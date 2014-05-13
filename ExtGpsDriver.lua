@@ -118,8 +118,14 @@ function tests.parse()
 		{"$GPGGA,094520.590,3723.46587704,N,12202.26957864,W,2,6,1.2,18.893,M,-25.669,M,2.0,0031*4c\r\n$GPGLL,3751.65,S,14507.36,E,225444,A*77", 1, 10 },
 		{"$GPGGA,094520.590,3723.46587704,N,12202.26957864,W,2,6,1.2,18.893,M,-25.669,M,2.0,0031*4c\r\n$GPGLL,3751.65,S,14507.36,E,225444,A*77", 2, 20 },
 	}
-	local data = MP.pack(data_tbl)
-	driver:on_data(data)
+	local merged = {}
+	for _,d in ipairs(data_tbl) do
+		local data = MP.pack(d)
+		table.insert(merged, data)
+	end
+	
+	merged = table.concat(merged)
+	driver:on_data(merged)
 end
 
 function tests.file()
