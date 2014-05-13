@@ -1,42 +1,10 @@
-local base = _G
-
-module('ExtGpsDriver')
-
-local global_names = {'assert', 'io', 'ipairs', 'pairs', 'string', 'setmetatable', 'print', 'require', 'type', 'table'}
-for _,n in base.pairs(global_names) do 
-	_M[n] = base[n] 
-end
 
 local MP = require( "MessagePack" )
 local Writer = require('ExtGpsWriter')
 local Parser = require('NMEA_Parser')
 
-printf  = function(s,...)        return base.io.write(s:format(...))		end
-sprintf = function(s,...)        return s:format(...)                  		end
-
-function dump(o) 
-	if type(o) == "number" then
-		io.write(o)
-	elseif type(o) == "string" then
-		io.write(string.format("%q", o))
-	elseif type(o) == "table" then
-		io.write("{\n")
-		for k,v in base.pairs(o) do
-			io.write(" ", k, " = ")
-			dump(v)
-			io.write(",\n")
-		end
-		io.write("}\n")
-	elseif type(o) == "function" then
-		io.write("function")
-	else
-		error("cannot dump a " .. base.type(o))
-	end
-end
-
-
-
---dump(Writer)
+local stuff = require 'stuff'
+local printf = stuff.printf
 
 -- ================================================================ 
 
@@ -52,9 +20,9 @@ end
 function Driver:on_data(data)
 	assert(self.parse)
 
-	local data_table, res = MP.unpack(data), {}
-	for i,d in ipairs(data_table) do
-		local pps, sc, gps = table.unpack(d)
+	local res = {}
+	for _, d in MP.unpacker(data) do
+		local gps, pps, sc = table.unpack(d)
 		print (pps, sc, gps)
 		local parsed = self.parse(gps)
 		if parsed then  
@@ -115,7 +83,7 @@ end
 
 -- ================================================================ 
 
-tests = {}
+local tests = {}
 
 function tests.modules()
 	function table_equals(t1, t2)
@@ -147,14 +115,25 @@ end
 function tests.parse()
 	local driver = OpenDriver('tttt')
 	local data_tbl = {
-		{1, 10, "$GPGGA,094520.590,3723.46587704,N,12202.26957864,W,2,6,1.2,18.893,M,-25.669,M,2.0,0031*4c\r\n$GPGLL,3751.65,S,14507.36,E,225444,A*77" },
-		{2, 20, "$GPGGA,094520.590,3723.46587704,N,12202.26957864,W,2,6,1.2,18.893,M,-25.669,M,2.0,0031*4c\r\n$GPGLL,3751.65,S,14507.36,E,225444,A*77" },
+		{"$GPGGA,094520.590,3723.46587704,N,12202.26957864,W,2,6,1.2,18.893,M,-25.669,M,2.0,0031*4c\r\n$GPGLL,3751.65,S,14507.36,E,225444,A*77", 1, 10 },
+		{"$GPGGA,094520.590,3723.46587704,N,12202.26957864,W,2,6,1.2,18.893,M,-25.669,M,2.0,0031*4c\r\n$GPGLL,3751.65,S,14507.36,E,225444,A*77", 2, 20 },
 	}
 	local data = MP.pack(data_tbl)
 	driver:on_data(data)
 end
 
+function tests.file()
+	local f = io.open('1.dat', 'rb')
+	local buff = f:read(2^13)
+	print (#buff)
+	
+	for i,d in MP.unpacker(buff) do
+		local gps, pps, sc = table.unpack(d)
+		print (gps, pps, sc)
+	end
+end
+
 
 --tests.modules()
 tests.parse()
-
+-- tests.file()

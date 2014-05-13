@@ -1,51 +1,31 @@
-local base = _G
-local module = module
+local M = {}
+do
+	local global_names = {'assert', 'io', 'ipairs', 'pairs', 'string', 'setmetatable', 'print', 'require', 'type', 'table', 'pcall', 'os'}
+	for _,n in pairs(global_names) do 
+		M[n] = _G[n] 
+	end
 
-module('ExtGpsWriter')
-
-function rebase_global()
-	local global_names = {'assert', 'io', 'ipairs', 'pairs', 'string', 'setmetatable', 'print', 'require', 'type', 'error', 'table'}
-	for _,n in base.pairs(global_names) do 
-		_M[n] = base[n] 
+	if setfenv then
+		setfenv(1, M) -- for 5.1
+	else
+		_ENV = M -- for 5.2
 	end
 end
-rebase_global()
 
 local sqlite3 = require("lsqlite3")
-
-
-printf  = function(s,...)        return base.io.write(s:format(...)) 		end
-sprintf = function(s,...)        return s:format(...)						end
-
-dump = function (o) 
-	if base.type(o) == "number" then
-		io.write(o)
-	elseif base.type(o) == "string" then
-		io.write(string.format("%q", o))
-	elseif base.type(o) == "table" then
-		io.write("{\n")
-		for k,v in base.pairs(o) do
-			io.write(" ", k, " = ")
-			dump(v)
-			io.write(",\n")
-		end
-		io.write("}\n")
-	else
-		base.error("cannot dump a " .. base.type(o))
-	end
-end
-
+local stuff = require 'stuff'
+local printf = stuff.printf
 
 -- ============================================================ 
 
-data_base = {}
+local data_base = {}
 
 function data_base:open(data_path)
 	 self.engine = sqlite3.open(data_path)
 end
 
 function data_base:exec(query, ...)
-	base.assert(self.engine)
+	assert(self.engine)
 	local stmt = self.engine:prepare(query)
 	self:assert(stmt)
 	
@@ -56,7 +36,7 @@ end
 
 function data_base:transaction(arg)
 	self:exec("BEGIN TRANSACTION")
-	local ok, msg = base.pcall(arg.body_fn)
+	local ok, msg = pcall(arg.body_fn)
 	if ok then
 		self:exec("COMMIT")
 	else
@@ -67,7 +47,7 @@ end
 
 function data_base:assert(test, msg, ...)
 	if not test then 
-		local ures_msg = msg and base.string.format(msg.."\n", ...) or ""
+		local ures_msg = msg and string.format(msg.."\n", ...) or ""
 		local db_error = "Sqlite ERROR: " .. self.engine:errmsg()
 		error(ures_msg .. db_error)
 	end
@@ -75,7 +55,7 @@ end
 
 function data_base:msg(test, msg, ...)
 	if not test then 
-		local ures_msg = msg and base.string.format(msg.."\n", ...) or ""
+		local ures_msg = msg and string.format(msg.."\n", ...) or ""
 		local db_error = "Sqlite ERROR: " .. self.engine:errmsg()
 		print(ures_msg .. db_error)
 	end
@@ -83,17 +63,17 @@ end
 
 -- ============================================================ 
 
-ExtGpsDB = {}
+local ExtGpsDB = {}
 
 function ExtGpsDB:_open(passport_path)
-	base.assert(passport_path, 'empty passport path')
+	assert(passport_path, 'empty passport path')
 	local db_path = passport_path .. '.egps'
 	self.db = data_base
 	self.db:open(db_path)
 end
 
 function ExtGpsDB:_check_tables(req_version)
-	base.assert(self.db, 'not opened')
+	assert(self.db, 'not opened')
 	
 	self.db:exec("CREATE TABLE IF NOT EXISTS version (version INTEGER);")
 	local f, v = self.db.engine:rows("SELECT max(version) FROM version")
@@ -121,7 +101,6 @@ function ExtGpsDB:_check_tables(req_version)
 				UNIQUE		(name)
 			);]]
 		self.db:exec[[ CREATE TABLE info (
-				id 			INTEGER PRIMARY KEY,
 				sys_coord	INTEGER,
 				type		INTEGER,
 				value		REAL,
@@ -132,6 +111,7 @@ function ExtGpsDB:_check_tables(req_version)
 	end
 	
 	self.types = {}
+	self.info_values = {}
 end
 
 function ExtGpsDB:_fetch_types(new_type)
@@ -173,7 +153,7 @@ function ExtGpsDB:_insert_coord(sc, lat, lon, alt, utc, qul)
 	assert(sc and lat and lon and alt and utc and qul)
 	local stmt = self.stmt_coord_inserter
 	assert(stmt)
-	stmt:bind_names{ sc=sc, lat=lat, lon=lon, utc=utc, q=qul}
+	stmt:bind_names{ sc=sc, lat=lat, lon=lon, alt=alt, utc=utc, q=qul}
 	local res = stmt:step()
 	self.db:msg(res == sqlite3.DONE, "stmt_coord_inserter failed")
 	stmt:reset()
@@ -181,18 +161,23 @@ end
 
 function ExtGpsDB:_insert_info(sc, name, value)
 	assert(sc and name and value)
-	local stmt = self.stmt_info_inserter
-	assert(stmt)
-	assert(self.types)
+	assert(self.info_values)
 	
-	if not self.types[name]	then	self:_fetch_types(name)	end
-	local tp = self.types[name]
-	assert(tp)
-	
-	stmt:bind_names{ sc=sc, tp=tp, val=value}
-	local res = stmt:step()
-	self.db:msg(res == sqlite3.DONE, "stmt_info_inserter failed")
-	stmt:reset()
+	if self.info_values[name] ~= value then
+		local stmt = self.stmt_info_inserter
+		assert(stmt)
+		assert(self.types)
+		
+		if not self.types[name]	then	self:_fetch_types(name)	end
+		local tp = self.types[name]
+		assert(tp)
+		
+		stmt:bind_names{ sc=sc, tp=tp, val=value}
+		local res = stmt:step()
+		self.db:msg(res == sqlite3.DONE, "stmt_info_inserter failed")
+		stmt:reset()
+		self.info_values[name] = value
+	end
 end
 
 function ExtGpsDB:_insert_raw(sc, pps, gps)
@@ -210,7 +195,7 @@ end
 
 function OpenEGps(passport_path)
 	local egps = {}
-	base.setmetatable(egps, {__index=ExtGpsDB})
+	setmetatable(egps, {__index=ExtGpsDB})
 	egps:_open(passport_path)
 	egps:_check_tables(101)
 	egps:_make_inserters()
@@ -237,22 +222,22 @@ end
 
 -- ================================================================= --
 
-function test()
+local function test1()
 	local egps = OpenEGps('test')
 	
 	local cc = 10000
-	local x = base.os.clock()
+	local x = os.clock()
 	egps.db:transaction{body_fn = function()
 		for i = 1, cc do
-			egps:InsertCoords(i, i, i + .01, i + 2.02, i)
+			egps:_insert_coord(i, i, i + .01, i + 2.02, i, 2)
 		end
 	end }
-	local eps = (base.os.clock() - x)
+	local eps = (os.clock() - x)
 
 	printf( "insert %d rec in %f sec (%.1f usec/rec)\n", cc, eps, eps * 1000000.0 / cc) 
 end 
 
-function test2()
+local function test2()
 	local td = {
 		{gps = "$GPGGA,094520.590,3723.46587704,N,12202.26957864,W,2,6,1.2,18.893,M,-25.669,M,2.0,0031*4c",
 		parsed = {
@@ -286,4 +271,6 @@ function test2()
 	end
 end
 
---test2()
+-- test1()
+
+return M
