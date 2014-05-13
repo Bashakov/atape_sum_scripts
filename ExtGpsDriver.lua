@@ -10,9 +10,8 @@ local printf = stuff.printf
 
 local Driver = {}
 
-Driver.BlockWriter = {}
-
 function Driver:open(passport_path)
+	assert(tonumber('0.3'), 'check locale settings, "." or "," used for fraction separator')
 	self.writer = Writer.OpenEGps(passport_path)
 	self.parse = Parser.ParseData
 end
@@ -69,6 +68,14 @@ function Driver:_on_parsed_data(data)
 	end}
 end
 
+function Driver:close_data()
+	assert(self.writer)
+	self.writer:close_data()
+	self.writer = nil
+	self.parse = nil
+end
+
+-- ================================================================ 
 
 function OpenDriver(passport_path)
 	local r = {}
@@ -79,6 +86,13 @@ end
 
 function OnData(driver, data)
 	driver:on_data(data)
+end
+
+function CloseDriver(driver)
+	-- print '============================================'
+	-- print (driver)
+	driver:close_data()
+	-- print '============================================'
 end
 
 -- ================================================================ 
@@ -141,5 +155,5 @@ end
 
 
 --tests.modules()
-tests.parse()
+--tests.parse()
 -- tests.file()

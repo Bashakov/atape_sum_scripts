@@ -1,6 +1,7 @@
 local M = {}
 do
-	local global_names = {'assert', 'io', 'ipairs', 'pairs', 'string', 'setmetatable', 'print', 'require', 'type', 'table', 'pcall', 'os'}
+	local global_names = {'assert', 'io', 'ipairs', 'pairs', 'string', 'setmetatable', 
+		'print', 'require', 'type', 'table', 'pcall', 'os', 'tostring', 'tonumber'}
 	for _,n in pairs(global_names) do 
 		M[n] = _G[n] 
 	end
@@ -45,6 +46,13 @@ function data_base:transaction(arg)
 	end
 end
 
+function data_base:close(data_path)
+	self.engine:close_vm()
+	self.engine:close()
+	self.engine = nil
+	-- printf('ExtGpsDB:close: %s %s\n', tostring(cvm), tostring(cls))
+end
+
 function data_base:assert(test, msg, ...)
 	if not test then 
 		local ures_msg = msg and string.format(msg.."\n", ...) or ""
@@ -66,6 +74,7 @@ end
 local ExtGpsDB = {}
 
 function ExtGpsDB:_open(passport_path)
+	passport_path = string.gsub(passport_path, '.xml$', '')
 	assert(passport_path, 'empty passport path')
 	local db_path = passport_path .. '.egps'
 	self.db = data_base
@@ -193,16 +202,6 @@ end
 
 -- ----------------------------------------------------------------- --
 
-function OpenEGps(passport_path)
-	local egps = {}
-	setmetatable(egps, {__index=ExtGpsDB})
-	egps:_open(passport_path)
-	egps:_check_tables(101)
-	egps:_make_inserters()
-	egps:_fetch_types()
-	return egps
-end
-
 function ExtGpsDB:on_data(sc, pps, parsed, gps)
 	local coord_data = {'Latitude', 'Longitude', 'Altitude', 'UTC', 'Quality'}
 	local coord = {sc}
@@ -218,6 +217,23 @@ function ExtGpsDB:on_data(sc, pps, parsed, gps)
 	end
 	
 	self:_insert_raw(sc, pps, gps)
+end
+
+function ExtGpsDB:close_data()
+	self.db:close()
+	self.db = nil
+	self.types = nil
+	self.info_values = nil
+end
+
+function OpenEGps(passport_path)
+	local egps = {}
+	setmetatable(egps, {__index=ExtGpsDB})
+	egps:_open(passport_path)
+	egps:_check_tables(101)
+	egps:_make_inserters()
+	egps:_fetch_types()
+	return egps
 end
 
 -- ================================================================= --

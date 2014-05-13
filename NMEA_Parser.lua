@@ -47,13 +47,13 @@ local details = {}
 details.UtcOffset = stuff.GetUtcOffset() 
 
 details.DecodeCoord = function(value, pos)
-	--print (value, pos)
+	-- print (value, pos)
 	local sign = {N=1, S=-1, W=1, E=-1} 
 	local gg, mm = string.match(value, "^0?(%d?%d%d)(%d%d%.%d*)")
 	if not (gg and mm) then 
 		gg, mm = string.match(value, "^0?(%d*.%d*)"), 0
 	end 
-	--print (gg, mm)
+	-- print (sign[pos], gg, mm, tonumber(mm))
 	local degr = sign[pos] * (gg + mm / 60.0)
 	return degr
 end
@@ -63,6 +63,7 @@ details.TimeToMScount = function(value)
 	if value and #value > 5 then
 		local h, m, s = string.match(value, "(%d%d)(%d%d)(%d%d%.?%d*)")
 		--res = string.format("%02d:%02d:%02.3f", h,m,s)
+		-- print (h, m, s, tonumber(s))
 		local seconds = (h * 60 + m) * 60 + s
 		res = math.floor( seconds * 1000.0 + 0.5)
 		--print (value, h, m, s, res)
@@ -144,6 +145,7 @@ local data_block_desc = {
 }
 
 function ParseData(data)
+	assert(tonumber('0.3'), 'check locale settings, "." or "," used for fraction separator')
 	local res = {}
 	for block_type, block_data in string.gmatch(data, "%$GP(%a%a%a),([^*]+)*%x%x") do
 		local desc = data_block_desc[block_type]
