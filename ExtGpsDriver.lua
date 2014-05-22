@@ -5,7 +5,7 @@ local Parser = require('NMEA_Parser')
 
 local stuff = require 'stuff'
 local printf = stuff.printf
-
+local sprintf = stuff.sprintf
 
 -- ================================================================ 
 
@@ -19,22 +19,27 @@ end
 
 function Driver:on_data(data)
 	assert(self.parse)
-	printf("Driver:on_data len=%d\n", #data)
 
+	local failed = 0
 	local res = {}
+	
 	for _, d in MP.unpacker(data) do
 		local gps, pps, sc = table.unpack(d)
 		--print (pps, sc, stuff.escape(gps))
-		local parsed = self.parse(gps)
-		if parsed then  
+		local ok, parsed = pcall(self.parse, gps)
+		if ok and parsed then  
 			--stuff.save('parsed', parsed)
 			local merged = self:_merge_parsed_data(parsed, gps)
 			table.insert(res, {pps=pps, sc=sc, parsed=merged, gps=gps} )
 		else
-			print ('=== parsing string filed ===')
+			--printf ('=== parsing string failed [%s] ===', stuff.escape(gps))
+			error( sprintf('parsing ERROR block pps=%d sc=%d data=[%s]: \n%s', 
+				pps, sc, stuff.escape(gps), parsed or "" ))
+			failed = failed + 1
 		end
-		
 	end
+	
+	printf("Driver:on_data data_len = %d; block (parsed = %d, falied = %d)\n", #data, #res, failed)
 	self:_on_parsed_data(res)
 	return #res
 end

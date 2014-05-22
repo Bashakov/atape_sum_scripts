@@ -129,7 +129,7 @@ local data_block_desc = {
 		Latitude 	= { fields={2,3}, 	fn = details.DecodeCoord},
 		Longitude	= { fields={4,5}, 	fn = details.DecodeCoord},
 		Quality		= { fields={6}, 	fn = tonumber},
-		NOS			= { fields={7}, 	fn = tonumber},
+		NoS			= { fields={7}, 	fn = tonumber},
 		HDOP		= { fields={8}, 	fn = tonumber},
 		Altitude	= { fields={9,10}, 	fn = details.DecodeAltitude},
 		GeoidSep	= { fields={11,12},	fn = details.DecodeAltitude},
@@ -147,14 +147,15 @@ local data_block_desc = {
 		Status		= {	fields={2}, 	fn = details.ParseStatus},
 		Latitude	= {	fields={3,4}, 	fn = details.DecodeCoord},
 		Longitude	= {	fields={5,6}, 	fn = details.DecodeCoord},
-		SOG			= {	fields={7}, 	fn = tonumber},
+		Speed		= {	fields={7}, 	fn = tonumber},
 		TMG			= {	fields={8}, 	fn = tonumber},
 		Date		= {	fields={9}, 	fn = details.DateToOsTime},
 		MagnVar		= {	fields={10,11},	fn = details.DecodeCoord},},
 }
 
+assert(tonumber('0.3'), 'check locale settings, "." or "," used for fraction separator')
+
 function ParseData(data)
-	assert(tonumber('0.3'), 'check locale settings, "." or "," used for fraction separator')
 	local res = {}
 	for block_type, block_data in string.gmatch(data, "%$GP(%a%a%a),([^*]+)*%x%x") do
 		local desc = data_block_desc[block_type]
@@ -235,7 +236,7 @@ tests.parser = function ()
 				Latitude = 37.391097950667,
 				Longitude = 122.03782631066667,
 				Quality = 2,
-				NOS	= 6,
+				NoS	= 6,
 				HDOP = 1.2,
 				Altitude = 18893.0,
 				GeoidSep = -25669,
@@ -257,7 +258,7 @@ tests.parser = function ()
 				Status = 1,
 				Latitude = 55.810116666666666,
 				Longitude = -37.65645,
-				SOG = 0.01,
+				Speed = 0.01,
 				TMG	= 5.6,
 				Date = 1050883200,
 				MagnVar = -8.7,}
@@ -270,7 +271,7 @@ tests.parser = function ()
 				Latitude = 38.85661666666667,
 				Longitude = 94.7998,
 				Quality = 8,
-				NOS	= 12,
+				NoS	= 12,
 				HDOP = 0.9,
 				Altitude = 186600.0,
 				GeoidSep = -28600,
@@ -293,7 +294,7 @@ end
 -- ================================================================ 
 
 
---tests.parser()
+-- tests.parser()
 --tests.benchmark()
 
 -- print(os.time{year=1970, month=1, day=2, hour=0} + stuff.GetUtcOffset() * 3600)

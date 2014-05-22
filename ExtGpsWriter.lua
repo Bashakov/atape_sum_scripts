@@ -23,8 +23,8 @@ local data_base = {}
 
 function data_base:open(data_path)
 	self.engine = sqlite3.open(data_path)
-	self:assert(self.engine:exec("PRAGMA synchronize = OFF") ~= sqlite3.DONE, 'synchronize = off')
-	self:assert(self.engine:exec("PRAGMA journal_mode = MEMORY;") ~= sqlite3.DONE, 'journal_mode = MEMORY')
+	self:assert(self.engine:exec("PRAGMA synchronize = OFF") == sqlite3.OK, 'synchronize = off')
+	self:assert(self.engine:exec("PRAGMA journal_mode = MEMORY;") == sqlite3.OK, 'journal_mode = MEMORY')
 end
 
 function data_base:exec(query, ...)
@@ -34,7 +34,7 @@ function data_base:exec(query, ...)
 	
 	stmt:bind_values(...)
 	local r = stmt:step() 
-	self:msg(r ~= sqlite3.DONE or r ~= sqlite3.ROW, query)
+	self:msg(r == sqlite3.DONE or r == sqlite3.ROW, query)
 	stmt:finalize()
 end
 
