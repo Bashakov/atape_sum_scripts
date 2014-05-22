@@ -2,7 +2,7 @@ local M = {}
 
 do
 	local global_names = {'assert', 'io', 'ipairs', 'pairs', 'string', 'setmetatable', 'print', 
-		'require', 'type', 'table', 'pcall', 'os', 'math', 'tonumber', 'tostring'}
+		'require', 'type', 'table', 'pcall', 'os', 'math', 'tonumber', 'tostring', 'error'}
 	for _,n in pairs(global_names) do 
 		M[n] = _G[n] 
 	end
@@ -16,6 +16,8 @@ end
 
 local stuff = require 'stuff'
 local printf = stuff.printf
+local sprintf = stuff.sprintf
+local escape = stuff.escape
 
 -- =============================================================
 
@@ -97,9 +99,16 @@ details.ParseBlock = function (data, fields_description)
 		--print (name, table.unpack(flds))
 		local r = flds[1]
 		if desc.fn then 
-			r = desc.fn(table.unpack(flds)) or ""
+			local ok, rr = pcall(desc.fn, table.unpack(flds))
+			if not ok then
+				--stuff.save('er', rr)
+				local esc_fld = escape(table.concat(flds, '\';\''))
+				error(sprintf('failed parse field %s:[\'%s\'] \n on data: [%s]\n with error: %s ', 
+					name, esc_fld, escape(data) , rr))
+			end
+			r = rr or ""
 		else
-			printf("parse function for name=[%s] not set\n", name)
+			error("parse function for name=[%s] not set\n", name)
 		end
 		--print (desc.name, r)
 		res_table[name] = r
@@ -199,6 +208,7 @@ tests.parser = function ()
 		for n, v in pairs(expected_res) do
 			local is_equal = false
 			if type(v) == 'number' then
+				--print (res[n], v)
 				is_equal = math.abs(res[n] - v) < math.abs(res[n] + v) * 1.0e-10
 			else
 				is_equal = res[n] == v
@@ -252,6 +262,21 @@ tests.parser = function ()
 				Date = 1050883200,
 				MagnVar = -8.7,}
 		},
+		{
+			block = "$GPGGA,094433,3851.3970,N,09447.9880,W,8,12,0.9,186.6,M,-28.6,M,,*77",
+			res = {
+				BlockType = "GGA",
+				UTC = 35073000,
+				Latitude = 38.85661666666667,
+				Longitude = 94.7998,
+				Quality = 8,
+				NOS	= 12,
+				HDOP = 0.9,
+				Altitude = 186600.0,
+				GeoidSep = -28600,
+				AgeDiff	= "",
+				DiffStID = "", }
+		},
 	}
 	local error_count = 0
 	for _,t in ipairs(tests_data) do
@@ -261,7 +286,7 @@ tests.parser = function ()
 	if error_count == 0 then
 		print ("======= All Test done! =========")
 	else
-		print ("========= FOUND " .. error_count .. " ERROR !!! =========")
+		print ("\n========= FOUND " .. error_count .. " ERROR !!! =========")
 	end
 end
 

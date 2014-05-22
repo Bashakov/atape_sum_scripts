@@ -1,7 +1,7 @@
 local M = {}
 do
 	local global_names = {'assert', 'io', 'ipairs', 'pairs', 'string', 'setmetatable', 
-		'print', 'require', 'type', 'table', 'pcall', 'os', 'tostring', 'tonumber'}
+		'print', 'require', 'type', 'table', 'pcall', 'os', 'tostring', 'tonumber', 'error'}
 	for _,n in pairs(global_names) do 
 		M[n] = _G[n] 
 	end
@@ -22,7 +22,9 @@ local printf = stuff.printf
 local data_base = {}
 
 function data_base:open(data_path)
-	 self.engine = sqlite3.open(data_path)
+	self.engine = sqlite3.open(data_path)
+	self:assert(self.engine:exec("PRAGMA synchronize = OFF") ~= sqlite3.DONE, 'synchronize = off')
+	self:assert(self.engine:exec("PRAGMA journal_mode = MEMORY;") ~= sqlite3.DONE, 'journal_mode = MEMORY')
 end
 
 function data_base:exec(query, ...)
@@ -31,7 +33,8 @@ function data_base:exec(query, ...)
 	self:assert(stmt)
 	
 	stmt:bind_values(...)
-	stmt:step()
+	local r = stmt:step() 
+	self:msg(r ~= sqlite3.DONE or r ~= sqlite3.ROW, query)
 	stmt:finalize()
 end
 

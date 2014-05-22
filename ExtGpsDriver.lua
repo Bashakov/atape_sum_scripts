@@ -6,6 +6,7 @@ local Parser = require('NMEA_Parser')
 local stuff = require 'stuff'
 local printf = stuff.printf
 
+
 -- ================================================================ 
 
 local Driver = {}
@@ -18,20 +19,24 @@ end
 
 function Driver:on_data(data)
 	assert(self.parse)
+	printf("Driver:on_data len=%d\n", #data)
 
 	local res = {}
 	for _, d in MP.unpacker(data) do
 		local gps, pps, sc = table.unpack(d)
-		print (pps, sc, gps)
+		--print (pps, sc, stuff.escape(gps))
 		local parsed = self.parse(gps)
 		if parsed then  
-			--dump(parsed)
+			--stuff.save('parsed', parsed)
 			local merged = self:_merge_parsed_data(parsed, gps)
 			table.insert(res, {pps=pps, sc=sc, parsed=merged, gps=gps} )
+		else
+			print ('=== parsing string filed ===')
 		end
+		
 	end
-	
 	self:_on_parsed_data(res)
+	return #res
 end
 
 function Driver:_merge_parsed_data(parsed, data)
@@ -85,7 +90,7 @@ function OpenDriver(passport_path)
 end
 
 function OnData(driver, data)
-	driver:on_data(data)
+	return driver:on_data(data)
 end
 
 function CloseDriver(driver)

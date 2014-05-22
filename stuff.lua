@@ -24,7 +24,7 @@ function stuff.save (name, value, saved)
 			for k,v in pairs(value) do -- save its fields
 				k = basicSerialize(k)
 				local fname = string.format("%s[%s]", name, k)
-				save(fname, v, saved)
+				stuff.save(fname, v, saved)
 			end
 		end
 	else
@@ -37,7 +37,17 @@ function stuff.printf (s,...)
 end
 
 function stuff.sprintf(s,...)        
-	return s:format(...)                  		
+	return string.format(s, ...)
+end
+
+local escape_hlper = function(c) 
+	return string.format('\\x%02X', string.byte(c))
+end
+
+function stuff.escape(s, ptrn)
+	ptrn = ptrn or '[%c%s]'
+	local res = string.gsub(s, ptrn, escape_hlper)
+	return res
 end
 
 function stuff.GetUtcOffset()
@@ -46,5 +56,6 @@ function stuff.GetUtcOffset()
 	local diff = (cur.day - utc.day) * 24 + (cur.hour - utc.hour)
 	return diff
 end
+
 
 return stuff
