@@ -130,6 +130,23 @@ end
                 ["{30F00EEB-FE4D-411C-82AE-66003115A864}"] = 14, -- FAIL_VR_17
                 ["{31E56427-E997-4CB9-B49C-0599FF9DDDB5}"] = 15, -- FAIL_VR_17_WEAK
         }
+		
+		local Img_uzlib_guids = {
+				["{AB01A400-F879-447A-922E-6B5818D85801}"] = 1, -- UZLIB_SINGLE_BOLT
+				["{AB01A400-F879-447A-922E-6B5818D85802}"] = 1, -- UZLIB_JOINT_BOLT
+				["{AB01A400-F879-447A-922E-6B5818D85803}"] = 0, -- UZLIB_JOINT
+				["{AB01A400-F879-447A-922E-6B5818D85804}"] = 4, -- UZLIB_FLAW
+				["{AB01A400-F879-447A-922E-6B5818D85805}"] = 0, -- UZLIB_STRELKA
+				["{AB01A400-F879-447A-922E-6B5818D85806}"] = 0, -- UZLIB_REGION_NOISE
+				["{AB01A400-F879-447A-922E-6B5818D85807}"] = 0, -- UZLIB_REGION_SIGNAL
+				["{AB01A400-F879-447A-922E-6B5818D85808}"] = 0, -- UZLIB_REGION_BOLT
+				["{AB01A400-F879-447A-922E-6B5818D85809}"] = 0, -- UZLIB_REGION_TOREZ
+				["{AB01A400-F879-447A-922E-6B5818D8580A}"] = 4, -- UZLIB_REGION_FLAW
+				["{AB01A400-F879-447A-922E-6B5818D8580B}"] = 0, -- UZLIB_REGION_UNKNW
+				["{AB01A400-F879-447A-922E-6B5818D85810}"] = 2, -- UZLIB_FOOT_LOSS_MX
+				["{AB01A400-F879-447A-922E-6B5818D85811}"] = 3, -- UZLIB_FOOT_LOSS_CH
+				["{AB01A400-F879-447A-922E-6B5818D85812}"] = 0, -- UZLIB_FOOT_PRESENT
+			}
 
 
         local Img_guid2idx = {
@@ -165,6 +182,17 @@ function GetMarkImage(mark) -- exported (return ico desc from mark)
                 }
                 return res                                                                -- return desc
         end
+		
+		local uzlib_index = Img_uzlib_guids[typeGuid] -- now check if uzlib guid
+		if uzlib_index then
+			local offset = (rail == 1) and 0 or 1
+			local im_size = 16
+            local res = {
+					filename = 'Images/uzlib.bmp',                -- filename
+					src_rect = { uzlib_index * im_size, offset * im_size, im_size, im_size}, -- {left, top, width, height}
+			}
+			return res  
+		end
 
 
         local img_x = Img_guid2idx[typeGuid]                -- chack atape guids

@@ -19,29 +19,28 @@ end
 
 function Driver:on_data(data)
 	assert(self.parse)
-
-	local failed = 0
-	local res = {}
 	
+	local res, failed = {}, {}
 	for _, d in MP.unpacker(data) do
 		local gps, pps, sc = table.unpack(d)
 		--print (pps, sc, stuff.escape(gps))
 		local ok, parsed = pcall(self.parse, gps)
+		
 		if ok and parsed then  
 			--stuff.save('parsed', parsed)
 			local merged = self:_merge_parsed_data(parsed, gps)
 			table.insert(res, {pps=pps, sc=sc, parsed=merged, gps=gps} )
 		else
-			--printf ('=== parsing string failed [%s] ===', stuff.escape(gps))
-			error( sprintf('parsing ERROR block pps=%d sc=%d data=[%s]: \n%s', 
-				pps, sc, stuff.escape(gps), parsed or "" ))
-			failed = failed + 1
+			local msg = sprintf('parsing ERROR block pps=%d sc=%d data=[%s]: \n%s', 
+				pps, sc, stuff.escape(gps), parsed or "" )
+			print(msg)
+			table.insert(failed, msg)
 		end
 	end
 	
-	printf("Driver:on_data data_len = %d; block (parsed = %d, falied = %d)\n", #data, #res, failed)
+	printf("Driver:on_data data_len = %d; block (parsed = %d, failed = %d)\n", #data, #res, #failed)
 	self:_on_parsed_data(res)
-	return #res
+	return {processed=#res, errors=failed}
 end
 
 function Driver:_merge_parsed_data(parsed, data)
@@ -71,11 +70,14 @@ end
 
 function Driver:_on_parsed_data(data)
 	assert(self.writer)
-	self.writer.db:transaction{body_fn = function()
+	local insert_data = function()
 		for _,d in ipairs(data) do
 			self.writer:on_data(d.sc, d.pps, d.parsed, d.gps)
 		end
-	end}
+	end
+	
+	self.writer.db:transaction{body_fn = insert_data}
+	--insert_data()
 end
 
 function Driver:close_data()
@@ -109,37 +111,10 @@ end
 
 local tests = {}
 
-function tests.modules()
-	function table_equals(t1, t2)
-		base.assert(base.type(t1) == 'table')
-		base.assert(base.type(t2) == 'table')
-		
-		for i, v in base.pairs(t1) do
-			if base.type(v) == 'table' then 
-				if not table_equals(v, t2[i]) then
-					return false
-				end
-			elseif t2[i] ~= v then
-				return false
-			end
-			t2[i] = nil
-		end
-		return base.next(t2) == nil
-	end
-	
-	local tbl = { a=123, b="any", c={"ta","bl","e",1,2,3} }
-	local packed = MP.pack(tbl)
-	local unpacked_table = MP.unpack(packed)
-	base.assert(table_equals(tbl, unpacked_table))
-
-	Writer.test()
-	Parser.tests.parser()
-end 
-
 function tests.parse()
 	local driver = OpenDriver('tttt')
 	local data_tbl = {
-		{"$GPGGA,094520.590,3723.46587704,N,12202.26957864,W,2,6,1.2,18.893,M,-25.669,M,2.0,0031*4c\r\n$GPGLL,3751.65,S,14507.36,E,225444,A*77", 1, 10 },
+		{"$GPGGA,0945 20.590,3723.46587704,N,12202.26957864,W,2,6,1.2,18.893,M,-25.669,M,2.0,0031*4c\r\n$GPGLL,3751.65,S,14507.36,E,225444,A*77", 1, 10 },
 		{"$GPGGA,094520.590,3723.46587704,N,12202.26957864,W,2,6,1.2,18.893,M,-25.669,M,2.0,0031*4c\r\n$GPGLL,3751.65,S,14507.36,E,225444,A*77", 2, 20 },
 	}
 	local merged = {}
@@ -149,7 +124,12 @@ function tests.parse()
 	end
 	
 	merged = table.concat(merged)
-	driver:on_data(merged)
+	
+	local res = driver:on_data(merged)
+	printf('processed %d records\n', res.processed)
+	for _, err in ipairs(res.errors) do
+		print (err)
+	end
 end
 
 function tests.file()
@@ -164,6 +144,5 @@ function tests.file()
 end
 
 
---tests.modules()
 --tests.parse()
 -- tests.file()

@@ -16,6 +16,7 @@ end
 local sqlite3 = require("lsqlite3")
 local stuff = require 'stuff'
 local printf = stuff.printf
+local sprintf = stuff.sprintf
 
 -- ============================================================ 
 
@@ -23,8 +24,9 @@ local data_base = {}
 
 function data_base:open(data_path)
 	self.engine = sqlite3.open(data_path)
-	self:assert(self.engine:exec("PRAGMA synchronize = OFF") == sqlite3.OK, 'synchronize = off')
-	self:assert(self.engine:exec("PRAGMA journal_mode = MEMORY;") == sqlite3.OK, 'journal_mode = MEMORY')
+	--self.engine = sqlite3.open_memory()
+	self:exec("PRAGMA synchronize = OFF;")
+	self:exec("PRAGMA journal_mode = MEMORY;")
 end
 
 function data_base:exec(query, ...)
@@ -34,19 +36,29 @@ function data_base:exec(query, ...)
 	
 	stmt:bind_values(...)
 	local r = stmt:step() 
-	self:msg(r == sqlite3.DONE or r == sqlite3.ROW, query)
+	self:assert(r == sqlite3.DONE or r == sqlite3.ROW, query)
 	stmt:finalize()
 end
 
 function data_base:transaction(arg)
+	local x1 = os.clock()
+	
 	self:exec("BEGIN TRANSACTION")
+	local x2 = os.clock()
+	
 	local ok, msg = pcall(arg.body_fn)
+	local x3 = os.clock()
+	
 	if ok then
 		self:exec("COMMIT")
 	else
 		self:exec("ROLLBACK")
 		print("error: " .. msg)
 	end
+	local x4 = os.clock()
+	
+	local function ff(v1, v2) return (v2-v1) * 1000000.0 end
+	--printf( "transaction %d %d %d\n", ff(x1,x2), ff(x2,x3), ff(x3,x4)) 
 end
 
 function data_base:close(data_path)
@@ -71,6 +83,12 @@ function data_base:msg(test, msg, ...)
 		print(ures_msg .. db_error)
 	end
 end
+
+--function data_base:exec_assert(cmd)
+--	if self.engine:exec(cmd) ~= sqlite3.OK then
+--		error( sprintf('[%s] failed with: %s', cmd, self.engine:errmsg()) )
+--	end
+--end
 
 -- ============================================================ 
 
@@ -163,6 +181,7 @@ end
 
 function ExtGpsDB:_insert_coord(sc, lat, lon, alt, utc, qul)
 	assert(sc and lat and lon and alt and utc and qul)
+	
 	local stmt = self.stmt_coord_inserter
 	assert(stmt)
 	stmt:bind_names{ sc=sc, lat=lat, lon=lon, alt=alt, utc=utc, q=qul}
@@ -213,6 +232,7 @@ function ExtGpsDB:on_data(sc, pps, parsed, gps)
 		table.insert(coord, d)
 		parsed[n] = nil
 	end
+	
 	self:_insert_coord(table.unpack(coord))
 	
 	for n, v in pairs(parsed) do
@@ -242,7 +262,7 @@ end
 -- ================================================================= --
 
 local function test1()
-	local egps = OpenEGps('test')
+	local egps = OpenEGps(':memmory:')
 	
 	local cc = 10000
 	local x = os.clock()
