@@ -22,6 +22,7 @@ local escape = stuff.escape
 -- =============================================================
 
 local function split_fields(str, delim)
+	str = string.gsub(str, "%s+", "")
 	local outResults = { }
 	local theStart = 1
 	local theSplitStart, theSplitEnd = str:find(delim, theStart )
@@ -82,7 +83,7 @@ details.DateToOsTime = function(value)
 end
 
 details.DecodeAltitude = function(value, units)
-	if #value == 0 and #units == 0 then 	return ""	end
+	if #value == 0 or #units == 0 then 	return ""	end
 	--print (value, units)
 	local units_factor = {M=1000.0} 
 	local res = units_factor[units] * tonumber(value)
@@ -179,6 +180,7 @@ tests.benchmark = function ()
 		"$GPGGA,094520.590,3723.46587704,N,12202.26957864,W,2,6,1.2,18.893,M,-25.669,M,2.0,0031*4c\r\n"
 		.. "$GPGGA,004241.47,5532.8492,N,03729.0987,E,1,04,2.0,-0015,M,,,,*AA\r\n" 
 		.. "$GPGGA,094446,3851.3970,N,09447.9880,W,8,12,0.9,186.6,M,-28.6,M,,*75\r\n" 
+		.. "$GPGGA,153450,3851.3970,N,09447.9880,W,0,00,	 ,		 ,M,		 ,M,,  *4c\r\n"
 		.. "$GPGLL,3751.65,S,14507.36,E*77\r\n" 
 		.. "$GPGLL,3751.65,S,14507.36,E,225444,A*77\r\n" 
 		.. "$GPGLL,5532.8492,N,03729.0987,E,004241.469,A*33\r\n" 
@@ -210,7 +212,7 @@ tests.parser = function ()
 			local is_equal = false
 			if type(v) == 'number' then
 				--print (res[n], v)
-				is_equal = math.abs(res[n] - v) < math.abs(res[n] + v) * 1.0e-10
+				is_equal = math.abs(res[n] - v) < math.abs(res[n] + v + 0.001) * 1.0e-10
 			else
 				is_equal = res[n] == v
 			end
@@ -229,6 +231,20 @@ tests.parser = function ()
 	end
 
 	local tests_data = {
+		{	block = "$GPGGA,153450,3851.3970,N,09447.9880,W,0,00,	 ,		 ,M,		 ,M,,  *4c",
+			res = {
+				BlockType = "GGA",
+				UTC = 56090000,
+				Latitude = 38.8566166666666,
+				Longitude = 94.7998,
+				Quality = 0,
+				NoS	= 0,
+				HDOP = "",
+				Altitude = "",
+				GeoidSep = "",
+				AgeDiff	= "",
+				DiffStID = "" }
+		},
 		{	block = "$GPGGA,094520.590,3723.46587704,N,12202.26957864,W,2,6,1.2,18.893,M,-25.669,M,2.0,0031*4c",
 			res = {
 				BlockType = "GGA",
@@ -277,7 +293,7 @@ tests.parser = function ()
 				GeoidSep = -28600,
 				AgeDiff	= "",
 				DiffStID = "", }
-		},
+		}, 
 	}
 	local error_count = 0
 	for _,t in ipairs(tests_data) do
@@ -294,7 +310,7 @@ end
 -- ================================================================ 
 
 
--- tests.parser()
+--tests.parser()
 --tests.benchmark()
 
 -- print(os.time{year=1970, month=1, day=2, hour=0} + stuff.GetUtcOffset() * 3600)
