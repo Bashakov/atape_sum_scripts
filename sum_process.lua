@@ -106,62 +106,48 @@ end
 
 -- ================================ EXPORT FUNCTIONS ================================= --
 
-        local Img_DA_guids = {
+local Img_DA_guids = {
 
-                ["{8BCDBD8F-0588-407D-83AA-92E2C4A762E2}"] = 0, -- Hi
-                ["{9FE614FC-275A-400E-869D-85C9BDFD22B5}"] = 1,        -- Mi
-                ["{E7F5AB7E-6C7E-47BF-8F17-A826942DDC2B}"] = 2, -- Lo
-                ["{5C3A5288-344E-4655-AD2D-FBE6C37C3F56}"] = 3, -- No
-                ["{19253263-2C0B-41EE-8EAA-FFFFFFFFFFFF}"] = 4, -- FAIL_GAP_BY_MAGN
-
-
-                ["{EADB9B20-6772-4FA7-A1ED-811ED6DB0E2B}"] = 5,  -- FAIL
-                ["{E5FB236D-FE40-411E-9F7C-51D94EB1856B}"] = 6,  -- FAIL_ONLY_SINGLE
-                ["{62DEC5BD-654E-4C7C-8682-5E9834B3A084}"] = 7,  -- FAIL_ONLY_LO
-                ["{7FA7E3A6-1B5F-4728-8312-FD82432A0E05}"] = 8,  -- FAIL_SHIFT_VERTICAL
-                ["{083B6FED-4AAE-412A-B92E-43C23BF47393}"] = 9,  -- FAIL_NORMAL
-
-                ["{FC29AF42-5605-44B9-9599-7CCFB2D0D213}"] = 10,  -- TO_BE_IMPROVED
-
-                ["{19253263-2C0B-41EE-8EAA-FFFFFFFFFFF0}"] = 11, --FAIL_JOINT_BY_MAGN_AS_WELD
-                ["{19253263-2C0B-41EE-8EAA-FFFFFFFFFFF1}"] = 12, --FAIL_JOINT_BY_MAGN_AS_WELD_FP
-                ["{19253263-2C0B-41EE-8EAA-FFFFFFFFFFF2}"] = 13, --FAIL_JOINT_BY_MAGN_AS_ISO
-
-                ["{30F00EEB-FE4D-411C-82AE-66003115A864}"] = 14, -- FAIL_VR_17
-                ["{31E56427-E997-4CB9-B49C-0599FF9DDDB5}"] = 15, -- FAIL_VR_17_WEAK
-        }
-		
-		local Img_uzlib_guids = {
-				["{AB01A400-F879-447A-922E-6B5818D85801}"] = 1, -- UZLIB_SINGLE_BOLT
-				["{AB01A400-F879-447A-922E-6B5818D85802}"] = 1, -- UZLIB_JOINT_BOLT
-				["{AB01A400-F879-447A-922E-6B5818D85803}"] = 0, -- UZLIB_JOINT
-				["{AB01A400-F879-447A-922E-6B5818D85804}"] = 4, -- UZLIB_FLAW
-				["{AB01A400-F879-447A-922E-6B5818D85805}"] = 0, -- UZLIB_STRELKA
-				["{AB01A400-F879-447A-922E-6B5818D85806}"] = 0, -- UZLIB_REGION_NOISE
-				["{AB01A400-F879-447A-922E-6B5818D85807}"] = 0, -- UZLIB_REGION_SIGNAL
-				["{AB01A400-F879-447A-922E-6B5818D85808}"] = 0, -- UZLIB_REGION_BOLT
-				["{AB01A400-F879-447A-922E-6B5818D85809}"] = 0, -- UZLIB_REGION_TOREZ
-				["{AB01A400-F879-447A-922E-6B5818D8580A}"] = 4, -- UZLIB_REGION_FLAW
-				["{AB01A400-F879-447A-922E-6B5818D8580B}"] = 0, -- UZLIB_REGION_UNKNW
-				["{AB01A400-F879-447A-922E-6B5818D85810}"] = 2, -- UZLIB_FOOT_LOSS_MX
-				["{AB01A400-F879-447A-922E-6B5818D85811}"] = 3, -- UZLIB_FOOT_LOSS_CH
-				["{AB01A400-F879-447A-922E-6B5818D85812}"] = 0, -- UZLIB_FOOT_PRESENT
-			}
+    ["{8BCDBD8F-0588-407D-83AA-92E2C4A762E2}"] = 0, -- Hi
+    ["{9FE614FC-275A-400E-869D-85C9BDFD22B5}"] = 1,        -- Mi
+    ["{E7F5AB7E-6C7E-47BF-8F17-A826942DDC2B}"] = 2, -- Lo
+    ["{5C3A5288-344E-4655-AD2D-FBE6C37C3F56}"] = 3, -- No
+    ["{19253263-2C0B-41EE-8EAA-FFFFFFFFFFFF}"] = 4, -- FAIL_GAP_BY_MAGN
 
 
-        local Img_guid2idx = {
-                ["{19253263-2C0B-41EE-8EAA-000000000010}"] = 4, -- iso
-                ["{19253263-2C0B-41EE-8EAA-000000000040}"] = 3, -- pseudo
-                ["{19253263-2C0B-41EE-8EAA-000000000080}"] = 5, -- NAKLADKA
-                ["{19FF08BB-C344-495B-82ED-10B6CBAD508F}"] = 8, -- NPU
+    ["{EADB9B20-6772-4FA7-A1ED-811ED6DB0E2B}"] = 5,  -- FAIL
+    ["{E5FB236D-FE40-411E-9F7C-51D94EB1856B}"] = 6,  -- FAIL_ONLY_SINGLE
+    ["{62DEC5BD-654E-4C7C-8682-5E9834B3A084}"] = 7,  -- FAIL_ONLY_LO
+    ["{7FA7E3A6-1B5F-4728-8312-FD82432A0E05}"] = 8,  -- FAIL_SHIFT_VERTICAL
+    ["{083B6FED-4AAE-412A-B92E-43C23BF47393}"] = 9,  -- FAIL_NORMAL
 
-                ["{CBD41D28-9308-4FEC-A330-35EAED9FC800}"] = 7, -- video_ident 0-50
-                ["{CBD41D28-9308-4FEC-A330-35EAED9FC810}"] = 7, -- video_ident 0-50
-                ["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = 6, -- video_ident 50-70
-                ["{CBD41D28-9308-4FEC-A330-35EAED9FC811}"] = 6, -- video_ident 50-70
-                ["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = 2, -- video_ident 70-100
-                ["{CBD41D28-9308-4FEC-A330-35EAED9FC812}"] = 2, -- video_ident 70-100
-        }
+    ["{FC29AF42-5605-44B9-9599-7CCFB2D0D213}"] = 10,  -- TO_BE_IMPROVED
+
+    ["{19253263-2C0B-41EE-8EAA-FFFFFFFFFFF0}"] = 11, --FAIL_JOINT_BY_MAGN_AS_WELD
+    ["{19253263-2C0B-41EE-8EAA-FFFFFFFFFFF1}"] = 12, --FAIL_JOINT_BY_MAGN_AS_WELD_FP
+    ["{19253263-2C0B-41EE-8EAA-FFFFFFFFFFF2}"] = 13, --FAIL_JOINT_BY_MAGN_AS_ISO
+
+    ["{30F00EEB-FE4D-411C-82AE-66003115A864}"] = 14, -- FAIL_VR_17
+    ["{31E56427-E997-4CB9-B49C-0599FF9DDDB5}"] = 15, -- FAIL_VR_17_WEAK
+}
+
+
+local Img_guid2idx = {
+    ["{19253263-2C0B-41EE-8EAA-000000000010}"] = 4, -- iso
+    ["{19253263-2C0B-41EE-8EAA-000000000040}"] = 3, -- pseudo
+    ["{19253263-2C0B-41EE-8EAA-000000000080}"] = 5, -- NAKLADKA
+	["{19253263-2C0B-41EE-8EAA-000000000100}"] = 9, -- SVARKA
+	["{19253263-2C0B-41EE-8EAA-000000000400}"] = 9, -- SVARKA_REG
+	["{19253263-2C0B-41EE-8EAA-000000000800}"] = 9, -- SVARKA_REG_NST
+    ["{19FF08BB-C344-495B-82ED-10B6CBAD508F}"] = 8, -- NPU
+
+    ["{CBD41D28-9308-4FEC-A330-35EAED9FC800}"] = 7, -- video_ident 0-50
+    ["{CBD41D28-9308-4FEC-A330-35EAED9FC810}"] = 7, -- video_ident 0-50
+    ["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = 6, -- video_ident 50-70
+    ["{CBD41D28-9308-4FEC-A330-35EAED9FC811}"] = 6, -- video_ident 50-70
+    ["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = 2, -- video_ident 70-100
+    ["{CBD41D28-9308-4FEC-A330-35EAED9FC812}"] = 2, -- video_ident 70-100
+}
 
 function GetMarkImage(mark) -- exported (return ico desc from mark)
         local RailMask = mark.RailMask
@@ -183,17 +169,6 @@ function GetMarkImage(mark) -- exported (return ico desc from mark)
                 return res                                                                -- return desc
         end
 		
-		local uzlib_index = Img_uzlib_guids[typeGuid] -- now check if uzlib guid
-		if uzlib_index then
-			local offset = (rail == 1) and 0 or 1
-			local im_size = 16
-            local res = {
-					filename = 'Images/uzlib.bmp',                -- filename
-					src_rect = { uzlib_index * im_size, offset * im_size, im_size, im_size}, -- {left, top, width, height}
-			}
-			return res  
-		end
-
 
         local img_x = Img_guid2idx[typeGuid]                -- chack atape guids
         local img_y = rail - 1                                        -- rail to y offset (1,2,3 -> 0,1,2)
@@ -218,7 +193,7 @@ function GetMarkImage(mark) -- exported (return ico desc from mark)
                 src_rect = {img_x * img_size.x, img_y *img_size.y, img_size.x, img_size.y}, -- {left, top, width, height}
         }
 
-        -- printf("coord=%d,  rm=%d, cm=%d, index=%d, x=%d\n", coord, RailMask, chMask, img_idx, res.src_rect[1] )
+        --printf("coord=%d, rm=%d, cm=%d, x=%d, y=%d\n", coord, RailMask, chMask, img_x, img_y)
         return res                                                                -- return ico description
 end -- function
 
@@ -264,18 +239,16 @@ function GetMarkDescription(mark) -- exported (get tooltip text)
                 end]]
 
                 local ar = parse_ActionResult(prop.RAWXMLDATA) -- convert XML to widths
-                local kvnrt = {
-                                                ['CalcRailGap_Head_Top'] =  'пов.  катания',
-                                                ["CalcRailGap_Head_Side"] = 'рабочей грани' }
+				local kvnrt = {
+					['CalcRailGap_Head_Top'] =  'пов.  катания',
+                    ["CalcRailGap_Head_Side"] = 'рабочей грани' }
                 for n, cw in pairs(ar) do
-                local t = ''
-                for _, w in pairs(cw) do t = t .. sprintf('\n     %d [%d] = %g mm', w.fn, w.crd, math.round(w.w/1000, 1)) end
-                        desc = desc .. sprintf('\nШирина по %s:%s', kvnrt[n] or n, t)
+					local t = ''
+					for _, w in pairs(cw) do 
+						t = t .. sprintf('\n     %d [%d] = %g mm', w.fn, w.crd, math.round(w.w/1000, 1)) 
+					end
+					desc = desc .. sprintf('\nШирина по %s:%s', kvnrt[n] or n, t)
                 end
-
-
-
-
         end
 
         if(typeGuid == "{19FF08BB-C344-495B-82ED-10B6CBAD508F}") then
