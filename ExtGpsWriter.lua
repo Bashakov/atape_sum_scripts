@@ -13,14 +13,20 @@ do
 	end
 end
 
+
 local sqlite3 = require("lsqlite3")
 local stuff = require 'stuff'
 local printf = stuff.printf
 local sprintf = stuff.sprintf
+local sleep = stuff.sleep
+
 
 -- ============================================================ 
 
-local data_base = {}
+local data_base = {
+	on_lock_try_count = 10,
+	on_lock_wait_time = 50,
+}
 
 function data_base:open(data_path)
 	self.engine = sqlite3.open(data_path)
@@ -31,11 +37,30 @@ end
 
 function data_base:exec(query, ...)
 	assert(self.engine)
-	local stmt = self.engine:prepare(query)
+	local stmt = nil
+	for i = 1, self.on_lock_try_count do
+		stmt = self.engine:prepare(query)
+		local err = self.engine:errcode()
+		if not stmt and ( err == sqlite3.LOCK or err == sqlite3.BUSY) then
+			sleep(self.on_lock_wait_time / 1000.0)
+		else
+			break
+		end
+	end
 	self:assert(stmt)
 	
 	stmt:bind_values(...)
-	local r = stmt:step() 
+	
+	local r = sqlite3.DONE
+	for i = 1, self.on_lock_try_count do
+		r = stmt:step() 
+		if r == sqlite3.LOCK or r == sqlite3.BUSY then
+			sleep(self.on_lock_wait_time / 1000.0)
+		else
+			break
+		end
+	end
+	
 	self:assert(r == sqlite3.DONE or r == sqlite3.ROW, query)
 	stmt:finalize()
 end
@@ -50,15 +75,17 @@ function data_base:transaction(arg)
 	local x3 = os.clock()
 	
 	if ok then
-		self:exec("COMMIT")
-	else
+		ok, msg2 = pcall(self.exec, self, "COMMIT")
+	end	
+	
+	if not ok then
 		self:exec("ROLLBACK")
-		print("error: " .. msg)
+		print("error: ", msg,  msg2)
 	end
 	local x4 = os.clock()
 	
-	local function ff(v1, v2) return (v2-v1) * 1000000.0 end
-	--printf( "transaction %d %d %d\n", ff(x1,x2), ff(x2,x3), ff(x3,x4)) 
+	-- local function ff(v1, v2) return (v2-v1) * 1000000.0 end
+	-- printf( "transaction %d %d %d\n", ff(x1,x2), ff(x2,x3), ff(x3,x4)) 
 end
 
 function data_base:close(data_path)
@@ -262,9 +289,13 @@ end
 -- ================================================================= --
 
 local function test1()
-	local egps = OpenEGps(':memmory:')
+	-- local egps = OpenEGps(':memmory:')
+	local egps = OpenEGps('1')
+	egps:close_data()
 	
-	local cc = 10000
+	egps = OpenEGps('1')
+	
+	local cc = 100000
 	local x = os.clock()
 	egps.db:transaction{body_fn = function()
 		for i = 1, cc do

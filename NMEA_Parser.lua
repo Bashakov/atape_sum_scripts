@@ -35,10 +35,14 @@ local function split_fields(str, delim)
 	return outResults
 end
 
-local function select_fields (fields, positions)
-	res = {}
-	for _,i in ipairs(positions) do 
-		table.insert(res, fields[i] or "")
+local function select_fields (fields, positions, can_empty)
+	local res = {}
+	for _, i in ipairs(positions) do 
+		local v = fields[i] or ""
+		if #v == 0 and not can_empty then
+			return nil
+		end
+		table.insert(res, v)
 	end
 	return res
 end
@@ -51,7 +55,11 @@ details.UtcOffset = stuff.GetUtcOffset()
 
 details.DecodeCoord = function(value, pos)
 	-- print (value, pos)
-	local sign = {N=1, S=-1, W=1, E=-1} 
+	if(#value + #pos < 3) then 
+		error("empty coord string")
+	end
+	
+	local sign = {N=1, S=-1, W=-1, E=1} 
 	local gg, mm = string.match(value, "^0?(%d?%d%d)(%d%d%.%d*)")
 	if not (gg and mm) then 
 		gg, mm = string.match(value, "^0?(%d*.%d*)"), 0
@@ -96,9 +104,14 @@ details.ParseBlock = function (data, fields_description)
 	
 	local res_table = {}
 	for name, desc in pairs(fields_description) do 
-		local flds = select_fields(fields, desc.fields)
+		local flds = select_fields(fields, desc.fields, desc.can_empty)
+		if not flds then 
+			return nil
+		end
+		
 		--print (name, table.unpack(flds))
 		local r = flds[1]
+		
 		if desc.fn then 
 			local ok, rr = pcall(desc.fn, table.unpack(flds))
 			if not ok then
@@ -126,44 +139,52 @@ end
 
 local data_block_desc = {
 	GGA = {
-		UTC 		= {	fields={1}, 	fn = details.TimeToMScount},
-		Latitude 	= { fields={2,3}, 	fn = details.DecodeCoord},
-		Longitude	= { fields={4,5}, 	fn = details.DecodeCoord},
-		Quality		= { fields={6}, 	fn = tonumber},
-		NoS			= { fields={7}, 	fn = tonumber},
-		HDOP		= { fields={8}, 	fn = tonumber},
-		Altitude	= { fields={9,10}, 	fn = details.DecodeAltitude},
-		GeoidSep	= { fields={11,12},	fn = details.DecodeAltitude},
-		AgeDiff		= { fields={13}, 	fn = tonumber},
-		DiffStID	= {	fields={14}, 	fn = tonumber},},
+		UTC 		= {	fields={1}, 	fn = details.TimeToMScount, can_empty = false},
+		Latitude 	= { fields={2,3}, 	fn = details.DecodeCoord, 	can_empty = false},
+		Longitude	= { fields={4,5}, 	fn = details.DecodeCoord, 	can_empty = false},
+		Quality		= { fields={6}, 	fn = tonumber,				can_empty = true},
+		NoS			= { fields={7}, 	fn = tonumber,				can_empty = true},
+		HDOP		= { fields={8}, 	fn = tonumber,				can_empty = true},
+		Altitude	= { fields={9,10}, 	fn = details.DecodeAltitude,can_empty = true},
+		GeoidSep	= { fields={11,12},	fn = details.DecodeAltitude,can_empty = true},
+		AgeDiff		= { fields={13}, 	fn = tonumber,				can_empty = true},
+		DiffStID	= {	fields={14}, 	fn = tonumber,				can_empty = true},
+	},
 	
 	GLL = {
-		Latitude	= { fields={1,2}, 	fn = details.DecodeCoord},
-		Longitude	= { fields={3,4}, 	fn = details.DecodeCoord},
-		UTC			= { fields={5}, 	fn = details.TimeToMScount},
-		Status		= { fields={6}, 	fn = details.ParseStatus},},
+		Latitude	= { fields={1,2}, 	fn = details.DecodeCoord, 	can_empty = false},
+		Longitude	= { fields={3,4}, 	fn = details.DecodeCoord, 	can_empty = false},
+		UTC			= { fields={5}, 	fn = details.TimeToMScount, can_empty = false},
+		Status		= { fields={6}, 	fn = details.ParseStatus,	can_empty = true},
+		},
 	
 	RMC = {
-		UTC			= {	fields={1}, 	fn = details.TimeToMScount},
-		Status		= {	fields={2}, 	fn = details.ParseStatus},
-		Latitude	= {	fields={3,4}, 	fn = details.DecodeCoord},
-		Longitude	= {	fields={5,6}, 	fn = details.DecodeCoord},
-		Speed		= {	fields={7}, 	fn = tonumber},
-		TMG			= {	fields={8}, 	fn = tonumber},
-		Date		= {	fields={9}, 	fn = details.DateToOsTime},
-		MagnVar		= {	fields={10,11},	fn = details.DecodeCoord},},
+		UTC			= {	fields={1}, 	fn = details.TimeToMScount, can_empty = false},
+		Status		= {	fields={2}, 	fn = details.ParseStatus,	can_empty = true},
+		Latitude	= {	fields={3,4}, 	fn = details.DecodeCoord, 	can_empty = false},
+		Longitude	= {	fields={5,6}, 	fn = details.DecodeCoord, 	can_empty = false},
+		Speed		= {	fields={7}, 	fn = tonumber,				can_empty = true},
+		TMG			= {	fields={8}, 	fn = tonumber,				can_empty = true},
+		Date		= {	fields={9}, 	fn = details.DateToOsTime,	can_empty = true},
+		MagnVar		= {	fields={10,11},	fn = details.DecodeCoord,	can_empty = true},
+		},
 }
 
+--print('test nmea', tostring(0.1), tonumber('0.3'))
 assert(tonumber('0.3'), 'check locale settings, "." or "," used for fraction separator')
 
 function ParseData(data)
 	local res = {}
-	for block_type, block_data in string.gmatch(data, "%$GP(%a%a%a),([^*]+)*%x%x") do
+	for block_type, block_data in string.gmatch(data, "%$G[PNL](%a%a%a),([^*]+)*%x%x") do
 		local desc = data_block_desc[block_type]
 		if desc then
 			local parsed = details.ParseBlock(block_data, desc)
-			parsed.BlockType = block_type
-			table.insert(res, parsed)
+			if parsed then
+				parsed.BlockType = block_type
+				table.insert(res, parsed)
+			else
+				print ('empty block:' .. escape(block_data))
+			end
 		else
 			print ('unknown block type:' .. block_type)
 		end
@@ -231,6 +252,10 @@ tests.parser = function ()
 	end
 
 	local tests_data = {
+		{
+			block = "$GPGGA,,,,,,0,07,,,M,,M,,*61",
+			BlockType = "GGA",
+		},
 		{	block = "$GPGGA,153450,3851.3970,N,09447.9880,W,0,00,	 ,		 ,M,		 ,M,,  *4c",
 			res = {
 				BlockType = "GGA",
@@ -307,11 +332,20 @@ tests.parser = function ()
 	end
 end
 
+tests.empty_data = function ()
+	local nmea_data = "$GNGGA,,,,,,0,,,,,,,,*78\r\n"
+		
+	local res = ParseData(nmea_data)
+	if #res ~= 0 then
+		print('ERROR: must be upparsed')
+	end
+end
 -- ================================================================ 
 
 
 --tests.parser()
 --tests.benchmark()
+--tests.empty_data()
 
 -- print(os.time{year=1970, month=1, day=2, hour=0} + stuff.GetUtcOffset() * 3600)
 --NMEA_PARSER.details.dump( os.date("*t", 100))

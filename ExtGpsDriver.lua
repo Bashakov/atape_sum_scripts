@@ -12,6 +12,7 @@ local sprintf = stuff.sprintf
 local Driver = {}
 
 function Driver:open(passport_path)
+	--print('test egpsdriver', tostring(0.1), tonumber('0.3'))
 	assert(tonumber('0.3'), 'check locale settings, "." or "," used for fraction separator')
 	self.writer = Writer.OpenEGps(passport_path)
 	self.parse = Parser.ParseData
@@ -26,10 +27,12 @@ function Driver:on_data(data)
 		--print (pps, sc, stuff.escape(gps))
 		local ok, parsed = pcall(self.parse, gps)
 		
-		if ok and parsed then  
+		if ok and parsed then 
 			--stuff.save('parsed', parsed)
-			local merged = self:_merge_parsed_data(parsed, gps)
-			table.insert(res, {pps=pps, sc=sc, parsed=merged, gps=gps} )
+			if #parsed > 0 then
+				local merged = self:_merge_parsed_data(parsed, gps)
+				table.insert(res, {pps=pps, sc=sc, parsed=merged, gps=gps} )
+			end
 		else
 			local msg = sprintf('parsing ERROR block pps=%d sc=%d data=[%s]: \n%s', 
 				pps, sc, stuff.escape(gps), parsed or "" )
@@ -132,6 +135,17 @@ function tests.parse()
 	end
 end
 
+function tests.parse_empty()
+	local driver = OpenDriver('tttt')
+	
+	local merged = ""
+	local res = driver:on_data(merged)
+	printf('processed %d records\n', res.processed)
+	for _, err in ipairs(res.errors) do
+		print (err)
+	end
+end
+
 function tests.file()
 	local f = io.open('1.dat', 'rb')
 	local buff = f:read(2^13)
@@ -144,5 +158,6 @@ function tests.file()
 end
 
 
---tests.parse()
+-- tests.parse_empty()
+-- tests.parse()
 -- tests.file()

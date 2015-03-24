@@ -57,5 +57,32 @@ function stuff.GetUtcOffset()
 	return diff
 end
 
+local function make_sleeper()
+	-- for n,v in pairs(os) do print(n, v) end
+	if os.sleep then
+		return os.sleep
+	end
+	print("This version of interpretator without SLEEP function!!!")
+	
+	local ok, socket = pcall(require, "socket")
+	if ok then 
+		return function(sec)
+			socket.select(nil, nil, sec)
+		end
+	else
+		local clock = os.clock
+		return function(sec)  -- seconds
+			local t0 = clock()
+			while clock() - t0 <= sec do end
+		end
+	end
+end
+
+local sleeper = make_sleeper()
+
+function stuff.sleep(sec)
+	sleeper(sec)
+end
+
 
 return stuff
