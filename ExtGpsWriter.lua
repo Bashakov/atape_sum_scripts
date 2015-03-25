@@ -71,16 +71,17 @@ function data_base:transaction(arg)
 	self:exec("BEGIN TRANSACTION")
 	local x2 = os.clock()
 	
-	local ok, msg = pcall(arg.body_fn)
+	local ok, error_msg = pcall(arg.body_fn)
 	local x3 = os.clock()
 	
 	if ok then
-		ok, msg2 = pcall(self.exec, self, "COMMIT")
+		ok, error_msg = pcall(self.exec, self, "COMMIT")
 	end	
 	
 	if not ok then
 		self:exec("ROLLBACK")
-		print("error: ", msg,  msg2)
+		print("error: ", error_msg)
+		error(error_msg)
 	end
 	local x4 = os.clock()
 	
