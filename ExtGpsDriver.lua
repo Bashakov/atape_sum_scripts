@@ -21,6 +21,7 @@ end
 function Driver:on_data(data)
 	assert(self.parse)
 	
+	local x = os.clock()
 	local res, failed = {}, {}
 	for _, d in MP.unpacker(data) do
 		local gps, pps, sc = table.unpack(d)
@@ -40,9 +41,12 @@ function Driver:on_data(data)
 			table.insert(failed, msg)
 		end
 	end
-	
+	print(string.format("Driver:on_data: parse time: %.3f", os.clock() - x))
+		
 	printf("Driver:on_data data_len = %d; block (parsed = %d, failed = %d)\n", #data, #res, #failed)
+	x = os.clock()
 	self:_on_parsed_data(res)
+	print(string.format("Driver:on_data: rite time: %.3f", os.clock() - x))
 	return {processed=#res, errors=failed}
 end
 

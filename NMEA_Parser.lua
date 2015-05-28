@@ -175,6 +175,7 @@ assert(tonumber('0.3'), 'check locale settings, "." or "," used for fraction sep
 
 function ParseData(data)
 	local res = {}
+	local x = os.clock()
 	for block_type, block_data in string.gmatch(data, "%$G[PNL](%a%a%a),([^*]+)*%x%x") do
 		local desc = data_block_desc[block_type]
 		if desc then
@@ -189,6 +190,7 @@ function ParseData(data)
 			print ('unknown block type:' .. block_type)
 		end
 	end
+	--print(string.format("ParseData: parse time: %.3f", os.clock() - x))	
 	return res
 end
 
@@ -202,7 +204,7 @@ tests.benchmark = function ()
 		.. "$GPGGA,004241.47,5532.8492,N,03729.0987,E,1,04,2.0,-0015,M,,,,*AA\r\n" 
 		.. "$GPGGA,094446,3851.3970,N,09447.9880,W,8,12,0.9,186.6,M,-28.6,M,,*75\r\n" 
 		.. "$GPGGA,153450,3851.3970,N,09447.9880,W,0,00,	 ,		 ,M,		 ,M,,  *4c\r\n"
-		.. "$GPGLL,3751.65,S,14507.36,E*77\r\n" 
+--		.. "$GPGLL,3751.65,S,14507.36,E*77\r\n" 
 		.. "$GPGLL,3751.65,S,14507.36,E,225444,A*77\r\n" 
 		.. "$GPGLL,5532.8492,N,03729.0987,E,004241.469,A*33\r\n" 
 		.. "$GPRMC,113650.0,A,5548.607,N,03739.387,E,000.01,5.6,210403,08.7,E*69"
@@ -229,10 +231,15 @@ tests.parser = function ()
 	function tester (block, expected_res)
 		local errors = 0
 		local res = ParseData(block)[1]
+		if not res then
+			print (string.format("ERROR: can not parce block [%s]", block) )
+			return 1
+		end
+		
 		for n, v in pairs(expected_res) do
 			local is_equal = false
 			if type(v) == 'number' then
-				--print (res[n], v)
+				print (n, res[n], v)
 				is_equal = math.abs(res[n] - v) < math.abs(res[n] + v + 0.001) * 1.0e-10
 			else
 				is_equal = res[n] == v
@@ -252,9 +259,24 @@ tests.parser = function ()
 	end
 
 	local tests_data = {
+--		{
+--			block = "$GPGGA,,,,,,0,07,,,M,,M,,*61",
+--			BlockType = "GGA",
+--		},
 		{
-			block = "$GPGGA,,,,,,0,07,,,M,,M,,*61",
-			BlockType = "GGA",
+			block = "$GNGGA,082041.00,5112.4214009,N,07123.4426824,E,4,17,0.7,326.653,M,,,0.81,0001*3B",
+			res = {
+				BlockType = "GGA",
+				UTC = 30041000,
+				Latitude = 51.20702334833333333333333,
+				Longitude = 71.3907113733333333333,
+				Quality = 4,
+				NoS	= 17,
+				HDOP = 0.7,
+				Altitude = 326653,
+				GeoidSep = "",
+				AgeDiff	= 0.81,
+				DiffStID = 1 }
 		},
 		{	block = "$GPGGA,153450,3851.3970,N,09447.9880,W,0,00,	 ,		 ,M,		 ,M,,  *4c",
 			res = {

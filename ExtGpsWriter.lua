@@ -31,8 +31,10 @@ local data_base = {
 function data_base:open(data_path)
 	self.engine = sqlite3.open(data_path)
 	--self.engine = sqlite3.open_memory()
-	self:exec("PRAGMA synchronize = OFF;")
+	self:exec("PRAGMA synchronous = OFF;")
 	self:exec("PRAGMA journal_mode = MEMORY;")
+--	self:exec("PRAGMA synchronous = FULL;")
+--	self:exec("PRAGMA journal_mode = TRUNCATE;")
 end
 
 function data_base:exec(query, ...)
