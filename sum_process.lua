@@ -147,6 +147,9 @@ local Img_guid2idx = {
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC811}"] = 6, -- video_ident 50-70
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = 2, -- video_ident 70-100
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC812}"] = 2, -- video_ident 70-100
+	
+	["{D4607B05-17C2-4C30-A303-69005A08C000}"] = 10, -- move backward
+	["{D4607B05-17C2-4C30-A303-69005A08C001}"] = 11, -- move backward
 }
 
 function GetMarkImage(mark) -- exported (return ico desc from mark)
