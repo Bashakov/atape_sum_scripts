@@ -835,11 +835,27 @@ end
 -- ============================================================== --
 
 function xml2table(xml)
-	h = simpleTreeHandler()
-	x = xmlParser(h)
-	x:parse(xml)
-	return h
+	if xml then
+		h = simpleTreeHandler()
+		x = xmlParser(h)
+		x:parse(xml)
+		return h
+	end
 end
+
+function xml2dom(xml)
+	if xml then
+		local h = domHandler()
+--		h.options.commentNode = false
+--		h:options.(comment|pi|dtd|decl)Node = bool 
+--		h:options.(comment|pi|dtd|decl)Node = bool 
+--		h:options.(comment|pi|dtd|decl)Node = bool 
+		local x = xmlParser(h)
+		x:parse(xml)
+		return h
+	end
+end
+
 
 function xmlFile2table(config_path)
 	local f, e = io.open(config_path, "r")

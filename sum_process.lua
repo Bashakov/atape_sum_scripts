@@ -95,12 +95,12 @@ function ChannelMask2videoChannels(ChannelMask)
 end
 
 function format_int(val)
-        return tostring(val):reverse():gsub("(%d%d%d)", "%1 "):reverse()
+	return tostring(val):reverse():gsub("(%d%d%d)", "%1 "):reverse()
 end
 
 function math.round(num, idp)
-        local mult = 10^(idp or 0)
-        return math.floor(num * mult + 0.5) / mult
+	local mult = 10^(idp or 0)
+	return math.floor(num * mult + 0.5) / mult
 end
 
 

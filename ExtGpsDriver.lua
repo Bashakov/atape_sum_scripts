@@ -46,7 +46,7 @@ function Driver:on_data(data)
 	printf("Driver:on_data data_len = %d; block (parsed = %d, failed = %d)\n", #data, #res, #failed)
 	x = os.clock()
 	self:_on_parsed_data(res)
-	print(string.format("Driver:on_data: rite time: %.3f", os.clock() - x))
+	print(string.format("Driver:on_data: write time: %.3f", os.clock() - x))
 	return {processed=#res, errors=failed}
 end
 
