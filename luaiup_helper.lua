@@ -5,6 +5,7 @@ end
 
 OOP = require 'OOP'
 
+iup.SetGlobal('UTF8MODE', 1)
 
 ProgressDlg = OOP.class
 {
@@ -13,6 +14,7 @@ ProgressDlg = OOP.class
 		
 		local _close_cb = function()
 			self.cancelflag = true
+			return iup.DEFAULT
 			--return iup.CLOSE
 		end
 
@@ -27,21 +29,22 @@ ProgressDlg = OOP.class
 		self.gaugeProgress = iup.progressbar{ expand="HORIZONTAL", size = "300x20", value = 0.0}
 	
 		local layout = iup.vbox {
-				self.label,
-				self.gaugeProgress,
+			self.label,
+			self.gaugeProgress,
+			iup.fill{},
+			iup.hbox{
 				iup.fill{},
-				iup.hbox{
-					iup.fill{},
-					self.cancelbutton,
-					iup.fill{},
-				}
+				self.cancelbutton,
+				iup.fill{},
 			}
+		}
 	
 		self.dlgProgress = iup.dialog{
 			title = "Report generator",
 			--menubox = "NO",
 			size = "320x80",
 			close_cb = _close_cb,
+			resize = "NO",
 			layout,
 		}
 		
@@ -53,8 +56,53 @@ ProgressDlg = OOP.class
 		self.label.title = text
 		self.gaugeProgress.value = value
 		iup.LoopStep()
+		if self.cancelflag then
+			print('cancaled...')
+		end
 		return not self.cancelflag
 	end
 }
 
-return ProgressDlg
+
+function ShowRadioBtn(title, values, def)
+	local togles = {}
+	local rr = {}
+	for i, v in ipairs(values) do 
+		togles[i] = iup.toggle{title=v} 
+		rr[v] = i
+	end
+	
+	local radio = iup.radio{ iup.vbox(togles), value=togles[def],}
+	local frame = iup.frame{ radio,	title=title, }
+	
+	local cancelbutton = iup.button {
+		title = "Ok",
+		size = "100x20",
+		action = function()	
+			return iup.CLOSE 
+		end,
+	}
+	
+	local dialog = iup.dialog{
+		iup.vbox{
+			--frame,
+			radio,
+			cancelbutton,
+			alignment = "ACENTER",
+		},
+		title=title,
+		--size=140,
+		resize="NO",
+		menubox = "NO",
+		gap="3",
+		margin="9x3"
+	}
+	dialog:popup()
+	return rr[radio.value.title]
+end
+
+
+return {
+	ProgressDlg = ProgressDlg,
+	ShowRadioBtn = ShowRadioBtn
+}

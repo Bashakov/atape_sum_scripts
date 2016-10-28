@@ -1,25 +1,37 @@
-require "luacom"
+-- require "luacom"
 
 local sprintf = function(s,...)	return s:format(...) 			end
 
+local function SelectNodes(xml, xpath)
+	return function(nodes)
+		return nodes:nextNode()
+	end, xml:SelectNodes(xpath)
+end
+
+
 
 local function ShowToolTip(drawer, x, y, fmt, ...)
-	fmt = fmt:format(...)
+	local message = fmt:format(...)
 	drawer.text:font { name="Tahoma", render="RasterFontCache", height=12, bold=0}
 	
-	local tw, th = drawer.text:calcSize(fmt)
+	local tw, th = drawer.text:calcSize(message)
 	
 	local padding = 3
 	drawer.prop:lineWidth(1)
 	drawer.prop:fillColor{r=200, g=255, b=200, a=130}
 	drawer.prop:lineColor{r=0, g=150, b=0, a=250}
-	drawer.fig:roundedRect(x - padding, y - padding + 1, x + tw + padding, y + th + padding, padding*2)
+	drawer.fig:roundedRect(
+		x - padding, 
+		y - padding + 1, 
+		x + tw + padding, 
+		y + th + padding, 
+		padding*2)
 	
 	--drawer.prop:lineWidth(1)
 	--drawer.prop:lineColor{r=255, g=255, b=255, a=200}
 	drawer.prop:fillColor{r=0, g=0, b=0, a=220}
 	drawer.text:alignment("AlignLeft", "AlignBottom")
-	drawer.text:multiline {x=x, y=y, str=fmt}
+	drawer.text:multiline {x=x, y=y, str=message}
 end
 
 
@@ -36,194 +48,238 @@ local function xml_attr(node, name, def)
 	end
 end
 
-local function parse_polygon(str, scale)
-	local res = {}
-	for w in str:gmatch('%d+') do 
-		res[#res+1] = tonumber(w) / scale[(#res % #scale) + 1]
+local function parse_polygon(str, cur_frame_coord, item_frame)
+	local points = {}
+	
+	for x,y in str:gmatch('(%d+),(%d+)') do
+		if cur_frame_coord and item_frame and item_frame ~= cur_frame_coord then
+			x, y = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, x, y)
+		else
+			x, y = Convertor:ScalePoint(x, y)
+		end
+			
+		table.insert(points, x)
+		table.insert(points, y)
 	end
-	return res
+			
+	return points
 end
 
 local function get_center_point(points)
-	local res = {0, 0}
-	for i, p in ipairs(points) do
-		local k = (i+1) % 2 + 1
-		res[k] = res[k] + p
+	local x, y = 0, 0
+	local cnt = #points / 2
+	for i = 1, #points, 2 do
+		x = x + points[i]   / cnt
+		y = y + points[i+1] / cnt
 	end
-	res[1] = res[1] / (#points / 2)
-	res[2] = res[2] / (#points / 2)
-	return res
+	return x, y
 end
 
 
-local function DrawSingleRailGap(drawer, frame, node, gap_type, scale)
+
+local function ProcessCalcRailGap(drawer, frame, dom)
+	local cur_frame_coord = frame.coord.raw
 	local colors = {
 		CalcRailGap_Head_Top = {r=255, g=255, b=0},
 		CalcRailGap_Head_Side = {r=0, g=255, b=255},
 	}
-	local color = colors[gap_type]	
 	
-	local node_result = node:SelectSingleNode('PARAM[@name="Result" and @value="main"]')
-	if node_result and color then 
-		local polygon = node_result:SelectSingleNode('PARAM[@name="Coord" and @type="polygon" and @value]/@value').nodeValue
-		local width = node_result:SelectSingleNode('PARAM[@name="RailGapWidth_mkm" and @value]/@value').nodeValue
-		local points = parse_polygon(polygon, scale)
+	local req = '\z
+		/ACTION_RESULTS\z
+		/PARAM[@name="ACTION_RESULTS" and starts-with(@value, "CalcRailGap")]\z
+		/PARAM[@name="FrameNumber" and @value="0" and @coord]\z
+		/PARAM[@name="Result" and @value="main"]'
+	for node in SelectNodes(dom, req) do
+		local gap_type =  node:SelectSingleNode("../../@value").nodeValue
+		local color = colors[gap_type]
+		if color then
+			local item_frame = node:SelectSingleNode("../@coord").nodeValue
+			local polygon = node:SelectSingleNode('PARAM[@name="Coord" and @type="polygon" and @value]/@value').nodeValue
+			local width = node:SelectSingleNode('PARAM[@name="RailGapWidth_mkm" and @value]/@value').nodeValue
 		
-		drawer.prop:lineWidth(2)
-		drawer.prop:fillColor(color.r, color.g, color.b, 100)
+			local points = parse_polygon(polygon, cur_frame_coord, item_frame)
+			--print(polygon, cur_frame_coord, item_frame)
+			--print(points[1], points[2], points[3], points[4], points[5], points[6], points[7], points[8])
+			
+			if #points == 8 then
+				drawer.prop:lineWidth(1)
+				drawer.prop:fillColor(color.r, color.g, color.b, 50)
+				drawer.prop:lineColor(color.r, color.g, color.b, 200)
+				drawer.fig:polygon(points)
+				
+				--drawer.fig:rectangle(points[1], points[2], points[5], points[6])
+				local strWidth = sprintf('%.1f mm', tonumber(width) / 1000)
+				
+				drawer.text:font { name="Tahoma", render="VectorFontCache", height=13, bold=0}
+				drawer.text:alignment("AlignLeft", "AlignBottom")
+				
+				local tcx, tcy = get_center_point(points)
+				local tw, th = drawer.text:calcSize(strWidth)
+				tcx = tcx - tw/2
+				tcy = tcy - th/2
+				
+				drawer.prop:lineWidth(3)
+				drawer.prop:fillColor{r=0, g=0, b=0, a=255}
+				drawer.prop:lineColor{r=0, g=0, b=0, a=255}
+				drawer.text:out{x=tcx, y=tcy, str=strWidth}
+				
+				drawer.prop:lineWidth(1)
+				drawer.prop:fillColor{r=255, g=255, b=255, a=220}
+				drawer.prop:lineColor{r=255, g=255, b=255, a=220}
+				drawer.text:out{x=tcx, y=tcy, str=strWidth}
+			end
+		end
+	end
+end
+
+local function DrawFishplate(drawer, frame, dom)
+	local points = {}
+	local cur_frame_coord = frame.coord.raw
+	local req = '\z
+			/ACTION_RESULTS\z
+			/PARAM[@name="ACTION_RESULTS" and @value="Fishplate"]\z
+			/PARAM[@name="FrameNumber" and @value and @coord]\z
+			/PARAM[@name="Result" and @value="main"]\z
+			/PARAM[@name="FishplateEdge" and @value]\z
+			/PARAM[@name="Coord" and @type="polygon" and @value]'
+	for node in SelectNodes(dom, req) do
+		local item_frame = node:SelectSingleNode("../../../@coord").nodeValue
+		local polygon = node:SelectSingleNode('@value').nodeValue
+		
+		local x1,y1, x2,y2 = string.match(polygon, '(%d+),(%d+)%s+(%d+),(%d+)')
+		x1, y1 = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, x1, y1)
+		x2, y2 = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, x2, y2)
+		
+		if x1 and y1 and x2 and y2 then
+			if #points ~= 0 then
+				x1, y1, x2, y2 = x2, y2, x1, y1
+			end
+			table.insert(points, x1)
+			table.insert(points, y1)
+			table.insert(points, x2)
+			table.insert(points, y2)
+		end
+	end
+	
+	if #points == 8 then
+		local color = {r=0, g=255, b=0},
+		drawer.prop:lineWidth(1)
+		drawer.prop:fillColor(color.r, color.g, color.b,  20)
 		drawer.prop:lineColor(color.r, color.g, color.b, 200)
 		drawer.fig:polygon(points)
-		--drawer.fig:rectangle(points[1], points[2], points[5], points[6])
-		local strWidth = sprintf('%.1f mm', tonumber(width) / 1000)
-		
-		drawer.text:font { name="Tahoma", render="VectorFontCache", height=13, bold=0}
-		drawer.text:alignment("AlignLeft", "AlignBottom")
-		
-		local tcx, tcy = table.unpack(get_center_point(points))		
-		local tw, th = drawer.text:calcSize(strWidth)
-		tcx = tcx - tw/2
-		tcy = tcy - th/2
-		
-	
-		drawer.prop:lineWidth(3)
-		drawer.prop:fillColor{r=0, g=0, b=0, a=255}
-		drawer.prop:lineColor{r=0, g=0, b=0, a=255}
-		drawer.text:out{x=tcx, y=tcy, str=strWidth}
-		
-		drawer.prop:lineWidth(1)
-		drawer.prop:fillColor{r=255, g=255, b=255, a=220}
-		drawer.prop:lineColor{r=255, g=255, b=255, a=220}
-		drawer.text:out{x=tcx, y=tcy, str=strWidth}
-		
-		--ShowToolTip(drawer, 200, color.r, sprintf("%d %d %s", tw, th, strWidth))
-	end
-end
-
-local function ProcessCalcRailGap(drawer, frame, dom, kx, ky)
-	local nodes = dom:SelectNodes('/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and starts-with(@value, "CalcRailGap")]/PARAM[@name="FrameNumber" and @value="0" and @coord]')
-	while true do
-		local node = nodes:nextNode()
-		if not node then break end
-		
-		local coord = tonumber(xml_attr(node, "coord"))
-		if coord == frame.coord.raw then
-			local recogn_type = xml_attr(node.parentNode, 'value')
-			DrawSingleRailGap(drawer, frame, node, recogn_type, kx, ky) 
-		end
-	end
-end
-
-
-local function ParseFishplate(drawer, frame, dom, scale)
-	local cur_frame_coord = frame.coord.raw
-	local edges = {}
-	
-	local nodes = dom:SelectNodes('/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Fishplate"]/PARAM[@name="FrameNumber" and @value and @coord]')
-	while true do
-		local node = nodes:nextNode()
-		if not node then break end
-		
-		local fram_num, frame_coord = xml_attr(node, {"value", "coord"})
-		local node_polygon = node:SelectSingleNode('PARAM[@name="Result" and @value="main"]/PARAM[@name="FishplateEdge" and @value]/PARAM[@name="Coord" and @type="polygon" and @value]')
-		if not node_polygon then break end
-		
-		local edge_num = tonumber(xml_attr(node_polygon.parentNode, 'value'))
-		local polygon = xml_attr(node_polygon, 'value')
-		edges[edge_num] = {points=parse_polygon(polygon, scale), coord=tonumber(frame_coord)}
-		--ShowToolTip(drawer, 200, 100, tostring(edges[edge_num]))
 	end
 	
-	local e1, e2 = edges[1], edges[2]
-	if e1 and e2 and e1.coord <= cur_frame_coord and e2.coord >= cur_frame_coord then
-		local res = {lines={}}
-		
-		if e1.coord < cur_frame_coord then
-			--ShowToolTip(drawer, 200, 200, "1")
-			e1.points[1] = 0
-			e1.points[3] = 0
-		else
-			table.insert(res.lines, {e1.points[1], e1.points[2], e1.points[3], e1.points[4]})
-		end
-		
-		if e2.coord > cur_frame_coord then
-			-- ShowToolTip(drawer, 200, 210, "2")
-			e2.points[1] = frame.size.current.x
-			e2.points[3] = frame.size.current.x
-			res.b2 = false
-		else
-			table.insert(res.lines, {e2.points[1], e2.points[2], e2.points[3], e2.points[4]})
-		end
 	
-		res.rect = {
-			e1.points[1], e1.points[2], e2.points[1], e2.points[2],
-			e2.points[3], e2.points[4], e1.points[3], e1.points[4],}
-		return res
-	end
-end
-
-
-local function DrawFishplate(drawer, frame, dom, scale)
-	local res = ParseFishplate(drawer, frame, dom, scale)
-	if res then
-		local color = {r=0, g=255, b=0},
-		drawer.prop:lineWidth(0)
-		drawer.prop:fillColor(color.r, color.g, color.b,  30)
-		drawer.prop:lineColor(color.r, color.g, color.b, 160)
-		drawer.fig:polygon(res.rect)
-		
-		drawer.prop:lineWidth(2)
-		for _, l in ipairs(res.lines) do
-			drawer.fig:line(l[1], l[2], l[3], l[4])
-		end
-	end
 	--ShowToolTip(drawer, 200, 200, sprintf("%d %d  %d %d", edges_rect[1], edges_rect[2], edges_rect[3], edges_rect[4]))
 end
 
-local function DrawCrewJoint(drawer, frame, dom, scale)
+local function DrawCrewJoint(drawer, frame, dom)
 	local colors = {
 		[-1] = {r=255, g=0,   b=0},
 		[ 0] = {r=255, g=255, b=0},
-		[ 1] = {r=0,   g=255, b=0}, }
+		[ 1] = {r=128, g=128, b=255}, }
 	
 	local cur_frame_coord = frame.coord.raw
 
-	local req_tmpl = '/ACTION_RESULTS\
-/PARAM[@name="ACTION_RESULTS" and @value="CrewJoint"]\
-/PARAM[@name="FrameNumber" and @value and @coord="%d"]\
-/PARAM[@name="Result" and @value="main"]\
-/PARAM[@name="JointNumber" and @value]'
-	local nodes = dom:SelectNodes(req_tmpl:format(cur_frame_coord))
-	while true do
-		local node = nodes:nextNode()
-		if not node then break end
-		
+	local req = '\z
+			/ACTION_RESULTS\z
+			/PARAM[@name="ACTION_RESULTS" and @value="CrewJoint"]\z
+			/PARAM[@name="FrameNumber" and @value and @coord]\z
+			/PARAM[@name="Result" and @value="main"]\z
+			/PARAM[@name="JointNumber" and @value]'
+	for node in SelectNodes(dom, req) do
 		local num = xml_attr(node, "value")
+		local item_frame = node:SelectSingleNode("../../@coord").nodeValue
 		local elipse = node:SelectSingleNode('PARAM[@name="Coord" and @type="ellipse" and @value]/@value').nodeValue
 		local safe = tonumber(node:SelectSingleNode('PARAM[@name="CrewJointSafe" and @value]/@value').nodeValue)
 		
 		local color = colors[safe]
 		if color then
 			local cx, cy, rx, ry = elipse:match('(%d+),(%d+),(%d+),(%d+)')
-			cx = tonumber(cx) / scale[1]
-			rx = tonumber(rx) / scale[1]
-			
-			cy = tonumber(cy) / scale[2]
-			ry = tonumber(ry) / scale[2]
-			
-			drawer.prop:lineWidth(2)
-			drawer.prop:fillColor(color.r, color.g, color.b,  80)
-			drawer.prop:lineColor(color.r, color.g, color.b, 180)
-			drawer.fig:ellipse(cx, cy, rx, ry)
+			--cx, cy = Convertor:ScalePoint(cx, cy)
+			cx, cy = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, cx, cy)
+			if cx and cy then
+				rx, ry = Convertor:ScalePoint(rx, ry)
+				
+				drawer.prop:lineWidth(1)
+				drawer.prop:fillColor( color.r, color.g, color.b,  50 )
+				drawer.prop:lineColor( color.r, color.g, color.b, 200 )
+				drawer.fig:ellipse(cx, cy, rx, ry)
+			end
 		end
 		--ShowToolTip(drawer, 200, 100, "%d %d %d %d", x, y, rx, ry)
 	end
 end
 
+local function DrawBeacon(drawer, frame, dom)
+	local colors = {
+		Beacon_Web 		= {r=67, g=149,   b=209},
+		Beacon_Fastener = {r=0,   g=169, b=157}, }
+	
+	local cur_frame_coord = frame.coord.raw
+	
+	local shifts = {}
+	local req = '\z
+			/ACTION_RESULTS\z
+			/PARAM[@name="ACTION_RESULTS" and starts-with(@value, "Beacon_")]\z
+			/PARAM[@name="FrameNumber" and @value and @coord]\z
+			/PARAM[@name="Result" and @value="main"]'
+	for node in SelectNodes(dom, req) do
+		
+		local pos = node:SelectSingleNode("../../@value").nodeValue
+		local item_frame = node:SelectSingleNode("../@coord").nodeValue
+		local rect = node:SelectSingleNode('PARAM[@name="Coord" and @type="rect" and @value]/@value').nodeValue
+		local shift = tonumber(node:SelectSingleNode('PARAM[@name="Shift_mkm" and @value]/@value').nodeValue) / 1000
+		
+		local color = colors[pos]
+		if color then
+			local x1,y1, x2,y2 = string.match(rect, '(-?%d+),(-?%d+),(-?%d+),(-?%d+)')
+			x1, y1 = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, x1, y1)
+			x2, y2 = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, x2, y2)
+			--x2, y2 = Convertor:ScalePoint(x2, y2)
+			if x1 and y1 and x2 and y2 then
+				
+				--ShowToolTip(drawer, x1, y1, "%s\n%s\n%s\n%s", pos, rect, offset, item_frame)
+				
+				drawer.prop:lineWidth(1)
+				drawer.prop:fillColor(color.r, color.g, color.b,  50)
+				drawer.prop:lineColor(color.r, color.g, color.b, 200)
+				drawer.fig:rectangle(x1, y1, x2, y2)
+				--ShowToolTip(drawer, 200, 100, "%d %d %d %d", x1, y1, x2, y2)
+				shifts[pos] = {coords = {x1, y1, x2, y2}, shift=shift}
+			end
+		end
+		
+		if shifts.Beacon_Web and shifts.Beacon_Fastener then
+			local c1 = shifts.Beacon_Web.coords
+			local c2 = shifts.Beacon_Fastener.coords
+			local tcx = (c1[1] + c1[3] + c2[1] + c2[3]) / 4
+			local tcy = (c1[4] + c2[2]) / 2
+			
+			local text = sprintf('%.1f mm', shifts.Beacon_Web.shift)
+		
+			drawer.text:font { name="Tahoma", render="VectorFontCache", height=13, bold=0}
+			drawer.text:alignment("AlignLeft", "AlignBottom")
+			
+			local tw, th = drawer.text:calcSize(text)
+			tcx = tcx - tw/2
+			--tcy = tcy - th/2
+			
+			drawer.prop:lineWidth(3)
+			drawer.prop:fillColor{r=0, g=0, b=0, a=255}
+			drawer.prop:lineColor{r=0, g=0, b=0, a=255}
+			drawer.text:out{x=tcx, y=tcy, str=text}
+			
+			drawer.prop:lineWidth(1)
+			drawer.prop:fillColor{r=255, g=255, b=255, a=220}
+			drawer.prop:lineColor{r=255, g=255, b=255, a=220}
+			drawer.text:out{x=tcx, y=tcy, str=text}
+		
+		end
+	end
+end
 
 local function DrawRecognitionMark(drawer, frame, mark)
-	local width, height = drawer:size()
-	local scale = {frame.size.origin.x / frame.size.current.x, frame.size.origin.y / frame.size.current.y}
-	
 	local prop, ext = mark.prop, mark.ext
 	local raw_xml = ext.RAWXMLDATA
 	if raw_xml then 
@@ -233,9 +289,52 @@ local function DrawRecognitionMark(drawer, frame, mark)
 		assert(xmlDom)
 		xmlDom:loadXML(raw_xml)
 
-		ProcessCalcRailGap(drawer, frame, xmlDom, scale)
-		DrawFishplate(drawer, frame, xmlDom, scale)
-		DrawCrewJoint(drawer, frame, xmlDom, scale)
+		ProcessCalcRailGap(drawer, frame, xmlDom)
+		DrawFishplate(drawer, frame, xmlDom)
+		DrawCrewJoint(drawer, frame, xmlDom)
+		DrawBeacon(drawer, frame, xmlDom)
+	end
+end
+
+
+local function DrawUnspecifiedObject(drawer, frame, mark)
+	local color = {r=67, g=149, b=209}
+		
+	local cur_frame_coord = frame.coord.raw
+	local prop, ext = mark.prop, mark.ext
+	
+	if ext.VIDEOFRAMECOORD and ext.VIDEOIDENTCHANNEL and ext.UNSPCOBJPOINTS and ext.VIDEOFRAMECOORD == cur_frame_coord then
+		local points = parse_polygon(ext.UNSPCOBJPOINTS)
+		--print(polygon, cur_frame_coord, item_frame)
+		--print(points[1], points[2], points[3], points[4], points[5], points[6], points[7], points[8])
+		
+		if #points == 8 then
+			drawer.prop:lineWidth(1)
+			drawer.prop:fillColor(color.r, color.g, color.b, 50)
+			drawer.prop:lineColor(color.r, color.g, color.b, 200)
+			drawer.fig:polygon(points)
+			
+			--drawer.fig:rectangle(points[1], points[2], points[5], points[6])
+			local text = prop.Description
+			
+			drawer.text:font { name="Tahoma", render="VectorFontCache", height=10, bold=0}
+			drawer.text:alignment("AlignLeft", "AlignBottom")
+			
+			local tcx, tcy = get_center_point(points)
+			local tw, th = drawer.text:calcSize(text)
+			tcx = tcx - tw/2
+			tcy = tcy - th/2
+			
+			drawer.prop:lineWidth(3)
+			drawer.prop:fillColor{r=0, g=0, b=0, a=255}
+			drawer.prop:lineColor{r=0, g=0, b=0, a=255}
+			drawer.text:multiline{x=tcx, y=tcy, str=text}
+			
+			drawer.prop:lineWidth(1)
+			drawer.prop:fillColor{r=255, g=255, b=255, a=220}
+			drawer.prop:lineColor{r=255, g=255, b=255, a=220}
+			drawer.text:multiline{x=tcx, y=tcy, str=text}
+		end
 	end
 end
 
@@ -245,21 +344,25 @@ local recorn_guids =
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = DrawRecognitionMark, --VID_INDT
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = DrawRecognitionMark, --VID_INDT
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = DrawRecognitionMark, --VID_INDT
+	
+	["{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"] = DrawRecognitionMark,	
+	["{0860481C-8363-42DD-BBDE-8A2366EFAC90}"] = DrawUnspecifiedObject,	
 }
 
 
 -- ================= EXPORT FUNCTION ================ 
 
 function Draw(drawer, frame, marks)
-	local width, height = drawer:size()
---	ShowToolTip(drawer, 10, height - 20, 'frame: %d %d', frame.coord.raw, frame.coord.visible)
+--	local width, height = drawer:size()
+--	ShowToolTip(drawer, 10, height - 20, 'frame: %d %d', frame.coord.raw, #marks)
 --	ShowToolTip(drawer, 10, height - 40, 'orgn: %d %d', frame.size.origin.x, frame.size.origin.y)
 --	ShowToolTip(drawer, 10, height - 60, 'curr: %d %d', frame.size.current.x, frame.size.current.y)
 	
+	--print(Convertor:ScalePoint(1000, 1000))
 	
 	for i = 1, #marks do
 		local mark = marks[i]
-		print("fdsa", mark.prop, mark.prop.Guid)
+		--print("fdsa", mark.prop, mark.prop.Guid)
 		local fn = recorn_guids[mark.prop.Guid]
 		if fn then
 			fn(drawer, frame, mark)

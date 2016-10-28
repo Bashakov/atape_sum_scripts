@@ -3,49 +3,67 @@ if not ATAPE then
 end
 
 stuff = require 'stuff'
+OOP = require 'OOP'
 
+-- ======================  stuff  ============================= -- 
 
--- ======================  EXCEL  ============================= -- 
+local function SplitPath(path)
+	local res = {}
+	for p in path:gmatch('([^\\]+)') do
+		table.insert(res, p)
+	end
+	local name = table.remove(res, #res)
+	return res, name
+end
 
-local excel_helper = {}
+local function CreatePath(path)
+	local fso = luacom.CreateObject("Scripting.FileSystemObject")	
+	local full_path = table.remove(path, 1) .. "\\"
+	for _, p in ipairs(path) do
+		full_path = full_path .. p .. "\\"
+		if not fso:FolderExists(full_path) then
+			assert( fso:CreateFolder(full_path) )
+		end
+	end
+	return full_path 
+end 
 
-function excel_helper.CopyTemplate(template_path, dst_name)		-- скопировать файл шаблона в папку отчетов
-	dst_name = dst_name or os.date('%y%m%d-%H%M%S.xls')
+local function CopyFile(src, dst)
+	local fso = luacom.CreateObject("Scripting.FileSystemObject")	
+	assert(fso, "can not create FileSystemObject object")
+	local path, name = SplitPath(dst)
+	path = CreatePath(path) 
+	assert(dst == path .. name)
 	
-	local new_name = os.getenv('USERPROFILE') .. '\\ATapeReport\\' .. dst_name
-	local cmd = stuff.sprintf('echo F | xcopy /Y "%s" "%s"', template_path, new_name)
-	if os.execute(cmd) == 0 then
-		stuff.errorf('cmd failed: %s', cmd)
+	fso:CopyFile(src, dst, True)
+	return fso:FileExists(dst)
+end
+
+local function CopyTemplate(template_path, sheet_name)		-- скопировать файл шаблона в папку отчетов
+	local new_name = os.getenv('USERPROFILE') .. '\\ATapeReport\\' .. os.date('%y%m%d-%H%M%S ') .. sheet_name .. '.xls'
+	if not CopyFile(template_path, new_name) then
+		stuff.errorf('copy file %s -> %s failed', template_path, new_name)
 	end
 	return new_name
 end
 
-
-function excel_helper.GetWorksheet(template_path, sheet_name, visible)
-	local excel = luacom.CreateObject("Excel.Application") 	-- запустить экземпляр excel
-	assert(excel, "Error! Could not run EXCEL object!")
-	
-	excel.Visible = visible 								-- сделать его видимым если нужно
-	
-	local file_path = excel_helper.CopyTemplate(template_path) 			-- скопируем шаблон в папку отчетов
-	
+local function OpenWorkbook(excel, file_path)
 	local workbooks = excel.Workbooks						
-	local workbook
-	for i = 1, workbooks.Count do							-- поищем среди открытых
+	
+	for i = 1, workbooks.Count do							-- поищем среди открытых или откроем его
 		local wb = workbooks(i)
 		if wb.FullName == file_path then
-			workbook = wb
-			break
+			return wb
 		end
 	end
 	
-	if not workbook then									-- или откроем файл
-		workbook = workbooks:Open(file_path)
-		assert(workbook, stuff.sprintf("can not open %s", file_path))
-	end
-	
+	return workbooks:Open(file_path)
+end
+
+local function FindWorkSheet(workbook, sheet_name)
 	local ws2del = {}										-- список листов для удаления
 	local worksheet
+	
 	for i = 1, workbook.Worksheets.Count do
 		local sheet = workbook.Worksheets(i)				-- ищем лист с нужным именем
 		-- print(i, sheet.name)
@@ -57,98 +75,123 @@ function excel_helper.GetWorksheet(template_path, sheet_name, visible)
 		end
 	end
 	
-	assert(worksheet, stuff.sprintf('can not find %s worksheet', sheet_name))
-	
-	excel.DisplayAlerts = false;							-- отключим предупреждения
-	for _, ws in ipairs(ws2del) do ws:Delete() end			-- удаляем ненужные листы
-	excel.DisplayAlerts = true;								-- включим предупреждения обратно
+	if worksheet then 
+		workbook.Application.DisplayAlerts = false;			-- отключим предупреждения
+		for _, ws in ipairs(ws2del) do ws:Delete() end		-- удаляем ненужные листы
+		workbook.Application.DisplayAlerts = true;			-- включим предупреждения обратно
+	end
 	
 	return worksheet
 end
 
-function excel_helper.CopyTemplateRow(worksheet, row_add_count, fnCB)
-	local user_range = worksheet.UsedRange					-- возьмем пользовательский диаппазон (ограничен незаполненными ячейками, своя внутренняя адресация)
-	
-	local template_row_num									-- номер шаблона строки с данными
+local function FindTemplateRowNum(user_range)
 	for r = 1, user_range.Rows.count do						-- по всем строкам
 		local val = user_range.Cells(r, 1).Value2			-- проверяем первую ячейку
 		local replaced, found = string.gsub(val or '', '%%table%%', '')
 		if found ~= 0 then
 			user_range.Cells(r, 1).Value2 = replaced		-- если нашли, то уберем маркер
-			template_row_num = r							-- и сохраним номер
-			break;
+			return r
 		end
 	end
-	
-	assert(template_row_num, 'Can not find table marker in tempalate')
-
-	local row_template = user_range.Rows(template_row_num+1).EntireRow -- возьмем строку включая размерамы (EntireRow)
-	row_template:Resize(row_add_count-1):Insert()			-- размножим ее
-	
-	local data_range = worksheet:Range(						-- седлаем из них новый диаппазон
-		user_range.Cells(template_row_num, 1), 
-		user_range.Cells(template_row_num + row_add_count - 1, user_range.Columns.count-1))
-	
-	for c = 1, user_range.Columns.count do
-		data_range.Columns(c):FillDown()					-- а затем заполним его включая значения и форматирования на основе первой строки (шаблона)
-	end
-	
-	-- for i = 1, row_add_count-1 do							-- размножим строку нужное количество раз
-		-- local row_template = user_range.Rows(template_row_num).EntireRow
-		-- row_template:Copy()
-		-- row_template:Insert()
-		-- if fnCB and not fnCB(i) then
-			-- row_add_count = i
-			-- break
-		-- end
-	-- end
-	
-	-- local data_range = worksheet:Range(
-		-- user_range.Cells(template_row_num, 1), 
-		-- user_range.Cells(template_row_num + row_add_count - 1, user_range.Columns.count-1))
-		
-	return data_range										-- и вернем диаппазон только этих размноженных ячеек
 end
 
-	
-function excel_helper.ProcessPspValues(worksheet, psp)				-- заменить строки вида $START_KM$ на значения из паспорта
-	local user_range = worksheet.UsedRange
-	for n = 1, user_range.Cells.count do					-- пройдем по всем ячейкам	
-		local cell = user_range.Cells(n);
-		local val = cell.Value2		
-		if val then
-			local replaced, found = string.gsub(val or '', '%$([%w_]+)%$', psp) -- и заменим шаблон
-			if found ~= 0 then
-				cell.Value2 = replaced						-- вставим исправленной значение
+
+-- ======================  EXCEL  ============================= -- 
+
+
+excel_helper = OOP.class
+{
+	ctor = function(self, template_path, sheet_name, visible)
+		self._excel = luacom.CreateObject("Excel.Application") 		-- запустить экземпляр excel
+		assert(self._excel, "Error! Could not run EXCEL object!")
+		
+		self._excel.Visible = visible 								-- сделать его видимым если нужно
+		
+		local file_path = CopyTemplate(template_path, sheet_name)	-- скопируем шаблон в папку отчетов
+		
+		self._workbook = OpenWorkbook(self._excel, file_path)	
+		assert(self._workbook, stuff.sprintf("can not open %s", file_path))
+		
+		self._worksheet = FindWorkSheet(self._workbook, sheet_name)
+		assert(self._worksheet, stuff.sprintf('can not find "%s" worksheet', sheet_name))
+	end,
+
+	ApplyPassportValues = function(self, psp)						-- заменить строки вида $START_KM$ на значения из паспорта
+		local user_range = self._worksheet.UsedRange
+		for n = 1, user_range.Cells.count do						-- пройдем по всем ячейкам	
+			local cell = user_range.Cells(n);
+			local val = cell.Value2		
+			if val then
+				local replaced, found = string.gsub(val, '%$([%w_]+)%$', psp) -- и заменим шаблон
+				if found > 0 then
+					cell.Value2 = replaced							-- вставим исправленной значение
+				end
 			end
 		end
-	end
-end
+	end,
 
-function  excel_helper.InsertLink(cell, url, text)						-- вставка ссылки в ячейку
-	local hyperlinks = cell.worksheet.Hyperlinks
-	-- print(cell.row, cell.column)
-	hyperlinks:Add(cell, url, nil, nil, text or url)
-end
+	CloneTemplateRow = function(self, row_count)
+		local user_range = self._worksheet.UsedRange				-- возьмем пользовательский диаппазон (ограничен незаполненными ячейками, и имеет свою внутреннюю адресацию)
+		
+		local template_row_num = FindTemplateRowNum(user_range)		-- номер шаблона строки с данными
+		assert(template_row_num, 'Can not find table marker in tempalate')
 
-function  excel_helper.InsetImage(cell, img_path)						-- вставка изображения в ячейку
-	local ok, err = pcall(function() 
-		local shapes = cell.worksheet.Shapes;
-		-- print(cell.row, cell.column, cell.Left, cell.Top, cell.Width, cell.Height)
-		local picture = shapes:AddPicture(img_path, false, true, cell.Left, cell.Top, cell.Width, cell.Height);
-		picture.Placement = 1  
+		if row_count > 1 then
+			local row_template = user_range.Rows(template_row_num+1).EntireRow -- возьмем строку (включая размеремы EntireRow)
+			row_template:Resize(row_count-1):Insert()				-- размножим ее
+		end
+		
+		self._data_range = self._worksheet:Range(					-- сделаем из них новый диаппазон
+			user_range.Cells(template_row_num, 1), 
+			user_range.Cells(template_row_num + row_count - 1, user_range.Columns.count-1))
+		
+		if row_count > 1 then
+			for c = 1, user_range.Columns.count do
+				self._data_range.Columns(c):FillDown()				-- а затем заполним его включая значения и форматирования на основе первой строки (шаблона)
+			end
+		end
+		
+		return self._data_range
+	end,
+
+	InsertLink = function (self, cell, url, text)					-- вставка ссылки в ячейку
+		local hyperlinks = cell.worksheet.Hyperlinks
+		--local hyperlinks = self._worksheet.Hyperlinks
+		-- print(cell.row, cell.column)
+		hyperlinks:Add(cell, url, nil, nil, tostring(text or url))
+	end,
+
+	InsertImage = function(self, cell, img_path)					-- вставка изображения в ячейку
+		local XlPlacement = 
+		{
+			xlFreeFloating = 3,
+			xlMove = 2,
+			xlMoveAndSize = 1,
+		}
 	
---		enum XlPlacement
---		{
---			xlFreeFloating = 3,
---			xlMove = 2,
---			xlMoveAndSize = 1
---		};
-	end)
-	if not ok then
-		cell.Value2 = err
-	end
-end
+		local ok, err = pcall(function() 
+			local shapes = cell.worksheet.Shapes
+			--local shapes = self._worksheet.Shapes
+			-- print(cell.row, cell.column, cell.Left, cell.Top, cell.Width, cell.Height)
+			local picture = shapes:AddPicture(img_path, false, true, cell.Left, cell.Top, cell.Width, cell.Height);
+			picture.Placement = XlPlacement.xlMoveAndSize
+		end)
+	
+		if not ok then
+			cell.Value2 = err
+		end
+	end,
+	
+	AutoFitDataRows = function(self)
+		self._data_range.Rows:AutoFit()
+	end,
+	
+	SaveAndShow = function(self)
+		self._excel.visible = true
+		self._workbook:Save()
+	end,
+	
+}
 
 -- ======================  TEST HELPERS  ============================= -- 
 
@@ -191,7 +234,7 @@ end
 
 
 function test_helper.GenerateTestMarks(cnt)									-- генерация тестовых отметок
-	local img_list = io.open('image_list.txt')
+	local img_list = io.open('C:\\Users\\abashak\\Desktop\\lua_test\\image_list.txt')
 	local marks = {}
 	for i = 1, cnt do
 		local mark = {
@@ -206,7 +249,7 @@ function test_helper.GenerateTestMarks(cnt)									-- генерация тес
 end
 
 
-local function ProcessMarks(marks, data_range)					-- вставка отметок в строки
+local function ProcessMarks(excel, data_range, marks)					-- вставка отметок в строки
 	if marks then 
 		assert(#marks == data_range.Rows.count, 'misamtch count of marks and table rows')
 		
@@ -216,8 +259,8 @@ local function ProcessMarks(marks, data_range)					-- вставка отмет�
 			data_range.Cells(i, 4).Value2 = mark.desc
 			data_range.Cells(i, 6).Value2 = "wwwww"
 			
-			excel_helper.InsetImage(data_range.Cells(i, 8), mark.img_path)
-			excel_helper.InsertLink(data_range.Cells(i, 10), 'http://google.com', 'google')
+			excel:InsertImage(data_range.Cells(i, 8), mark.img_path)
+			excel:InsertLink(data_range.Cells(i, 10), 'http://google.com', 'google')
 		end
 	else														-- test
 		for r = 1, data_range.Rows.count do
@@ -230,16 +273,17 @@ end
 
 -- ======================TEST ============================= -- 
 
-if not ATAPE then
+if false and not ATAPE then
 
-	psp = test_helper.Passport2Table('[480]_2014_03_19_01.xml')
+	psp = test_helper.Passport2Table('C:\\Users\\abashak\\Desktop\\lua_test\\[480]_2014_03_19_01.xml')
 	marks = test_helper.GenerateTestMarks(4)
 
-	local worksheet = excel_helper.GetWorksheet('C:\\Users\\abashak\\Desktop\\lua_test\\ProcessSum.xls', 'Ведомость Зазоров', true)
-	excel_helper.ProcessPspValues(worksheet, psp)
-	local data_range = excel_helper.CopyTemplateRow(worksheet, #marks)
+	excel = excel_helper('C:\\Users\\abashak\\Desktop\\lua_test\\ProcessSum.xls', 'Ведомость Зазоров', true)
+	excel:ApplyPassportValues(psp)
+	local data_range = excel:CloneTemplateRow(#marks)
 
-	ProcessMarks(marks, data_range)
+	ProcessMarks(excel, data_range, marks)
+	--excel:AutoFitDataRows()
 end
 
 return excel_helper

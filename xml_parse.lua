@@ -836,10 +836,10 @@ end
 
 function xml2table(xml)
 	if xml then
-		h = simpleTreeHandler()
-		x = xmlParser(h)
-		x:parse(xml)
-		return h
+	h = simpleTreeHandler()
+	x = xmlParser(h)
+	x:parse(xml)
+	return h
 	end
 end
 

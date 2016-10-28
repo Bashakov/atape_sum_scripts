@@ -66,21 +66,20 @@ local function make_sleeper()
 	if os.sleep then
 		return os.sleep
 	end
-	
+	print("This version of interpretator without SLEEP function!!!")
 	
 	local ok, socket = pcall(require, "socket")
 	if ok then 
 		return function(sec)
 			socket.select(nil, nil, sec)
 		end
+	else
+		local clock = os.clock
+		return function(sec)  -- seconds
+			local t0 = clock()
+			while clock() - t0 <= sec do end
+		end
 	end
-	error("This version of interpretator without SLEEP function!!!")
---		local clock = os.clock
---		return function(sec)  -- seconds
---			local t0 = clock()
---			while clock() - t0 <= sec do end
---		end
---	end
 end
 
 local sleeper = make_sleeper()
@@ -88,17 +87,6 @@ local sleeper = make_sleeper()
 function stuff.sleep(sec)
 	sleeper(sec)
 end
-
-function stuff.is_file_exists(name)
-   local f = io.open(name, "r")
-   if f then 
-	   io.close(f) 
-	   return true 
-	else 
-		return false 
-	end
-end
-
 
 
 return stuff
