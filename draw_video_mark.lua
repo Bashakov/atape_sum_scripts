@@ -244,7 +244,7 @@ local function DrawBeacon(drawer, frame, dom)
 				drawer.prop:lineWidth(1)
 				drawer.prop:fillColor(color.r, color.g, color.b,  50)
 				drawer.prop:lineColor(color.r, color.g, color.b, 200)
-				drawer.fig:rectangle(x1, y1, x2, y2)
+				drawer.fig:rectangle(x1-5, y1, x2+5, y2)
 				--ShowToolTip(drawer, 200, 100, "%d %d %d %d", x1, y1, x2, y2)
 				shifts[pos] = {coords = {x1, y1, x2, y2}, shift=shift}
 			end

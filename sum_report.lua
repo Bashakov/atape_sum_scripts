@@ -243,8 +243,8 @@ local function dump_mark_list(template_name, sheet_name)
 			name = Driver:GetSumTypeName(prop.Guid),
 			img_path = Driver:GetFrame(
 				vch, 
-				prop.SysCoord, 
-				{
+				prop.SysCoord, {
+					mark_id = prop.ID,
 					file_path = stuff.sprintf('%s\\img\\%d_%d.jpg', out_dir, prop.SysCoord, vch),
 					width = 400,          -- ширина кадра
 					height = 300,          -- высота кадра
@@ -303,26 +303,31 @@ end
 
 
 local function report_crew_join(params)
+	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Показать все", "Дефектные", "Нормальные"}, 2)
+	if not filter_mode then
+		return
+	end
+	
 	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 	assert(xmlDom)
 	
 	local function make_filter_fn()
-		local mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Показать все", "Дефектные", "Нормальные"}, 2)
+		
 		local guids = {
-		["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = true,
-		["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = true}
+			["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = true,
+			["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = true}
 	
 		return function(mark)
 			if not (guids[mark.prop.Guid] and mark.ext.RAWXMLDATA and  mark.ext.VIDEOIDENTCHANNEL) then
 				return false
 			end
-			if mode == 1 then
+			if filter_mode == 1 then
 				return true
 			end
 			
 			xmlDom:loadXML(mark.ext.RAWXMLDATA)
 			local cnt, defect = GetCrewJointSafe(xmlDom)
-			return (mode == 2 and defect >= 2) or (mode == 3 and defect < 2)
+			return (filter_mode == 2 and defect >= 2) or (filter_mode == 3 and defect < 2)
 		end
 	end
 	
@@ -353,7 +358,16 @@ local function report_crew_join(params)
 
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
 		local count, defect = GetCrewJointSafe(xmlDom)
-		local img_path = Driver:GetFrame( ext.VIDEOIDENTCHANNEL, prop.SysCoord, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
+		local img_path = Driver:GetFrame( 
+			ext.VIDEOIDENTCHANNEL, 
+			prop.SysCoord, {
+				mark_id=prop.ID,
+				mode=3, 
+				panoram_width=1500, 
+				frame_count=3, 
+				width=400, 
+				height=300,
+			})
 		local uri = make_mark_uri(prop.ID)
 
 		excel:InsertLink(data_range.Cells(line, 1 + column_offset), uri, km)
@@ -382,7 +396,10 @@ local function report_crew_join(params)
 end
 
 local function report_gaps(params)
-	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Меньше 3 мм", "Все", "Больше 22 мм"}, 2)
+	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Меньше 3 мм", "Все", "Больше 22 мм", "Слепые подряд"}, 2)
+	if not filter_mode then
+		return
+	end
 	
 	local guids = {
 			["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = true,
@@ -406,12 +423,30 @@ local function report_gaps(params)
 		prev_rail_end[prop.RailMask] = prop.SysCoord
 	end
 
-	if filter_mode ~= 2 then
+	if filter_mode == 1 or filter_mode == 3 then
 		local function ff(mark)
 			local widths, min_width, max_width = GetRailGap(mark)
 			return (filter_mode == 1 and min_width <= 3) or (filter_mode == 3 and max_width >= 22)
 		end
 		marks = FilterSort(marks, ff, nil, function(val, desc) dlg:step(val, desc) end)
+	elseif filter_mode == 4 then
+		local mark_ids = {}
+		local prev_gap_width = {}
+		
+		for _, mark in ipairs(marks) do
+			local _, min_width, _ = GetRailGap(mark)
+			local prev = prev_gap_width[mark.prop.RailMask] 
+			if prev and prev.width <= 3 and min_width <= 3 then
+				mark_ids[prev.ID] = true
+				mark_ids[mark.prop.ID] = true
+			end
+			prev_gap_width[mark.prop.RailMask] = {ID=mark.prop.ID, width=min_width}
+		end
+		
+		marks = FilterSort(marks, 
+			function(mark) return mark_ids[mark.prop.ID] end,
+			nil, 
+			function(val, desc) dlg:step(val, desc) end)
 	end
 
 	local mark_pairs = BuildMarkPairs(marks, 500)
@@ -434,7 +469,16 @@ local function report_gaps(params)
 		
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
 		local temperature = Driver:GetTemperature(bit32.band(prop.RailMask, 3)-1, prop.SysCoord)
-		local img_path = Driver:GetFrame( ext.VIDEOIDENTCHANNEL, prop.SysCoord, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
+		local img_path = Driver:GetFrame( 
+			ext.VIDEOIDENTCHANNEL, 
+			prop.SysCoord, {
+				mark_id=prop.ID,
+				mode=3, 
+				panoram_width=1500, 
+				frame_count=3, 
+				width=400, 
+				height=300,
+			} )
 		local uri = make_mark_uri(prop.ID)
 		
 		temperature = temperature and temperature.target
@@ -542,7 +586,16 @@ local function report_welding(params)
 		
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
 		local temperature = Driver:GetTemperature(bit32.band(prop.RailMask, 3)-1, prop.SysCoord)
-		local img_path = Driver:GetFrame( ext.VIDEOIDENTCHANNEL, prop.SysCoord, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
+		local img_path = Driver:GetFrame( 
+			ext.VIDEOIDENTCHANNEL, 
+			prop.SysCoord, {
+				mark_id=prop.ID,
+				mode=3,
+				panoram_width=1500, 
+				frame_count=3, 
+				width=400, 
+				height=300,
+			} )
 		local uri = make_mark_uri(prop.ID)
 		
 		temperature = temperature and temperature.target

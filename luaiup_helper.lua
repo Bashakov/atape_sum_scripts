@@ -82,7 +82,7 @@ function ShowRadioBtn(title, values, def)
 			return iup.CLOSE 
 		end,
 	}
-	
+	local abort = false
 	local dialog = iup.dialog{
 		iup.vbox{
 			--frame,
@@ -93,12 +93,18 @@ function ShowRadioBtn(title, values, def)
 		title=title,
 		--size=140,
 		resize="NO",
-		menubox = "NO",
+--		menubox = "NO",
+		maxbox = "NO", 
+		minbox = "NO",
 		gap="3",
-		margin="9x3"
+		margin="9x3",
+		close_cb = function() 
+			abort = true
+			return iup.CLOSE
+		end 
 	}
 	dialog:popup()
-	return rr[radio.value.title]
+	return not abort and rr[radio.value.title]
 end
 
 
