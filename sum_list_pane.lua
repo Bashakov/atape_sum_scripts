@@ -420,18 +420,18 @@ column_fastener_width =
 
 local Filters = 
 {
-	{	
-		name = 'Магнитные Стыки', 		
-		columns = {
-			column_num,
-			column_path_coord, 
-			column_rail,
-			column_mag_use_recog,
-			}, 
-		GUIDS = {
-			"{19253263-2C0B-41EE-8EAA-000000000010}",
-			"{19253263-2C0B-41EE-8EAA-000000000040}",}
-	},
+	--{	
+	--	name = 'Магнитные Стыки', 		
+	--	columns = {
+	--		column_num,
+	--		column_path_coord, 
+	--		column_rail,
+	--		column_mag_use_recog,
+	--		}, 
+	--	GUIDS = {
+	--		"{19253263-2C0B-41EE-8EAA-000000000010}",
+	--		"{19253263-2C0B-41EE-8EAA-000000000040}",}
+	--},
 	{
 		name = 'Зазоры', 
 		columns = {
@@ -448,7 +448,8 @@ local Filters =
 		GUIDS = {
 			"{CBD41D28-9308-4FEC-A330-35EAED9FC801}", 
 			"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
-			"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",}
+			"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
+			}
 	},
 	{
 		name = 'Отсутствующие болты', 
@@ -462,7 +463,8 @@ local Filters =
 		GUIDS = {
 			"{CBD41D28-9308-4FEC-A330-35EAED9FC801}", 
 			"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
-			"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",},
+			"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
+			},
 		filter = function(mark)
 			local all, defect = GetCrewJointSafe(mark)
 			return all ~= 0 and defect ~= 0
@@ -480,20 +482,20 @@ local Filters =
 			"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}",
 			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",}
 	},
-	{
-		name = 'Скрепления',
-		columns = {
-			column_num,
-			column_path_coord, 
-			column_rail,
-			column_fastener_type,
-			column_fastener_fault,
-			column_recogn_reability,
-			column_fastener_width,
-			}, 
-		GUIDS = {
-			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
-	}
+	--{
+	--	name = 'Скрепления',
+	--	columns = {
+	--		column_num,
+	--		column_path_coord, 
+	--		column_rail,
+	--		column_fastener_type,
+	--		column_fastener_fault,
+	--		column_recogn_reability,
+	--		column_fastener_width,
+	--		}, 
+	--	GUIDS = {
+	--		"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
+	--}
 }
 
 -- внутренняя функция, возвращает описание фильтра по его имени

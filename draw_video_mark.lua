@@ -353,7 +353,7 @@ local function DrawFastener(drawer, frame, mark)
 	local item_frame = ext.VIDEOFRAMECOORD
 	local raw_xml = ext.RAWXMLDATA
 	
-	local color = {r=187, g=189, b=209}
+	local color = {r=127, g=0, b=127}
 	
 	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 	assert(xmlDom)
@@ -387,11 +387,10 @@ local function DrawFastener(drawer, frame, mark)
 			drawer.fig:polygon(points)
 			
 			--drawer.fig:rectangle(points[1], points[2], points[5], points[6])
-			local strText = sprintf('Type %s\nFault %s\nWidth %d\n%d %d', 
+			local strText = sprintf('Тип: %s\nНеиспр.: %s\nШир.: %d\n', 
 				nodeFastenerType and nodeFastenerType.nodeValue  or '', 
 				nodeFastenerFault and nodeFastenerFault.nodeValue or '',
-				raw_points[5]- raw_points[1],
-				raw_points[1], raw_points[5])
+				raw_points[5]- raw_points[1])
 			
 			drawer.text:font { name="Tahoma", render="VectorFontCache", height=11, bold=0}
 			drawer.text:alignment("AlignLeft", "AlignBottom")
@@ -422,6 +421,9 @@ local recorn_guids =
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = DrawRecognitionMark, --VID_INDT
 	
 	["{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"] = DrawRecognitionMark,	
+	
+	["{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}"] = DrawRecognitionMark,	--M_SPALA
+	
 	["{0860481C-8363-42DD-BBDE-8A2366EFAC90}"] = DrawUnspecifiedObject,	
 	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"] = DrawFastener,	
 	["{28C82406-2773-48CB-8E7D-61089EEB86ED}"] = DrawRecognitionMark,

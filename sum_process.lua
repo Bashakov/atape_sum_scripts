@@ -175,6 +175,9 @@ local Img_DA_guids = {
 		["{0860481C-8363-42DD-BBDE-8A2366EFAC90}"]=5, --USER_SET="1" INTERNAL_NAME="UNSPC_OBJ" VALUE="Ненормативный объект"  />		
 	
 		["{28C82406-2773-48CB-8E7D-61089EEB86ED}"]=17, --USER_SET="1" INTERNAL_NAME="VID_CREWJOINT_INDT" VALUE="Болты(Видео распознование)"  />	
+		
+		["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"]=9, --INTERNAL_NAME="FASTENER" VALUE="Скрепление"
+
 }
 
 local Img_guid2idx = {
@@ -258,6 +261,7 @@ local desc_vguids = {
 	
 	["{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}"] = _get_beacon_mark,			-- beacon  (user)
 	["{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"] = _get_beacon_mark,			-- beacon
+	
 }
 
 

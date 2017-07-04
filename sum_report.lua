@@ -398,14 +398,16 @@ local function report_crew_join(params)
 end
 
 local function report_gaps(params)
-	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Меньше 3 мм", "Все", "Больше 22 мм", "Слепые подряд"}, 2)
+	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Меньше 3 мм", "Все", "Больше 22 мм", "Слепые подряд", "Больше 35 мм"}, 2)
 	if not filter_mode then
 		return
 	end
 	
 	local guids = {
 			["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = true,
-			["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = true,}
+			["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = true,
+			["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = true,
+	}
 	
 	local dlg = luaiup_helper.ProgressDlg()
 	local marks = Driver:GetMarks()
@@ -431,6 +433,14 @@ local function report_gaps(params)
 			return (filter_mode == 1 and min_width <= 3) or (filter_mode == 3 and max_width >= 22)
 		end
 		marks = FilterSort(marks, ff, nil, function(val, desc) dlg:step(val, desc) end)
+		
+	elseif filter_mode == 5 then
+		local function ff(mark)
+			local widths, min_width, max_width = GetRailGap(mark)
+			return ( max_width >= 35 )
+		end
+		marks = FilterSort(marks, ff, nil, function(val, desc) dlg:step(val, desc) end)		
+		
 	elseif filter_mode == 4 then
 		local mark_ids = {}
 		local prev_gap_width = {}
@@ -695,13 +705,69 @@ local function report_unspec_obj(params)
 end
 
 
+local joint_filter_guids = 
+{
+	"{19253263-2C0B-41EE-8EAA-000000000010}",
+	"{19253263-2C0B-41EE-8EAA-000000000040}",
+}
+
+local function report_coord(params)
+	local dlg = luaiup_helper.ProgressDlg()
+	local marks = Driver:GetMarks()
+	local guids = {}
+	for _, g in ipairs(joint_filter_guids) do guids[g] = true end 
+	
+	marks = FilterSort(marks, 
+		function(mark) return guids[mark.prop.Guid] end,
+		function(mark) return {mark.prop.SysCoord} end,
+		function(val, desc) dlg:step(val, desc) end)
+
+	if #marks == 0 then
+		iup.Message('Info', "Подходящих отметок не найдено")
+		return
+	end
+
+	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
+	excel:ApplyPassportValues(Passport)
+	local data_range = excel:CloneTemplateRow(#marks)
+	local vdCh = params.ch
+
+	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
+
+	for line, mark in ipairs(marks) do
+		local prop, ext = mark.prop, mark.ext
+		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
+		
+		local coord = prop.SysCoord + prop.Len / 2, 0
+		local offsetVideo = Driver:GetVideoCurrentOffset(vdCh)
+		local offsetMagn = Driver:GetChannelOffset(11)
+		local frcoord = coord + offsetVideo + offsetMagn
+		print( vdCh, coord, offsetVideo, offsetMagn, frcoord )
+
+		data_range.Cells(line, 1).Value2 = sprintf("%d km %d m %d mm", km, m, mm)
+		data_range.Cells(line, 2).Value2 = coord
+		data_range.Cells(line, 3).Value2 = coord + offsetMagn
+		data_range.Cells(line, 4).Value2 = coord + offsetMagn + offsetVideo
+		data_range.Cells(line, 5).Value2 = vdCh
+		data_range.Cells(line, 6).Value2 = frcoord
+		
+		local img_path = Driver:GetFrame( vdCh, coord + offsetMagn, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
+		if img_path and #img_path then
+			excel:InsertImage(data_range.Cells(line, 7), img_path)
+		end
+		
+		if not dlg:step(line / #marks, stuff.sprintf(' Process %d / %d mark', line, #marks)) then 
+			break
+		end
+	end 
+
+	excel:SaveAndShow()
+end
 
 -- ====================================================================================
 
 local gap_rep_filter_guids = 
 {
-	"{19253263-2C0B-41EE-8EAA-000000000010}",
-	"{19253263-2C0B-41EE-8EAA-000000000040}",
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC801}",
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
@@ -714,12 +780,16 @@ local beacon_rep_filter_guids =
 }
 
 local Report_Functions = {
-	{name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
+	---{name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 	--{name="Сохранить в Excel",			fn=mark2excel,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="test",}, 					},
-	{name="Ведомость болтовых стыков",		fn=report_crew_join,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ведомость Болтов",}, 		},
+	{name="Ведомость болтовых стыков",		fn=report_crew_join,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ведомость Болтов",}, 		guids=gap_rep_filter_guids},
 	{name="Ведомость Зазоров",				fn=report_gaps,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ведомость Зазоров",}, 		guids=gap_rep_filter_guids},
 	{name="Ведомость сварной плети",		fn=report_welding,		params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ведомость сварной плети",}, 	guids=beacon_rep_filter_guids},
-	{name="Ведомость ненормативных объектов",fn=report_unspec_obj,	params={ filename="Scripts\\ProcessSum.xls",				sheetname="Ненормативные объекты",},	guids=unspec_obj_filter_guids},	
+	{name="Ведомость ненормативных объектов",fn=report_unspec_obj,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ненормативные объекты",},	guids=unspec_obj_filter_guids},	
+	--{name="КоордСтыков | 1",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=1}, 	guids=joint_filter_guids},
+	--{name="КоордСтыков | 2",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=2}, 	guids=joint_filter_guids},
+	--{name="КоордСтыков | 17",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=17}, 	guids=joint_filter_guids},
+	--{name="КоордСтыков | 18",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=18}, 	guids=joint_filter_guids},
 }
 
 
