@@ -5,11 +5,11 @@ end
 
 OOP = require 'OOP'
 
-iup.SetGlobal('UTF8MODE', 1)
 
 ProgressDlg = OOP.class
 {
 	ctor = function(self)
+		iup.SetGlobal('UTF8MODE', 1)
 		self.cancelflag = false
 		
 		local _close_cb = function()
@@ -65,6 +65,8 @@ ProgressDlg = OOP.class
 
 
 function ShowRadioBtn(title, values, def)
+	iup.SetGlobal('UTF8MODE', 1)
+	
 	local togles = {}
 	local rr = {}
 	for i, v in ipairs(values) do 

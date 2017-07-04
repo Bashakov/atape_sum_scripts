@@ -40,10 +40,6 @@ function stuff.sprintf(s,...)
 	return string.format(s, ...)
 end
 
-function stuff.errorf(s,...)        
-	error(string.format(s, ...))
-end
-
 local escape_hlper = function(c) 
 	return string.format('\\x%02X', string.byte(c))
 end

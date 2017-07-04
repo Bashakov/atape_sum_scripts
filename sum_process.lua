@@ -192,6 +192,9 @@ local Img_guid2idx = {
     ["{CBD41D28-9308-4FEC-A330-35EAED9FC811}"] = 6, -- video_ident 50-70
     ["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = 2, -- video_ident 70-100
     ["{CBD41D28-9308-4FEC-A330-35EAED9FC812}"] = 2, -- video_ident 70-100
+
+	["{D4607B05-17C2-4C30-A303-69005A08C000}"] = 10, -- move backward
+	["{D4607B05-17C2-4C30-A303-69005A08C001}"] = 11, -- move backward
 }
 
 function GetMarkImage(mark) -- exported (return ico desc from mark)
@@ -255,7 +258,6 @@ local desc_vguids = {
 	
 	["{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}"] = _get_beacon_mark,			-- beacon  (user)
 	["{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"] = _get_beacon_mark,			-- beacon
-	
 }
 
 

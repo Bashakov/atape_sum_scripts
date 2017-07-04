@@ -85,8 +85,8 @@ dofile('sum_report.lua')
 
 --MakeReport("Ведомость болтовых стыков")
 --MakeReport("Сохранить в Excel")
-MakeReport("Ведомость Зазоров")
---MakeReport("Ведомость ненормативных объектов")
+--MakeReport("Ведомость Зазоров")
+MakeReport("Ведомость ненормативных объектов")
 --MakeReport("Ведомость сварной плети")
 
 

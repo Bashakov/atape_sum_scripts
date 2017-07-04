@@ -51,7 +51,7 @@ end
 local function parse_polygon(str, cur_frame_coord, item_frame)
 	local points = {}
 	
-	for x,y in str:gmatch('(%d+),(%d+)') do
+	for x,y in str:gmatch('(-?%d+),(-?%d+)') do
 		if cur_frame_coord and item_frame and item_frame ~= cur_frame_coord then
 			x, y = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, x, y)
 		else
@@ -62,6 +62,15 @@ local function parse_polygon(str, cur_frame_coord, item_frame)
 		table.insert(points, y)
 	end
 			
+	return points
+end
+
+local function raw_parse_polygon(str)
+	local points = {}
+	for x,y in str:gmatch('(-?%d+),(-?%d+)') do
+		table.insert(points, tonumber(x))
+		table.insert(points, tonumber(y))
+	end
 	return points
 end
 
@@ -103,7 +112,7 @@ local function ProcessCalcRailGap(drawer, frame, dom)
 			
 			if #points == 8 then
 				drawer.prop:lineWidth(1)
-				drawer.prop:fillColor(color.r, color.g, color.b, 50)
+				drawer.prop:fillColor(color.r, color.g, color.b, 20)
 				drawer.prop:lineColor(color.r, color.g, color.b, 200)
 				drawer.fig:polygon(points)
 				
@@ -203,7 +212,7 @@ local function DrawCrewJoint(drawer, frame, dom)
 				
 				drawer.prop:lineWidth(1)
 				drawer.prop:fillColor( color.r, color.g, color.b,  50 )
-				drawer.prop:lineColor( color.r, color.g, color.b, 200 )
+				drawer.prop:lineColor( color.r, color.g, color.b, 255 )
 				drawer.fig:ellipse(cx, cy, rx, ry)
 			end
 		end
@@ -213,8 +222,8 @@ end
 
 local function DrawBeacon(drawer, frame, dom)
 	local colors = {
-		Beacon_Web 		= {r=67, g=149,   b=209},
-		Beacon_Fastener = {r=0,   g=169, b=157}, }
+		Beacon_Web 		= {r=67, g=149, b=209},
+		Beacon_Fastener = {r=0,  g=169, b=157}, }
 	
 	local cur_frame_coord = frame.coord.raw
 	
@@ -224,8 +233,8 @@ local function DrawBeacon(drawer, frame, dom)
 			/PARAM[@name="ACTION_RESULTS" and starts-with(@value, "Beacon_")]\z
 			/PARAM[@name="FrameNumber" and @value and @coord]\z
 			/PARAM[@name="Result" and @value="main"]'
+	
 	for node in SelectNodes(dom, req) do
-		
 		local pos = node:SelectSingleNode("../../@value").nodeValue
 		local item_frame = node:SelectSingleNode("../@coord").nodeValue
 		local rect = node:SelectSingleNode('PARAM[@name="Coord" and @type="rect" and @value]/@value').nodeValue
@@ -242,8 +251,8 @@ local function DrawBeacon(drawer, frame, dom)
 				--ShowToolTip(drawer, x1, y1, "%s\n%s\n%s\n%s", pos, rect, offset, item_frame)
 				
 				drawer.prop:lineWidth(1)
-				drawer.prop:fillColor(color.r, color.g, color.b,  50)
-				drawer.prop:lineColor(color.r, color.g, color.b, 200)
+				drawer.prop:fillColor(color.r, color.g, color.b,  90)
+				drawer.prop:lineColor(color.r, color.g, color.b, 250)
 				drawer.fig:rectangle(x1-5, y1, x2+5, y2)
 				--ShowToolTip(drawer, 200, 100, "%d %d %d %d", x1, y1, x2, y2)
 				shifts[pos] = {coords = {x1, y1, x2, y2}, shift=shift}
@@ -285,7 +294,7 @@ local function DrawRecognitionMark(drawer, frame, mark)
 	if raw_xml then 
 		--raw_xml = '<ACTION_RESULTS version="1.4"><PARAM name="ACTION_RESULTS" value="CalcRailGap_Head_Top"><PARAM name="FrameNumber" value="0" coord="284142"><PARAM name="Result" value="main"><PARAM name="Coord" type="polygon" value="550,784 550,670 587,670 587,784"/><PARAM name="RailGapWidth_mkm" value="37000"/></PARAM></PARAM></PARAM><PARAM name="ACTION_RESULTS" value="CalcRailGap_Head_Side"><PARAM name="FrameNumber" value="0" coord="284142"><PARAM name="Result" value="main"><PARAM name="Coord" type="polygon" value="550,670 550,592 587,592 587,670"/><PARAM name="RailGapWidth_mkm" value="37000"/></PARAM></PARAM></PARAM><PARAM name="ACTION_RESULTS" value="Fishplate"><PARAM name="FrameNumber" value="0" coord="284142"><PARAM name="Result" value="main"><PARAM name="FishplateEdge" value="1"><PARAM name="Coord" type="polygon" value="68,559 68,292"/></PARAM></PARAM></PARAM><PARAM name="FrameNumber" value="1" coord="285166"><PARAM name="Result" value="main"><PARAM name="FishplateEdge" value="2"><PARAM name="Coord" type="polygon" value="44,559 44,292"/></PARAM></PARAM></PARAM></PARAM><PARAM name="ACTION_RESULTS" value="CrewJoint"><PARAM name="FrameNumber" value="0" coord="284142"><PARAM name="Result" value="main"><PARAM name="JointNumber" value="0"><PARAM name="Coord" type="ellipse" value="114,433,22,22"/><PARAM name="CrewJointSafe" value="-1" _value="-1(нет), 0(болтается), 1(есть)"/></PARAM><PARAM name="JointNumber" value="1"><PARAM name="Coord" type="ellipse" value="246,422,26,43"/><PARAM name="CrewJointSafe" value="1" _value="-1(нет), 0(болтается), 1(есть)"/></PARAM><PARAM name="JointNumber" value="2"><PARAM name="Coord" type="ellipse" value="468,416,26,43"/><PARAM name="CrewJointSafe" value="1" _value="-1(нет), 0(болтается), 1(есть)"/></PARAM><PARAM name="JointNumber" value="3"><PARAM name="Coord" type="ellipse" value="675,415,26,43"/><PARAM name="CrewJointSafe" value="1" _value="-1(нет), 0(болтается), 1(есть)"/></PARAM><PARAM name="JointNumber" value="4"><PARAM name="Coord" type="ellipse" value="894,413,26,43"/><PARAM name="CrewJointSafe" value="1" _value="-1(нет), 0(болтается), 1(есть)"/></PARAM><PARAM name="JointNumber" value="5"><PARAM name="Coord" type="ellipse" value="1016,424,22,22"/><PARAM name="CrewJointSafe" value="-1" _value="-1(нет), 0(болтается), 1(есть)"/></PARAM></PARAM></PARAM></PARAM><PARAM name="ACTION_RESULTS" value="Common"><PARAM name="Reliability" value="80"/><PARAM name="RecogObjCoord" value="284710" _desc="координата найденного объекта"/></PARAM></ACTION_RESULTS>'
 	
-		xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+		local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 		assert(xmlDom)
 		xmlDom:loadXML(raw_xml)
 
@@ -338,6 +347,73 @@ local function DrawUnspecifiedObject(drawer, frame, mark)
 	end
 end
 
+local function DrawFastener(drawer, frame, mark)
+	local prop, ext = mark.prop, mark.ext
+	local cur_frame_coord = frame.coord.raw
+	local item_frame = ext.VIDEOFRAMECOORD
+	local raw_xml = ext.RAWXMLDATA
+	
+	local color = {r=187, g=189, b=209}
+	
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom)
+	xmlDom:loadXML(raw_xml)
+	-- print(raw_xml)
+	
+	local points = {}
+	local req = '\z
+			/ACTION_RESULTS\z
+			/PARAM[@name="ACTION_RESULTS" and @value="Fastener"]\z
+			/PARAM[@name="FrameNumber" and @value and @coord]\z
+			/PARAM[@name="Result" and @value="main"]\z
+			/PARAM[@name="Coord" and @type="polygon" and @value]'
+	for node in SelectNodes(xmlDom, req) do
+		local nodeFastenerType = node:SelectSingleNode('../PARAM[@name="FastenerType" and @value]/@value')
+		local nodeFastenerFault = node:SelectSingleNode('../PARAM[@name="FastenerFault" and @value]/@value')
+		--print(nodeFastenerType)
+		
+		local polygon = node:SelectSingleNode('@value').nodeValue
+	
+		local points = parse_polygon(polygon, cur_frame_coord, item_frame)
+		local raw_points = raw_parse_polygon(polygon)
+		-- print(raw_points, raw_points[1], raw_points[5])
+		--print(polygon, cur_frame_coord, item_frame)
+		--print(points[1], points[2], points[3], points[4], points[5], points[6], points[7], points[8])
+			
+		if #points == 8 then
+			drawer.prop:lineWidth(1)
+			drawer.prop:fillColor(color.r, color.g, color.b, 20)
+			drawer.prop:lineColor(color.r, color.g, color.b, 255)
+			drawer.fig:polygon(points)
+			
+			--drawer.fig:rectangle(points[1], points[2], points[5], points[6])
+			local strText = sprintf('Type %s\nFault %s\nWidth %d\n%d %d', 
+				nodeFastenerType and nodeFastenerType.nodeValue  or '', 
+				nodeFastenerFault and nodeFastenerFault.nodeValue or '',
+				raw_points[5]- raw_points[1],
+				raw_points[1], raw_points[5])
+			
+			drawer.text:font { name="Tahoma", render="VectorFontCache", height=11, bold=0}
+			drawer.text:alignment("AlignLeft", "AlignBottom")
+			
+			local tcx, tcy = get_center_point(points)
+			local tw, th = drawer.text:calcSize(strText)
+			tcx = tcx - tw/2
+			tcy = tcy - th/2
+			
+			drawer.prop:lineWidth(3)
+			drawer.prop:fillColor{r=0, g=0, b=0, a=255}
+			drawer.prop:lineColor{r=0, g=0, b=0, a=255}
+			drawer.text:multiline{x=tcx, y=tcy, str=strText}
+			
+			drawer.prop:lineWidth(1)
+			drawer.prop:fillColor{r=255, g=255, b=255, a=220}
+			drawer.prop:lineColor{r=255, g=255, b=255, a=220}
+			drawer.text:multiline{x=tcx, y=tcy, str=strText}
+		end
+	end
+end
+
 
 local recorn_guids = 
 {
@@ -347,6 +423,8 @@ local recorn_guids =
 	
 	["{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"] = DrawRecognitionMark,	
 	["{0860481C-8363-42DD-BBDE-8A2366EFAC90}"] = DrawUnspecifiedObject,	
+	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"] = DrawFastener,	
+	["{28C82406-2773-48CB-8E7D-61089EEB86ED}"] = DrawRecognitionMark,
 }
 
 

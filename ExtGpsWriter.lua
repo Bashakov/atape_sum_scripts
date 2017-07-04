@@ -71,16 +71,6 @@ function data_base:transaction(arg)
 	local x1 = os.clock()
 	
 	self:exec("BEGIN TRANSACTION")
-	
---	file = io.open("1234", "r")
---	if file then 
---		print("======================== EXIT TRANSACTION ============================")
---		file:close() 
---		return
---	else
---		print("======================== NO FILE ============================")
---	end
-
 	local x2 = os.clock()
 	
 	local ok, error_msg = pcall(arg.body_fn)
@@ -97,8 +87,8 @@ function data_base:transaction(arg)
 	end
 	local x4 = os.clock()
 	
-	local function ff(v1, v2) return (v2-v1) * 1000000.0 end
-	--printf( "transaction %d %d %d\n", ff(x1,x2), ff(x2,x3), ff(x3,x4)) 
+	-- local function ff(v1, v2) return (v2-v1) * 1000000.0 end
+	-- printf( "transaction %d %d %d\n", ff(x1,x2), ff(x2,x3), ff(x3,x4)) 
 end
 
 function data_base:close(data_path)

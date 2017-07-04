@@ -315,7 +315,9 @@ local function report_crew_join(params)
 		
 		local guids = {
 			["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = true,
-			["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = true}
+			["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = true,
+			["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = true,
+		}
 	
 		return function(mark)
 			if not (guids[mark.prop.Guid] and mark.ext.RAWXMLDATA and  mark.ext.VIDEOIDENTCHANNEL) then
