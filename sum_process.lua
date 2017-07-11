@@ -131,14 +131,15 @@ local function _get_video_recog_desc(mark, desc)
 
 	local ar = parse_ActionResult(prop.RAWXMLDATA) -- convert XML to widths
 	local kvnrt = {
-		['CalcRailGap_Head_Top'] =  'пов.  катания',
-		["CalcRailGap_Head_Side"] = 'рабочей грани' }
+		['CalcRailGap_User'] =  'пользователь',
+		['CalcRailGap_Head_Top'] =  'по пов.  катания',
+		["CalcRailGap_Head_Side"] = 'по рабочей грани' }
 	for n, cw in pairs(ar) do
 		local t = ''
 		for _, w in pairs(cw) do 
 			t = t .. sprintf('\n     %d [%d] = %g mm', w.fn, w.crd, math.round(w.w/1000, 1)) 
 		end
-		desc = desc .. sprintf('\nШирина по %s:%s', kvnrt[n] or n, t)
+		desc = desc .. sprintf('\nШирина %s:%s', kvnrt[n] or n, t)
 	end
 	return desc
 end -- function _get_video_recog_desc
@@ -189,12 +190,14 @@ local Img_guid2idx = {
 	["{19253263-2C0B-41EE-8EAA-000000000800}"] = 9, -- SVARKA_REG_NST
     ["{19FF08BB-C344-495B-82ED-10B6CBAD508F}"] = 8, -- NPU
 
-    ["{CBD41D28-9308-4FEC-A330-35EAED9FC800}"] = 7, -- video_ident 0-50
-    ["{CBD41D28-9308-4FEC-A330-35EAED9FC810}"] = 7, -- video_ident 0-50
-    ["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = 6, -- video_ident 50-70
-    ["{CBD41D28-9308-4FEC-A330-35EAED9FC811}"] = 6, -- video_ident 50-70
+    ["{CBD41D28-9308-4FEC-A330-35EAED9FC800}"] = 2, -- video_ident 0-50
+    ["{CBD41D28-9308-4FEC-A330-35EAED9FC810}"] = 2, -- video_ident 0-50
+    ["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = 2, -- video_ident 50-70
+    ["{CBD41D28-9308-4FEC-A330-35EAED9FC811}"] = 2, -- video_ident 50-70
     ["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = 2, -- video_ident 70-100
     ["{CBD41D28-9308-4FEC-A330-35EAED9FC812}"] = 2, -- video_ident 70-100
+	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = 7, -- video_ident user
+	["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = 6, -- ats
 
 	["{D4607B05-17C2-4C30-A303-69005A08C000}"] = 10, -- move backward
 	["{D4607B05-17C2-4C30-A303-69005A08C001}"] = 11, -- move backward
@@ -256,6 +259,7 @@ local desc_vguids = {
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = _get_video_recog_desc, 	-- video_ident 70-100
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC812}"] = false, 					-- video_ident 70-100
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = _get_video_recog_desc, 	-- video_ident (user)
+	["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = _get_video_recog_desc, 	-- video_ident (ats)
 	
 	["{19FF08BB-C344-495B-82ED-10B6CBAD508F}"] = _get_npu_desc,				-- NPU
 	

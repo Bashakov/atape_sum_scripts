@@ -60,12 +60,13 @@ local function GetRailGap(mark)
 	end
 
 	local KWs = { 
+		user = { a="CalcRailGap_User" }, 
 		top  = { p="VIDEOIDENTGWT", a="CalcRailGap_Head_Top"}, 
 		side = { p="VIDEOIDENTGWS", a="CalcRailGap_Head_Side"} 
 	}
 	
 	for k, v in pairs(KWs) do
-		local w = ext[v.p]
+		local w = v.p and ext[v.p]
 		if not w and ext.RAWXMLDATA then
 			local node = xmlDom:SelectSingleNode(sprintf('ACTION_RESULTS\z
 				/PARAM[@name="ACTION_RESULTS" and @value="%s"]\z
@@ -76,16 +77,11 @@ local function GetRailGap(mark)
 				w = tonumber(node.nodeValue) / 1000
 			end
 		end
-		res[k] = w
-	end
-	
-	local min_width, max_width
-	if res.top and res.side then
-		res.min = math.min(res.top, res.side)
-		res.max = math.max(res.top, res.side)
-	else
-		res.min = res.top or res.side
-		res.max = res.top or res.side
+		if w then
+			res[k] = w
+			res.min = w and res.min and math.min(w, res.min) or w
+			res.max = w and res.max and math.max(w, res.max) or w
+		end
 	end
 	
 	return res
@@ -449,6 +445,7 @@ local Filters =
 			"{CBD41D28-9308-4FEC-A330-35EAED9FC801}", 
 			"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
 			"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
+			"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
 			}
 	},
 	{
@@ -464,6 +461,7 @@ local Filters =
 			"{CBD41D28-9308-4FEC-A330-35EAED9FC801}", 
 			"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
 			"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
+			"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
 			},
 		filter = function(mark)
 			local all, defect = GetCrewJointSafe(mark)

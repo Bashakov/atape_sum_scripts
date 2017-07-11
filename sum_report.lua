@@ -10,6 +10,9 @@ excel_helper = require 'excel_helper'
 
 local sprintf = stuff.sprintf
 
+if not ShowVideo then
+	ShowVideo = 1
+end
 
 -- итератор по нодам xml
 local function SelectNodes(xml, xpath)
@@ -144,12 +147,15 @@ local function GetRailGap(mark)
 	end
 
 	local KWs = { 
+		user = { a="CalcRailGap_User"}, 
 		top  = { p="VIDEOIDENTGWT", a="CalcRailGap_Head_Top"}, 
 		side = { p="VIDEOIDENTGWS", a="CalcRailGap_Head_Side"} 
 	}
 	
+	local min_width = 1000
+	local max_width = 0
 	for k, v in pairs(KWs) do
-		local w = ext[v.p]
+		local w = v.p and ext[v.p]
 		if not w and ext.RAWXMLDATA then
 			local node = xmlDom:SelectSingleNode(sprintf('ACTION_RESULTS\z
 				/PARAM[@name="ACTION_RESULTS" and @value="%s"]\z
@@ -160,16 +166,11 @@ local function GetRailGap(mark)
 				w = tonumber(node.nodeValue) / 1000
 			end
 		end
-		res[k] = w
-	end
-	
-	local min_width, max_width
-	if res.top and res.side then
-		min_width = math.min(res.top, res.side)
-		max_width = math.max(res.top, res.side)
-	else
-		min_width = res.top or res.side
-		max_width = res.top or res.side
+		if w and not res.user then 
+			res[k] = w
+			min_width = w and min_width and math.min(w, min_width) or w
+			max_width = w and max_width and math.max(w, max_width) or w
+		end
 	end
 	
 	return res, min_width, max_width
@@ -317,6 +318,7 @@ local function report_crew_join(params)
 			["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = true,
 			["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = true,
 			["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = true,
+			["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = true,
 		}
 	
 		return function(mark)
@@ -360,10 +362,10 @@ local function report_crew_join(params)
 
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
 		local count, defect = GetCrewJointSafe(xmlDom)
-		local img_path = Driver:GetFrame( 
+		local img_path = ShowVideo ~= 0 and Driver:GetFrame( 
 			ext.VIDEOIDENTCHANNEL, 
 			prop.SysCoord, {
-				mark_id=prop.ID,
+				mark_id=(ShowVideo == 1) and prop.ID or 0,
 				mode=3, 
 				panoram_width=1500, 
 				frame_count=3, 
@@ -394,6 +396,11 @@ local function report_crew_join(params)
 		end
 	end 
 
+	if ShowVideo == 0 then 
+		excel:AutoFitDataRows()
+		data_range.Cells(nil, 5).ColumnWidth = 0
+		data_range.Cells(nil, 10).ColumnWidth = 0
+	end
 	excel:SaveAndShow()
 end
 
@@ -407,6 +414,7 @@ local function report_gaps(params)
 			["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = true,
 			["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = true,
 			["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = true,
+			["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = true,
 	}
 	
 	local dlg = luaiup_helper.ProgressDlg()
@@ -430,14 +438,14 @@ local function report_gaps(params)
 	if filter_mode == 1 or filter_mode == 3 then
 		local function ff(mark)
 			local widths, min_width, max_width = GetRailGap(mark)
-			return (filter_mode == 1 and min_width <= 3) or (filter_mode == 3 and max_width >= 22)
+			return (filter_mode == 1 and min_width and min_width <= 3) or (filter_mode == 3 and max_width and max_width >= 22)
 		end
 		marks = FilterSort(marks, ff, nil, function(val, desc) dlg:step(val, desc) end)
 		
 	elseif filter_mode == 5 then
 		local function ff(mark)
 			local widths, min_width, max_width = GetRailGap(mark)
-			return ( max_width >= 35 )
+			return ( max_width and max_width >= 35 )
 		end
 		marks = FilterSort(marks, ff, nil, function(val, desc) dlg:step(val, desc) end)		
 		
@@ -481,16 +489,17 @@ local function report_gaps(params)
 		
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
 		local temperature = Driver:GetTemperature(bit32.band(prop.RailMask, 3)-1, prop.SysCoord)
-		local img_path = Driver:GetFrame( 
-			ext.VIDEOIDENTCHANNEL, 
-			prop.SysCoord, {
-				mark_id=prop.ID,
-				mode=3, 
-				panoram_width=1500, 
-				frame_count=3, 
-				width=400, 
-				height=300,
-			} )
+		
+		local img_path = ShowVideo ~= 0 and Driver:GetFrame( 
+				ext.VIDEOIDENTCHANNEL, 
+				prop.SysCoord, {
+					mark_id = (ShowVideo == 1) and prop.ID or 0,
+					mode=3, 
+					panoram_width=1500, 
+					frame_count=3, 
+					width=400, 
+					height=300,
+				} )
 		local uri = make_mark_uri(prop.ID)
 		
 		temperature = temperature and temperature.target
@@ -540,6 +549,11 @@ local function report_gaps(params)
 		end
 	end 
 	
+	if ShowVideo == 0 then 
+		excel:AutoFitDataRows()
+		data_range.Cells(nil, 8).ColumnWidth = 0
+		data_range.Cells(nil, 17).ColumnWidth = 0
+	end
 	excel:SaveAndShow()
 end
 
@@ -598,10 +612,10 @@ local function report_welding(params)
 		
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
 		local temperature = Driver:GetTemperature(bit32.band(prop.RailMask, 3)-1, prop.SysCoord)
-		local img_path = Driver:GetFrame( 
+		local img_path = ShowVideo ~= 0 and Driver:GetFrame( 
 			ext.VIDEOIDENTCHANNEL, 
 			prop.SysCoord, {
-				mark_id=prop.ID,
+				mark_id=(ShowVideo == 1) and prop.ID or 0,
 				mode=3,
 				panoram_width=1500, 
 				frame_count=3, 
@@ -643,6 +657,11 @@ local function report_welding(params)
 		end
 	end 
 
+	if ShowVideo == 0 then 
+		excel:AutoFitDataRows()
+		data_range.Cells(nil, 8).ColumnWidth = 0
+		data_range.Cells(nil, 16).ColumnWidth = 0
+	end
 	excel:SaveAndShow()
 end
 
@@ -684,7 +703,7 @@ local function report_unspec_obj(params)
 		local rail = left_mask == bit32.band(prop.RailMask, 0x3) and "Левый" or "Правый"
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
 		
-		local img_path = Driver:GetFrame( ext.VIDEOIDENTCHANNEL, prop.SysCoord, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
+		local img_path = ShowVideo ~= 0 and Driver:GetFrame( ext.VIDEOIDENTCHANNEL, prop.SysCoord, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
 		local uri = make_mark_uri(prop.ID)
 		
 		data_range.Cells(line, 1).Value2 = rail
@@ -701,6 +720,10 @@ local function report_unspec_obj(params)
 		end
 	end 
 
+	if ShowVideo == 0 then 
+		excel:AutoFitDataRows()
+		data_range.Cells(5).ColumnWidth = 0
+	end
 	excel:SaveAndShow()
 end
 
@@ -771,6 +794,7 @@ local gap_rep_filter_guids =
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC801}",
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
+	"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
 }
 
 local beacon_rep_filter_guids = 

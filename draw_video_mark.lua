@@ -91,6 +91,7 @@ local function ProcessCalcRailGap(drawer, frame, dom)
 	local colors = {
 		CalcRailGap_Head_Top = {r=255, g=255, b=0},
 		CalcRailGap_Head_Side = {r=0, g=255, b=255},
+		CalcRailGap_User = {r=255, g=0, b=255},
 	}
 	
 	local req = '\z
@@ -292,8 +293,6 @@ local function DrawRecognitionMark(drawer, frame, mark)
 	local prop, ext = mark.prop, mark.ext
 	local raw_xml = ext.RAWXMLDATA
 	if raw_xml then 
-		--raw_xml = '<ACTION_RESULTS version="1.4"><PARAM name="ACTION_RESULTS" value="CalcRailGap_Head_Top"><PARAM name="FrameNumber" value="0" coord="284142"><PARAM name="Result" value="main"><PARAM name="Coord" type="polygon" value="550,784 550,670 587,670 587,784"/><PARAM name="RailGapWidth_mkm" value="37000"/></PARAM></PARAM></PARAM><PARAM name="ACTION_RESULTS" value="CalcRailGap_Head_Side"><PARAM name="FrameNumber" value="0" coord="284142"><PARAM name="Result" value="main"><PARAM name="Coord" type="polygon" value="550,670 550,592 587,592 587,670"/><PARAM name="RailGapWidth_mkm" value="37000"/></PARAM></PARAM></PARAM><PARAM name="ACTION_RESULTS" value="Fishplate"><PARAM name="FrameNumber" value="0" coord="284142"><PARAM name="Result" value="main"><PARAM name="FishplateEdge" value="1"><PARAM name="Coord" type="polygon" value="68,559 68,292"/></PARAM></PARAM></PARAM><PARAM name="FrameNumber" value="1" coord="285166"><PARAM name="Result" value="main"><PARAM name="FishplateEdge" value="2"><PARAM name="Coord" type="polygon" value="44,559 44,292"/></PARAM></PARAM></PARAM></PARAM><PARAM name="ACTION_RESULTS" value="CrewJoint"><PARAM name="FrameNumber" value="0" coord="284142"><PARAM name="Result" value="main"><PARAM name="JointNumber" value="0"><PARAM name="Coord" type="ellipse" value="114,433,22,22"/><PARAM name="CrewJointSafe" value="-1" _value="-1(нет), 0(болтается), 1(есть)"/></PARAM><PARAM name="JointNumber" value="1"><PARAM name="Coord" type="ellipse" value="246,422,26,43"/><PARAM name="CrewJointSafe" value="1" _value="-1(нет), 0(болтается), 1(есть)"/></PARAM><PARAM name="JointNumber" value="2"><PARAM name="Coord" type="ellipse" value="468,416,26,43"/><PARAM name="CrewJointSafe" value="1" _value="-1(нет), 0(болтается), 1(есть)"/></PARAM><PARAM name="JointNumber" value="3"><PARAM name="Coord" type="ellipse" value="675,415,26,43"/><PARAM name="CrewJointSafe" value="1" _value="-1(нет), 0(болтается), 1(есть)"/></PARAM><PARAM name="JointNumber" value="4"><PARAM name="Coord" type="ellipse" value="894,413,26,43"/><PARAM name="CrewJointSafe" value="1" _value="-1(нет), 0(болтается), 1(есть)"/></PARAM><PARAM name="JointNumber" value="5"><PARAM name="Coord" type="ellipse" value="1016,424,22,22"/><PARAM name="CrewJointSafe" value="-1" _value="-1(нет), 0(болтается), 1(есть)"/></PARAM></PARAM></PARAM></PARAM><PARAM name="ACTION_RESULTS" value="Common"><PARAM name="Reliability" value="80"/><PARAM name="RecogObjCoord" value="284710" _desc="координата найденного объекта"/></PARAM></ACTION_RESULTS>'
-	
 		local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 		assert(xmlDom)
 		xmlDom:loadXML(raw_xml)
@@ -418,7 +417,8 @@ local recorn_guids =
 {
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = DrawRecognitionMark, --VID_INDT
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = DrawRecognitionMark, --VID_INDT
-	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = DrawRecognitionMark, --VID_INDT
+	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = DrawRecognitionMark, --USER
+	["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = DrawRecognitionMark, --ATS
 	
 	["{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"] = DrawRecognitionMark,	
 	
