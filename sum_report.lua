@@ -152,8 +152,8 @@ local function GetRailGap(mark)
 		side = { p="VIDEOIDENTGWS", a="CalcRailGap_Head_Side"} 
 	}
 	
-	local min_width = 1000
-	local max_width = 0
+	local min_width
+	local max_width
 	for k, v in pairs(KWs) do
 		local w = v.p and ext[v.p]
 		if not w and ext.RAWXMLDATA then
@@ -331,7 +331,20 @@ local function report_crew_join(params)
 			
 			xmlDom:loadXML(mark.ext.RAWXMLDATA)
 			local cnt, defect = GetCrewJointSafe(xmlDom)
-			return (filter_mode == 2 and defect >= 2) or (filter_mode == 3 and defect < 2)
+			
+			local is_defect = true
+			if cnt == 6 then
+				is_defect = defect >= 3
+			elseif cnt == 4 then
+				is_defect = defect >= 2
+			end
+
+			if filter_mode == 2 then
+				return is_defect
+			end
+				
+			-- filter_mode == 3 
+			return not is_defect
 		end
 	end
 	
@@ -455,6 +468,7 @@ local function report_gaps(params)
 		
 		for _, mark in ipairs(marks) do
 			local _, min_width, _ = GetRailGap(mark)
+			min_width = min_width or 100000
 			local prev = prev_gap_width[mark.prop.RailMask] 
 			if prev and prev.width <= 3 and min_width <= 3 then
 				mark_ids[prev.ID] = true
@@ -491,15 +505,15 @@ local function report_gaps(params)
 		local temperature = Driver:GetTemperature(bit32.band(prop.RailMask, 3)-1, prop.SysCoord)
 		
 		local img_path = ShowVideo ~= 0 and Driver:GetFrame( 
-				ext.VIDEOIDENTCHANNEL, 
-				prop.SysCoord, {
-					mark_id = (ShowVideo == 1) and prop.ID or 0,
-					mode=3, 
-					panoram_width=1500, 
-					frame_count=3, 
-					width=400, 
-					height=300,
-				} )
+			ext.VIDEOIDENTCHANNEL, 
+			prop.SysCoord, {
+				mark_id = (ShowVideo == 1) and prop.ID or 0,
+				mode=3, 
+				panoram_width=1500, 
+				frame_count=3, 
+				width=400, 
+				height=300,
+			} )
 		local uri = make_mark_uri(prop.ID)
 		
 		temperature = temperature and temperature.target
