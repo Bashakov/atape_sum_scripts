@@ -102,7 +102,11 @@ local function ProcessCalcRailGap(drawer, frame, dom)
 	for node in SelectNodes(dom, req) do
 		local gap_type =  node:SelectSingleNode("../../@value").nodeValue
 		local color = colors[gap_type]
-		if color then
+		
+		local fig_channel = node:SelectSingleNode("../../@channel")
+		fig_channel = fig_channel and tonumber(fig_channel.nodeValue)
+		
+		if color and (not fig_channel or not frame.channel or fig_channel == frame.channel) then
 			local item_frame = node:SelectSingleNode("../@coord").nodeValue
 			local polygon = node:SelectSingleNode('PARAM[@name="Coord" and @type="polygon" and @value]/@value').nodeValue
 			local width = node:SelectSingleNode('PARAM[@name="RailGapWidth_mkm" and @value]/@value').nodeValue
@@ -156,18 +160,22 @@ local function DrawFishplate(drawer, frame, dom)
 		local item_frame = node:SelectSingleNode("../../../@coord").nodeValue
 		local polygon = node:SelectSingleNode('@value').nodeValue
 		
-		local x1,y1, x2,y2 = string.match(polygon, '(%d+),(%d+)%s+(%d+),(%d+)')
-		x1, y1 = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, x1, y1)
-		x2, y2 = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, x2, y2)
-		
-		if x1 and y1 and x2 and y2 then
-			if #points ~= 0 then
-				x1, y1, x2, y2 = x2, y2, x1, y1
+		local fig_channel = node:SelectSingleNode("../../../../@channel")
+		fig_channel = fig_channel and tonumber(fig_channel.nodeValue)
+		if not fig_channel or not frame.channel or fig_channel == frame.channel then
+			local x1,y1, x2,y2 = string.match(polygon, '(%d+),(%d+)%s+(%d+),(%d+)')
+			x1, y1 = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, x1, y1)
+			x2, y2 = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, x2, y2)
+			
+			if x1 and y1 and x2 and y2 then
+				if #points ~= 0 then
+					x1, y1, x2, y2 = x2, y2, x1, y1
+				end
+				table.insert(points, x1)
+				table.insert(points, y1)
+				table.insert(points, x2)
+				table.insert(points, y2)
 			end
-			table.insert(points, x1)
-			table.insert(points, y1)
-			table.insert(points, x2)
-			table.insert(points, y2)
 		end
 	end
 	
@@ -203,8 +211,11 @@ local function DrawCrewJoint(drawer, frame, dom)
 		local elipse = node:SelectSingleNode('PARAM[@name="Coord" and @type="ellipse" and @value]/@value').nodeValue
 		local safe = tonumber(node:SelectSingleNode('PARAM[@name="CrewJointSafe" and @value]/@value').nodeValue)
 		
+		local fig_channel = node:SelectSingleNode("../../../@channel")
+		fig_channel = fig_channel and tonumber(fig_channel.nodeValue)
+		
 		local color = colors[safe]
-		if color then
+		if color and (not fig_channel or not frame.channel or fig_channel == frame.channel) then
 			local cx, cy, rx, ry = elipse:match('(%d+),(%d+),(%d+),(%d+)')
 			--cx, cy = Convertor:ScalePoint(cx, cy)
 			cx, cy = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, cx, cy)
