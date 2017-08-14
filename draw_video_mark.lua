@@ -193,9 +193,11 @@ end
 
 local function DrawCrewJoint(drawer, frame, dom)
 	local colors = {
-		[-1] = {r=255, g=0,   b=0},
-		[ 0] = {r=255, g=255, b=0},
-		[ 1] = {r=128, g=128, b=255}, }
+		[-1] = {r=255, g=0,   b=0},		-- нет
+		[ 0] = {r=255, g=255, b=0},		-- болтается
+		[ 1] = {r=128, g=128, b=255},	-- есть
+		[10] = {r=255, g=90, b=255}, 	-- пользователь
+		}
 	
 	local cur_frame_coord = frame.coord.raw
 
@@ -209,7 +211,8 @@ local function DrawCrewJoint(drawer, frame, dom)
 		local num = xml_attr(node, "value")
 		local item_frame = node:SelectSingleNode("../../@coord").nodeValue
 		local elipse = node:SelectSingleNode('PARAM[@name="Coord" and @type="ellipse" and @value]/@value').nodeValue
-		local safe = tonumber(node:SelectSingleNode('PARAM[@name="CrewJointSafe" and @value]/@value').nodeValue)
+		local node_safe = node:SelectSingleNode('PARAM[@name="CrewJointSafe" and @value]/@value')
+		local safe = node_safe and tonumber(node_safe.nodeValue) or 10
 		
 		local fig_channel = node:SelectSingleNode("../../../@channel")
 		fig_channel = fig_channel and tonumber(fig_channel.nodeValue)

@@ -304,19 +304,29 @@ local column_recogn_reability =
 	end
 }
 
+local function get_bit_positions(mask)
+	local res = {}
+	for i = 1, 32 do
+		local t = bit32.lshift(1, i)
+		if bit32.btest(mask, t) then
+			table.insert(res, i)
+		end
+	end
+	return res
+end
+
 local column_recogn_video_channel = 
 {
 	name = 'Кнл', 
-	width = 33, 
+	width = 40, 
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
-		local c = mark.ext.VIDEOIDENTCHANNEL
-		return c
+		local channels = get_bit_positions(mark.prop.ChannelMask)
+		return table.concat(channels, ',')
 	end,
 	sorter = function(mark)
-		local c = mark.ext.VIDEOIDENTCHANNEL
-		return {c or 0}
+		return mark.prop.ChannelMask
 	end
 }
 
@@ -480,20 +490,20 @@ local Filters =
 			"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}",
 			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",}
 	},
-	--{
-	--	name = 'Скрепления',
-	--	columns = {
-	--		column_num,
-	--		column_path_coord, 
-	--		column_rail,
-	--		column_fastener_type,
-	--		column_fastener_fault,
-	--		column_recogn_reability,
-	--		column_fastener_width,
-	--		}, 
-	--	GUIDS = {
-	--		"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
-	--}
+	{
+		name = 'Скрепления',
+		columns = {
+			column_num,
+			column_path_coord, 
+			column_rail,
+			column_fastener_type,
+			column_fastener_fault,
+			column_recogn_reability,
+			column_fastener_width,
+			}, 
+		GUIDS = {
+			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
+	}
 }
 
 -- внутренняя функция, возвращает описание фильтра по его имени

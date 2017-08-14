@@ -124,7 +124,7 @@ local function _get_video_recog_desc(mark, desc)
 	if prop.VIDEOIDENTGWT then                desc = desc .. sprintf('\nШирина по пов.  катания(коррек.): %d мм', prop.VIDEOIDENTGWT)        end
 	if prop.VIDEOIDENTGWS then                desc = desc .. sprintf('\nШирина по рабочей грани(коррек.): %d мм', prop.VIDEOIDENTGWS)        end
 
-	desc = desc .. sprintf('\n Видео канал [%d]', ChannelMask2videoChannels(mark.ChannelMask))
+	desc = desc .. sprintf('\n Видео канал [%s]', ChannelMask2videoChannels(mark.ChannelMask))
 
 	local gf = "" --1 and ' стык найден' or ' стык НЕ найден'
 	desc = desc .. sprintf('\nдостоверность : %d | %s\n', prop.VIDEOIDENTRLBLT, gf)

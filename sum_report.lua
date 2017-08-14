@@ -43,7 +43,7 @@ local function GetCrewJointSafe(xmlDom)
 	return count, defect
 end
 
--- сделать строку ссылку для открытия отейпа на данной отметке
+-- сделать строку ссылку для открытия атейпа на данной отметке
 local function make_mark_uri(markid)
 	local link = stuff.sprintf(" -g %s -mark %d", Passport.GUID, markid)
 	link = string.gsub(link, "[%s{}]", function (c)
