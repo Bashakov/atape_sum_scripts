@@ -193,12 +193,13 @@ end
 
 local function DrawCrewJoint(drawer, frame, dom)
 	local colors = {
-		[-1] = {r=255, g=0,   b=0},		-- нет
-		[ 0] = {r=255, g=255, b=0},		-- болтается
-		[ 1] = {r=128, g=128, b=255},	-- есть
-		[10] = {r=255, g=90, b=255}, 	-- пользователь
-		}
-	
+		[-1] = {r=255, g=0,   b=0},  	-- отсутствует
+		[ 0] = {r=255, g=255, b=0},  	-- болтается
+		[ 1] = {r=128, g=128, b=255},  	-- есть 
+		[ 2] = {r=128, g=192, b=255},   -- болт
+		[ 3] = {r=128, g=64, b=255},    -- гайка	
+	}	
+		
 	local cur_frame_coord = frame.coord.raw
 
 	local req = '\z
@@ -212,12 +213,13 @@ local function DrawCrewJoint(drawer, frame, dom)
 		local item_frame = node:SelectSingleNode("../../@coord").nodeValue
 		local elipse = node:SelectSingleNode('PARAM[@name="Coord" and @type="ellipse" and @value]/@value').nodeValue
 		local node_safe = node:SelectSingleNode('PARAM[@name="CrewJointSafe" and @value]/@value')
-		local safe = node_safe and tonumber(node_safe.nodeValue) or 10
+		local safe = node_safe and tonumber(node_safe.nodeValue)
 		
 		local fig_channel = node:SelectSingleNode("../../../@channel")
 		fig_channel = fig_channel and tonumber(fig_channel.nodeValue)
 		
-		local color = colors[safe]
+		local color = colors[safe] or {r=128, g=128, b=128}
+		
 		if color and (not fig_channel or not frame.channel or fig_channel == frame.channel) then
 			local cx, cy, rx, ry = elipse:match('(%d+),(%d+),(%d+),(%d+)')
 			--cx, cy = Convertor:ScalePoint(cx, cy)

@@ -4,6 +4,7 @@ end
 
 -- OOP = require 'OOP'
 
+mark_helper = require 'sum_mark_helper'
 stuff = require 'stuff'
 luaiup_helper = require 'luaiup_helper'
 excel_helper = require 'excel_helper'
@@ -433,7 +434,7 @@ local function report_gaps(params)
 	local dlg = luaiup_helper.ProgressDlg()
 	local marks = Driver:GetMarks()
 	marks = FilterSort(marks, 
-		function(mark) return guids[mark.prop.Guid] and mark.ext.RAWXMLDATA and  mark.ext.VIDEOIDENTCHANNEL end,
+		function(mark) return guids[mark.prop.Guid] and mark.ext.RAWXMLDATA end,
 		function(mark) return {mark.prop.SysCoord} end,
 		function(val, desc) dlg:step(val, desc) end)
 
@@ -503,9 +504,10 @@ local function report_gaps(params)
 		
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
 		local temperature = Driver:GetTemperature(bit32.band(prop.RailMask, 3)-1, prop.SysCoord)
-		
-		local img_path = ShowVideo ~= 0 and Driver:GetFrame( 
-			ext.VIDEOIDENTCHANNEL, 
+		local recog_video_channels = mark_helper.GetSelectedBits(mark.prop.ChannelMask)
+
+		local img_path = #recog_video_channels ~= 0 and ShowVideo ~= 0 and Driver:GetFrame( 
+			recog_video_channels[1], 
 			prop.SysCoord, {
 				mark_id = (ShowVideo == 1) and prop.ID or 0,
 				mode=3, 

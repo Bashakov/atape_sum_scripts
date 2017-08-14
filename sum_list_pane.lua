@@ -1,3 +1,5 @@
+mark_helper = require 'sum_mark_helper'
+
 local sprintf = function(s,...)	return s:format(...) 			end
 local printf = function(s,...)	print(s:format(...)) 			end
 
@@ -238,54 +240,22 @@ local column_mag_use_recog =
 	end
 }
 
-local column_recogn_width_head = 
+local column_recogn_width = 
 {
-	name = 'ШПК', 
+	name = 'Шир', 
 	width = 37, 
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
-		local w = GetRailGap(mark)
-		return w.top and sprintf('%.1f', w.top) or ''
+		local w = mark_helper.GetGapWidth(mark)
+		return w and sprintf('%.1f', w) or ''
 	end,
 	sorter = function(mark)
-		local w = GetRailGap(mark)
-		return {w.top or 0}
+		local w = mark_helper.GetGapWidth(mark)
+		return {w or 0}
 	end
 }
 
-local column_recogn_width_side = 
-{
-	name = 'ШРГ', 
-	width = 35, 
-	align = 'r', 
-	text = function(row)
-		local mark = work_marks_list[row]
-		local w = GetRailGap(mark)
-		return w.side and sprintf('%.1f', w.side) or ''
-	end,
-	sorter = function(mark)
-		local w = GetRailGap(mark)
-		return {w.side or 0}
-	end
-}
-
-
-local column_recogn_width_diff = 
-{
-	name = 'Рзн', 
-	width = 30, 
-	align = 'r', 
-	text = function(row)
-		local mark = work_marks_list[row]
-		local w = GetRailGap(mark)
-		return w.side and w.top and sprintf('%.1f', w.top - w.side) or ''
-	end,
-	sorter = function(mark)
-		local w = GetRailGap(mark)
-		return {w.side and w.top and w.top - w.side or 0}
-	end
-}
 
 local column_recogn_reability = 
 {
@@ -304,16 +274,7 @@ local column_recogn_reability =
 	end
 }
 
-local function get_bit_positions(mask)
-	local res = {}
-	for i = 1, 32 do
-		local t = bit32.lshift(1, i)
-		if bit32.btest(mask, t) then
-			table.insert(res, i)
-		end
-	end
-	return res
-end
+
 
 local column_recogn_video_channel = 
 {
@@ -322,7 +283,7 @@ local column_recogn_video_channel =
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
-		local channels = get_bit_positions(mark.prop.ChannelMask)
+		local channels = mark_helper.GetSelectedBits(mark.prop.ChannelMask)
 		return table.concat(channels, ',')
 	end,
 	sorter = function(mark)
@@ -444,10 +405,8 @@ local Filters =
 			column_num, 
 			column_path_coord, 
 			column_rail,
-			column_recogn_width_head,
-			column_recogn_width_side,
+			column_recogn_width,
 			column_recogn_bolt,
-			column_recogn_width_diff,
 			column_recogn_reability,
 			column_recogn_video_channel,
 			}, 
@@ -490,20 +449,20 @@ local Filters =
 			"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}",
 			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",}
 	},
-	{
-		name = 'Скрепления',
-		columns = {
-			column_num,
-			column_path_coord, 
-			column_rail,
-			column_fastener_type,
-			column_fastener_fault,
-			column_recogn_reability,
-			column_fastener_width,
-			}, 
-		GUIDS = {
-			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
-	}
+--	{
+--		name = 'Скрепления',
+--		columns = {
+--			column_num,
+--			column_path_coord, 
+--			column_rail,
+--			column_fastener_type,
+--			column_fastener_fault,
+--			column_recogn_reability,
+--			column_fastener_width,
+--			}, 
+--		GUIDS = {
+--			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
+--	}
 }
 
 -- внутренняя функция, возвращает описание фильтра по его имени
