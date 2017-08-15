@@ -240,39 +240,45 @@ local column_mag_use_recog =
 	end
 }
 
-local column_recogn_width = 
-{
-	name = 'Шир', 
-	width = 37, 
-	align = 'r', 
-	text = function(row)
-		local mark = work_marks_list[row]
-		local w = mark_helper.GetGapWidth(mark)
-		return w and sprintf('%.1f', w) or ''
-	end,
-	sorter = function(mark)
-		local w = mark_helper.GetGapWidth(mark)
-		return {w or 0}
-	end
-}
+local function make_column_recogn_width(name, source)
+	return {
+		name = name, 
+		width = 37, 
+		align = 'r', 
+		text = function(row)
+			local mark = work_marks_list[row]
+			local w = mark_helper.GetGapWidthName(mark, source)
+			return w and sprintf('%.1f', w) or ''
+		end,
+		sorter = function(mark)
+			local w = mark_helper.GetGapWidthName(mark, source)
+			return {w or 0}
+		end
+	}
+end
+
+local column_recogn_width_inactive = make_column_recogn_width("ШНГ", 'inactive')
+local column_recogn_width_active = make_column_recogn_width("ШРГ", 'active')
+local column_recogn_width_tread = make_column_recogn_width("ШПК", 'thread')
+local column_recogn_width_user = make_column_recogn_width("ШП", 'user')
 
 
-local column_recogn_reability = 
-{
-	name = 'Дст', 
-	width = 32, 
-	align = 'r', 
-	text = function(row)
-		local mark = work_marks_list[row]
-		local r = mark.ext.VIDEOIDENTRLBLT
-		return r
-	end,
-	sorter = function(mark)
-		local r = mark.ext.VIDEOIDENTRLBLT
-		r = r and tonumber(r) or 0
-		return {r}
-	end
-}
+--local column_recogn_reability = 
+--{
+--	name = 'Дст', 
+--	width = 32, 
+--	align = 'r', 
+--	text = function(row)
+--		local mark = work_marks_list[row]
+--		local r = mark.ext.VIDEOIDENTRLBLT
+--		return r
+--	end,
+--	sorter = function(mark)
+--		local r = mark.ext.VIDEOIDENTRLBLT
+--		r = r and tonumber(r) or 0
+--		return {r}
+--	end
+--}
 
 
 
@@ -405,9 +411,11 @@ local Filters =
 			column_num, 
 			column_path_coord, 
 			column_rail,
-			column_recogn_width,
+			column_recogn_width_inactive,
+			column_recogn_width_active,
+			column_recogn_width_tread,
+			column_recogn_width_user,
 			column_recogn_bolt,
-			column_recogn_reability,
 			column_recogn_video_channel,
 			}, 
 		GUIDS = {

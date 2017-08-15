@@ -62,6 +62,9 @@ end
 -- выбрать ширину зазора из таблицы {номер_канала:ширина} в соответствии с приоритетами каналов, 
 -- сначала 19,20 (внешняя камера), потом 17,18 (внутренняя), остальные (в тч. непромаркированные)
 local function SelectWidthFromChannelsWidths(channel_widths)
+	if not channel_widths then 
+		return nil
+	end
 	local width = 
 		channel_widths[19] or channel_widths[20] or
 		channel_widths[17] or channel_widths[18]
@@ -69,9 +72,10 @@ local function SelectWidthFromChannelsWidths(channel_widths)
 	if not width then
 		_, width = next(channel_widths)
 	end
-	return width or 0
+	return width
 end
 
+-- получить результирующую ширину зазора
 local function GetGapWidth(mark)
 	local widths = GetAllGapWidth(mark)
 	
@@ -93,10 +97,34 @@ local function GetGapWidth(mark)
 	return nil
 end
 
+-- получить конкретную ширину зазора ('inactive', 'active', 'thread', 'user')
+local function GetGapWidthName(mark, name)
+	local widths = GetAllGapWidth(mark)
+	
+	if name == 'inactive' then -- нерабочая: боковая по 19,20 каналу
+		local w = widths.CalcRailGap_Head_Side
+		return w and (w[19] or w[20])
+	elseif name == 'active' then -- рабочая: боковая по 17,18 каналу
+		local w = widths.CalcRailGap_Head_Side
+		return w and (w[17] or w[18] or w[0])
+	elseif name == 'thread' then -- поверх катания: 
+		local w = widths.CalcRailGap_Head_Top
+		return SelectWidthFromChannelsWidths(w)
+	elseif name == 'user' then -- поверх катания: 
+		for _, n in ipairs{'CalcRailGap_User', 'VIDEOIDENTGWS', 'VIDEOIDENTGWT'} do
+			if widths[n] then
+				return SelectWidthFromChannelsWidths(widths[n])
+			end
+		end
+		return nil
+	end
+	return nil
+end
 
 
 return{
 	GetAllGapWidth = GetAllGapWidth,
 	GetGapWidth = GetGapWidth,
-	GetSelectedBits=GetSelectedBits
+	GetSelectedBits=GetSelectedBits,
+	GetGapWidthName=GetGapWidthName
 }
