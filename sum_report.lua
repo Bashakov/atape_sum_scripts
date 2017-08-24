@@ -36,7 +36,7 @@ local function GetCrewJointSafe(xmlDom)
 	for node in SelectNodes(xmlDom, req_tmpl) do
 		count = count + 1
 		local safe = tonumber(node.nodeValue)
-		if safe ~= 1 then
+		if safe < 1 then
 			defect = defect + 1
 		end
 	end
@@ -750,11 +750,16 @@ local joint_filter_guids =
 	"{19253263-2C0B-41EE-8EAA-000000000040}",
 }
 
+local ats_joint_filter_guids = 
+{
+	"{19253263-2C0B-41EE-8EAA-000000000080}",
+}
+
 local function report_coord(params)
 	local dlg = luaiup_helper.ProgressDlg()
 	local marks = Driver:GetMarks()
 	local guids = {}
-	for _, g in ipairs(joint_filter_guids) do guids[g] = true end 
+	for _, g in ipairs(params.guids or joint_filter_guids) do guids[g] = true end 
 	
 	marks = FilterSort(marks, 
 		function(mark) return guids[mark.prop.Guid] end,
@@ -828,8 +833,11 @@ local Report_Functions = {
 	{name="Ведомость ненормативных объектов",fn=report_unspec_obj,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ненормативные объекты",},	guids=unspec_obj_filter_guids},	
 	--{name="КоордСтыков | 1",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=1}, 	guids=joint_filter_guids},
 	--{name="КоордСтыков | 2",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=2}, 	guids=joint_filter_guids},
-	--{name="КоордСтыков | 17",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=17}, 	guids=joint_filter_guids},
-	--{name="КоордСтыков | 18",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=18}, 	guids=joint_filter_guids},
+	{name=" коорд. cтыков (магн.) | 17",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=17}, 	guids=joint_filter_guids},
+	{name=" коорд. cтыков (магн.) | 18",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=18}, 	guids=joint_filter_guids},
+	
+	{name=" коорд. cтыков (магн.) | 17_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=17, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
+	{name=" коорд. cтыков (магн.) | 18_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=18, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
 }
 
 

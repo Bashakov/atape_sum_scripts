@@ -109,7 +109,7 @@ local function GetCrewJointSafe(mark)
 	for node in SelectNodes(xmlDom, req_tmpl) do
 		count = count + 1
 		local safe = tonumber(node.nodeValue)
-		if safe ~= 1 then
+		if safe < 1 then
 			defect = defect + 1
 		end
 	end
@@ -263,22 +263,22 @@ local column_recogn_width_tread = make_column_recogn_width("ШПК", 'thread')
 local column_recogn_width_user = make_column_recogn_width("ШП", 'user')
 
 
---local column_recogn_reability = 
---{
---	name = 'Дст', 
---	width = 32, 
---	align = 'r', 
---	text = function(row)
---		local mark = work_marks_list[row]
---		local r = mark.ext.VIDEOIDENTRLBLT
---		return r
---	end,
---	sorter = function(mark)
---		local r = mark.ext.VIDEOIDENTRLBLT
---		r = r and tonumber(r) or 0
---		return {r}
---	end
---}
+local column_recogn_reability = 
+{
+	name = 'Дст', 
+	width = 32, 
+	align = 'r', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local r = mark.ext.VIDEOIDENTRLBLT
+		return r
+	end,
+	sorter = function(mark)
+		local r = mark.ext.VIDEOIDENTRLBLT
+		r = r and tonumber(r) or 0
+		return {r}
+	end
+}
 
 
 
@@ -364,7 +364,7 @@ local column_fastener_fault =
 }
 
 local function GetFastenerWidth(mark)
-	local polygon = GetFastenerParamName1(mark, "Coord")
+	local polygon = GetFastenerParamName(mark, "Coord")
 	if polygon then
 		local points = table.pack(string.match(polygon .. ',', string.rep('(-?%d+)%D+', 8)))
 		return points[5] - points[1]
@@ -373,7 +373,7 @@ local function GetFastenerWidth(mark)
 end
 	
 
-column_fastener_width = 
+local column_fastener_width = 
 {
 	name = 'Шир', 
 	width = 40, 
@@ -388,6 +388,7 @@ column_fastener_width =
 		return {w}
 	end
 }
+
     			
 --=========================================================================== --
 
@@ -457,20 +458,20 @@ local Filters =
 			"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}",
 			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",}
 	},
---	{
---		name = 'Скрепления',
---		columns = {
---			column_num,
---			column_path_coord, 
---			column_rail,
---			column_fastener_type,
---			column_fastener_fault,
---			column_recogn_reability,
---			column_fastener_width,
---			}, 
---		GUIDS = {
---			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
---	}
+	{
+		name = 'Скрепления',
+		columns = {
+			column_num,
+			column_path_coord, 
+			column_rail,
+			column_fastener_type,
+			column_fastener_fault,
+			column_recogn_reability,
+			column_fastener_width,
+			}, 
+		GUIDS = {
+			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
+	}
 }
 
 -- внутренняя функция, возвращает описание фильтра по его имени

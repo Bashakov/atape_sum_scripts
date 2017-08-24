@@ -212,8 +212,7 @@ local function DrawCrewJoint(drawer, frame, dom)
 		local num = xml_attr(node, "value")
 		local item_frame = node:SelectSingleNode("../../@coord").nodeValue
 		local elipse = node:SelectSingleNode('PARAM[@name="Coord" and @type="ellipse" and @value]/@value').nodeValue
-		local node_safe = node:SelectSingleNode('PARAM[@name="CrewJointSafe" and @value]/@value')
-		local safe = node_safe and tonumber(node_safe.nodeValue)
+		local safe = tonumber(node:SelectSingleNode('PARAM[@name="CrewJointSafe" and @value]/@value').nodeValue)
 		
 		local fig_channel = node:SelectSingleNode("../../../@channel")
 		fig_channel = fig_channel and tonumber(fig_channel.nodeValue)
