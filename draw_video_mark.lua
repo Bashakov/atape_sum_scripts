@@ -34,6 +34,26 @@ local function ShowToolTip(drawer, x, y, fmt, ...)
 	drawer.text:multiline {x=x, y=y, str=message}
 end
 
+local function OutlineTextOut(drawer, x, y, text, params)
+	params = params or {}
+	drawer.text:font { name=params.font or "Tahoma", render="VectorFontCache", height=params.height or 13, bold=0}
+	drawer.text:alignment("AlignLeft", "AlignBottom")
+	
+	local tw, th = drawer.text:calcSize(text)
+	x = x - tw/2
+	y = y - th/2
+	
+	drawer.prop:lineWidth(3)
+	drawer.prop:fillColor{r=0, g=0, b=0, a=255}
+	drawer.prop:lineColor{r=0, g=0, b=0, a=255}
+	drawer.text:out{x=x, y=y, str=text}
+	
+	drawer.prop:lineWidth(1)
+	drawer.prop:fillColor{r=255, g=255, b=255, a=220}
+	drawer.prop:lineColor{r=255, g=255, b=255, a=220}
+	drawer.text:out{x=x, y=y, str=text}
+end
+
 
 local function xml_attr(node, name, def)
 	if type(name) == 'table' then
@@ -89,9 +109,9 @@ end
 local function ProcessCalcRailGap(drawer, frame, dom)
 	local cur_frame_coord = frame.coord.raw
 	local colors = {
-		CalcRailGap_Head_Top = {r=255, g=255, b=0},
-		CalcRailGap_Head_Side = {r=0, g=255, b=255},
-		CalcRailGap_User = {r=255, g=0, b=255},
+		CalcRailGap_Head_Top =  {r=255, g=255, b=0  },
+		CalcRailGap_Head_Side = {r=0,   g=255, b=255},
+		CalcRailGap_User =      {r=255, g=0,   b=255},
 	}
 	
 	local req = '\z
@@ -124,27 +144,48 @@ local function ProcessCalcRailGap(drawer, frame, dom)
 				--drawer.fig:rectangle(points[1], points[2], points[5], points[6])
 				local strWidth = sprintf('%.1f mm', tonumber(width) / 1000)
 				
-				drawer.text:font { name="Tahoma", render="VectorFontCache", height=13, bold=0}
-				drawer.text:alignment("AlignLeft", "AlignBottom")
-				
 				local tcx, tcy = get_center_point(points)
-				local tw, th = drawer.text:calcSize(strWidth)
-				tcx = tcx - tw/2
-				tcy = tcy - th/2
-				
-				drawer.prop:lineWidth(3)
-				drawer.prop:fillColor{r=0, g=0, b=0, a=255}
-				drawer.prop:lineColor{r=0, g=0, b=0, a=255}
-				drawer.text:out{x=tcx, y=tcy, str=strWidth}
-				
-				drawer.prop:lineWidth(1)
-				drawer.prop:fillColor{r=255, g=255, b=255, a=220}
-				drawer.prop:lineColor{r=255, g=255, b=255, a=220}
-				drawer.text:out{x=tcx, y=tcy, str=strWidth}
+				OutlineTextOut(drawer, tcx, tcy, strWidth)
 			end
 		end
 	end
 end
+
+local function ProcessRailGapStep(drawer, frame, dom)
+	local cur_frame_coord = frame.coord.raw
+		
+	local req = '\z
+		/ACTION_RESULTS\z
+		/PARAM[@name="ACTION_RESULTS" and @value="CalcRailGapStep"]\z
+		/PARAM[@name="FrameNumber" and @value="0" and @coord]\z
+		/PARAM[@name="Result" and @value="main"]'
+	for node in SelectNodes(dom, req) do
+
+		local fig_channel = node:SelectSingleNode("../../@channel")
+		fig_channel = fig_channel and tonumber(fig_channel.nodeValue)
+		
+		if not fig_channel or not frame.channel or fig_channel == frame.channel then
+			local item_frame = node:SelectSingleNode("../@coord").nodeValue
+			local line = node:SelectSingleNode('PARAM[@name="Coord" and @type="line" and @value]/@value').nodeValue
+			local width = node:SelectSingleNode('PARAM[@name="RailGapStepWidth" and @value]/@value').nodeValue
+		
+			local points = parse_polygon(line, cur_frame_coord, item_frame)
+			
+			if #points == 4 then
+				drawer.prop:lineWidth(2)
+				drawer.prop:fillColor(255, 0, 0, 20)
+				drawer.prop:lineColor(255, 0, 0, 200)
+				drawer.fig:line(points[1], points[2], points[3], points[4])
+				
+				local strWidth = sprintf('%.1f mm', tonumber(width))
+				
+				local tcx, tcy = get_center_point(points)
+				OutlineTextOut(drawer, tcx, tcy + 10, strWidth)
+			end
+		end
+	end
+end
+
 
 local function DrawFishplate(drawer, frame, dom)
 	local points = {}
@@ -186,7 +227,6 @@ local function DrawFishplate(drawer, frame, dom)
 		drawer.prop:lineColor(color.r, color.g, color.b, 200)
 		drawer.fig:polygon(points)
 	end
-	
 	
 	--ShowToolTip(drawer, 200, 200, sprintf("%d %d  %d %d", edges_rect[1], edges_rect[2], edges_rect[3], edges_rect[4]))
 end
@@ -282,24 +322,7 @@ local function DrawBeacon(drawer, frame, dom)
 			local tcy = (c1[4] + c2[2]) / 2
 			
 			local text = sprintf('%.1f mm', shifts.Beacon_Web.shift)
-		
-			drawer.text:font { name="Tahoma", render="VectorFontCache", height=13, bold=0}
-			drawer.text:alignment("AlignLeft", "AlignBottom")
-			
-			local tw, th = drawer.text:calcSize(text)
-			tcx = tcx - tw/2
-			--tcy = tcy - th/2
-			
-			drawer.prop:lineWidth(3)
-			drawer.prop:fillColor{r=0, g=0, b=0, a=255}
-			drawer.prop:lineColor{r=0, g=0, b=0, a=255}
-			drawer.text:out{x=tcx, y=tcy, str=text}
-			
-			drawer.prop:lineWidth(1)
-			drawer.prop:fillColor{r=255, g=255, b=255, a=220}
-			drawer.prop:lineColor{r=255, g=255, b=255, a=220}
-			drawer.text:out{x=tcx, y=tcy, str=text}
-		
+			OutlineTextOut(drawer, tcx, tcy, text)
 		end
 	end
 end
@@ -316,6 +339,7 @@ local function DrawRecognitionMark(drawer, frame, mark)
 		DrawFishplate(drawer, frame, xmlDom)
 		DrawCrewJoint(drawer, frame, xmlDom)
 		DrawBeacon(drawer, frame, xmlDom)
+		ProcessRailGapStep(drawer, frame, xmlDom)
 	end
 end
 
