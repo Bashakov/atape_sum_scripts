@@ -1,18 +1,12 @@
 mark_helper = require 'sum_mark_helper'
 
+local SelectNodes = mark_helper.SelectNodes
 local sprintf = function(s,...)	return s:format(...) 			end
 local printf = function(s,...)	print(s:format(...)) 			end
 
 local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 assert(xmlDom)
 
-
--- итератор по нодам xml
-local function SelectNodes(xml, xpath)
-	return function(nodes)
-		return nodes:nextNode()
-	end, xml:SelectNodes(xpath)
-end
 
 
 local function sort_marks(marks, fn, inc)
@@ -52,71 +46,6 @@ local function sort_marks(marks, fn, inc)
 end
 
 
--- получить ширины распознанных или отредактрованных ширин зазоров
-local function GetRailGap(mark)
-	local res = {}
-	
-	local ext = mark.ext
-	if ext.RAWXMLDATA then
-		xmlDom:loadXML(ext.RAWXMLDATA)	
-	end
-
-	local KWs = { 
-		user = { a="CalcRailGap_User" }, 
-		top  = { p="VIDEOIDENTGWT", a="CalcRailGap_Head_Top"}, 
-		side = { p="VIDEOIDENTGWS", a="CalcRailGap_Head_Side"} 
-	}
-	
-	for k, v in pairs(KWs) do
-		local w = v.p and ext[v.p]
-		if not w and ext.RAWXMLDATA then
-			local node = xmlDom:SelectSingleNode(sprintf('ACTION_RESULTS\z
-				/PARAM[@name="ACTION_RESULTS" and @value="%s"]\z
-				/PARAM[@name="FrameNumber"]\z
-				/PARAM[@name="Result" and @value="main"]\z
-				/PARAM[@name="RailGapWidth_mkm" and @value]/@value', v.a))
-			if node then
-				w = tonumber(node.nodeValue) / 1000
-			end
-		end
-		if w then
-			res[k] = w
-			res.min = w and res.min and math.min(w, res.min) or w
-			res.max = w and res.max and math.max(w, res.max) or w
-		end
-	end
-	
-	return res
-end
-
--- извлечь количество и качество болтов из xml
-local function GetCrewJointSafe(mark)
-	
-	local ext = mark.ext
-	if ext.RAWXMLDATA then
-		xmlDom:loadXML(ext.RAWXMLDATA)	
-	end
-	
-	local count, defect = 0, 0
-	local req_tmpl = '\z
-		/ACTION_RESULTS\z
-		/PARAM[@name="ACTION_RESULTS" and @value="CrewJoint"]\z
-		/PARAM[@name="FrameNumber" and @value]\z
-		/PARAM[@name="Result" and @value="main"]\z
-		/PARAM[@name="JointNumber" and @value]\z
-		/PARAM[@name="CrewJointSafe" and @value]/@value'
-
-	for node in SelectNodes(xmlDom, req_tmpl) do
-		count = count + 1
-		local safe = tonumber(node.nodeValue)
-		if safe < 1 then
-			defect = defect + 1
-		end
-	end
-
-	return count, defect
-end
-
 local function GetBeaconOffset(mark)
 	xmlDom:loadXML(mark.ext.RAWXMLDATA)
 	local node = xmlDom:SelectSingleNode('\z
@@ -128,6 +57,7 @@ local function GetBeaconOffset(mark)
 	return node and tonumber(node.nodeValue)/1000
 end
 
+-- получить пареметры скрепления
 local function GetFastenerParam(mark)
 	xmlDom:loadXML(mark.ext.RAWXMLDATA)
 	
@@ -147,6 +77,7 @@ local function GetFastenerParam(mark)
 	return res
 end
 
+-- получить параметр скрепления по имени (разбор xml)
 local function GetFastenerParamName(mark, name)
 	xmlDom:loadXML(mark.ext.RAWXMLDATA)
 	
@@ -160,6 +91,7 @@ local function GetFastenerParamName(mark, name)
 	return node and node.nodeValue
 end
 
+-- получить параметр скрепления по имени (поиск строки, работает не всегда)
 local function GetFastenerParamName1(mark, name)
 	local x = mark.ext.RAWXMLDATA
 	local req = 'PARAM%s+name%s*=%s*"' .. name .. '"%s*value%s*=%s*"([^"]+)"'
@@ -304,12 +236,12 @@ local column_recogn_bolt =
 	align = 'c', 
 	text = function(row)
 		local mark = work_marks_list[row]
-		local all, defect = GetCrewJointSafe(mark)
-		return all ~=0 and sprintf('%d/%d', all, defect) or ''
+		local all, defect = mark_helper.GetCrewJointCount(mark)
+		return all and all ~=0 and sprintf('%d/%d', all, defect) or ''
 	end,
 	sorter = function(mark)
-		local all, defect = GetCrewJointSafe(mark)
-		defect = (all == 0) and -1 or defect
+		local all, defect = mark_helper.GetCrewJointCount(mark)
+		defect = (all and all == 0) and -1 or defect
 		return {defect}
 	end
 }
@@ -331,6 +263,17 @@ local column_beacon_offset =
 	end
 }
 	
+local fastener_type_names = {
+	[0] = 'кб(кд)65',
+	[1] = 'apc',
+}
+	
+local fastener_fault_names = {
+	[0] = 'отсутствие неисправности',
+	[1] = 'отсутствие закладного болта kb65', 
+	[2] = 'отсуствие клеммы apc',
+}
+	
 local column_fastener_type = 
 {
 	name = 'Тип', 
@@ -339,7 +282,7 @@ local column_fastener_type =
 	text = function(row)
 		local mark = work_marks_list[row]
 		local FastenerType = GetFastenerParamName1(mark, 'FastenerType')
-		return FastenerType or ''
+		return FastenerType and (fastener_type_names[tonumber(FastenerType)] or FastenerType) or ''
 	end,
 	sorter = function(mark)
 		local FastenerType = GetFastenerParamName1(mark, 'FastenerType')
@@ -355,7 +298,7 @@ local column_fastener_fault =
 	text = function(row)
 		local mark = work_marks_list[row]
 		local FastenerFault = GetFastenerParamName1(mark, 'FastenerFault')
-		return FastenerFault or ''
+		return FastenerFault and (fastener_fault_names[tonumber(FastenerFault)] or FastenerFault) or ''
 	end,
 	sorter = function(mark)
 		local FastenerFault = GetFastenerParamName1(mark, 'FastenerFault')
@@ -442,8 +385,7 @@ local Filters =
 			"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
 			},
 		filter = function(mark)
-			local all, defect = GetCrewJointSafe(mark)
-			return all ~= 0 and defect ~= 0
+			return mark_helper.CheckCrewJointDefect(mark)
 		end,
 	},
 	{

@@ -385,6 +385,17 @@ local function DrawUnspecifiedObject(drawer, frame, mark)
 	end
 end
 
+local fastener_type_names = {
+	[0] = 'кб(кд)65',
+	[1] = 'apc',
+}
+	
+local fastener_fault_names = {
+	[0] = 'отсутствие неисправности',
+	[1] = 'отсутствие закладного болта kb65', 
+	[2] = 'отсуствие клеммы apc',
+}
+
 local function DrawFastener(drawer, frame, mark)
 	local prop, ext = mark.prop, mark.ext
 	local cur_frame_coord = frame.coord.raw
@@ -408,7 +419,8 @@ local function DrawFastener(drawer, frame, mark)
 	for node in SelectNodes(xmlDom, req) do
 		local nodeFastenerType = node:SelectSingleNode('../PARAM[@name="FastenerType" and @value]/@value')
 		local nodeFastenerFault = node:SelectSingleNode('../PARAM[@name="FastenerFault" and @value]/@value')
-		--print(nodeFastenerType)
+		nodeFastenerType = nodeFastenerType and nodeFastenerType.nodeValue
+		nodeFastenerFault = nodeFastenerFault and nodeFastenerFault.nodeValue
 		
 		local polygon = node:SelectSingleNode('@value').nodeValue
 	
@@ -426,8 +438,8 @@ local function DrawFastener(drawer, frame, mark)
 			
 			--drawer.fig:rectangle(points[1], points[2], points[5], points[6])
 			local strText = sprintf('Тип: %s\nНеиспр.: %s\nШир.: %d\n', 
-				nodeFastenerType and nodeFastenerType.nodeValue  or '', 
-				nodeFastenerFault and nodeFastenerFault.nodeValue or '',
+				nodeFastenerType and (fastener_type_names[tonumber(nodeFastenerType)] or nodeFastenerType) or '', 
+				nodeFastenerFault and (fastener_fault_names[tonumber(nodeFastenerFault)] or nodeFastenerFault) or '',
 				raw_points[5]- raw_points[1])
 			
 			drawer.text:font { name="Tahoma", render="VectorFontCache", height=11, bold=0}

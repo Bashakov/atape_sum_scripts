@@ -1,4 +1,5 @@
 -- итератор по нодам xml
+
 local function SelectNodes(xml, xpath)
 	return function(nodes)
 		return nodes:nextNode()
@@ -122,9 +123,72 @@ local function GetGapWidthName(mark, name)
 end
 
 
+-- извлечь количество и качество болтов из xml (если распз по неск каналам, то данные берутся последовательно из 17/18 потом из 19/20)
+local function GetCrewJointCount(mark)
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom)
+	
+	local ext = mark.ext
+	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA)	then
+		return nil
+	end
+	
+	local req = '\z
+		/ACTION_RESULTS\z
+		/PARAM[@name="ACTION_RESULTS" and @value="CrewJoint"]\z
+		/PARAM[@name="FrameNumber" and @value]\z
+		/PARAM[@name="Result" and @value="main"]\z
+		/PARAM[@name="JointNumber" and @value]\z
+		/PARAM[@name="CrewJointSafe" and @value]/@value'
+
+	local res = {}
+
+	for node in SelectNodes(xmlDom, req) do
+		local video_channel = node:SelectSingleNode("../../../../@channel")
+		video_channel = video_channel and tonumber(video_channel.nodeValue) or 0
+		
+		if not res[video_channel] then
+			res[video_channel] = {0, 0}
+		end
+		
+		res[video_channel][1] = res[video_channel][1] + 1
+		local safe = tonumber(node.nodeValue)
+		if safe < 1 then
+			res[video_channel][2] = res[video_channel][2] + 1
+		end
+	end
+
+	res = res[17] or res[18] or res[19] or res[20] or res[0]
+	if res then
+		return table.unpack(res)
+	end
+end
+
+
+local function CheckCrewJointDefect(mark)
+	local cnt, defect = GetCrewJointCount(mark)
+	
+	local is_defect = false
+	if not cnt or cnt == 0 then
+		-- no action
+	elseif cnt == 6 then
+		is_defect = defect >= 3
+	elseif cnt == 4 then
+		is_defect = defect >= 2
+	else
+		is_defect = true
+	end
+	
+	return is_defect
+end
+
+
 return{
+	SelectNodes = SelectNodes,
 	GetAllGapWidth = GetAllGapWidth,
 	GetGapWidth = GetGapWidth,
-	GetSelectedBits=GetSelectedBits,
-	GetGapWidthName=GetGapWidthName
+	GetSelectedBits = GetSelectedBits,
+	GetGapWidthName = GetGapWidthName,
+	GetCrewJointCount = GetCrewJointCount,
+	CheckCrewJointDefect = CheckCrewJointDefect,
 }
