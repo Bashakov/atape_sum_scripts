@@ -144,7 +144,7 @@ local function GetCrewJointCount(mark)
 	local res = {}
 
 	for node in SelectNodes(xmlDom, req) do
-		local video_channel = node:SelectSingleNode("../../../../@channel")
+		local video_channel = node:SelectSingleNode("../../../../../@channel")
 		video_channel = video_channel and tonumber(video_channel.nodeValue) or 0
 		
 		if not res[video_channel] then
