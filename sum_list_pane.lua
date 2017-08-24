@@ -1,6 +1,7 @@
 mark_helper = require 'sum_mark_helper'
 
 local SelectNodes = mark_helper.SelectNodes
+
 local sprintf = function(s,...)	return s:format(...) 			end
 local printf = function(s,...)	print(s:format(...)) 			end
 
@@ -12,33 +13,34 @@ assert(xmlDom)
 local function sort_marks(marks, fn, inc)
 	local start_time = os.clock()
 	
-	local keys = {}
+	local keys = {}	-- массив ключей, который будем сортировать
 	for i, mark in ipairs(marks) do
-		local key = fn(mark)
-		--print(key[1])
-		key[#key+1] = i
-		table.insert(keys, key)
+		local key = fn(mark)	-- создадим ключ (каждый ключ - массив), с сортируемой характеристикой
+		key[#key+1] = i 		-- добавим текущий номер отметки номер последним элементом, для стабильности сортировки
+		keys[#keys+1] = key 	-- и вставим в таблицу ключей 
 	end
+	
 	assert(#keys == #marks)
 	local fetch_time = os.clock()
 
-	table.sort(keys, function(t1, t2)
-			if inc ~= 0 then 
-				t1, t2 = t2, t1
-			end
-			for i = 1, #t1 do
-				local a,b = t1[i], t2[i]
-				if a < b then return true end
-				if b < a then return false end
-			end
-			return false
-		end)
+	local compare_fn = function(t1, t2)  -- функция сравнения массивов, поэлементное сравнение 
+		if inc ~= 0 then 
+			t1, t2 = t2, t1
+		end
+		for i = 1, #t1 do
+			local a, b = t1[i], t2[i]
+			if a < b then return true end
+			if b < a then return false end
+		end
+		return false
+	end
+	table.sort(keys, sort_fn)  -- сортируем массив с ключами
 	local sort_time = os.clock()
 
-	local tmp = {}
+	local tmp = {}	-- сюда скопируем отметки в нужном порядке
 	for i, key in ipairs(keys) do
-		tmp[i] = marks[key[#key]]
-		--print(key[1])
+		local mark_pos = key[#key] -- номер отметки в изначальном списке мы поместили последним элементом ключа
+		tmp[i] = marks[mark_pos] -- берем эту отметку и помещаем на нужное место
 	end
 	-- print(inc, #marks, #tmp)
 	printf('fetch: %.2f,  sort = %.2f', fetch_time - start_time, sort_time-fetch_time)
@@ -211,7 +213,6 @@ local column_recogn_reability =
 		return {r}
 	end
 }
-
 
 
 local column_recogn_video_channel = 
