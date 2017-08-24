@@ -386,14 +386,15 @@ local function DrawUnspecifiedObject(drawer, frame, mark)
 end
 
 local fastener_type_names = {
-	[0] = 'кб(кд)65',
-	[1] = 'apc',
+	[0] = 'КБ-65',
+	[1] = 'Аpc',
+	[2] = 'КД',
 }
 	
 local fastener_fault_names = {
-	[0] = 'отсутствие неисправности',
-	[1] = 'отсутствие закладного болта kb65', 
-	[2] = 'отсуствие клеммы apc',
+	[0] = 'норм.',
+	[1] = 'От.ЗБ', 
+	[2] = 'От.Кл',
 }
 
 local function DrawFastener(drawer, frame, mark)
@@ -437,10 +438,15 @@ local function DrawFastener(drawer, frame, mark)
 			drawer.fig:polygon(points)
 			
 			--drawer.fig:rectangle(points[1], points[2], points[5], points[6])
-			local strText = sprintf('Тип: %s\nНеиспр.: %s\nШир.: %d\n', 
+			local strText = sprintf('тип..:  %s\nсост.:  %s\n', 
 				nodeFastenerType and (fastener_type_names[tonumber(nodeFastenerType)] or nodeFastenerType) or '', 
-				nodeFastenerFault and (fastener_fault_names[tonumber(nodeFastenerFault)] or nodeFastenerFault) or '',
-				raw_points[5]- raw_points[1])
+				nodeFastenerFault and (fastener_fault_names[tonumber(nodeFastenerFault)] or nodeFastenerFault) or '')
+			-- тоже с ширирной
+			--local strText = sprintf('Тип   : %s\nСост.: %s\nШир.: %d\n', 
+			---	nodeFastenerType and (fastener_type_names[tonumber(nodeFastenerType)] or nodeFastenerType) or '', 
+			--	nodeFastenerFault and (fastener_fault_names[tonumber(nodeFastenerFault)] or nodeFastenerFault) or '',
+			--	raw_points[5]- raw_points[1])				
+
 			
 			drawer.text:font { name="Tahoma", render="VectorFontCache", height=11, bold=0}
 			drawer.text:alignment("AlignLeft", "AlignBottom")

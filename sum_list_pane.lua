@@ -265,14 +265,15 @@ local column_beacon_offset =
 }
 	
 local fastener_type_names = {
-	[0] = 'кб(кд)65',
-	[1] = 'apc',
+	[0] = 'КБ-65',
+	[1] = 'Аpc',
+	[2] = 'КД',
 }
 	
 local fastener_fault_names = {
-	[0] = 'отсутствие неисправности',
-	[1] = 'отсутствие закладного болта kb65', 
-	[2] = 'отсуствие клеммы apc',
+	[0] = 'норм.',
+	[1] = 'От.ЗБ', 
+	[2] = 'От.Кл',
 }
 	
 local column_fastener_type = 
@@ -293,7 +294,7 @@ local column_fastener_type =
 
 local column_fastener_fault = 
 {
-	name = 'Прб', 
+	name = 'Сост.', 
 	width = 40, 
 	align = 'r', 
 	text = function(row)
