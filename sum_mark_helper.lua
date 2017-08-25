@@ -1,12 +1,14 @@
--- итератор по нодам xml
+require "luacom"
 
+-- итератор по нодам xml
 local function SelectNodes(xml, xpath)
 	return function(nodes)
 		return nodes:nextNode()
 	end, xml:SelectNodes(xpath)
 end
 
--- получить номера установленных битов
+
+-- получить номера установленных битов, вернуть массив с номерами
 local function GetSelectedBits(mask)
 	local res = {}
 	for i = 1, 32 do
@@ -32,9 +34,8 @@ local function GetAllGapWidth(mark)
 		end
 	end
 	
-	if ext.RAWXMLDATA then
-		dom:loadXML(ext.RAWXMLDATA)	
-		
+	if ext.RAWXMLDATA and dom:loadXML(ext.RAWXMLDATA) then
+	
 		local req = '\z
 		/ACTION_RESULTS\z
 		/PARAM[@name="ACTION_RESULTS" and starts-with(@value, "CalcRailGap")]\z
@@ -98,8 +99,12 @@ local function GetGapWidth(mark)
 	return nil
 end
 
--- получить конкретную ширину зазора ('inactive', 'active', 'thread', 'user')
+-- получить конкретную ширину зазора ('inactive', 'active', 'thread', 'user', nil)
 local function GetGapWidthName(mark, name)
+	if not name then
+		return GetGapWidth(mark)
+	end
+	
 	local widths = GetAllGapWidth(mark)
 	
 	if name == 'inactive' then -- нерабочая: боковая по 19,20 каналу
@@ -122,9 +127,10 @@ local function GetGapWidthName(mark, name)
 	return nil
 end
 
+-- ================================= БОЛТЫ ====================================
 
--- извлечь количество и качество болтов из xml (если распз по неск каналам, то данные берутся последовательно из 17/18 потом из 19/20)
-local function GetCrewJointCount(mark)
+-- получить массив с качествами болтов
+local function GetCrewJointArray(mark)
 	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 	assert(xmlDom)
 	
@@ -133,62 +139,86 @@ local function GetCrewJointCount(mark)
 		return nil
 	end
 	
-	local req = '\z
-		/ACTION_RESULTS\z
-		/PARAM[@name="ACTION_RESULTS" and @value="CrewJoint"]\z
-		/PARAM[@name="FrameNumber" and @value]\z
+	local req_safe = '\z
+		PARAM[@name="FrameNumber" and @value]\z
 		/PARAM[@name="Result" and @value="main"]\z
 		/PARAM[@name="JointNumber" and @value]\z
 		/PARAM[@name="CrewJointSafe" and @value]/@value'
 
 	local res = {}
 
-	for node in SelectNodes(xmlDom, req) do
-		local video_channel = node:SelectSingleNode("../../../../../@channel")
+	for nodeCrewJoint in SelectNodes(xmlDom, '/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="CrewJoint"]') do
+		local video_channel = nodeCrewJoint:SelectSingleNode("@channel")
 		video_channel = video_channel and tonumber(video_channel.nodeValue) or 0
 		
-		if not res[video_channel] then
-			res[video_channel] = {0, 0}
+		local cur_safe = {}
+		for node in SelectNodes(nodeCrewJoint, req_safe) do
+			local safe = tonumber(node.nodeValue)
+			cur_safe[#cur_safe+1] = safe
 		end
-		
-		res[video_channel][1] = res[video_channel][1] + 1
-		local safe = tonumber(node.nodeValue)
-		if safe < 1 then
-			res[video_channel][2] = res[video_channel][2] + 1
-		end
+		res[video_channel] = cur_safe
 	end
 
 	res = res[17] or res[18] or res[19] or res[20] or res[0]
-	if res then
-		return table.unpack(res)
-	end
+	return res
 end
 
 
-local function CheckCrewJointDefect(mark)
-	local cnt, defect = GetCrewJointCount(mark)
+-- посчитать количество нормальных и дефектных болтов в массиве в заданном диапазоне
+local function CalcJointDefectInRange(joints, first, last)
+	local defects, valid = 0, 0
+	for i = first or 1, last or #joints do
+		local safe = joints[i]
+		if safe > 0 then
+			valid = valid + 1
+		else
+			defects = defects + 1
+		end
+	end
+	return valid, defects
+end
+
+
+-- извлечь количество и качество болтов из xml (если распз по неск каналам, то данные берутся последовательно из 17/18 потом из 19/20)
+local function GetCrewJointCount(mark)
+	local joints = GetCrewJointArray(mark)
+	if joints then
+		local valid, defects = CalcJointDefectInRange(joints)
+		return #joints, defects
+	end
+end
+
+-- проверить стык на дефектность по наличие болтов (не больше одного млохого в половине накладки)
+local function CalcValidCrewJointOnHalf(mark)
+	local joints = mark_helper.GetCrewJointArray(mark)
 	
-	local is_defect = false
-	if not cnt or cnt == 0 then
+	local valid_on_half = nil
+	if not joints or #joints == 0 then
 		-- no action
-	elseif cnt == 6 then
-		is_defect = defect >= 3
-	elseif cnt == 4 then
-		is_defect = defect >= 2
+	elseif #joints == 6 then
+		local l = CalcJointDefectInRange(joints, 1, 3)
+		local r = CalcJointDefectInRange(joints, 4, 6)
+		valid_on_half = math.min(l, r)
+	elseif #joints == 4 then
+		local l = CalcJointDefectInRange(joints, 1, 2)
+		local r = CalcJointDefectInRange(joints, 3, 4)
+		valid_on_half = math.min(l, r)
 	else
-		is_defect = true
+		valid_on_half = 0
 	end
 	
-	return is_defect
+	return valid_on_half
 end
-
 
 return{
 	SelectNodes = SelectNodes,
+	GetSelectedBits = GetSelectedBits,
+	
 	GetAllGapWidth = GetAllGapWidth,
 	GetGapWidth = GetGapWidth,
-	GetSelectedBits = GetSelectedBits,
 	GetGapWidthName = GetGapWidthName,
+	
+	GetCrewJointArray = GetCrewJointArray,
 	GetCrewJointCount = GetCrewJointCount,
-	CheckCrewJointDefect = CheckCrewJointDefect,
+	CalcValidCrewJointOnHalf = CalcValidCrewJointOnHalf,
 }

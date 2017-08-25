@@ -34,7 +34,7 @@ local function sort_marks(marks, fn, inc)
 		end
 		return false
 	end
-	table.sort(keys, sort_fn)  -- сортируем массив с ключами
+	table.sort(keys, compare_fn)  -- сортируем массив с ключами
 	local sort_time = os.clock()
 
 	local tmp = {}	-- сюда скопируем отметки в нужном порядке
@@ -57,6 +57,19 @@ local function GetBeaconOffset(mark)
 		/PARAM[@name="Result" and @value="main"]\z
 		/PARAM[@name="Shift_mkm" and @value]/@value')
 	return node and tonumber(node.nodeValue)/1000
+end
+
+local function GetRailGapStep(mark)
+	if not xmlDom:loadXML(mark.ext.RAWXMLDATA) then 
+		return nil
+	end 
+	local node = xmlDom:SelectSingleNode('\z
+		/ACTION_RESULTS\z
+		/PARAM[@name="ACTION_RESULTS" and @value="CalcRailGapStep"]\z
+		/PARAM[@name="FrameNumber" and @value and @coord]\z
+		/PARAM[@name="Result" and @value="main"]\z
+		/PARAM[@name="RailGapStepWidth" and @value]/@value')
+	return node and tonumber(node.nodeValue)
 end
 
 -- получить пареметры скрепления
@@ -97,6 +110,7 @@ end
 local function GetFastenerParamName1(mark, name)
 	local x = mark.ext.RAWXMLDATA
 	local req = 'PARAM%s+name%s*=%s*"' .. name .. '"%s*value%s*=%s*"([^"]+)"'
+	--local req = 'PARAM%s+name="' .. name .. '"[^>]+value="([^"]+)"'
 	local res = string.match(x, req)
 	return res
 end
@@ -195,7 +209,24 @@ local column_recogn_width_inactive = make_column_recogn_width("ШНГ", 'inactiv
 local column_recogn_width_active = make_column_recogn_width("ШРГ", 'active')
 local column_recogn_width_tread = make_column_recogn_width("ШПК", 'thread')
 local column_recogn_width_user = make_column_recogn_width("ШП", 'user')
+local column_recogn_width = make_column_recogn_width("Шир")
 
+local column_recogn_rail_gap_step = 
+{
+	name = 'Ступ', 
+	width = 40, 
+	align = 'r', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local r = GetRailGapStep(mark)
+		return r or ''
+	end,
+	sorter = function(mark)
+		local r = GetRailGapStep(mark)
+		r = r and r or -1
+		return {r}
+	end
+}
 
 local column_recogn_reability = 
 {
@@ -247,6 +278,28 @@ local column_recogn_bolt =
 	end
 }
 
+-- колич нормальных болтов в половине накладки
+local joint_speed_limit_messages = {
+	[0] = 'ЗАКР.',
+	[1] = '<25 км/ч',
+}
+
+local column_joint_speed_limit = 
+{
+	name = 'Огр. скор.', 
+	width = 65, 
+	align = 'c', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
+		return valid_on_half and (joint_speed_limit_messages[valid_on_half] or '??') or ''
+	end,
+	sorter = function(mark)
+		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
+		return {valid_on_half or -1}
+	end
+}
+
 local column_beacon_offset = 
 {
 	name = 'Смещ.', 
@@ -279,7 +332,7 @@ local fastener_fault_names = {
 local column_fastener_type = 
 {
 	name = 'Тип', 
-	width = 40, 
+	width = 50, 
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
@@ -295,7 +348,7 @@ local column_fastener_type =
 local column_fastener_fault = 
 {
 	name = 'Сост.', 
-	width = 40, 
+	width = 50, 
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
@@ -334,7 +387,13 @@ local column_fastener_width =
 	end
 }
 
-    			
+local recognition_guids = {
+	"{CBD41D28-9308-4FEC-A330-35EAED9FC801}", 
+	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
+	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
+	"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
+}			
+				
 --=========================================================================== --
 
 local Filters = 
@@ -364,30 +423,22 @@ local Filters =
 			column_recogn_bolt,
 			column_recogn_video_channel,
 			}, 
-		GUIDS = {
-			"{CBD41D28-9308-4FEC-A330-35EAED9FC801}", 
-			"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
-			"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
-			"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
-			}
+		GUIDS = recognition_guids,
 	},
 	{
-		name = 'Отсутствующие болты', 
+		name = 'Отсутствующие болты (вне норматива)', 
 		columns = {
 			column_num, 
 			column_path_coord, 
 			column_rail,
 			column_recogn_bolt,
+			column_joint_speed_limit,
 			column_recogn_reability,
 			}, 
-		GUIDS = {
-			"{CBD41D28-9308-4FEC-A330-35EAED9FC801}", 
-			"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
-			"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
-			"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
-			},
+		GUIDS = recognition_guids,
 		filter = function(mark)
-			return mark_helper.CheckCrewJointDefect(mark)
+			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
+			return valid_on_half and valid_on_half < 2
 		end,
 	},
 	{
@@ -410,12 +461,23 @@ local Filters =
 			column_rail,
 			column_fastener_type,
 			column_fastener_fault,
-			column_recogn_reability,
-			column_fastener_width,
+--			column_recogn_reability,
+--			column_fastener_width,
 			}, 
 		GUIDS = {
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
-	}
+	},
+	{
+		name = 'Ступеньки', 
+		columns = {
+			column_num, 
+			column_path_coord, 
+			column_rail,
+			column_recogn_width,
+			column_recogn_rail_gap_step,
+			}, 
+		GUIDS = recognition_guids,
+	},
 }
 
 -- внутренняя функция, возвращает описание фильтра по его имени
