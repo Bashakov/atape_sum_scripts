@@ -15,11 +15,29 @@ if not ShowVideo then
 	ShowVideo = 1
 end
 
--- итератор по нодам xml
-local function SelectNodes(xml, xpath)
-	return function(nodes)
-		return nodes:nextNode()
-	end, xml:SelectNodes(xpath)
+local SelectNodes = mark_helper.SelectNodes
+
+
+local gap_rep_filter_guids = 
+{
+	"{CBD41D28-9308-4FEC-A330-35EAED9FC801}",
+	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
+	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
+	"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
+}
+
+local fastener_guids = {
+	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"
+}
+
+
+-- получить индекс элемента в массиве
+local function table_find(tbl, val)
+	for i = 1, #tbl do
+		if tbl[i] == val then
+			return i
+		end
+	end
 end
 
 -- извлечь количество и качество болтов из xml
@@ -177,6 +195,7 @@ local function GetRailGap(mark)
 	return res, min_width, max_width
 end
 
+-- получить доустимую ширину зазора в зав от температуры
 local function get_nominal_gape_width(rail_len, temperature)
 	if rail_len > 17000 then
 		-- рельс 25 метров
@@ -214,6 +233,47 @@ local function get_nominal_gape_width(rail_len, temperature)
 	end
 end
 
+-- построить изображение для данной отметки
+local function make_mark_image(mark, video_channel)
+	local img_path
+	
+	if ShowVideo ~= 0 then
+		local prop = mark.prop
+		
+		if not video_channel then
+			local recog_video_channels = mark_helper.GetSelectedBits(prop.ChannelMask)
+			video_channel = recog_video_channels and recog_video_channels[1]
+		end
+
+		if video_channel then
+			local img_prop = {
+				mark_id = (ShowVideo == 1) and prop.ID or 0,
+				mode = 3,  -- panoram
+				panoram_width = 1500, 
+				-- frame_count = 3, 
+				width = 400, 
+				height = 300,
+			}
+			
+			--print(prop.ID, prop.SysCoord, prop.Guid, video_channel)
+			img_path = Driver:GetFrame(video_channel, prop.SysCoord, img_prop)
+		end
+	end
+	return img_path
+end
+
+-- сгенерировать и вставить картинку в отчет
+local function insert_frame(excel, data_range, mark, row, col, video_channel)
+	local img_path
+	local ok, msg = pcall(function ()
+			img_path = make_mark_image(mark, video_channel)
+		end)
+	if not ok then
+		data_range.Cells(row, col).Value2 = msg and #msg and msg or 'Error'
+	elseif img_path and #img_path then
+		excel:InsertImage(data_range.Cells(row, col), img_path)
+	end
+end
 
 -- =================================================================================
 
@@ -306,55 +366,32 @@ end
 
 local function report_crew_join(params)
 	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Показать все", "Дефектные", "Нормальные"}, 2)
+	
 	if not filter_mode then
 		return
 	end
 	
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom)
-	
-	local function make_filter_fn()
+	local function filter_fn(mark)
+		local accept = table_find(gap_rep_filter_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
 		
-		local guids = {
-			["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = true,
-			["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = true,
-			["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = true,
-			["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = true,
-		}
-	
-		return function(mark)
-			if not (guids[mark.prop.Guid] and mark.ext.RAWXMLDATA and  mark.ext.VIDEOIDENTCHANNEL) then
-				return false
-			end
-			if filter_mode == 1 then
-				return true
-			end
-			
-			xmlDom:loadXML(mark.ext.RAWXMLDATA)
-			local cnt, defect = GetCrewJointSafe(xmlDom)
-			
-			local is_defect = true
-			if cnt == 6 then
-				is_defect = defect >= 3
-			elseif cnt == 4 then
-				is_defect = defect >= 2
-			end
-
-			if filter_mode == 2 then
-				return is_defect
-			end
-				
-			-- filter_mode == 3 
-			return not is_defect
+		if accept and filter_mode ~= 1 then  -- если отметка еще подходит и нужно выбрать не все (только тефектные или только нормальные)
+			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
+			accept = valid_on_half and valid_on_half >= 2  		-- нормальные те, у которых как минимум 2 болта
+			if filter_mode == 2 then accept = not accept end	-- если нужны ненормальные, инвертируем
 		end
+		return accept
 	end
 	
 	local dlg = luaiup_helper.ProgressDlg()
 	local marks = Driver:GetMarks()
-	marks = FilterSort(marks, make_filter_fn(),
-		function(mark) return {mark.prop.SysCoord} end,
-		function(val, desc) dlg:step(val, desc) end)
-
+	
+	local function filter_progress (all, checked, accepted)
+		dlg:step(checked / all, string.format('check %d / %d mark, accept %d', checked, all, accepted))
+	end
+	
+	marks = mark_helper.filter_marks(marks, filter_fn, filter_progress)
+	marks = mark_helper.sort_marks(marks, function(mark) return {mark.prop.SysCoord} end)
+	
 	local mark_pairs = BuildMarkPairs(marks, 500)
 	if #mark_pairs == 0 then
 		iup.Message('Info', "Подходящих отметок не найдено")
@@ -363,29 +400,17 @@ local function report_crew_join(params)
 
 	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
 	excel:ApplyPassportValues(Passport)
-	local data_range = excel:CloneTemplateRow(#mark_pairs)
+	local data_range = excel:CloneTemplateRow(#mark_pairs) -- data_range - область, куда вставлять отметки
 
 	assert(#mark_pairs == data_range.Rows.count, 'misamtch count of mark_pairs and table rows')
 
 	local function insert_mark(line, rail, mark)
 		local column_offset = (rail == 1) and 0 or 5
 		local prop = mark.prop
-		local ext = mark.ext
 		
-		xmlDom:loadXML(ext.RAWXMLDATA)
-
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-		local count, defect = GetCrewJointSafe(xmlDom)
-		local img_path = ShowVideo ~= 0 and Driver:GetFrame( 
-			ext.VIDEOIDENTCHANNEL, 
-			prop.SysCoord, {
-				mark_id=(ShowVideo == 1) and prop.ID or 0,
-				mode=3, 
-				panoram_width=1500, 
-				frame_count=3, 
-				width=400, 
-				height=300,
-			})
+		local count, defect = mark_helper.GetCrewJointCount(mark)
+		
 		local uri = make_mark_uri(prop.ID)
 
 		excel:InsertLink(data_range.Cells(line, 1 + column_offset), uri, km)
@@ -393,11 +418,9 @@ local function report_crew_join(params)
 		data_range.Cells(line, 3 + column_offset).Value2 = count
 		data_range.Cells(line, 4 + column_offset).Value2 = defect
 
-		if img_path and #img_path then
-			excel:InsertImage(data_range.Cells(line, 5 + column_offset), img_path)
-		end
+		insert_frame(excel, data_range, mark, line, 5 + column_offset)
 
-		data_range.Cells(line, 12+rail).Value2 = prop.SysCoord
+		--data_range.Cells(line, 12+rail).Value2 = prop.SysCoord
 	end
 
 	for line, mark_pair in ipairs(mark_pairs) do
@@ -410,36 +433,19 @@ local function report_crew_join(params)
 		end
 	end 
 
-	if ShowVideo == 0 then 
+	if ShowVideo == 0 then  -- спрячем столбцы с видео
 		excel:AutoFitDataRows()
-		data_range.Cells(nil, 5).ColumnWidth = 0
-		data_range.Cells(nil, 10).ColumnWidth = 0
+		data_range.Cells(nil, 5).ColumnWidth = 1
+		data_range.Cells(nil, 10).ColumnWidth = 1
 	end
 	excel:SaveAndShow()
 end
 
-local function report_gaps(params)
-	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Меньше 3 мм", "Все", "Больше 22 мм", "Слепые подряд", "Больше 35 мм"}, 2)
-	if not filter_mode then
-		return
-	end
-	
-	local guids = {
-			["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = true,
-			["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = true,
-			["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = true,
-			["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = true,
-	}
-	
-	local dlg = luaiup_helper.ProgressDlg()
-	local marks = Driver:GetMarks()
-	marks = FilterSort(marks, 
-		function(mark) return guids[mark.prop.Guid] and mark.ext.RAWXMLDATA end,
-		function(mark) return {mark.prop.SysCoord} end,
-		function(val, desc) dlg:step(val, desc) end)
-
+-- по списку отметок создает таблицу id отметки -> длинна рельса перед ней
+local function make_rail_len_table(marks)
 	local prev_rail_end = {}
 	local mark_rail_len = {}
+	
 	for _, mark in ipairs(marks) do
 		local prop = mark.prop
 		local prev_coord = prev_rail_end[prop.RailMask]
@@ -448,40 +454,63 @@ local function report_gaps(params)
 		end
 		prev_rail_end[prop.RailMask] = prop.SysCoord
 	end
+	return mark_rail_len
+end
 
-	if filter_mode == 1 or filter_mode == 3 then
-		local function ff(mark)
-			local widths, min_width, max_width = GetRailGap(mark)
-			return (filter_mode == 1 and min_width and min_width <= 3) or (filter_mode == 3 and max_width and max_width >= 22)
+local function report_gaps(params)
+	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Меньше 3 мм", "Все", "Больше 22 мм", "Слепые подряд", "Больше 35 мм"}, 2)
+	
+	if not filter_mode then
+		return
+	end
+	
+	local dlg = luaiup_helper.ProgressDlg()
+	local marks = Driver:GetMarks()
+	
+	local function filter_fn(mark)
+		return table_find(gap_rep_filter_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
+	end
+	
+	local function filter_progress (all, checked, accepted)
+		dlg:step(checked / all, string.format('check %d / %d mark, accept %d', checked, all, accepted))
+	end
+	
+	marks = mark_helper.filter_marks(marks, filter_fn, filter_progress)
+	marks = mark_helper.sort_marks(marks, function(mark) return {mark.prop.SysCoord} end)
+	
+--	marks = FilterSort(marks, 
+--		function(mark) return guids[mark.prop.Guid] and mark.ext.RAWXMLDATA end,
+--		function(mark) return {mark.prop.SysCoord} end,
+--		function(val, desc) dlg:step(val, desc) end)
+
+
+	local mark_rail_len = make_rail_len_table(marks)
+
+	if filter_mode == 1 or filter_mode == 3 or filter_mode == 5 then
+		local function filter_fn(mark)
+			local width = mark_helper.GetGapWidth(mark)
+			return width and ((filter_mode == 1 and width <= 3) or (filter_mode == 3 and width >= 22) or (filter_mode == 5 and width >= 35))
 		end
-		marks = FilterSort(marks, ff, nil, function(val, desc) dlg:step(val, desc) end)
 		
-	elseif filter_mode == 5 then
-		local function ff(mark)
-			local widths, min_width, max_width = GetRailGap(mark)
-			return ( max_width and max_width >= 35 )
-		end
-		marks = FilterSort(marks, ff, nil, function(val, desc) dlg:step(val, desc) end)		
-		
+		--marks = FilterSort(marks, ff, nil, function(val, desc) dlg:step(val, desc) end)
+		marks = mark_helper.filter_marks(marks, filter_fn, filter_progress)
+
 	elseif filter_mode == 4 then
 		local mark_ids = {}
 		local prev_gap_width = {}
 		
-		for _, mark in ipairs(marks) do
-			local _, min_width, _ = GetRailGap(mark)
-			min_width = min_width or 100000
+		for i, mark in ipairs(marks) do
+			local width = mark_helper.GetGapWidth(mark) or 100000
 			local prev = prev_gap_width[mark.prop.RailMask] 
-			if prev and prev.width <= 3 and min_width <= 3 then
+			if prev and prev.width <= 3 and width <= 3 then
 				mark_ids[prev.ID] = true
 				mark_ids[mark.prop.ID] = true
 			end
-			prev_gap_width[mark.prop.RailMask] = {ID=mark.prop.ID, width=min_width}
+			prev_gap_width[mark.prop.RailMask] = {ID = mark.prop.ID, width = width}
+			dlg:step(i / #marks, string.format('scan for blind joint %d / %d mark', i, #marks))
 		end
 		
-		marks = FilterSort(marks, 
-			function(mark) return mark_ids[mark.prop.ID] end,
-			nil, 
-			function(val, desc) dlg:step(val, desc) end)
+		marks = mark_helper.filter_marks(marks, function(mark) return mark_ids[mark.prop.ID] end, filter_progress)
 	end
 
 	local mark_pairs = BuildMarkPairs(marks, 500)
@@ -504,18 +533,8 @@ local function report_gaps(params)
 		
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
 		local temperature = Driver:GetTemperature(bit32.band(prop.RailMask, 3)-1, prop.SysCoord)
-		local recog_video_channels = mark_helper.GetSelectedBits(mark.prop.ChannelMask)
 
-		local img_path = #recog_video_channels ~= 0 and ShowVideo ~= 0 and Driver:GetFrame( 
-			recog_video_channels[1], 
-			prop.SysCoord, {
-				mark_id = (ShowVideo == 1) and prop.ID or 0,
-				mode=3, 
-				panoram_width=1500, 
-				frame_count=3, 
-				width=400, 
-				height=300,
-			} )
+		
 		local uri = make_mark_uri(prop.ID)
 		
 		temperature = temperature and temperature.target
@@ -534,9 +553,7 @@ local function report_gaps(params)
 			end
 		end
 
-		if img_path and #img_path then
-			excel:InsertImage(data_range.Cells(line, 8 + column_offset), img_path)
-		end
+		insert_frame(excel, data_range, mark, line, 8 + column_offset)
 		
 		local widths, min_width, max_width = GetRailGap(mark)
 		if min_width then
@@ -808,15 +825,88 @@ local function report_coord(params)
 	excel:SaveAndShow()
 end
 
+
+
+-- отчет по скреплениям 
+local function report_fasteners(params)
+	local left_mask = tonumber(Passport.FIRST_LEFT) + 1
+	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Показать все", "Дефектные", "Нормальные"}, 2)
+	
+	if not filter_mode then
+		return
+	end
+
+	local function filter_fn(mark)
+		local accept = table_find(fastener_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
+		
+		if accept and filter_mode ~= 1 then  -- если отметка еще подходит и нужно выбрать не все (только дефектные или только нормальные)
+			accept = mark_helper.IsFastenerDefect(mark)
+			if filter_mode == 3 then accept = not accept end	-- если нужны нормальные, инвертируем
+		end
+		return accept
+	end
+	
+	local dlg = luaiup_helper.ProgressDlg()
+	local marks = Driver:GetMarks()
+	
+	marks = FilterSort(marks, 
+		filter_fn,
+		function(mark) return {mark.prop.SysCoord} end,
+		function(val, desc) dlg:step(val, desc) end)
+
+	if #marks == 0 then
+		iup.Message('Info', "Подходящих отметок не найдено")
+		return
+	end
+
+	
+	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
+	excel:ApplyPassportValues(Passport)
+	local data_range = excel:CloneTemplateRow(#marks)
+	print('==***', #marks)
+
+	local fastener_type_names = {
+		[0] = 'КБ-65',
+		[1] = 'Аpc',
+		[2] = 'КД',
+	}
+		
+	local fastener_fault_names = {
+		[0] = 'норм.',
+		[1] = 'От.ЗБ', 
+		[2] = 'От.Кл',
+	}
+
+	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
+
+	for line, mark in ipairs(marks) do
+		local prop, ext = mark.prop, mark.ext
+		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
+		local fastener_params = mark_helper.GetFastenetParams(mark) or {}
+		
+		local uri = make_mark_uri(prop.ID)
+		excel:InsertLink(data_range.Cells(line, 1), uri, sprintf("%d km %.3f m", km, m + mm/1000))
+		data_range.Cells(line, 2).Value2 = left_mask == bit32.band(prop.RailMask, 0x3) and "Левый" or "Правый"
+		data_range.Cells(line, 3).Value2 = Driver:GetSumTypeName(prop.Guid)
+		data_range.Cells(line, 4).Value2 = fastener_type_names[fastener_params['FastenerType']] or '??'
+		data_range.Cells(line, 5).Value2 = fastener_fault_names[fastener_params['FastenerFault']] or '??'
+		insert_frame(excel, data_range, mark, line, 6)
+		
+		if not dlg:step(line / #marks, stuff.sprintf(' Process %d / %d mark', line, #marks)) then 
+			break
+		end
+	end 
+
+	if ShowVideo == 0 then 
+		excel:AutoFitDataRows()
+		data_range.Cells(6).ColumnWidth = 0
+	end
+	
+	excel:SaveAndShow()
+end
+
 -- ====================================================================================
 
-local gap_rep_filter_guids = 
-{
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC801}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
-}
 
 local beacon_rep_filter_guids = 
 {
@@ -838,6 +928,8 @@ local Report_Functions = {
 	
 	{name=" коорд. cтыков (магн.) | 17_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=17, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
 	{name=" коорд. cтыков (магн.) | 18_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=18, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
+	
+	{name="Ведомость скреплений",		fn=report_fasteners,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ведомость Скреплений",}, 		guids=fastener_guids},
 }
 
 
