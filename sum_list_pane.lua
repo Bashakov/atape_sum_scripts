@@ -99,13 +99,13 @@ local column_num =
 local column_path_coord = 
 {
 	name = 'Коорд.', 
-	width = 70, 
+	width = 80, 
 	align = 'r',
 	text = function(row)
 		local mark = work_marks_list[row]
 		local prop = mark.prop
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-		return string.format('%d км %05.1f', km, m + mm/1000.0)
+		return string.format('%3d км %05.1f', km, m + mm/1000.0)
 	end,
 	sorter = function(mark)
 		return {mark.prop.SysCoord}
@@ -156,12 +156,12 @@ local column_mag_use_recog =
 local function make_column_recogn_width(name, source)
 	return {
 		name = name, 
-		width = 37, 
+		width = 30, 
 		align = 'r', 
 		text = function(row)
 			local mark = work_marks_list[row]
 			local w = mark_helper.GetGapWidthName(mark, source)
-			return w and sprintf('%.1f', w) or ''
+			return w and sprintf('%2d', w) or ''
 		end,
 		sorter = function(mark)
 			local w = mark_helper.GetGapWidthName(mark, source)
@@ -245,7 +245,7 @@ local column_recogn_bolt =
 
 -- колич нормальных болтов в половине накладки
 local joint_speed_limit_messages = {
-	[0] = 'ЗАКР.',
+	[0] = 'ЗАКРЫТИЕ',
 	[1] = '<25 км/ч',
 }
 
@@ -268,12 +268,12 @@ local column_joint_speed_limit =
 local column_beacon_offset = 
 {
 	name = 'Смещ.', 
-	width = 60, 
+	width = 50, 
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
 		local offset = GetBeaconOffset(mark)
-		return offset and sprintf('%.1f мм', offset) or ''
+		return offset and sprintf('%2d', offset) or ''
 	end,
 	sorter = function(mark)
 		local r = mark.ext.VIDEO_RECOGNITION
@@ -376,7 +376,7 @@ local Filters =
 	--		"{19253263-2C0B-41EE-8EAA-000000000040}",}
 	--},
 	{
-		name = 'Зазоры', 
+		name = 'Стыковые зазоры', 
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -398,7 +398,7 @@ local Filters =
 			column_rail,
 			column_recogn_bolt,
 			column_joint_speed_limit,
-			column_recogn_reability,
+			--column_recogn_reability,
 			column_recogn_video_channel,
 			}, 
 		GUIDS = recognition_guids,
@@ -408,7 +408,7 @@ local Filters =
 		end,
 	},
 	{
-		name = 'Маячные шпалы',
+		name = 'Маячные отметки',
 		columns = {
 			column_num,
 			column_path_coord, 
@@ -434,7 +434,7 @@ local Filters =
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
 	},
 	{
-		name = 'Ступеньки', 
+		name = 'Горизонтальные ступеньки', 
 		columns = {
 			column_num, 
 			column_path_coord, 

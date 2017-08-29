@@ -92,7 +92,7 @@ local function SelectWidthFromChannelsWidths(channel_widths, mark)
 		-- а потом хоть какой нибудь
 		for n, width in pairs(channel_widths) do
 			if n == 0 and mark then
-				n = mark_helper.GetSelectedBits(prop.ChannelMask)
+				n = mark_helper.GetSelectedBits(mark.prop.ChannelMask)
 				n = n and n[1]
 				return width, n
 			end
@@ -143,7 +143,7 @@ local function GetGapWidthName(mark, name)
 			if w[19] then return w[19], 19 end
 			if w[20] then return w[20], 20 end
 			if w[0] then 
-				local video_channel = mark_helper.GetSelectedBits(prop.ChannelMask)
+				local video_channel = mark_helper.GetSelectedBits(mark.prop.ChannelMask)
 				video_channel = video_channel and video_channel[1]
 				return w[0], video_channel 
 			end
