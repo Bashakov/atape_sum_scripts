@@ -10,6 +10,7 @@ luaiup_helper = require 'luaiup_helper'
 excel_helper = require 'excel_helper'
 
 local sprintf = stuff.sprintf
+local printf = stuff.printf
 
 if not ShowVideo then
 	ShowVideo = 1
@@ -30,6 +31,12 @@ local fastener_guids = {
 	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"
 }
 
+local switch_guids = {
+	"{19253263-2C0B-41EE-8EAA-000000100000}",
+	"{19253263-2C0B-41EE-8EAA-000000200000}",
+	"{19253263-2C0B-41EE-8EAA-000000400000}",
+	"{19253263-2C0B-41EE-8EAA-000000800000}",
+}
 
 -- получить индекс элемента в массиве
 local function table_find(tbl, val)
@@ -234,7 +241,7 @@ local function get_nominal_gape_width(rail_len, temperature)
 end
 
 -- построить изображение для данной отметки
-local function make_mark_image(mark, video_channel)
+local function make_mark_image(mark, video_channel, show_range)
 	local img_path
 	
 	if ShowVideo ~= 0 then
@@ -245,34 +252,52 @@ local function make_mark_image(mark, video_channel)
 			video_channel = recog_video_channels and recog_video_channels[1]
 		end
 
+		local panoram_width = 1500
+		local width = 400
+		local mark_id = (ShowVideo == 1) and prop.ID or 0
+		
+		if show_range then
+			panoram_width = show_range[2] - show_range[1]
+			width = panoram_width / 10
+			if ShowVideo == 1 then
+				mark_id = -1
+			end
+		end
+		
 		if video_channel then
 			local img_prop = {
-				mark_id = (ShowVideo == 1) and prop.ID or 0,
+				mark_id = mark_id,
 				mode = 3,  -- panoram
-				panoram_width = 1500, 
+				panoram_width = panoram_width, 
 				-- frame_count = 3, 
-				width = 400, 
+				width = width, 
 				height = 300,
 			}
 			
 			--print(prop.ID, prop.SysCoord, prop.Guid, video_channel)
-			img_path = Driver:GetFrame(video_channel, prop.SysCoord, img_prop)
+			local coord = show_range and (show_range[1] + show_range[2])/2 or prop.SysCoord
+			img_path = Driver:GetFrame(video_channel, coord, img_prop)
 		end
 	end
 	return img_path
 end
 
 -- сгенерировать и вставить картинку в отчет
-local function insert_frame(excel, data_range, mark, row, col, video_channel)
+local function insert_frame(excel, data_range, mark, row, col, video_channel, show_range)
 	local img_path
 	local ok, msg = pcall(function ()
-			img_path = make_mark_image(mark, video_channel)
+			img_path = make_mark_image(mark, video_channel, show_range)
 		end)
 	if not ok then
 		data_range.Cells(row, col).Value2 = msg and #msg and msg or 'Error'
 	elseif img_path and #img_path then
 		excel:InsertImage(data_range.Cells(row, col), img_path)
 	end
+end
+
+local function get_rail_name(mark)
+	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
+	return bit32.btest(mark.prop.RailMask, right_rail_mask) and "Правый" or "Левый"
 end
 
 -- =================================================================================
@@ -302,8 +327,10 @@ local function dump_mark_list(template_name, sheet_name)
 			prop = prop, 
 			ext = mark.ext, 
 			path = { Driver:GetPathCoord(prop.SysCoord) }, 
-			name = Driver:GetSumTypeName(prop.Guid),
-			img_path = Driver:GetFrame(
+			name = Driver:GetSumTypeName(prop.Guid)
+		}
+		if ShowVideo ~= 0 then 
+			out[i].img_path = Driver:GetFrame(
 				vch, 
 				prop.SysCoord, {
 					mark_id = prop.ID,
@@ -311,8 +338,8 @@ local function dump_mark_list(template_name, sheet_name)
 					width = 400,          -- ширина кадра
 					height = 300,          -- высота кадра
 				}
-			),
-		}
+			)
+		end
 
 		if not dlg:step(1.0 * i / #marks, stuff.sprintf('progress %d / %d mark', i, #marks)) then 
 			return 
@@ -365,6 +392,7 @@ end
 
 
 local function report_crew_join(params)
+	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
 	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Показать все", "Дефектные", "Нормальные"}, 2)
 	
 	if not filter_mode then
@@ -405,7 +433,7 @@ local function report_crew_join(params)
 	assert(#mark_pairs == data_range.Rows.count, 'misamtch count of mark_pairs and table rows')
 
 	local function insert_mark(line, rail, mark)
-		local column_offset = (rail == 1) and 0 or 5
+		local column_offset = (rail == right_rail_mask) and 5 or 0
 		local prop = mark.prop
 		
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
@@ -458,6 +486,7 @@ local function make_rail_len_table(marks)
 end
 
 local function report_gaps(params)
+	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
 	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Меньше 3 мм", "Все", "Больше 22 мм", "Слепые подряд", "Больше 35 мм"}, 2)
 	
 	if not filter_mode then
@@ -527,7 +556,7 @@ local function report_gaps(params)
 	assert(#mark_pairs == data_range.Rows.count, 'misamtch count of mark_pairs and table rows')
 	
 	local function insert_mark(line, rail, mark)
-		local column_offset = (rail == 1) and 0 or 9
+		local column_offset = (rail == right_rail_mask) and 9 or 0
 		local prop = mark.prop
 		local ext = mark.ext
 		
@@ -592,6 +621,7 @@ end
 
 
 local function report_welding(params)
+	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
 	local ok, setup_temperature = iup.GetParam(params.sheetname, nil, "Температура закрепления: %i\n", 35)
 	if not ok then	
 		return
@@ -639,7 +669,7 @@ local function report_welding(params)
 	end
 	
 	local function insert_mark(line, rail, mark)
-		local column_offset = (rail == 1) and 0 or 8
+		local column_offset = (rail == right_rail_mask) and 8 or 0
 		local prop = mark.prop
 		local ext = mark.ext
 		
@@ -706,7 +736,6 @@ local unspec_obj_filter_guids =
 }
 
 local function report_unspec_obj(params)
-	local left_mask = tonumber(Passport.FIRST_LEFT) + 1
 	
 	local dlg = luaiup_helper.ProgressDlg()
 	local marks = Driver:GetMarks()
@@ -733,13 +762,12 @@ local function report_unspec_obj(params)
 		
 		local prop = mark.prop
 		local ext = mark.ext
-		local rail = left_mask == bit32.band(prop.RailMask, 0x3) and "Левый" or "Правый"
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
 		
 		local img_path = ShowVideo ~= 0 and Driver:GetFrame( ext.VIDEOIDENTCHANNEL, prop.SysCoord, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
 		local uri = make_mark_uri(prop.ID)
 		
-		data_range.Cells(line, 1).Value2 = rail
+		data_range.Cells(line, 1).Value2 = get_rail_name(mark)
 		data_range.Cells(line, 2).Value2 = km
 		excel:InsertLink(data_range.Cells(line, 3), uri, sprintf("%.02f", m + mm/1000))
 		data_range.Cells(line, 4).Value2 = prop.Description 
@@ -829,7 +857,6 @@ end
 
 -- отчет по скреплениям 
 local function report_fasteners(params)
-	local left_mask = tonumber(Passport.FIRST_LEFT) + 1
 	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Показать все", "Дефектные", "Нормальные"}, 2)
 	
 	if not filter_mode then
@@ -863,7 +890,6 @@ local function report_fasteners(params)
 	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
 	excel:ApplyPassportValues(Passport)
 	local data_range = excel:CloneTemplateRow(#marks)
-	print('==***', #marks)
 
 	local fastener_type_names = {
 		[0] = 'КБ-65',
@@ -886,7 +912,7 @@ local function report_fasteners(params)
 		
 		local uri = make_mark_uri(prop.ID)
 		excel:InsertLink(data_range.Cells(line, 1), uri, sprintf("%d km %.3f m", km, m + mm/1000))
-		data_range.Cells(line, 2).Value2 = left_mask == bit32.band(prop.RailMask, 0x3) and "Левый" or "Правый"
+		data_range.Cells(line, 2).Value2 = get_rail_name(mark)
 		data_range.Cells(line, 3).Value2 = Driver:GetSumTypeName(prop.Guid)
 		data_range.Cells(line, 4).Value2 = fastener_type_names[fastener_params['FastenerType']] or '??'
 		data_range.Cells(line, 5).Value2 = fastener_fault_names[fastener_params['FastenerFault']] or '??'
@@ -905,6 +931,181 @@ local function report_fasteners(params)
 	excel:SaveAndShow()
 end
 
+
+-- отчет по сткпенькам на стыках
+local function report_recog_joint_step(params)
+
+	local ok, min_height = iup.GetParam(params.sheetname, nil, "Пороговая высота ступеньки: %i мм\n", 20)
+	if not ok then	
+		return
+	end
+
+	local function filter_fn(mark)
+		local accept = table_find(gap_rep_filter_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
+		if accept then 
+			local step = mark_helper.GetRailGapStep(mark)
+			accept = step and step >= min_height
+		end
+		return accept
+	end
+	
+	local dlg = luaiup_helper.ProgressDlg()
+	local marks = Driver:GetMarks()
+	
+		local function filter_progress (all, checked, accepted)
+		dlg:step(checked / all, string.format('check %d / %d mark, accept %d', checked, all, accepted))
+	end
+	
+	marks = mark_helper.filter_marks(marks, filter_fn, filter_progress)
+	marks = mark_helper.sort_marks(marks, function(mark) return {mark.prop.SysCoord} end)
+	
+	if #marks == 0 then
+		iup.Message('Info', "Подходящих отметок не найдено")
+		return
+	end
+	
+	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
+	excel:ApplyPassportValues(Passport)
+	local data_range = excel:CloneTemplateRow(#marks)
+
+	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
+
+	for line, mark in ipairs(marks) do
+		local prop, ext = mark.prop, mark.ext
+		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
+		local step = mark_helper.GetRailGapStep(mark)
+		
+		local uri = make_mark_uri(prop.ID)
+		excel:InsertLink(data_range.Cells(line, 1), uri, sprintf("%d km %.3f m", km, m + mm/1000))
+		data_range.Cells(line, 2).Value2 = get_rail_name(mark)
+		data_range.Cells(line, 3).Value2 = Driver:GetSumTypeName(prop.Guid)
+		data_range.Cells(line, 4).Value2 = sprintf("%d", step)
+		insert_frame(excel, data_range, mark, line, 5)
+		
+		if not dlg:step(line / #marks, stuff.sprintf(' Process %d / %d mark', line, #marks)) then 
+			break
+		end
+	end 
+
+	if ShowVideo == 0 then 
+		excel:AutoFitDataRows()
+		data_range.Cells(5).ColumnWidth = 0
+	end
+	
+	excel:SaveAndShow()
+end
+
+-- ищет короткие рельсы, возвращает массив пар отметок, ограничивающих врезку
+local function scan_for_short_rail(marks, min_length)
+	local res = {}
+	local prev_mark = {}
+	
+	for _, mark in ipairs(marks) do
+		local rail = bit32.band(mark.prop.RailMask)
+		local coord = mark.prop.SysCoord
+		if prev_mark[rail] and coord - prev_mark[rail].coord < min_length then
+			table.insert(res, {prev_mark[rail].mark, mark})
+		end
+		prev_mark[rail] = {coord=coord, mark=mark}
+	end
+	return res
+end
+
+local function scan_for_rr_switch()
+	local marks = Driver:GetMarks{ListType='all', GUIDS=switch_guids}
+	local res = {}
+	for i = 1, #marks do
+		local mark = marks[i]
+		local prop = mark.prop
+		res[#res+1] = {from=prop.SysCoord, to=prop.SysCoord + prop.Len, id=prop.ID}
+	end
+	printf('found %d switches', #res)
+	return res
+end
+
+-- проверить что координата находится в стрелке
+local function is_inside_switch(switches, coords)
+	for _, switch in ipairs(switches) do
+		local inside = true
+		for _, c in ipairs(coords) do
+			if c < switch.from or switch.to < c then
+				inside = false
+				break
+			end
+		end
+		if inside then
+			return switch.id
+		end
+	end
+	return nil
+end
+	
+
+-- отчет по коротким стыкам
+local function report_short_rails(params)
+	local ok, min_length = iup.GetParam(params.sheetname, nil, "Пороговая длинна рельса: %i м\n", 8)
+	if not ok then	
+		return
+	end
+
+	local function filter_type_fn(mark)
+		return table_find(gap_rep_filter_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
+	end
+	
+	local dlg = luaiup_helper.ProgressDlg()
+	local marks = Driver:GetMarks()
+	
+	local function filter_progress (all, checked, accepted)
+		dlg:step(checked / all, string.format('check %d / %d mark, accept %d', checked, all, accepted))
+	end
+	
+	marks = mark_helper.filter_marks(marks, filter_type_fn, filter_progress)
+	marks = mark_helper.sort_marks(marks, function(mark) return {mark.prop.SysCoord} end)
+
+	local short_rails = scan_for_short_rail(marks, min_length*1000)
+
+	if #short_rails == 0 then
+		iup.Message('Info', "Подходящих отметок не найдено")
+		return
+	end
+	local rr_switchs = scan_for_rr_switch()
+	
+	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
+	excel:ApplyPassportValues(Passport)
+	local data_range = excel:CloneTemplateRow(#short_rails)
+
+	assert(#short_rails == data_range.Rows.count, 'misamtch count of mark and table rows')
+
+	for line, mark_pair in ipairs(short_rails) do
+		local mark1, mark2 = table.unpack(mark_pair)
+		local prop1, prop2 = mark1.prop, mark2.prop
+		local km1, m1, mm1 = Driver:GetPathCoord(prop1.SysCoord)
+		local km2, m2, mm2 = Driver:GetPathCoord(prop2.SysCoord)
+		local switch_id = is_inside_switch(rr_switchs, {prop1.SysCoord, prop2.SysCoord})
+		
+		local uri = make_mark_uri(prop1.ID)
+		local text_pos = sprintf("%d km %.1f = %d km %.1f", km1, m1 + mm1/1000, km2, m2 + mm2/1000)
+		excel:InsertLink(data_range.Cells(line, 1), uri, text_pos)
+		data_range.Cells(line, 2).Value2 = sprintf("%.1f", (prop2.SysCoord - prop1.SysCoord) / 1000)
+		data_range.Cells(line, 3).Value2 = get_rail_name(mark1)
+		if switch_id then
+			local switch_uri = make_mark_uri(switch_id)
+			excel:InsertLink(data_range.Cells(line, 4), switch_uri, "Да")
+		end
+		insert_frame(excel, data_range, mark1, line, 5, nil, {prop1.SysCoord-500, prop2.SysCoord+500})
+		
+		if not dlg:step(line / #short_rails, stuff.sprintf(' Out %d / %d line', line, #short_rails)) then 
+			break
+		end
+	end 
+
+	if ShowVideo == 0 then 
+		excel:AutoFitDataRows()
+		data_range.Cells(5).ColumnWidth = 0
+	end
+	
+	excel:SaveAndShow()
+end
 -- ====================================================================================
 
 
@@ -915,7 +1116,7 @@ local beacon_rep_filter_guids =
 }
 
 local Report_Functions = {
-	---{name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
+	-- {name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 	--{name="Сохранить в Excel",			fn=mark2excel,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="test",}, 					},
 	{name="Ведомость болтовых стыков",		fn=report_crew_join,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ведомость Болтов",}, 		guids=gap_rep_filter_guids},
 	{name="Ведомость Зазоров",				fn=report_gaps,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ведомость Зазоров",}, 		guids=gap_rep_filter_guids},
@@ -930,6 +1131,8 @@ local Report_Functions = {
 	{name=" коорд. cтыков (магн.) | 18_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=18, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
 	
 	{name="Ведомость скреплений",		fn=report_fasteners,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ведомость Скреплений",}, 		guids=fastener_guids},
+	{name="Горизонтальные ступеньки",	fn=report_recog_joint_step,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Горизонтальные ступеньки",}, 		guids=gap_rep_filter_guids},
+	{name="Рубки",						fn=report_short_rails,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Рубки",}, 		guids=gap_rep_filter_guids},
 }
 
 

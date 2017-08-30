@@ -162,6 +162,38 @@ local function GetGapWidthName(mark, name)
 	return nil
 end
 
+-- получить высоты ступеньки на стыке
+local function GetRailGapStep(mark)
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom)
+	if not xmlDom:loadXML(mark.ext.RAWXMLDATA) then 
+		return nil
+	end 
+	local node = xmlDom:SelectSingleNode('\z
+		/ACTION_RESULTS\z
+		/PARAM[@name="ACTION_RESULTS" and @value="CalcRailGapStep"]\z
+		/PARAM[@name="FrameNumber" and @value and @coord]\z
+		/PARAM[@name="Result" and @value="main"]\z
+		/PARAM[@name="RailGapStepWidth" and @value]/@value')
+	return node and tonumber(node.nodeValue)
+end
+
+
+-- ================================= Маячные отметки ====================================
+
+--получить смещенеи маячной отметки
+local function GetBeaconOffset(mark)
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom)
+	local node = xmlDom:loadXML(mark.ext.RAWXMLDATA) and xmlDom:SelectSingleNode('\z
+		/ACTION_RESULTS\z
+		/PARAM[@name="ACTION_RESULTS" and @value="Beacon_Web"]\z
+		/PARAM[@name="FrameNumber" and @value and @coord]\z
+		/PARAM[@name="Result" and @value="main"]\z
+		/PARAM[@name="Shift_mkm" and @value]/@value')
+	return node and tonumber(node.nodeValue)/1000
+end
+
 -- ================================= БОЛТЫ ====================================
 
 -- получить массив с качествами болтов
@@ -365,6 +397,9 @@ return{
 	GetAllGapWidth = GetAllGapWidth,
 	GetGapWidth = GetGapWidth,
 	GetGapWidthName = GetGapWidthName,
+	GetRailGapStep = GetRailGapStep,
+	
+	GetBeaconOffset = GetBeaconOffset,
 	
 	IsFastenerDefect = IsFastenerDefect,
 	GetFastenetParams = GetFastenetParams,

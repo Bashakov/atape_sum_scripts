@@ -7,35 +7,9 @@ local printf = function(s,...)	print(s:format(...)) 			end
 local SelectNodes = mark_helper.SelectNodes
 local sort_marks = mark_helper.sort_marks
 
-
 local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 assert(xmlDom)
 
-
-
-local function GetBeaconOffset(mark)
-	xmlDom:loadXML(mark.ext.RAWXMLDATA)
-	local node = xmlDom:SelectSingleNode('\z
-		/ACTION_RESULTS\z
-		/PARAM[@name="ACTION_RESULTS" and @value="Beacon_Web"]\z
-		/PARAM[@name="FrameNumber" and @value and @coord]\z
-		/PARAM[@name="Result" and @value="main"]\z
-		/PARAM[@name="Shift_mkm" and @value]/@value')
-	return node and tonumber(node.nodeValue)/1000
-end
-
-local function GetRailGapStep(mark)
-	if not xmlDom:loadXML(mark.ext.RAWXMLDATA) then 
-		return nil
-	end 
-	local node = xmlDom:SelectSingleNode('\z
-		/ACTION_RESULTS\z
-		/PARAM[@name="ACTION_RESULTS" and @value="CalcRailGapStep"]\z
-		/PARAM[@name="FrameNumber" and @value and @coord]\z
-		/PARAM[@name="Result" and @value="main"]\z
-		/PARAM[@name="RailGapStepWidth" and @value]/@value')
-	return node and tonumber(node.nodeValue)
-end
 
 -- получить пареметры скрепления
 local function GetFastenerParam(mark)
@@ -183,12 +157,12 @@ local column_recogn_rail_gap_step =
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
-		local r = GetRailGapStep(mark)
+		local r = mark_helper.GetRailGapStep(mark)
 		return r or ''
 	end,
 	sorter = function(mark)
-		local r = GetRailGapStep(mark)
-		r = r and r or -1
+		local r = mark_helper.GetRailGapStep(mark)
+		r = r and r or 0
 		return {r}
 	end
 }
@@ -238,7 +212,7 @@ local column_recogn_bolt =
 	end,
 	sorter = function(mark)
 		local all, defect = mark_helper.GetCrewJointCount(mark)
-		defect = (all and all == 0) and -1 or defect
+		defect = (all and all ~= 0) and -1 or defect
 		return {defect}
 	end
 }
@@ -272,12 +246,12 @@ local column_beacon_offset =
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
-		local offset = GetBeaconOffset(mark)
+		local offset = mark_helper.GetBeaconOffset(mark)
 		return offset and sprintf('%2d', offset) or ''
 	end,
 	sorter = function(mark)
 		local r = mark.ext.VIDEO_RECOGNITION
-		local offset = GetBeaconOffset(mark)
+		local offset = mark_helper.GetBeaconOffset(mark)
 		return {offset}
 	end
 }
@@ -444,6 +418,7 @@ local Filters =
 			}, 
 		GUIDS = recognition_guids,
 	},
+	
 }
 
 -- внутренняя функция, возвращает описание фильтра по его имени
