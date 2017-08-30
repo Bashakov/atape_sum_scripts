@@ -47,28 +47,6 @@ local function table_find(tbl, val)
 	end
 end
 
--- извлечь количество и качество болтов из xml
-local function GetCrewJointSafe(xmlDom)
-	local count, defect = 0, 0
-	local req_tmpl = '\z
-/ACTION_RESULTS\z
-/PARAM[@name="ACTION_RESULTS" and @value="CrewJoint"]\z
-/PARAM[@name="FrameNumber" and @value]\z
-/PARAM[@name="Result" and @value="main"]\z
-/PARAM[@name="JointNumber" and @value]\z
-/PARAM[@name="CrewJointSafe" and @value]/@value'
-
-	for node in SelectNodes(xmlDom, req_tmpl) do
-		count = count + 1
-		local safe = tonumber(node.nodeValue)
-		if safe < 1 then
-			defect = defect + 1
-		end
-	end
-
-	return count, defect
-end
-
 -- сделать строку ссылку для открытия атейпа на данной отметке
 local function make_mark_uri(markid)
 	local link = stuff.sprintf(" -g %s -mark %d", Passport.GUID, markid)
@@ -127,6 +105,21 @@ local function FilterSort(marks, fnFilter, fnCmpKey, cbProgress)
 	return marks
 end
 
+local function make_filter_progress_fn(dlg)
+	return function(all, checked, accepted)
+		dlg:step(checked / all, string.format('Check %d / %d mark, accept %d', checked, all, accepted))
+	end
+end
+
+-- вернуть ключь сортировки по системной координате
+local function get_sys_coord_key(mark)
+	return {mark.prop.SysCoord} 
+end
+
+-- отсортировать отметки по системной координате
+local function sort_mark_by_coord(marks)
+	return mark_helper.sort_marks(marks, get_sys_coord_key)
+end
 
 -- разбивает отметки на пары, marks должен быть отсортирован по сиситемной координате
 local function BuildMarkPairs(marks, dist)
@@ -413,12 +406,8 @@ local function report_crew_join(params)
 	local dlg = luaiup_helper.ProgressDlg()
 	local marks = Driver:GetMarks()
 	
-	local function filter_progress (all, checked, accepted)
-		dlg:step(checked / all, string.format('check %d / %d mark, accept %d', checked, all, accepted))
-	end
-	
-	marks = mark_helper.filter_marks(marks, filter_fn, filter_progress)
-	marks = mark_helper.sort_marks(marks, function(mark) return {mark.prop.SysCoord} end)
+	marks = mark_helper.filter_marks(marks, filter_fn, make_filter_progress_fn(dlg))
+	marks = sort_mark_by_coord(marks)
 	
 	local mark_pairs = BuildMarkPairs(marks, 500)
 	if #mark_pairs == 0 then
@@ -485,6 +474,7 @@ local function make_rail_len_table(marks)
 	return mark_rail_len
 end
 
+-- отчет по зазорам
 local function report_gaps(params)
 	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
 	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Меньше 3 мм", "Все", "Больше 22 мм", "Слепые подряд", "Больше 35 мм"}, 2)
@@ -496,33 +486,21 @@ local function report_gaps(params)
 	local dlg = luaiup_helper.ProgressDlg()
 	local marks = Driver:GetMarks()
 	
-	local function filter_fn(mark)
+	local function filter_type_fn(mark)
 		return table_find(gap_rep_filter_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
 	end
 	
-	local function filter_progress (all, checked, accepted)
-		dlg:step(checked / all, string.format('check %d / %d mark, accept %d', checked, all, accepted))
-	end
+	marks = mark_helper.filter_marks(marks, filter_type_fn, make_filter_progress_fn(dlg))
+	marks = sort_mark_by_coord(marks)
 	
-	marks = mark_helper.filter_marks(marks, filter_fn, filter_progress)
-	marks = mark_helper.sort_marks(marks, function(mark) return {mark.prop.SysCoord} end)
-	
---	marks = FilterSort(marks, 
---		function(mark) return guids[mark.prop.Guid] and mark.ext.RAWXMLDATA end,
---		function(mark) return {mark.prop.SysCoord} end,
---		function(val, desc) dlg:step(val, desc) end)
-
-
 	local mark_rail_len = make_rail_len_table(marks)
 
 	if filter_mode == 1 or filter_mode == 3 or filter_mode == 5 then
-		local function filter_fn(mark)
+		local function filter_width_fn(mark)
 			local width = mark_helper.GetGapWidth(mark)
 			return width and ((filter_mode == 1 and width <= 3) or (filter_mode == 3 and width >= 22) or (filter_mode == 5 and width >= 35))
 		end
-		
-		--marks = FilterSort(marks, ff, nil, function(val, desc) dlg:step(val, desc) end)
-		marks = mark_helper.filter_marks(marks, filter_fn, filter_progress)
+		marks = mark_helper.filter_marks(marks, filter_width_fn, make_filter_progress_fn(dlg))
 
 	elseif filter_mode == 4 then
 		local mark_ids = {}
@@ -539,7 +517,7 @@ local function report_gaps(params)
 			dlg:step(i / #marks, string.format('scan for blind joint %d / %d mark', i, #marks))
 		end
 		
-		marks = mark_helper.filter_marks(marks, function(mark) return mark_ids[mark.prop.ID] end, filter_progress)
+		marks = mark_helper.filter_marks(marks, function(mark) return mark_ids[mark.prop.ID] end, make_filter_progress_fn(dlg))
 	end
 
 	local mark_pairs = BuildMarkPairs(marks, 500)
@@ -619,7 +597,7 @@ local function report_gaps(params)
 	excel:SaveAndShow()
 end
 
-
+-- отчет по маячнам отметкам
 local function report_welding(params)
 	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
 	local ok, setup_temperature = iup.GetParam(params.sheetname, nil, "Температура закрепления: %i\n", 35)
@@ -637,7 +615,7 @@ local function report_welding(params)
 	
 	marks = FilterSort(marks, 
 		function(mark) return guids[mark.prop.Guid] and mark.ext.RAWXMLDATA and  mark.ext.VIDEOIDENTCHANNEL end,
-		function(mark) return {mark.prop.SysCoord} end,
+		get_sys_coord_key,
 		function(val, desc) dlg:step(val, desc) end)
 
 	local mark_pairs = BuildMarkPairs(marks, 500)
@@ -657,17 +635,6 @@ local function report_welding(params)
 
 	local prev_mark_offset = {}
 
-	local function GetBeaconOffset(mark)
-		xmlDom:loadXML(mark.ext.RAWXMLDATA)
-		local node = xmlDom:SelectSingleNode('\z
-			/ACTION_RESULTS\z
-			/PARAM[@name="ACTION_RESULTS" and @value="Beacon_Web"]\z
-			/PARAM[@name="FrameNumber" and @value and @coord]\z
-			/PARAM[@name="Result" and @value="main"]\z
-			/PARAM[@name="Shift_mkm" and @value]/@value')
-		return node and tonumber(node.nodeValue)/1000
-	end
-	
 	local function insert_mark(line, rail, mark)
 		local column_offset = (rail == right_rail_mask) and 8 or 0
 		local prop = mark.prop
@@ -693,7 +660,7 @@ local function report_welding(params)
 		excel:InsertLink(data_range.Cells(line, 2 + column_offset), uri, sprintf("%.02f", m + mm/1000))
 		data_range.Cells(line, 3 + column_offset).Value2 = temperature 
 		
-		local shift = GetBeaconOffset(mark)
+		local shift = mark_helper.GetBeaconOffset(mark)
 		if shift then
 			if not prev_mark_offset[prop.RailMask] then prev_mark_offset[prop.RailMask] = 0 end
 			local diff_dist = shift - prev_mark_offset[prop.RailMask]
@@ -735,6 +702,7 @@ local unspec_obj_filter_guids =
 	"{0860481C-8363-42DD-BBDE-8A2366EFAC90}",
 }
 
+-- отчет по неспецифицированным объектам
 local function report_unspec_obj(params)
 	
 	local dlg = luaiup_helper.ProgressDlg()
@@ -744,7 +712,7 @@ local function report_unspec_obj(params)
 	
 	marks = FilterSort(marks, 
 		function(mark) return guids[mark.prop.Guid] and mark.ext.VIDEOFRAMECOORD and mark.ext.VIDEOIDENTCHANNEL and mark.ext.UNSPCOBJPOINTS end,
-		function(mark) return {mark.prop.SysCoord} end,
+		get_sys_coord_key,
 		function(val, desc) dlg:step(val, desc) end)
 
 	if #marks == 0 then
@@ -808,7 +776,7 @@ local function report_coord(params)
 	
 	marks = FilterSort(marks, 
 		function(mark) return guids[mark.prop.Guid] end,
-		function(mark) return {mark.prop.SysCoord} end,
+		get_sys_coord_key,
 		function(val, desc) dlg:step(val, desc) end)
 
 	if #marks == 0 then
@@ -854,7 +822,6 @@ local function report_coord(params)
 end
 
 
-
 -- отчет по скреплениям 
 local function report_fasteners(params)
 	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Показать все", "Дефектные", "Нормальные"}, 2)
@@ -876,10 +843,8 @@ local function report_fasteners(params)
 	local dlg = luaiup_helper.ProgressDlg()
 	local marks = Driver:GetMarks()
 	
-	marks = FilterSort(marks, 
-		filter_fn,
-		function(mark) return {mark.prop.SysCoord} end,
-		function(val, desc) dlg:step(val, desc) end)
+	marks = mark_helper.filter_marks(marks, filter_fn, make_filter_progress_fn(dlg))
+	marks = sort_mark_by_coord(marks)
 
 	if #marks == 0 then
 		iup.Message('Info', "Подходящих отметок не найдено")
@@ -952,12 +917,8 @@ local function report_recog_joint_step(params)
 	local dlg = luaiup_helper.ProgressDlg()
 	local marks = Driver:GetMarks()
 	
-		local function filter_progress (all, checked, accepted)
-		dlg:step(checked / all, string.format('check %d / %d mark, accept %d', checked, all, accepted))
-	end
-	
-	marks = mark_helper.filter_marks(marks, filter_fn, filter_progress)
-	marks = mark_helper.sort_marks(marks, function(mark) return {mark.prop.SysCoord} end)
+	marks = mark_helper.filter_marks(marks, filter_fn, make_filter_progress_fn(dlg))
+	marks = sort_mark_by_coord(marks)
 	
 	if #marks == 0 then
 		iup.Message('Info', "Подходящих отметок не найдено")
@@ -1055,12 +1016,8 @@ local function report_short_rails(params)
 	local dlg = luaiup_helper.ProgressDlg()
 	local marks = Driver:GetMarks()
 	
-	local function filter_progress (all, checked, accepted)
-		dlg:step(checked / all, string.format('check %d / %d mark, accept %d', checked, all, accepted))
-	end
-	
-	marks = mark_helper.filter_marks(marks, filter_type_fn, filter_progress)
-	marks = mark_helper.sort_marks(marks, function(mark) return {mark.prop.SysCoord} end)
+	marks = mark_helper.filter_marks(marks, filter_type_fn, make_filter_progress_fn(dlg))
+	marks = sort_mark_by_coord(marks)
 
 	local short_rails = scan_for_short_rail(marks, min_length*1000)
 
