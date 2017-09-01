@@ -2,6 +2,10 @@ if not ATAPE then
 	require "iuplua" 
 end
 
+if iup then
+	iup.SetGlobal('UTF8MODE', 1)
+end
+
 -- OOP = require 'OOP'
 
 mark_helper = require 'sum_mark_helper'
@@ -939,9 +943,9 @@ local function report_recog_joint_step(params)
 		local uri = make_mark_uri(prop.ID)
 		excel:InsertLink(data_range.Cells(line, 1), uri, sprintf("%d km %.3f m", km, m + mm/1000))
 		data_range.Cells(line, 2).Value2 = get_rail_name(mark)
-		data_range.Cells(line, 3).Value2 = Driver:GetSumTypeName(prop.Guid)
-		data_range.Cells(line, 4).Value2 = sprintf("%d", step)
-		insert_frame(excel, data_range, mark, line, 5)
+		--data_range.Cells(line, 3).Value2 = Driver:GetSumTypeName(prop.Guid)
+		data_range.Cells(line, 3).Value2 = sprintf("%d", step)
+		insert_frame(excel, data_range, mark, line, 4)
 		
 		if not dlg:step(line / #marks, stuff.sprintf(' Process %d / %d mark', line, #marks)) then 
 			break
@@ -950,7 +954,7 @@ local function report_recog_joint_step(params)
 
 	if ShowVideo == 0 then 
 		excel:AutoFitDataRows()
-		data_range.Cells(5).ColumnWidth = 0
+		data_range.Cells(4).ColumnWidth = 0
 	end
 	
 	excel:SaveAndShow()
