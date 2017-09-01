@@ -423,6 +423,9 @@ local function DrawFastener(drawer, frame, mark)
 		nodeFastenerType = nodeFastenerType and nodeFastenerType.nodeValue
 		nodeFastenerFault = nodeFastenerFault and nodeFastenerFault.nodeValue
 		
+		local fig_channel = node:SelectSingleNode("../../../@channel")
+		fig_channel = fig_channel and tonumber(fig_channel.nodeValue)
+		
 		local polygon = node:SelectSingleNode('@value').nodeValue
 	
 		local points = parse_polygon(polygon, cur_frame_coord, item_frame)
@@ -431,7 +434,7 @@ local function DrawFastener(drawer, frame, mark)
 		--print(polygon, cur_frame_coord, item_frame)
 		--print(points[1], points[2], points[3], points[4], points[5], points[6], points[7], points[8])
 			
-		if #points == 8 then
+		if #points == 8 and (not fig_channel or not frame.channel or fig_channel == frame.channel) then
 			drawer.prop:lineWidth(1)
 			drawer.prop:fillColor(color.r, color.g, color.b, 20)
 			drawer.prop:lineColor(color.r, color.g, color.b, 255)
@@ -446,6 +449,9 @@ local function DrawFastener(drawer, frame, mark)
 			---	nodeFastenerType and (fastener_type_names[tonumber(nodeFastenerType)] or nodeFastenerType) or '', 
 			--	nodeFastenerFault and (fastener_fault_names[tonumber(nodeFastenerFault)] or nodeFastenerFault) or '',
 			--	raw_points[5]- raw_points[1])				
+
+        -- local strText = sprintf('%s, %s', raw_points[1], raw_points[2] )
+
 
 			
 			drawer.text:font { name="Tahoma", render="VectorFontCache", height=11, bold=0}
