@@ -67,7 +67,7 @@ local function FindWorkSheet(workbook, sheet_name)
 	for i = 1, workbook.Worksheets.Count do
 		local sheet = workbook.Worksheets(i)				-- ищем лист с нужным именем
 		-- print(i, sheet.name)
-		if sheet.name == sheet_name then
+		if not sheet_name or #sheet_name == 0 or sheet.name == sheet_name then
 			worksheet = sheet								-- сохраняем для использования
 			worksheet:Activate()							-- и активируем его
 		else
@@ -86,11 +86,16 @@ end
 
 local function FindTemplateRowNum(user_range)
 	for r = 1, user_range.Rows.count do						-- по всем строкам
-		local val = user_range.Cells(r, 1).Value2			-- проверяем первую ячейку
-		local replaced, found = string.gsub(val or '', '%%table%%', '')
-		if found ~= 0 then
-			user_range.Cells(r, 1).Value2 = replaced		-- если нашли, то уберем маркер
-			return r
+		for c = 1, user_range.Columns.count do
+			local val = user_range.Cells(r, c).Value2			-- проверяем ячейку
+			-- print(r, c, val)
+			for _, table_marker in ipairs{'%%table%%', '%$table%$'} do
+				local replaced, found = string.gsub(val or '', table_marker, '')
+				if found ~= 0 then
+					user_range.Cells(r, 1).Value2 = replaced		-- если нашли, то уберем маркер
+					return r
+				end
+			end
 		end
 	end
 end
@@ -102,6 +107,7 @@ end
 excel_helper = OOP.class
 {
 	ctor = function(self, template_path, sheet_name, visible)
+		sheet_name = sheet_name or ""
 		self._excel = luacom.CreateObject("Excel.Application") 		-- запустить экземпляр excel
 		assert(self._excel, "Error! Could not run EXCEL object!")
 		
@@ -116,26 +122,37 @@ excel_helper = OOP.class
 		assert(self._worksheet, stuff.sprintf('can not find "%s" worksheet', sheet_name))
 	end,
 
-	ApplyPassportValues = function(self, psp)						-- заменить строки вида $START_KM$ на значения из паспорта
-		local user_range = self._worksheet.UsedRange
-		for n = 1, user_range.Cells.count do						-- пройдем по всем ячейкам	
-			local cell = user_range.Cells(n);
-			local val = cell.Value2		
+	-- проити по всему диаппазону и заменить подстановки
+	-- sources_values - массив таблиц со значениями
+	ReplaceTemplates = function(self, dst_range, sources_values)
+		assert(type(sources_values[1]) == 'table')
+			
+		for n = 1, dst_range.Cells.count do						-- пройдем по всем ячейкам	
+			local cell = dst_range.Cells(n);
+			local val = cell.Value2	
 			if val then
-				local replaced, found = string.gsub(val, '%$([%w_]+)%$', psp) -- и заменим шаблон
-				if found > 0 then
-					cell.Value2 = replaced							-- вставим исправленной значение
+				for _, src in ipairs(sources_values) do
+					val, _ = string.gsub(val, '%$([%w_]+)%$', src) -- и заменим шаблон
 				end
+				--print(n, cell.Value2, val)
+				cell.Value2 = val
 			end
 		end
 	end,
 
-	CloneTemplateRow = function(self, row_count)
+	ApplyPassportValues = function(self, psp)						-- заменить строки вида $START_KM$ на значения из паспорта
+		local user_range = self._worksheet.UsedRange
+		self:ReplaceTemplates(user_range, {psp})
+	end,
+
+	CloneTemplateRow = function(self, row_count, correction)
+		correction = correction or 0
 		local user_range = self._worksheet.UsedRange				-- возьмем пользовательский диаппазон (ограничен незаполненными ячейками, и имеет свою внутреннюю адресацию)
 		
 		local template_row_num = FindTemplateRowNum(user_range)		-- номер шаблона строки с данными
 		assert(template_row_num, 'Can not find table marker in tempalate')
-
+		template_row_num = template_row_num + correction
+		
 		if row_count > 1 then
 			local row_template = user_range.Rows(template_row_num+1).EntireRow -- возьмем строку (включая размеремы EntireRow)
 			row_template:Resize(row_count-1):Insert()				-- размножим ее

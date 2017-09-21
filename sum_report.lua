@@ -1100,7 +1100,7 @@ local Report_Functions = {
 -- ================================ EXPORT FUNCTIONS ================================= --
 
 function GetAvailableReports() -- exported
-	res = {}
+	local res = {}
 	for _, n in ipairs(Report_Functions) do 
 		table.insert(res, n.name)
 	end
