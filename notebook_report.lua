@@ -28,8 +28,18 @@ local function is_record_included(record)
 	return ok
 end
 
+local function is_record_selected(record)
+	local ok = record.USER_SELECTED == "1" 
+	return ok
+end	
+
 local function filter_included_mark(records, dlg)
 	local res = mark_helper.filter_marks(records, is_record_included, make_filter_progress_fn(dlg))
+	return res
+end
+
+local function filter_selected_mark(records, dlg)
+	local res = mark_helper.filter_marks(records, is_record_selected, make_filter_progress_fn(dlg))
 	return res
 end
 
@@ -49,6 +59,25 @@ local function get_record_rail(record)
 	end
 	return res
 end
+
+local function make_report_dir()
+	local folter = os.getenv('USERPROFILE') .. '\\ATapeReport\\' .. os.date('%y%m%d-%H%M%S') .. '\\'
+	os.execute('mkdir ' .. folter)
+	return folter
+end
+
+local function format_path_coord(record)
+	local km, m, mm = Driver:GetPathCoord(record.MARK_COORD)
+	local res = sprintf('%d км %.1f м', km, m + mm/1000)
+	return res
+end
+
+local function get_str_sved(record)
+	local desc = {"Без сведения", "Сведение сдвигом", "Полное сведение", "Сечение рельса"}
+	local res = desc[record.SVED+1]
+	return res
+end
+	
 
 -- =================== Отчеты =====================
 
@@ -127,6 +156,49 @@ local function vedomost_with_US_images_excel(records)
 --	end
 	excel:SaveAndShow()
 end
+
+local function report_html_properties(records)
+	local resty = require "resty.template"
+	local view = resty.compile[[
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>{{Passport.NAME}}</title>
+	</head> 
+	
+<body>
+	<h1>Список Свойств отметок</h1>
+	
+	<table>
+	{% for i, record in ipairs(records) do %}
+		<tr>
+			<th>Отметка: {{i}}</th>
+		</tr>
+		{% for name, value in pairs(record) do %}
+			<tr>
+				<td>{{name}}</td>
+				<td>{{value}}</td>
+			</tr>
+		{% end %}
+	{% end %}
+	<table>
+	<br/>
+</body>
+</html>]]
+
+	local folter = make_report_dir()
+	local file_name = folter .. 'record_propertyes.html'
+	
+	local res = view{records=records}
+
+	local dst_file = assert(io.open(file_name, 'w+'))
+	dst_file:write(res)
+	dst_file:close()
+	
+	os.execute("start " .. file_name)
+end
+
 
 local function vedomost_with_US_images_html(records)
 	local resty = require "resty.template"
@@ -257,8 +329,7 @@ table.DataDesc {
 </html>]]
 
 
-	local folter = os.getenv('USERPROFILE') .. '\\ATapeReport\\' .. os.date('%y%m%d-%H%M%S') .. '\\'
-	os.execute('mkdir ' .. folter)
+	local folter = make_report_dir()
 	local file_name = folter .. 'report.html'
 	
 	local filtred_records = {}
@@ -299,13 +370,74 @@ local function report_make_dump(records)
 	io.output(prev_output)
 end
 
+
+
+
+local function excel_defectogram(records)
+	local insert_us_img = true
+	local insert_video_img = true
+	
+	local dlg = luaiup_helper.ProgressDlg()
+	
+	records = filter_selected_mark(records, dlg)
+
+	if #records == 0 then
+		iup.Message('Info', "Выделенных отметок не найдено")
+		return
+	end
+	
+	local excel = excel_helper(Driver:GetAppPath() .. 'Telegrams\\Defectogram.xlsx', nil, true)
+	
+	excel:ApplyPassportValues(Passport)
+	for line, dst_tbl in excel:EnumDstTable(#records) do
+		local record = records[line]
+		record.PATH = format_path_coord(record)
+		record.STR_SVED = get_str_sved(record)
+		excel:ReplaceTemplates(dst_tbl, {record})
+		
+		if insert_us_img and Driver.GetUltrasoundImage then
+			local us_img_path = Driver:GetUltrasoundImage{note_rec=record, width=800, height=600, color=1, coord=record.MARK_COORD}
+			if us_img_path and #us_img_path then
+				excel:InsertImage(dst_tbl.Cells(11, 1), us_img_path)
+			end
+		else
+			dst_tbl.Cells(11, 1).RowHeight = 1
+		end
+		
+		if insert_video_img and Driver.GetFrame then
+			local rail = get_record_rail(record)
+			local video_channel = rail==1 and 18 or 17
+			local video_img_path = Driver:GetFrame( video_channel, record.MARK_COORD, {mode=3, panoram_width=700, width=800, height=600} )
+			if video_img_path and #video_img_path then
+				excel:InsertImage(dst_tbl.Cells(12, 1), video_img_path)
+			end
+		else
+			dst_tbl.Cells(12, 1).RowHeight = 1
+		end
+		
+		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then 
+			break
+		end
+	end 
+
+--	if ShowVideo == 0 then 
+--		excel:AutoFitDataRows()
+--		data_range.Cells(5).ColumnWidth = 0
+--	end
+	excel:SaveAndShow()
+	
+end
+
+
 -- =================== Описание отчетов =====================
 
 local REPORTS = 
 {
 	{ name = 'Создать дамп отметок', fn = report_make_dump },
+	{ name = 'Свойства отметок', fn = report_html_properties },
 	{ name = 'Ведомость HTML с изображениями УЗ', fn = vedomost_with_US_images_html },
 	{ name = 'Ведомость EXCEL с изображениями УЗ', fn = vedomost_with_US_images_excel },
+	{ name = 'Дефектограмма', fn = excel_defectogram },
 }
 
 -- =================== EXPORT FUNCTION =====================

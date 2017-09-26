@@ -40,7 +40,7 @@ local function CopyFile(src, dst)
 end
 
 local function CopyTemplate(template_path, sheet_name)		-- скопировать файл шаблона в папку отчетов
-	local new_name = os.getenv('USERPROFILE') .. '\\ATapeReport\\' .. os.date('%y%m%d-%H%M%S ') .. sheet_name .. '.xls'
+	local new_name = os.getenv('USERPROFILE') .. '\\ATapeReport\\' .. os.date('%y%m%d-%H%M%S') .. sheet_name .. '.xls'
 	if not CopyFile(template_path, new_name) then
 		stuff.errorf('copy file %s -> %s failed', template_path, new_name)
 	end
@@ -177,7 +177,7 @@ excel_helper = OOP.class
 		-- print(cell.row, cell.column)
 		hyperlinks:Add(cell, url, nil, nil, tostring(text or url))
 	end,
-
+	
 	InsertImage = function(self, cell, img_path)					-- вставка изображения в ячейку
 		local XlPlacement = 
 		{
@@ -190,7 +190,7 @@ excel_helper = OOP.class
 			local shapes = cell.worksheet.Shapes
 			--local shapes = self._worksheet.Shapes
 			-- print(cell.row, cell.column, cell.Left, cell.Top, cell.Width, cell.Height)
-			local picture = shapes:AddPicture(img_path, false, true, cell.Left, cell.Top, cell.Width, cell.Height);
+			local picture = shapes:AddPicture(img_path, false, true, cell.Left, cell.Top, cell.MergeArea.Width, cell.MergeArea.Height)
 			picture.Placement = XlPlacement.xlMoveAndSize
 		end)
 	
@@ -208,6 +208,69 @@ excel_helper = OOP.class
 		self._workbook:Save()
 	end,
 	
+	-- поиск диапазона с шаблоном таблицы, возвращает пару ячеек левую верхнюю и правую нижнюю
+	ScanTemplateTableRange = function (self, worksheet)
+		local templates = {'table_begin', 'table_end'}
+		local cells = {}
+		local user_range = worksheet.UsedRange
+		for n = 1, user_range.Cells.count do						-- пройдем по всем ячейкам	
+			local cell = user_range.Cells(n);
+			local val = cell.Value2	
+			if val then
+				for i, tmp in ipairs(templates) do
+					val, found = string.gsub(val, '%%' .. tmp .. '%%', '') -- и заменим шаблон
+					if found ~= 0 then
+						cells[i] = cell
+					end
+				end
+				--print(n, cell.Value2, val)
+				cell.Value2 = val
+			end
+		end
+		assert(cells[1], 'Can not find table_begin marker')
+		assert(cells[2], 'Can not find table_end marker')
+		return cells[1], cells[2]
+	end,
+
+	-- генератор, для использования в цикле for, возвращает номер и диаппазон, куда следует вставлять данные
+	EnumDstTable = function(self, count)
+		local const = {
+			xlDown = -4121,
+			xlShiftToRight = -4161
+		}
+		
+		local worksheet = self._worksheet
+		local c1, c2 = self:ScanTemplateTableRange(worksheet) -- ищем шаблонную таблицу
+		
+		local src_table = worksheet:Range(c1, c2)
+		if count > 1 then
+			local a = worksheet.Cells(c2.row+1, c1.column)
+			local dst_range = a:Resize(src_table.Rows.count * (count-1), src_table.Columns.count)
+			dst_range:Insert(const.xlDown)
+		end
+		
+		local function get_table(i) -- функция возвращает диапазон относящийся к требуемой записи (1 <= i <= count)
+			local a1 = worksheet.Cells(c1.row + (i-1)*src_table.Rows.count, c1.column)
+			local a2 = worksheet.Cells(c1.row + (i+0)*src_table.Rows.count, c2.column)
+			local tbl = worksheet:Range(a1, a2)
+			return tbl
+		end
+		
+		for i = 2, count do -- проходим по скопированным таблицам вставляем туда щаблон и исправляем высоты
+			local dst_table = get_table(i)
+			src_table:Copy(dst_table)
+			for r = 1, src_table.Rows.count do
+				dst_table.Rows(r).RowHeight = src_table.Rows(r).RowHeight
+			end
+		end
+		
+		return function(_, i) -- замыкание для for
+			i = i + 1
+			if i <= count then
+				return i, get_table(i)
+			end
+		end, 0, 0
+	end,
 }
 
 -- ======================  TEST HELPERS  ============================= -- 
