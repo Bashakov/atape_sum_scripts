@@ -78,6 +78,12 @@ local function get_str_sved(record)
 	return res
 end
 	
+local function get_video_frame(record, base64)
+	local rail = get_record_rail(record)
+	local video_channel = rail==1 and 18 or 17
+	local video_img = Driver:GetFrame( video_channel, record.MARK_COORD, {mode=3, panoram_width=700, width=400, height=300, base64=base64} )
+	return video_img
+end
 
 -- =================== Отчеты =====================
 
@@ -127,9 +133,7 @@ local function vedomost_with_US_images_excel(records)
 		end
 		
 		if insert_video_img and Driver.GetFrame then
-			local rail = get_record_rail(record)
-			local video_channel = rail==1 and 18 or 17
-			local video_img_path = Driver:GetFrame( video_channel, record.MARK_COORD, {mode=3, panoram_width=700, width=400, height=300} )
+			local video_img_path = get_video_frame(record, false)
 			if video_img_path and #video_img_path then
 				excel:InsertImage(data_range.Cells(line, 19), video_img_path)
 				increase_height = true
@@ -137,14 +141,6 @@ local function vedomost_with_US_images_excel(records)
 			end
 		end
 
---		local img_path = ShowVideo ~= 0 and Driver:GetFrame( ext.VIDEOIDENTCHANNEL, prop.SysCoord, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
---		local uri = make_mark_uri(prop.ID)
-		
---		data_range.Cells(line, 1).Value2 = get_rail_name(mark)
---		data_range.Cells(line, 2).Value2 = km
---		excel:InsertLink(data_range.Cells(line, 3), uri, sprintf("%.02f", m + mm/1000))
---		data_range.Cells(line, 4).Value2 = prop.Description 
-			
 		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then 
 			break
 		end
@@ -420,11 +416,57 @@ local function excel_defectogram(records)
 		end
 	end 
 
---	if ShowVideo == 0 then 
---		excel:AutoFitDataRows()
---		data_range.Cells(5).ColumnWidth = 0
---	end
 	excel:SaveAndShow()
+end
+
+local function report_EKSUI(records)
+	local resty = require "resty.template"
+	local view = resty.compile[[
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+	<passport>
+	{% for name, value in pairs(Passport) do %}
+		<PARAM name="{{name}}" value="{{value}}"/>
+	{% end %}
+	</passport>
+	
+	{% for i, record in ipairs(records) do %}
+	<record>
+	{% for name, value in pairs(record) do %}
+		<PARAM name="{{name}}" value="{{value}}"/>
+	{% end %}
+		<base64>{*get_encoded_frame(record)*}</base64>
+	</record>
+	{% end %}
+</report>]]
+	
+	local dlg = luaiup_helper.ProgressDlg()
+	
+	records = filter_selected_mark(records, dlg)
+
+	if #records == 0 then
+		iup.Message('Info', "Выделенных отметок не найдено")
+		return
+	end
+	
+	local mark_processed = 0
+	local function get_encoded_frame(record)
+		if not dlg:step(mark_processed / #records, stuff.sprintf(' Process %d / %d mark', mark_processed, #records)) then 
+			error("Прервано пользователем")
+		end
+		mark_processed = mark_processed + 1 
+		local frame_data = get_video_frame(record, true)
+		return frame_data
+	end
+		
+	local res = view{Passport=Passport, records=records,get_encoded_frame=get_encoded_frame}
+
+	local file_name = "c:\\1.xml"
+	local dst_file = assert(io.open(file_name, 'w+'))
+	dst_file:write(res)
+	dst_file:close()
+	
+	os.execute("start " .. file_name)
 	
 end
 
@@ -433,11 +475,12 @@ end
 
 local REPORTS = 
 {
-	{ name = 'Создать дамп отметок', fn = report_make_dump },
-	{ name = 'Свойства отметок', fn = report_html_properties },
-	{ name = 'Ведомость HTML с изображениями УЗ', fn = vedomost_with_US_images_html },
-	{ name = 'Ведомость EXCEL с изображениями УЗ', fn = vedomost_with_US_images_excel },
-	{ name = 'Дефектограмма', fn = excel_defectogram },
+	{ name = 'Создать дамп отметок', fn = report_make_dump, user_select_range=true },
+	{ name = 'Свойства отметок', fn = report_html_properties, user_select_range=true },
+	{ name = 'Ведомость HTML с изображениями УЗ', fn = vedomost_with_US_images_html, user_select_range=true },
+	{ name = 'Ведомость EXCEL с изображениями УЗ', fn = vedomost_with_US_images_excel, user_select_range=true },
+	{ name = 'Дефектограмма', fn = excel_defectogram, user_select_range=false },
+	{ name = 'Выделенные в отчет ЕКСУИ', fn = report_EKSUI, user_select_range=false },
 }
 
 -- =================== EXPORT FUNCTION =====================
@@ -449,6 +492,16 @@ function GetAvailableReports()
 		res[n] = REPORTS[n].name
 	end
 	return res
+end
+
+function UserSelectRange(name)
+	for _, n in ipairs(REPORTS) do 
+		if n.name == name then
+			return n.user_select_range
+		end
+	end
+	
+	stuff.errorf('can not find report [%s] [%s]', name, REPORTS[2].name)
 end
 
 function MakeReport(name, records) -- exported
