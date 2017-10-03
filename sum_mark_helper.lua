@@ -7,6 +7,12 @@ local function SelectNodes(xml, xpath)
 	end, xml:SelectNodes(xpath)
 end
 
+
+function math.round(num, idp)
+	local mult = 10^(idp or 0)
+	return math.floor(num * mult + 0.5) / mult
+end
+
 local function xml_attr(node, name, def)
 	if type(name) == 'table' then
 		local res = {}
@@ -175,7 +181,7 @@ local function GetRailGapStep(mark)
 		/PARAM[@name="FrameNumber" and @value and @coord]\z
 		/PARAM[@name="Result" and @value="main"]\z
 		/PARAM[@name="RailGapStepWidth" and @value]/@value')
-	return node and tonumber(node.nodeValue)
+	return node and math.round(tonumber(node.nodeValue)/1000, 0)
 end
 
 

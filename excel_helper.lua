@@ -40,7 +40,7 @@ local function CopyFile(src, dst)
 end
 
 local function CopyTemplate(template_path, sheet_name)		-- скопировать файл шаблона в папку отчетов
-	local new_name = os.getenv('USERPROFILE') .. '\\ATapeReport\\' .. os.date('%y%m%d-%H%M%S') .. sheet_name .. '.xls'
+	local new_name = os.getenv('USERPROFILE') .. '\\ATapeReport\\' .. os.date('%y%m%d-%H%M%S_') .. sheet_name .. '.xls'
 	if not CopyFile(template_path, new_name) then
 		stuff.errorf('copy file %s -> %s failed', template_path, new_name)
 	end
@@ -177,7 +177,7 @@ excel_helper = OOP.class
 		-- print(cell.row, cell.column)
 		hyperlinks:Add(cell, url, nil, nil, tostring(text or url))
 	end,
-	
+
 	InsertImage = function(self, cell, img_path)					-- вставка изображения в ячейку
 		local XlPlacement = 
 		{

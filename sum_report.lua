@@ -3,7 +3,7 @@ if not ATAPE then
 end
 
 if iup then
-	iup.SetGlobal('UTF8MODE', 1)
+ iup.SetGlobal('UTF8MODE', 1)
 end
 
 -- OOP = require 'OOP'
@@ -1079,10 +1079,10 @@ local beacon_rep_filter_guids =
 local Report_Functions = {
 	-- {name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 	--{name="Сохранить в Excel",			fn=mark2excel,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="test",}, 					},
-	{name="Ведомость болтовых стыков",		fn=report_crew_join,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ведомость Болтов",}, 		guids=gap_rep_filter_guids},
-	{name="Ведомость Зазоров",				fn=report_gaps,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ведомость Зазоров",}, 		guids=gap_rep_filter_guids},
-	{name="Ведомость сварной плети",		fn=report_welding,		params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ведомость сварной плети",}, 	guids=beacon_rep_filter_guids},
-	{name="Ведомость ненормативных объектов",fn=report_unspec_obj,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ненормативные объекты",},	guids=unspec_obj_filter_guids},	
+	{name="Ведомость болтовых стыков",		fn=report_crew_join,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Болтов",}, 		guids=gap_rep_filter_guids},
+	{name="Ведомость Зазоров",				fn=report_gaps,			params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Зазоров",}, 		guids=gap_rep_filter_guids},
+	{name="Ведомость сварной плети",		fn=report_welding,		params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость сварной плети",}, 	guids=beacon_rep_filter_guids},
+	{name="Ведомость ненормативных объектов",fn=report_unspec_obj,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ненормативные объекты",},	guids=unspec_obj_filter_guids},	
 	--{name="КоордСтыков | 1",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=1}, 	guids=joint_filter_guids},
 	--{name="КоордСтыков | 2",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=2}, 	guids=joint_filter_guids},
 	{name=" коорд. cтыков (магн.) | 17",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=17}, 	guids=joint_filter_guids},
@@ -1091,9 +1091,9 @@ local Report_Functions = {
 	{name=" коорд. cтыков (магн.) | 17_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=17, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
 	{name=" коорд. cтыков (магн.) | 18_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=18, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
 	
-	{name="Ведомость скреплений",		fn=report_fasteners,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Ведомость Скреплений",}, 		guids=fastener_guids},
-	{name="Горизонтальные ступеньки",	fn=report_recog_joint_step,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Горизонтальные ступеньки",}, 		guids=gap_rep_filter_guids},
-	{name="Рубки",						fn=report_short_rails,	params={ filename="Scripts\\ProcessSum.xls",	sheetname="Рубки",}, 		guids=gap_rep_filter_guids},
+	{name="Ведомость скреплений",		fn=report_fasteners,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Скреплений",}, 		guids=fastener_guids},
+	{name="Горизонтальные ступеньки",	fn=report_recog_joint_step,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Горизонтальные ступеньки",}, 		guids=gap_rep_filter_guids},
+	{name="Рубки",						fn=report_short_rails,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Рубки",}, 		guids=gap_rep_filter_guids},
 }
 
 

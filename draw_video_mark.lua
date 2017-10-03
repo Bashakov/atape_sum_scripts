@@ -142,7 +142,8 @@ local function ProcessCalcRailGap(drawer, frame, dom)
 				drawer.fig:polygon(points)
 				
 				--drawer.fig:rectangle(points[1], points[2], points[5], points[6])
-				local strWidth = sprintf('%.1f mm', tonumber(width) / 1000)
+				--local strWidth = sprintf('%.1f mm', tonumber(width) / 1000)
+				local strWidth = sprintf('%d mm', tonumber(width) / 1000)
 				
 				local tcx, tcy = get_center_point(points)
 				OutlineTextOut(drawer, tcx, tcy, strWidth)
@@ -177,7 +178,8 @@ local function ProcessRailGapStep(drawer, frame, dom)
 				drawer.prop:lineColor(255, 0, 0, 200)
 				drawer.fig:line(points[1], points[2], points[3], points[4])
 				
-				local strWidth = sprintf('%.1f mm', tonumber(width))
+				--local strWidth = sprintf('%.1f mm', tonumber(width))
+				local strWidth = sprintf('%d mm', tonumber(width)/1000)
 				
 				local tcx, tcy = get_center_point(points)
 				OutlineTextOut(drawer, tcx, tcy + 10, strWidth)

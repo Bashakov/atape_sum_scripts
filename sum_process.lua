@@ -178,6 +178,11 @@ local Img_DA_guids = {
 		["{28C82406-2773-48CB-8E7D-61089EEB86ED}"]=17, --USER_SET="1" INTERNAL_NAME="VID_CREWJOINT_INDT" VALUE="Болты(Видео распознование)"  />	
 		
 		["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"]=9, --INTERNAL_NAME="FASTENER" VALUE="Скрепление"
+		
+		["{CC8B0BF6-719A-4252-8CA7-2991D226C4EF}"]=16, --"Нерасп. Стык" 
+		["{FC2F2752-9383-45A4-8D0B-29851F3DD805}"]=15, --"Нерасп. АТСтык"
+		["{1F3BDFD2-112F-499A-9CD3-30DF28DDF6D3}"]=14, --"Нерасп. П.Деф."
+		
 
 }
 
