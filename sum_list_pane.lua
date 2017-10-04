@@ -326,13 +326,46 @@ local column_fastener_width =
 	end
 }
 
+
+
+local function make_column_surf_defect(col_name, attrib)  
+	local function get_val(mark)
+		local prm = mark_helper.GetSurfDefectPrm(mark)
+		return prm and prm[attrib]
+	end
+	
+	return {
+		name = col_name, 
+		width = 60, 
+		align = 'r', 
+		text = function(row)
+			local mark = work_marks_list[row]
+			local val = get_val(mark)
+			return val and sprintf('%d', val)
+		end,
+		sorter = function(mark)
+			local val = get_val(mark)
+			return {val or 0}
+		end,
+	}
+end
+
+local column_surf_defect_type = make_column_surf_defect('Тип', 'SurfaceFault')
+local column_surf_defect_area = make_column_surf_defect('Плщ', 'SurfaceArea')
+
+--=========================================================================== --
+
 local recognition_guids = {
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC801}", 
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
 }			
-				
+			
+local recognition_surface_defects = {
+	"{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}",
+}
+			
 --=========================================================================== --
 
 local Filters = 
@@ -418,7 +451,17 @@ local Filters =
 			}, 
 		GUIDS = recognition_guids,
 	},
-	
+	{
+		name = 'Поверхн. дефекты', 
+		columns = {
+			column_num, 
+			column_path_coord, 
+			column_rail,
+			column_surf_defect_type,
+			column_surf_defect_area,
+			}, 
+		GUIDS = recognition_surface_defects,
+	},	
 }
 
 -- внутренняя функция, возвращает описание фильтра по его имени

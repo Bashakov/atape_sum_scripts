@@ -324,6 +324,32 @@ local function GetFastenetParams(mark)
 	end
 end
 
+-- =================== Поверхностные дефекты ===================
+
+local function GetSurfDefectPrm(mark)
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom)
+	local res = {}
+	
+	local ext = mark.ext
+	if ext and ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
+		local req = '\z
+		/ACTION_RESULTS\z
+		/PARAM[@value="Surface"]\z
+		/PARAM[@name="FrameNumber" and @value and @coord]\z
+		/PARAM[@name="Result" and @value="main"]\z
+		/PARAM[@name and @value]'
+		for node_param in SelectNodes(xmlDom, req) do
+			local name, value = xml_attr(node_param, {'name', 'value'})
+			if value and name and name:find('Surface') then 
+				value = tonumber(value)
+			end
+			res[name] = value
+		end
+				
+		return res
+	end
+end
 
 -- =================== Вспомогательные ===================
 
@@ -409,6 +435,8 @@ return{
 	
 	IsFastenerDefect = IsFastenerDefect,
 	GetFastenetParams = GetFastenetParams,
+	
+	GetSurfDefectPrm = GetSurfDefectPrm,
 	
 	GetCrewJointArray = GetCrewJointArray,
 	GetCrewJointCount = GetCrewJointCount,

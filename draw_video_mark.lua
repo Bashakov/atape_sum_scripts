@@ -46,12 +46,12 @@ local function OutlineTextOut(drawer, x, y, text, params)
 	drawer.prop:lineWidth(3)
 	drawer.prop:fillColor{r=0, g=0, b=0, a=255}
 	drawer.prop:lineColor{r=0, g=0, b=0, a=255}
-	drawer.text:out{x=x, y=y, str=text}
+	drawer.text:multiline{x=x, y=y, str=text}
 	
 	drawer.prop:lineWidth(1)
 	drawer.prop:fillColor{r=255, g=255, b=255, a=220}
 	drawer.prop:lineColor{r=255, g=255, b=255, a=220}
-	drawer.text:out{x=x, y=y, str=text}
+	drawer.text:multiline{x=x, y=y, str=text}
 end
 
 
@@ -477,6 +477,57 @@ local function DrawFastener(drawer, frame, mark)
 	end
 end
 
+local function DrawSurfDefectMark(drawer, frame, mark)
+	
+	local function get_prms(node, names)
+		local res = {}
+		for node_param in SelectNodes(node, 'PARAM[starts-with(@name, "Surface") and @value]') do
+			local name, value = xml_attr(node_param, {'name', 'value'})
+			res[name] = tonumber(value)
+		end
+		return res
+	end
+		
+	OutlineTextOut(drawer, 10,  10, 'test')
+		
+	local cur_frame_coord = frame.coord.raw
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom)
+	local raw_xml = mark.ext.RAWXMLDATA
+	if raw_xml and xmlDom:loadXML(raw_xml) then 
+		local req = '\z
+			/ACTION_RESULTS\z
+			/PARAM[@name="ACTION_RESULTS" and @value="Surface"]\z
+			/PARAM[@name="FrameNumber" and @value="0" and @coord]\z
+			/PARAM[@name="Result" and @value="main"]'
+		for node in SelectNodes(xmlDom, req) do
+			local fig_channel = node:SelectSingleNode("../../@channel")
+			fig_channel = fig_channel and tonumber(fig_channel.nodeValue)
+			
+			if not fig_channel or not frame.channel or fig_channel == frame.channel then
+				local item_frame = node:SelectSingleNode("../@coord").nodeValue
+				local polygon = node:SelectSingleNode('PARAM[@name="Coord" and @type="polygon" and @value]/@value').nodeValue
+				local prm = get_prms(node)
+				local points = parse_polygon(polygon, cur_frame_coord, item_frame)
+				
+				if #points == 8 then
+					drawer.prop:lineWidth(2)
+					drawer.prop:fillColor(255, 0, 0, 20)
+					drawer.prop:lineColor(255, 0, 0, 200)
+					drawer.fig:polygon(points)
+					
+					--local strWidth = sprintf('%.1f mm', tonumber(width))
+					local strText = sprintf('Type: %s\nArea: %d', prm.SurfaceFault, prm.SurfaceArea)
+					
+					local tcx, tcy = get_center_point(points)
+					OutlineTextOut(drawer, tcx, tcy + 10, strText)
+				end
+			end
+			
+		end
+	end
+end
+	
 
 local recorn_guids = 
 {
@@ -492,6 +543,8 @@ local recorn_guids =
 	["{0860481C-8363-42DD-BBDE-8A2366EFAC90}"] = DrawUnspecifiedObject,	
 	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"] = DrawFastener,	
 	["{28C82406-2773-48CB-8E7D-61089EEB86ED}"] = DrawRecognitionMark,
+	
+	["{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}"] = DrawSurfDefectMark,
 }
 
 
