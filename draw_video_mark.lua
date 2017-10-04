@@ -567,3 +567,13 @@ function Draw(drawer, frame, marks)
 		end
 	end
 end
+
+-- запрос какие отметки следует загружать для отображения
+function GetMarkGuids()
+	local res = {}
+	for g, f in pairs(recorn_guids) do
+		table.insert(res, g)
+	end
+	return res
+end
+
