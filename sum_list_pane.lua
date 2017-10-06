@@ -353,6 +353,30 @@ end
 local column_surf_defect_type = make_column_surf_defect('Тип', 'SurfaceFault')
 local column_surf_defect_area = make_column_surf_defect('Плщ', 'SurfaceArea')
 
+local fishpalte_fault_str = 
+{
+	[0] = 'исправен',
+	[1] = 'надрыв',
+	[3] = 'трещина',
+	[4] = 'излом',
+}
+
+local column_fishplate_state =
+{
+	name = "Накл", 
+	width = 60, 
+	align = 'r', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local fault = mark_helper.GetFishplateState(mark)
+		return fishpalte_fault_str[fault] or tostring(fault)
+	end,
+	sorter = function(mark)
+		local fault = mark_helper.GetFishplateState(mark)
+		return {fault}
+	end,
+}
+
 --=========================================================================== --
 
 local recognition_guids = {
@@ -462,6 +486,20 @@ local Filters =
 			}, 
 		GUIDS = recognition_surface_defects,
 	},	
+	{
+		name = 'Дефекты Накладок', 
+		columns = {
+			column_num, 
+			column_path_coord, 
+			column_rail,
+			column_fishplate_state,
+			}, 
+		GUIDS = recognition_guids,
+		filter = function(mark)
+			local fault = mark_helper.GetFishplateState(mark)
+			return fault > 0
+		end,
+	},
 }
 
 -- внутренняя функция, возвращает описание фильтра по его имени

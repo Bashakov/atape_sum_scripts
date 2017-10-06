@@ -283,6 +283,33 @@ local function CalcValidCrewJointOnHalf(mark)
 	return valid_on_half
 end
 
+-- =================== Накладка ===================
+
+local function GetFishplateState(mark)
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom)
+	
+	local res = -1
+	
+	local ext = mark.ext
+	if ext and ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
+	
+		local req = '\z
+			ACTION_RESULTS\z
+			/PARAM[@name="ACTION_RESULTS" and @value="Fishplate"]\z
+			/PARAM[@name="FrameNumber" and @value]\z
+			/PARAM[@name="Result" and @value="main"]\z
+			/PARAM[@name="FishplateState"]\z
+			/PARAM[@name="FishplateFault" and @value]/@value'
+
+		for nodeFault in SelectNodes(xmlDom, req) do
+			local fault = tonumber(nodeFault.nodeValue)
+			res = math.max(res, fault)
+		end
+	end
+	return res
+end
+
 -- =================== Скрепления ===================
 
 local function IsFastenerDefect(mark)
@@ -350,6 +377,7 @@ local function GetSurfDefectPrm(mark)
 		return res
 	end
 end
+
 
 -- =================== Вспомогательные ===================
 
@@ -430,6 +458,8 @@ return{
 	GetGapWidth = GetGapWidth,
 	GetGapWidthName = GetGapWidthName,
 	GetRailGapStep = GetRailGapStep,
+	
+	GetFishplateState = GetFishplateState,
 	
 	GetBeaconOffset = GetBeaconOffset,
 	

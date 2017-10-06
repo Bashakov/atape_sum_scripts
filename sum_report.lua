@@ -304,13 +304,14 @@ local function dump_mark_list(template_name, sheet_name)
 	local filedlg = iup.filedlg{
 		dialogtype = "dir", 
 		title = "Select dir for dump mark", 
-		directory = "c:\\out",
+		directory = "c:\\",
 	} 
 	filedlg:popup (iup.ANYWHERE, iup.ANYWHERE)
 	if filedlg.status == -1 then
 		return
 	end
 	local out_dir = filedlg.value .. '\\' .. Passport.NAME
+	os.execute('mkdir ' .. out_dir)
 
 	local marks = Driver:GetMarks()
 	local dlg = luaiup_helper.ProgressDlg()
@@ -1077,7 +1078,7 @@ local beacon_rep_filter_guids =
 }
 
 local Report_Functions = {
-	-- {name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
+	{name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 	--{name="Сохранить в Excel",			fn=mark2excel,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="test",}, 					},
 	{name="Ведомость болтовых стыков",		fn=report_crew_join,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Болтов",}, 		guids=gap_rep_filter_guids},
 	{name="Ведомость Зазоров",				fn=report_gaps,			params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Зазоров",}, 		guids=gap_rep_filter_guids},
@@ -1108,6 +1109,7 @@ function GetAvailableReports() -- exported
 end
 
 function MakeReport(name) -- exported
+	--stuff.errorf("проверка %s", "ошибки")
 	for _, n in ipairs(Report_Functions) do 
 		if n.name == name then
 			if not n.fn then

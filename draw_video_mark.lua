@@ -36,6 +36,9 @@ end
 
 local function OutlineTextOut(drawer, x, y, text, params)
 	params = params or {}
+	local fill_color = params.fill_color or {r=255, g=255, b=255}
+	local line_color = params.line_color or {r=0, g=0, b=0}
+	
 	drawer.text:font { name=params.font or "Tahoma", render="VectorFontCache", height=params.height or 13, bold=0}
 	drawer.text:alignment("AlignLeft", "AlignBottom")
 	
@@ -44,13 +47,13 @@ local function OutlineTextOut(drawer, x, y, text, params)
 	y = y - th/2
 	
 	drawer.prop:lineWidth(3)
-	drawer.prop:fillColor{r=0, g=0, b=0, a=255}
-	drawer.prop:lineColor{r=0, g=0, b=0, a=255}
+	drawer.prop:fillColor{r=line_color.r, g=line_color.g, b=line_color.b, a=line_color.a or 225}
+	drawer.prop:lineColor{r=line_color.r, g=line_color.g, b=line_color.b, a=line_color.a or 225}
 	drawer.text:multiline{x=x, y=y, str=text}
 	
 	drawer.prop:lineWidth(1)
-	drawer.prop:fillColor{r=255, g=255, b=255, a=220}
-	drawer.prop:lineColor{r=255, g=255, b=255, a=220}
+	drawer.prop:fillColor{r=fill_color.r, g=fill_color.g, b=fill_color.b, a=fill_color.a or 220}
+	drawer.prop:lineColor{r=fill_color.r, g=fill_color.g, b=fill_color.b, a=fill_color.a or 220}
 	drawer.text:multiline{x=x, y=y, str=text}
 end
 
@@ -230,7 +233,55 @@ local function DrawFishplate(drawer, frame, dom)
 		drawer.fig:polygon(points)
 	end
 	
-	--ShowToolTip(drawer, 200, 200, sprintf("%d %d  %d %d", edges_rect[1], edges_rect[2], edges_rect[3], edges_rect[4]))
+	
+end
+
+
+local fishpalte_fault_str = 
+{
+	[0] = 'исправен',
+	[1] = 'надрыв',
+	[3] = 'трещина',
+	[4] = 'излом',
+}
+
+local function DrawFishplateFailt(drawer, frame, dom)
+	local color = {r=255, g=0, b=0}
+	
+	local cur_frame_coord = frame.coord.raw
+	local req = '\z
+			/ACTION_RESULTS\z
+			/PARAM[@name="ACTION_RESULTS" and @value="Fishplate"]\z
+			/PARAM[@name="FrameNumber" and @value and @coord]\z
+			/PARAM[@name="Result" and @value="main"]\z
+			/PARAM[@name="FishplateState"]'
+	for node in SelectNodes(dom, req) do
+		local item_frame = node:SelectSingleNode("../../@coord").nodeValue
+		local fig_channel = node:SelectSingleNode("../../../@channel")
+		fig_channel = fig_channel and tonumber(fig_channel.nodeValue)
+		
+		local polygon = node:SelectSingleNode('PARAM[@name="Coord" and @type="polygon" and @value]/@value')
+		local fault = node:SelectSingleNode('PARAM[@name="FishplateFault" and @value]/@value')
+		
+		
+		if not fig_channel or not frame.channel or fig_channel == frame.channel and polygon and fault then
+			fault = tonumber(fault.nodeValue)
+			polygon = polygon.nodeValue
+			
+			local points = parse_polygon(polygon, cur_frame_coord, item_frame)
+			
+			drawer.prop:lineWidth(1)
+			drawer.prop:fillColor(color.r, color.g, color.b,  20)
+			drawer.prop:lineColor(color.r, color.g, color.b, 200)
+			drawer.fig:polygon(points)
+			
+			local text = fishpalte_fault_str[fault] or fault
+				
+			local tcx, tcy = get_center_point(points)
+			OutlineTextOut(drawer, tcx, tcy, text, {fill_color={r=255, g=0, b=0}, line_color={r=255, g=255, b=0}})
+		end
+	end
+
 end
 
 local function DrawCrewJoint(drawer, frame, dom)
@@ -342,6 +393,7 @@ local function DrawRecognitionMark(drawer, frame, mark)
 		DrawCrewJoint(drawer, frame, xmlDom)
 		DrawBeacon(drawer, frame, xmlDom)
 		ProcessRailGapStep(drawer, frame, xmlDom)
+		DrawFishplateFailt(drawer, frame, xmlDom)
 	end
 end
 
