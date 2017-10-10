@@ -355,10 +355,10 @@ local column_surf_defect_area = make_column_surf_defect('Плщ', 'SurfaceArea')
 
 local fishpalte_fault_str = 
 {
-	[0] = 'исправен',
-	[1] = 'надрыв',
-	[3] = 'трещина',
-	[4] = 'излом',
+	[0] = 'испр.',
+	[1] = 'надр.',
+	[3] = 'трещ.',
+	[4] = 'изл.',
 }
 
 local column_fishplate_state =
@@ -394,18 +394,18 @@ local recognition_surface_defects = {
 
 local Filters = 
 {
-	--{	
-	--	name = 'Магнитные Стыки', 		
-	--	columns = {
-	--		column_num,
-	--		column_path_coord, 
-	--		column_rail,
-	--		column_mag_use_recog,
-	--		}, 
-	--	GUIDS = {
-	--		"{19253263-2C0B-41EE-8EAA-000000000010}",
-	--		"{19253263-2C0B-41EE-8EAA-000000000040}",}
-	--},
+--	{	
+--		name = 'Магнитные Стыки', 		
+--		columns = {
+--			column_num,
+--			column_path_coord, 
+--			column_rail,
+--			column_mag_use_recog,
+--			}, 
+--		GUIDS = {
+--			"{19253263-2C0B-41EE-8EAA-000000000010}",
+--			"{19253263-2C0B-41EE-8EAA-000000000040}",}
+--	},
 	{
 		name = 'Стыковые зазоры', 
 		columns = {

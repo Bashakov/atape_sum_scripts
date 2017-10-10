@@ -177,8 +177,8 @@ local function ProcessRailGapStep(drawer, frame, dom)
 			
 			if #points == 4 then
 				drawer.prop:lineWidth(2)
-				drawer.prop:fillColor(255, 0, 0, 20)
-				drawer.prop:lineColor(255, 0, 0, 200)
+				drawer.prop:fillColor(0, 0, 255, 20)
+				drawer.prop:lineColor(0, 0, 255, 200)
 				drawer.fig:line(points[1], points[2], points[3], points[4])
 				
 				--local strWidth = sprintf('%.1f mm', tonumber(width))
@@ -239,14 +239,14 @@ end
 
 local fishpalte_fault_str = 
 {
-	[0] = 'исправен',
-	[1] = 'надрыв',
-	[3] = 'трещина',
-	[4] = 'излом',
+	[0] = 'испр.',
+	[1] = 'надр.',
+	[3] = 'трещ.',
+	[4] = 'изл.',
 }
 
 local function DrawFishplateFailt(drawer, frame, dom)
-	local color = {r=255, g=0, b=0}
+	local color = {r=128, g=0, b=0}
 	
 	local cur_frame_coord = frame.coord.raw
 	local req = '\z
@@ -278,7 +278,7 @@ local function DrawFishplateFailt(drawer, frame, dom)
 			local text = fishpalte_fault_str[fault] or fault
 				
 			local tcx, tcy = get_center_point(points)
-			OutlineTextOut(drawer, tcx, tcy, text, {fill_color={r=255, g=0, b=0}, line_color={r=255, g=255, b=0}})
+			OutlineTextOut(drawer, tcx, tcy, text, {fill_color={r=128, g=0, b=0}, line_color={r=128, g=128, b=0}})
 		end
 	end
 
@@ -540,7 +540,7 @@ local function DrawSurfDefectMark(drawer, frame, mark)
 		return res
 	end
 		
-	OutlineTextOut(drawer, 10,  10, 'test')
+	-- OutlineTextOut(drawer, 10,  10, 'test')
 		
 	local cur_frame_coord = frame.coord.raw
 	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
@@ -550,7 +550,7 @@ local function DrawSurfDefectMark(drawer, frame, mark)
 		local req = '\z
 			/ACTION_RESULTS\z
 			/PARAM[@name="ACTION_RESULTS" and @value="Surface"]\z
-			/PARAM[@name="FrameNumber" and @value="0" and @coord]\z
+			/PARAM[@name="FrameNumber" and @coord]\z
 			/PARAM[@name="Result" and @value="main"]'
 		for node in SelectNodes(xmlDom, req) do
 			local fig_channel = node:SelectSingleNode("../../@channel")
