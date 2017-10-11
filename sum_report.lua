@@ -2,6 +2,8 @@ if not ATAPE then
 	require "iuplua" 
 end
 
+local resty = require "resty.template"
+
 if iup then
  iup.SetGlobal('UTF8MODE', 1)
 end
@@ -13,8 +15,10 @@ stuff = require 'stuff'
 luaiup_helper = require 'luaiup_helper'
 excel_helper = require 'excel_helper'
 
+local table_find = stuff.table_find
 local sprintf = stuff.sprintf
 local printf = stuff.printf
+local errorf = stuff.errorf
 
 if not ShowVideo then
 	ShowVideo = 1
@@ -42,14 +46,11 @@ local switch_guids = {
 	"{19253263-2C0B-41EE-8EAA-000000800000}",
 }
 
--- получить индекс элемента в массиве
-local function table_find(tbl, val)
-	for i = 1, #tbl do
-		if tbl[i] == val then
-			return i
-		end
-	end
-end
+local NPU_guids = {
+	"{19FF08BB-C344-495B-82ED-10B6CBAD5090}",
+}
+
+
 
 -- сделать строку ссылку для открытия атейпа на данной отметке
 local function make_mark_uri(markid)
@@ -238,7 +239,7 @@ local function get_nominal_gape_width(rail_len, temperature)
 end
 
 -- построить изображение для данной отметки
-local function make_mark_image(mark, video_channel, show_range)
+local function make_mark_image(mark, video_channel, show_range, base64)
 	local img_path
 	
 	if ShowVideo ~= 0 then
@@ -269,6 +270,7 @@ local function make_mark_image(mark, video_channel, show_range)
 				-- frame_count = 3, 
 				width = width, 
 				height = 300,
+				base64=base64
 			}
 			
 			--print(prop.ID, prop.SysCoord, prop.Guid, video_channel)
@@ -283,7 +285,7 @@ end
 local function insert_frame(excel, data_range, mark, row, col, video_channel, show_range)
 	local img_path
 	local ok, msg = pcall(function ()
-			img_path = make_mark_image(mark, video_channel, show_range)
+			img_path = make_mark_image(mark, video_channel, show_range, false)
 		end)
 	if not ok then
 		data_range.Cells(row, col).Value2 = msg and #msg and msg or 'Error'
@@ -292,13 +294,126 @@ local function insert_frame(excel, data_range, mark, row, col, video_channel, sh
 	end
 end
 
-local function get_rail_name(mark)
-	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
-	return bit32.btest(mark.prop.RailMask, right_rail_mask) and "Правый" or "Левый"
+-- сгенерировать видео изображение отметки закодированное в base64
+local function make_video_frame_base64(mark)
+	local image_data
+	local ok, msg = pcall(function ()
+			image_data = make_mark_image(mark, nil, nil, true)
+		end)
+	if not ok then
+		image_data = msg and #msg and msg or 'Error'
+	end
+	return image_data
 end
 
--- =================================================================================
+function get_rail_name(mark)
+	local mark_rail = mark
+	if type(mark_rail) == 'table' or type(mark_rail) == 'userdata' then
+		mark_rail = mark.prop.RailMask
+	elseif type(mark_rail) == 'number' then
+		-- ok
+	else
+		errorf('type of mark must be number or Mark(table), got %s', type(mark))
+	end
+	
+	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
+	return bit32.btest(mark_rail, right_rail_mask) and "Правый" or "Левый"
+end
 
+-- шаблон xml с выводом в одну колонку
+local eksui_template_column = resty.compile([[
+<?xml version="1.0" encoding="UTF-8"?>
+<report name="{{report_name}}" date="{{os.date('%Y-%m-%d')}}" time="{{os.date('%H:%M:%S')}}"
+	{% for name, value in pairs(os.date('*t')) do %}
+		{{name}}="{{value}}"
+	{% end %}
+	>
+	<passport>
+	{% for name, value in pairs(Passport) do %}
+		<PARAM name="{{name}}" value="{{value}}" {% if Driver.GetPassportParamDescription and #Driver:GetPassportParamDescription(name) ~= 0 then %} description="{{ Driver:GetPassportParamDescription(name) }}" {% end %}/>
+	{% end %}
+	</passport>
+	
+	{% for i, mark in ipairs(marks) do %}
+	<mark>
+	{% for _, param in ipairs(mark) do %}
+		<PARAM name="{{param.name}}" value="{{param.value}}" {%if param.desc then %} description="{{param.desc}}" {% end %}/>
+	{% end %}
+	{% if ShowVideo ~= 0 then %}
+		<base64>{* get_encoded_frame(mark.mark) *}</base64>
+	{% end %}
+	</mark>
+	{% end %}
+</report>]])
+
+-- шаблон xml с выводом по строкам
+local eksui_template_rows = resty.compile([[
+<?xml version="1.0" encoding="UTF-8"?>
+<report name="{{report_name}}" report_filter="{{report_filter}}" date="{{os.date('%Y-%m-%d')}}" time="{{os.date('%H:%M:%S')}}"
+	{% for name, value in pairs(os.date('*t')) do %}
+		{{name}}="{{value}}"
+	{% end %}
+	>
+	<passport>
+	{% for name, value in pairs(Passport) do %}
+		<PARAM name="{{name}}" value="{{value}}" {% if Driver.GetPassportParamDescription and #Driver:GetPassportParamDescription(name) ~= 0 then %} description="{{ Driver:GetPassportParamDescription(name) }}" {% end %}/>
+	{% end %}
+	</passport>
+	
+	{% for line, row in ipairs(rows) do %}
+	<row num="{{line}}">
+		{% for r = 1, 2 do %}
+		{% local mark = row[r] %}
+		{% if mark then %}
+		<mark rail="{{r}}" thread="{{get_rail_name(r)}}">
+		{% for _, param in ipairs(mark) do %}
+			<PARAM name="{{param.name}}" value="{{param.value}}" {%if param.desc then %} description="{{param.desc}}" {% end %}/>
+		{% end %}
+		{% if ShowVideo ~= 0 then %}
+			<base64>{* get_encoded_frame(mark.mark) *}</base64>
+		{% end %}
+		</mark>
+		{% end %}
+		{% end %}
+		{% if row.ext then %}
+		{% for _, param in ipairs(row.ext) do %}
+		<EXT name="{{param.name}}" value="{{param.value}}" {%if param.desc then %} description="{{param.desc}}" {% end %}/>
+		{% end %}
+		{% end %}
+	</row>
+	{% end %}
+</report>]])
+
+-- счетчик прогресса выполнения, на каждый вызов увеличиваем значение на 1
+local function ProgressCounter(dlg, desc, all_count)
+	local i = 0
+	return function()
+		i = i + 1
+		if not dlg:step(i / all_count, stuff.sprintf('%s: %d / %d', desc, i, all_count)) then 
+			error("Прервано пользователем") 
+		end
+		return i
+	end
+end
+
+-- по списку отметок создает таблицу id отметки -> длинна рельса перед ней
+local function make_rail_len_table(marks)
+	local prev_rail_end = {}
+	local mark_rail_len = {}
+	
+	for _, mark in ipairs(marks) do
+		local prop = mark.prop
+		local prev_coord = prev_rail_end[prop.RailMask]
+		if prev_coord then
+			mark_rail_len[prop.ID] = prop.SysCoord - prev_coord
+		end
+		prev_rail_end[prop.RailMask] = prop.SysCoord
+	end
+	return mark_rail_len
+end
+
+
+-- =================================================================================
 
 local function dump_mark_list(template_name, sheet_name)
 	local filedlg = iup.filedlg{
@@ -348,7 +463,8 @@ local function dump_mark_list(template_name, sheet_name)
 
 	local prev_output = io.output()
 	io.output(out_dir .. "\\dump.lua")
-	stuff.save("marks", out)
+	--stuff.save("marks", out)
+	stuff.save("data", {marks=out, Passport=Passport})
 	io.output(prev_output)
 end
 
@@ -389,9 +505,11 @@ local function mark2excel(params)
 end
 
 
+-- Ведомость болтовых стыков 
 local function report_crew_join(params)
 	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
-	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Показать все", "Дефектные", "Нормальные"}, 2)
+	local filters_names = {"Показать все", "Дефектные", "Нормальные"}
+	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', filters_names, 2)
 	
 	if not filter_mode then
 		return
@@ -420,69 +538,109 @@ local function report_crew_join(params)
 		return
 	end
 
-	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
-	excel:ApplyPassportValues(Passport)
-	local data_range = excel:CloneTemplateRow(#mark_pairs) -- data_range - область, куда вставлять отметки
+	if params.filename then
+		local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
+		excel:ApplyPassportValues(Passport)
+		local data_range = excel:CloneTemplateRow(#mark_pairs) -- data_range - область, куда вставлять отметки
 
-	assert(#mark_pairs == data_range.Rows.count, 'misamtch count of mark_pairs and table rows')
+		assert(#mark_pairs == data_range.Rows.count, 'mismatch count of mark_pairs and table rows')
 
-	local function insert_mark(line, rail, mark)
-		local column_offset = (rail == right_rail_mask) and 5 or 0
-		local prop = mark.prop
-		
-		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-		local count, defect = mark_helper.GetCrewJointCount(mark)
-		
-		local uri = make_mark_uri(prop.ID)
+		local function insert_mark(line, rail, mark)
+			local column_offset = (rail == right_rail_mask) and 5 or 0
+			local prop = mark.prop
+			
+			local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
+			local count, defect = mark_helper.GetCrewJointCount(mark)
+			
+			local uri = make_mark_uri(prop.ID)
 
-		excel:InsertLink(data_range.Cells(line, 1 + column_offset), uri, km)
-		data_range.Cells(line, 2 + column_offset).Value2 = sprintf("%.02f", m + mm/1000)
-		data_range.Cells(line, 3 + column_offset).Value2 = count
-		data_range.Cells(line, 4 + column_offset).Value2 = defect
+			excel:InsertLink(data_range.Cells(line, 1 + column_offset), uri, km)
+			data_range.Cells(line, 2 + column_offset).Value2 = sprintf("%.02f", m + mm/1000)
+			data_range.Cells(line, 3 + column_offset).Value2 = count
+			data_range.Cells(line, 4 + column_offset).Value2 = defect
 
-		insert_frame(excel, data_range, mark, line, 5 + column_offset)
+			insert_frame(excel, data_range, mark, line, 5 + column_offset)
 
-		--data_range.Cells(line, 12+rail).Value2 = prop.SysCoord
-	end
-
-	for line, mark_pair in ipairs(mark_pairs) do
-		for r, mark in pairs(mark_pair) do
-			insert_mark(line, r, mark)
+			--data_range.Cells(line, 12+rail).Value2 = prop.SysCoord
 		end
-		
-		if not dlg:step(line / #mark_pairs, stuff.sprintf(' Process %d / %d line', line, #mark_pairs)) then 
-			break
+
+		for line, mark_pair in ipairs(mark_pairs) do
+			for r, mark in pairs(mark_pair) do
+				insert_mark(line, r, mark)
+			end
+			
+			if not dlg:step(line / #mark_pairs, stuff.sprintf(' Process %d / %d line', line, #mark_pairs)) then 
+				break
+			end
+		end 
+
+		if ShowVideo == 0 then  -- спрячем столбцы с видео
+			excel:AutoFitDataRows()
+			data_range.Cells(nil, 5).ColumnWidth = 1
+			data_range.Cells(nil, 10).ColumnWidth = 1
 		end
-	end 
-
-	if ShowVideo == 0 then  -- спрячем столбцы с видео
-		excel:AutoFitDataRows()
-		data_range.Cells(nil, 5).ColumnWidth = 1
-		data_range.Cells(nil, 10).ColumnWidth = 1
-	end
-	excel:SaveAndShow()
-end
-
--- по списку отметок создает таблицу id отметки -> длинна рельса перед ней
-local function make_rail_len_table(marks)
-	local prev_rail_end = {}
-	local mark_rail_len = {}
+		excel:SaveAndShow()
 	
-	for _, mark in ipairs(marks) do
-		local prop = mark.prop
-		local prev_coord = prev_rail_end[prop.RailMask]
-		if prev_coord then
-			mark_rail_len[prop.ID] = prop.SysCoord - prev_coord
+	elseif params.eksui then
+		local frame_counter = ProgressCounter	(dlg, "Generate Frame", #marks)
+		local mark_counter = ProgressCounter	(dlg, "Generate Mark", #marks)
+		
+		local function get_encoded_frame(mark)
+			frame_counter()
+			return make_video_frame_base64(mark)
 		end
-		prev_rail_end[prop.RailMask] = prop.SysCoord
+		
+		local rows = {}
+		for line, mark_pair in ipairs(mark_pairs) do
+			local row = {}
+			rows[line] = row
+			for r, mark in pairs(mark_pair) do
+				local prop = mark.prop
+				local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
+				local count, defect = mark_helper.GetCrewJointCount(mark)
+				
+				local res = {
+					--{name='uri', value=make_mark_uri(prop.ID), desc='показать отметку в ATape'},
+					{name='ID', value=prop.ID, desc='Mark ID'},
+					{name='KM', value=km},
+					{name='M', value=sprintf("%.02f", m + mm/1000)},
+					{name='rail', value=r, desc='Номер рельса'},
+					{name='thread', value=get_rail_name(mark), desc='Название рельса'},
+					{name='all_joint',value=count, desc='Тип накладки  (число отверстий)'},
+					{name='defect_joint', value=defect, desc='Количество отсутствующих болтов'},
+				}
+				
+				local other = mark_pair[bit32.bxor(r, 0x03)]
+				if other then
+					res[#res+1] = {name='pair_mark_id', value=other.prop.ID, desc='отметка на другом рельсе'}
+				end
+				res.mark = mark
+
+				row[r] = res
+				
+				mark_counter()
+			end
+		end
+		
+		local res = eksui_template_rows{rows=rows, get_encoded_frame=get_encoded_frame, report_name='vedomost boltovih stykov', report_filter=filters_names[filter_mode]}
+
+		local file_name = "c:\\1.xml"
+		local dst_file = assert(io.open(file_name, 'w+'))
+		dst_file:write(res)
+		dst_file:close()
+		
+		os.execute("start " .. file_name)
+	else
+		errorf('для отчета должен быть задан файл шаблона или флаг отчета ЕКСУИ')
 	end
-	return mark_rail_len
 end
 
--- отчет по зазорам
+
+-- отчет Ведомость Зазоров
 local function report_gaps(params)
 	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
-	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Меньше 3 мм", "Все", "Больше 22 мм", "Слепые подряд", "Больше 35 мм"}, 2)
+	local filters_names = {"Меньше 3 мм", "Все", "Больше 22 мм", "Слепые подряд", "Больше 35 мм"}
+	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', filters_names, 2)
 	
 	if not filter_mode then
 		return
@@ -531,75 +689,154 @@ local function report_gaps(params)
 		return
 	end
 
-	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
-	excel:ApplyPassportValues(Passport)
-	local data_range = excel:CloneTemplateRow(#mark_pairs)
+	if params.filename then
+		local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
+		excel:ApplyPassportValues(Passport)
+		local data_range = excel:CloneTemplateRow(#mark_pairs)
 
-	--print(#mark_pairs, data_range.Rows.count)
-	assert(#mark_pairs == data_range.Rows.count, 'misamtch count of mark_pairs and table rows')
-	
-	local function insert_mark(line, rail, mark)
-		local column_offset = (rail == right_rail_mask) and 9 or 0
-		local prop = mark.prop
-		local ext = mark.ext
+		--print(#mark_pairs, data_range.Rows.count)
+		assert(#mark_pairs == data_range.Rows.count, 'misamtch count of mark_pairs and table rows')
 		
-		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-		local temperature = Driver:GetTemperature(bit32.band(prop.RailMask, 3)-1, prop.SysCoord)
+		local function insert_mark(line, rail, mark)
+			local column_offset = (rail == right_rail_mask) and 9 or 0
+			local prop = mark.prop
+			local ext = mark.ext
+			
+			local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
+			local temperature = Driver:GetTemperature(bit32.band(prop.RailMask, 3)-1, prop.SysCoord)
 
-		
-		local uri = make_mark_uri(prop.ID)
-		
-		temperature = temperature and temperature.target
+			
+			local uri = make_mark_uri(prop.ID)
+			
+			temperature = temperature and temperature.target
 
-		data_range.Cells(line, 1 + column_offset).Value2 = km
-		excel:InsertLink(data_range.Cells(line, 2 + column_offset), uri, sprintf("%.02f", m + mm/1000))
-		data_range.Cells(line, 3 + column_offset).Value2 = temperature 
+			data_range.Cells(line, 1 + column_offset).Value2 = km
+			excel:InsertLink(data_range.Cells(line, 2 + column_offset), uri, sprintf("%.02f", m + mm/1000))
+			data_range.Cells(line, 3 + column_offset).Value2 = temperature 
+			
+			local rail_len = mark_rail_len[prop.ID]
+			local norm_gap_width
+			if rail_len then
+				data_range.Cells(line, 7 + column_offset).Value2 = sprintf("%.02f", rail_len/1000)
+				if temperature then
+					norm_gap_width = get_nominal_gape_width(rail_len, temperature)
+					data_range.Cells(line, 5 + column_offset).Value2 = norm_gap_width
+				end
+			end
+
+			insert_frame(excel, data_range, mark, line, 8 + column_offset)
+			
+			local widths, min_width, max_width = GetRailGap(mark)
+			if min_width then
+				data_range.Cells(line, 4 + column_offset).Value2 = min_width
+				if norm_gap_width then
+					data_range.Cells(line, 6 + column_offset).Value2 = sprintf('%.1f', min_width - norm_gap_width)
+				end
+			end
+			
+	--		data_range.Cells(line, 12+rail).Value2 = prop.SysCoord
+			
+		end
+
+		for line, mark_pair in ipairs(mark_pairs) do
+			for r, mark in pairs(mark_pair) do
+				insert_mark(line, r, mark)
+			end
+			
+			if mark_pair[1] and mark_pair[2] then
+				local c1, c2 = mark_pair[1].prop.SysCoord, mark_pair[2].prop.SysCoord
+				data_range.Cells(line, 9).Value2 = sprintf('%.02f', (c2 - c1) / 1000)
+			end
 		
-		local rail_len = mark_rail_len[prop.ID]
-		local norm_gap_width
-		if rail_len then
-			data_range.Cells(line, 7 + column_offset).Value2 = sprintf("%.02f", rail_len/1000)
-			if temperature then
-				norm_gap_width = get_nominal_gape_width(rail_len, temperature)
-				data_range.Cells(line, 5 + column_offset).Value2 = norm_gap_width
+			if not dlg:step(line / #mark_pairs, stuff.sprintf(' Process %d / %d line', line, #mark_pairs)) then 
+				break
+			end
+		end 
+		
+		if ShowVideo == 0 then 
+			excel:AutoFitDataRows()
+			data_range.Cells(nil, 8).ColumnWidth = 0
+			data_range.Cells(nil, 17).ColumnWidth = 0
+		end
+		excel:SaveAndShow()
+	elseif params.eksui then
+		local frame_counter = ProgressCounter	(dlg, "Generate Frame", #marks)
+		local mark_counter = ProgressCounter	(dlg, "Generate Mark", #marks)
+		
+		local function get_encoded_frame(mark)
+			frame_counter()
+			return make_video_frame_base64(mark)
+		end
+		
+		local rows = {}
+		for line, mark_pair in ipairs(mark_pairs) do
+			local row = {}
+			rows[line] = row
+			for r, mark in pairs(mark_pair) do
+				local prop = mark.prop
+				local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
+				local temperature = Driver:GetTemperature(bit32.band(prop.RailMask, 3)-1, prop.SysCoord)
+				temperature = temperature and temperature.target
+				
+				local rail_len = mark_rail_len[prop.ID]
+				local norm_gap_width 
+				if rail_len then
+					if temperature then
+						norm_gap_width = get_nominal_gape_width(rail_len, temperature)
+					end
+				end
+
+				local dif_norm_width = ''
+				local widths, min_width, max_width = GetRailGap(mark)
+				if min_width then
+					if norm_gap_width then
+						dif_norm_width = sprintf('%.1f', min_width - norm_gap_width)
+					end
+				end
+		
+				local other = mark_pair[bit32.bxor(r, 0x03)]
+				local cur_zabeg = other and prop.SysCoord - other.prop.SysCoord
+				
+		
+				local res = {
+					--{name='uri', value=make_mark_uri(prop.ID), desc='показать отметку в ATape'},
+					{name='ID', value=prop.ID, desc='Mark ID'},
+					{name='KM', value=km},
+					{name='M', value=sprintf("%.02f", m + mm/1000)},
+					{name='rail', value=r, desc='Номер рельса'},
+					{name='thread', value=get_rail_name(mark), desc='Название рельса'},
+					{name='temperature',value=temperature, desc='Т рельса, °С'},
+					{name='gap_width', value=min_width or '', desc='Зазор, мм'},
+					{name='norm_gap_width', value=norm_gap_width or '', desc='Ном. зазор, мм'},
+					{name='dif_norm_width', value=dif_norm_width, desc='Откл. от ном., мм'},
+					{name='rail_len', value=rail_len and sprintf("%.02f", rail_len/1000) or '', desc='Длина рельса'},
+					{name='pair_mark_id', value=other and other.prop.ID or '', desc='Отметка на другом рельсе'},
+					{name='cur_zabeg', value=cur_zabeg and sprintf('%.02f', cur_zabeg / 1000) or '', desc='Относительный забег'},
+				}
+				
+				res.mark = mark
+				row[r] = res
+				row.ext = {}
+				
+				if mark_pair[1] and mark_pair[2] then
+					local c1, c2 = mark_pair[1].prop.SysCoord, mark_pair[2].prop.SysCoord
+					row.ext[1] = {name='zabeg', value=sprintf('%.02f', (c2 - c1) / 1000), desc='Забег'}
+				end
+			
+				mark_counter()
 			end
 		end
+		
+		local res = eksui_template_rows{rows=rows, get_encoded_frame=get_encoded_frame, report_name='vedomost zazorov', report_filter=filters_names[filter_mode]}
 
-		insert_frame(excel, data_range, mark, line, 8 + column_offset)
+		local file_name = "c:\\1.xml"
+		local dst_file = assert(io.open(file_name, 'w+'))
+		dst_file:write(res)
+		dst_file:close()
 		
-		local widths, min_width, max_width = GetRailGap(mark)
-		if min_width then
-			data_range.Cells(line, 4 + column_offset).Value2 = min_width
-			if norm_gap_width then
-				data_range.Cells(line, 6 + column_offset).Value2 = sprintf('%.1f', min_width - norm_gap_width)
-			end
-		end
-		
---		data_range.Cells(line, 12+rail).Value2 = prop.SysCoord
-		
+		os.execute("start " .. file_name)
 	end
-
-	for line, mark_pair in ipairs(mark_pairs) do
-		for r, mark in pairs(mark_pair) do
-			insert_mark(line, r, mark)
-		end
-		
-		if mark_pair[1] and mark_pair[2] then
-			local c1, c2 = mark_pair[1].prop.SysCoord, mark_pair[2].prop.SysCoord
-			data_range.Cells(line, 9).Value2 = sprintf('%.02f', (c2 - c1) / 1000)
-		end
 	
-		if not dlg:step(line / #mark_pairs, stuff.sprintf(' Process %d / %d line', line, #mark_pairs)) then 
-			break
-		end
-	end 
-	
-	if ShowVideo == 0 then 
-		excel:AutoFitDataRows()
-		data_range.Cells(nil, 8).ColumnWidth = 0
-		data_range.Cells(nil, 17).ColumnWidth = 0
-	end
-	excel:SaveAndShow()
 end
 
 -- отчет по маячнам отметкам
@@ -1068,6 +1305,69 @@ local function report_short_rails(params)
 	
 	excel:SaveAndShow()
 end
+
+-- отчет по НПУ
+local function report_NPU(params)
+
+	local function filter_type_fn(mark)
+		return table_find(NPU_guids, mark.prop.Guid)
+	end
+	
+	local dlg = luaiup_helper.ProgressDlg()
+	local marks = Driver:GetMarks()
+	
+	marks = mark_helper.filter_marks(marks, filter_type_fn, make_filter_progress_fn(dlg))
+	marks = sort_mark_by_coord(marks)
+
+	if #marks == 0 then
+		iup.Message('Info', "Подходящих отметок не найдено")
+		return
+	end
+	
+	local excel = excel_helper(Driver:GetAppPath() .. params.filename, nil, false)
+	
+	excel:ApplyPassportValues(Passport)
+	local data_range = excel:CloneTemplateRow(#marks, 1)
+
+	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
+
+	local full_len = 0
+	for line, mark in ipairs(marks) do
+		local prop = mark.prop
+		local km1, m1, mm1 = Driver:GetPathCoord(prop.SysCoord)
+		local km2, m2, mm2 = Driver:GetPathCoord(prop.SysCoord + prop.Len)
+		
+		if Passport.INCREASE == '0' then
+			km1, m1, mm1, km2, m2, mm2 = km2, m2, mm2, km1, m1, mm1
+		end
+		
+		local uri = make_mark_uri(prop.ID)
+		excel:InsertLink(data_range.Cells(line, 13), uri, tonumber(line))
+	
+		data_range.Cells(line, 14).Value2 = sprintf("%d км %.1f м", km1, m1 + mm1/1000)
+		data_range.Cells(line, 15).Value2 = sprintf("%d км %.1f м", km2, m2 + mm2/1000)
+		data_range.Cells(line, 16).Value2 = get_rail_name(mark)
+		data_range.Cells(line, 17).Value2 = sprintf('%.2f', prop.Len / 1000):gsub('%.', ',')
+		data_range.Cells(line, 18).Value2 = prop.Description
+		
+		if not dlg:step(line / #marks, stuff.sprintf(' Out %d / %d line', line, #marks)) then 
+			break
+		end
+		
+		full_len = full_len + prop.Len
+		printf("%d: %f %f %s %f = %.2f\n", line, prop.Len, full_len, full_len/1000, full_len/1000, full_len/1000)
+	end 
+	
+	data_range.Cells(#marks+1, 17).Value2 = sprintf('%.2f', full_len / 1000.0):gsub('%.', ',')
+
+--	if ShowVideo == 0 then 
+--		excel:AutoFitDataRows()
+--		data_range.Cells(5).ColumnWidth = 0
+--	end
+	
+	excel:SaveAndShow()
+end
+
 -- ====================================================================================
 
 
@@ -1081,20 +1381,23 @@ local Report_Functions = {
 	-- {name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 	--{name="Сохранить в Excel",			fn=mark2excel,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="test",}, 					},
 	{name="Ведомость болтовых стыков",		fn=report_crew_join,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Болтов",}, 		guids=gap_rep_filter_guids},
+	{name="Ведомость болтовых стыков ЕКСУИ",fn=report_crew_join,	params={ eksui=true }, 		guids=gap_rep_filter_guids},
 	{name="Ведомость Зазоров",				fn=report_gaps,			params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Зазоров",}, 		guids=gap_rep_filter_guids},
+	{name="Ведомость Зазоров ЕКСУИ",		fn=report_gaps,			params={ eksui=true }, 		guids=gap_rep_filter_guids},
 	{name="Ведомость сварной плети",		fn=report_welding,		params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость сварной плети",}, 	guids=beacon_rep_filter_guids},
 	{name="Ведомость ненормативных объектов",fn=report_unspec_obj,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ненормативные объекты",},	guids=unspec_obj_filter_guids},	
 	--{name="КоордСтыков | 1",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=1}, 	guids=joint_filter_guids},
 	--{name="КоордСтыков | 2",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=2}, 	guids=joint_filter_guids},
-	{name=" коорд. cтыков (магн.) | 17",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=17}, 	guids=joint_filter_guids},
-	{name=" коорд. cтыков (магн.) | 18",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=18}, 	guids=joint_filter_guids},
+--	{name=" коорд. cтыков (магн.) | 17",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=17}, 	guids=joint_filter_guids},
+--	{name=" коорд. cтыков (магн.) | 18",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=18}, 	guids=joint_filter_guids},
 	
-	{name=" коорд. cтыков (магн.) | 17_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=17, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
-	{name=" коорд. cтыков (магн.) | 18_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=18, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
+--	{name=" коорд. cтыков (магн.) | 17_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=17, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
+--	{name=" коорд. cтыков (магн.) | 18_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=18, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
 	
 	{name="Ведомость скреплений",		fn=report_fasteners,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Скреплений",}, 		guids=fastener_guids},
 	{name="Горизонтальные ступеньки",	fn=report_recog_joint_step,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Горизонтальные ступеньки",}, 		guids=gap_rep_filter_guids},
 	{name="Рубки",						fn=report_short_rails,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Рубки",}, 		guids=gap_rep_filter_guids},
+	{name="НПУ",						fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls",}, 		guids=NPU_guids},
 }
 
 

@@ -1,8 +1,9 @@
 mark_helper = require 'sum_mark_helper'
+stuff = require 'stuff'
 
-local sprintf = function(s,...)	return s:format(...) 			end
-local printf = function(s,...)	print(s:format(...)) 			end
-
+local sprintf = stuff.sprintf
+local printf = stuff.printf
+local table_find = stuff.table_find
 
 local SelectNodes = mark_helper.SelectNodes
 local sort_marks = mark_helper.sort_marks
@@ -86,6 +87,21 @@ local column_path_coord =
 	end
 }
 
+local column_length = 
+{
+	name = 'Длн.', 
+	width = 40, 
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local prop = mark.prop
+		return sprintf("%.2f", prop.Len / 1000)
+	end,
+	sorter = function(mark)
+		return {mark.prop.Len}
+	end
+}
+
 local column_rail = 
 {
 	name = 'Р', 
@@ -96,9 +112,24 @@ local column_rail =
 		local rail_mask = bit32.band(mark.prop.RailMask, 0x3)
 		
 		local left_mask = tonumber(Passport.FIRST_LEFT) + 1
-		local rail_name = left_mask == rail_mask and "пр" or "лев"
-		local kup_cor = rail_mask == 1 and 'Куп' or 'Кор'
-		return kup_cor
+		return rail_mask == 1 and 'Куп' or 'Кор'
+	end,
+	sorter = function(mark)
+		return { bit32.band(mark.prop.RailMask, 0x3) }
+	end
+}
+
+local column_rail_lr = 
+{
+	name = 'Р', 
+	width = 33, 
+	align = 'r', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local rail_mask = bit32.band(mark.prop.RailMask, 0x3)
+		
+		local left_mask = tonumber(Passport.FIRST_LEFT) + 1
+		return left_mask == rail_mask and "Прв" or "Лв"
 	end,
 	sorter = function(mark)
 		return { bit32.band(mark.prop.RailMask, 0x3) }
@@ -377,6 +408,30 @@ local column_fishplate_state =
 	end,
 }
 
+local NPU_type_str = {"Возм.", "Подтв."}
+
+local NPU_guids = {
+	"{19FF08BB-C344-495B-82ED-10B6CBAD508F}",
+	"{19FF08BB-C344-495B-82ED-10B6CBAD5090}"
+}
+
+local column_npu_type = 
+{
+	name = 'тип', 
+	width = 60, 
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local prop = mark.prop
+		local pos = table_find(NPU_guids, prop.Guid)
+		local text = NPU_type_str[pos] or '--'
+		return text
+	end,
+	sorter = function(mark)
+		return {mark.prop.Guid}
+	end
+}
+
 --=========================================================================== --
 
 local recognition_guids = {
@@ -389,7 +444,9 @@ local recognition_guids = {
 local recognition_surface_defects = {
 	"{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}",
 }
-			
+		
+
+		
 --=========================================================================== --
 
 local Filters = 
@@ -500,6 +557,18 @@ local Filters =
 			return fault > 0
 		end,
 	},
+	{
+		name = 'НПУ', 
+		columns = {
+			column_num, 
+			column_path_coord, 
+			column_length,
+			--column_rail,
+			column_rail_lr,
+			column_npu_type,
+			}, 
+		GUIDS = NPU_guids,
+	},
 }
 
 -- внутренняя функция, возвращает описание фильтра по его имени
@@ -559,7 +628,7 @@ function GetItemText(row, col)
 		local fn = work_filter.columns[col].text
 		if fn then
 			local res = fn(row)
-			return res
+			return tostring(res)
 		end
 	end
 	return ''

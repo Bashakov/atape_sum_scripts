@@ -31,10 +31,14 @@ end
 local function CopyFile(src, dst)
 	local fso = luacom.CreateObject("Scripting.FileSystemObject")	
 	assert(fso, "can not create FileSystemObject object")
+	
+	if not fso:FileExists(src) then
+		stuff.errorf("template %s not exist", src)
+	end
+	
 	local path, name = SplitPath(dst)
 	path = CreatePath(path) 
 	assert(dst == path .. name)
-	
 	fso:CopyFile(src, dst, True)
 	return fso:FileExists(dst)
 end
@@ -107,6 +111,7 @@ end
 excel_helper = OOP.class
 {
 	ctor = function(self, template_path, sheet_name, visible)
+		
 		sheet_name = sheet_name or ""
 		self._excel = luacom.CreateObject("Excel.Application") 		-- запустить экземпляр excel
 		assert(self._excel, "Error! Could not run EXCEL object!")

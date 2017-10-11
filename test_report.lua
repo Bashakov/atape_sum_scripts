@@ -1,6 +1,9 @@
 socket = require "socket"
 require "luacom"
 
+local dump_path = 'C:\\1\\[494]_2017_06_08_12\\dump.lua'
+dofile(dump_path)
+
 os.sleep = function(sec)
 	socket.select(nil, nil, sec)
 end
@@ -40,17 +43,17 @@ function Passport2Table(psp_path)						-- открыть xml паспорт и �
 	end
 	return res
 end
-Passport = Passport2Table('C:\\out\\[480]_2013_11_09_14\\[480]_2013_11_09_14.xml')
+
+
+-- Passport = Passport2Table('C:\\1\\[480]_2013_11_09_14\\[480]_2013_11_09_14.xml')
+Passport = data.Passport
+marks = data.marks
 
 local sys2path_coord = {}
 
 Driver = 
 {
 	GetMarks = function()
-		if not marks then
-			local path = string.format("c:\\out\\%s\\dump.lua", Passport.NAME)
-			dofile(path)
-		end
 		for _, m in ipairs(marks) do
 			sys2path_coord[m.prop.SysCoord] = m.path
 		end
@@ -86,7 +89,7 @@ dofile('sum_report.lua')
 --MakeReport("Ведомость болтовых стыков")
 --MakeReport("Сохранить в Excel")
 --MakeReport("Ведомость Зазоров")
-MakeReport("Ведомость ненормативных объектов")
+--MakeReport("Ведомость ненормативных объектов")
 --MakeReport("Ведомость сварной плети")
-
-
+-- MakeReport("Ведомость болтовых стыков ЕКСУИ")
+MakeReport("Ведомость Зазоров ЕКСУИ")

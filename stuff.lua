@@ -99,6 +99,14 @@ function stuff.is_file_exists(name)
 	end
 end
 
+-- получить индекс элемента в массиве
+function stuff.table_find(tbl, val)
+	for i = 1, #tbl do
+		if tbl[i] == val then
+			return i
+		end
+	end
+end
 
 
 return stuff
