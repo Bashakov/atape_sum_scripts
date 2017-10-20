@@ -159,47 +159,6 @@ local function BuildMarkPairs(marks, dist)
 	return res
 end
 
--- получить ширины распознанных или отредактрованных ширин зазоров
-local function GetRailGap(mark)
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom)
-	local res = {}
-	
-	local ext = mark.ext
-	if ext.RAWXMLDATA then
-		xmlDom:loadXML(ext.RAWXMLDATA)	
-	end
-
-	local KWs = { 
-		user = { a="CalcRailGap_User"}, 
-		top  = { p="VIDEOIDENTGWT", a="CalcRailGap_Head_Top"}, 
-		side = { p="VIDEOIDENTGWS", a="CalcRailGap_Head_Side"} 
-	}
-	
-	local min_width
-	local max_width
-	for k, v in pairs(KWs) do
-		local w = v.p and ext[v.p]
-		if not w and ext.RAWXMLDATA then
-			local node = xmlDom:SelectSingleNode(sprintf('ACTION_RESULTS\z
-				/PARAM[@name="ACTION_RESULTS" and @value="%s"]\z
-				/PARAM[@name="FrameNumber"]\z
-				/PARAM[@name="Result" and @value="main"]\z
-				/PARAM[@name="RailGapWidth_mkm" and @value]/@value', v.a))
-			if node then
-				w = tonumber(node.nodeValue) / 1000
-			end
-		end
-		if w and not res.user then 
-			res[k] = w
-			min_width = w and min_width and math.min(w, min_width) or w
-			max_width = w and max_width and math.max(w, max_width) or w
-		end
-	end
-	
-	return res, min_width, max_width
-end
-
 -- получить доустимую ширину зазора в зав от температуры
 local function get_nominal_gape_width(rail_len, temperature)
 	if rail_len > 17000 then
@@ -724,13 +683,14 @@ local function report_gaps(params)
 				end
 			end
 
-			insert_frame(excel, data_range, mark, line, 8 + column_offset)
+		
+			local width, video_channel = mark_helper.GetGapWidth(mark)
+			insert_frame(excel, data_range, mark, line, 8 + column_offset, video_channel)
 			
-			local widths, min_width, max_width = GetRailGap(mark)
-			if min_width then
-				data_range.Cells(line, 4 + column_offset).Value2 = min_width
+			if width then
+				data_range.Cells(line, 4 + column_offset).Value2 = width
 				if norm_gap_width then
-					data_range.Cells(line, 6 + column_offset).Value2 = sprintf('%.1f', min_width - norm_gap_width)
+					data_range.Cells(line, 6 + column_offset).Value2 = sprintf('%.1f', width - norm_gap_width)
 				end
 			end
 			
@@ -787,11 +747,9 @@ local function report_gaps(params)
 				end
 
 				local dif_norm_width = ''
-				local widths, min_width, max_width = GetRailGap(mark)
-				if min_width then
-					if norm_gap_width then
-						dif_norm_width = sprintf('%.1f', min_width - norm_gap_width)
-					end
+				local width = mark_helper.GetGapWidth(mark)
+				if width and norm_gap_width then
+					dif_norm_width = sprintf('%.1f', width - norm_gap_width)
 				end
 		
 				local other = mark_pair[bit32.bxor(r, 0x03)]
@@ -806,7 +764,7 @@ local function report_gaps(params)
 					{name='rail', value=r, desc='Номер рельса'},
 					{name='thread', value=get_rail_name(mark), desc='Название рельса'},
 					{name='temperature',value=temperature, desc='Т рельса, °С'},
-					{name='gap_width', value=min_width or '', desc='Зазор, мм'},
+					{name='gap_width', value=width or '', desc='Зазор, мм'},
 					{name='norm_gap_width', value=norm_gap_width or '', desc='Ном. зазор, мм'},
 					{name='dif_norm_width', value=dif_norm_width, desc='Откл. от ном., мм'},
 					{name='rail_len', value=rail_len and sprintf("%.02f", rail_len/1000) or '', desc='Длина рельса'},

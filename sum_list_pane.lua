@@ -432,6 +432,54 @@ local column_npu_type =
 	end
 }
 
+local column_connections_all = 
+{
+	name = 'Всего', 
+	width = 60, 
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local all, fault = mark_helper.GetConnectorsCount(mark)
+		return all or ''
+	end,
+	sorter = function(mark)
+		local all, fault = mark_helper.GetConnectorsCount(mark)
+		return {all or 0}
+	end
+}
+
+local column_connections_defect = 
+{
+	name = 'Дефек.', 
+	width = 60, 
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local all, fault = mark_helper.GetConnectorsCount(mark)
+		return fault  or ''
+	end,
+	sorter = function(mark)
+		local all, fault = mark_helper.GetConnectorsCount(mark)
+		return {fault or 0}
+	end
+}
+
+local column_mark_type_name = 
+{
+	name = 'Тип', 
+	width = 120, 
+	align = 'l', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local name = Driver:GetSumTypeName(mark.prop.Guid)
+		return name
+	end,
+	sorter = function(mark)
+		return {mark.prop.Guid}
+	end
+}
+
+
 --=========================================================================== --
 
 local recognition_guids = {
@@ -531,6 +579,25 @@ local Filters =
 			column_recogn_rail_gap_step,
 			}, 
 		GUIDS = recognition_guids,
+		filter = function(mark)
+			local step = mark_helper.GetRailGapStep(mark)
+			return step 
+		end,
+	},
+	{
+		name = 'Соединители', 
+		columns = {
+			column_num, 
+			column_path_coord, 
+			column_rail,
+			column_connections_all,
+			column_connections_defect,
+			}, 
+		GUIDS = recognition_guids,
+		filter = function(mark)
+			local all, fault = mark_helper.GetConnectorsCount(mark)
+			return all 
+		end,
 	},
 	{
 		name = 'Поверхн. дефекты', 
@@ -569,6 +636,18 @@ local Filters =
 			}, 
 		GUIDS = NPU_guids,
 	},
+	{
+		name = 'Видимые', 
+		columns = {
+			column_num, 
+			column_path_coord, 
+			column_length,
+			--column_rail,
+			column_rail_lr,
+			column_mark_type_name,
+			}, 
+		visible = true,
+	},
 }
 
 -- внутренняя функция, возвращает описание фильтра по его имени
@@ -605,7 +684,7 @@ function InitMark(name)
 			local fn_filter = filter.filter
 			work_filter = filter
 			work_marks_list = {}
-			local marks = Driver:GetMarks{GUIDS=filter.GUIDS}
+			local marks = Driver:GetMarks{GUIDS=filter.GUIDS, ListType = filter.visible and 'visible' or 'all'}
 			for i = 1, #marks do
 				local mark = marks[i]
 				if not fn_filter or fn_filter(mark) then 

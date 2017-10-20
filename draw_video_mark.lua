@@ -240,8 +240,8 @@ end
 local fishpalte_fault_str = 
 {
 	[0] = 'испр.',
-	[1] = 'надр.',
-	[3] = 'трещ.',
+	[1] = 'ндp.',
+	[3] = 'тре.',
 	[4] = 'изл.',
 }
 
@@ -278,11 +278,50 @@ local function DrawFishplateFailt(drawer, frame, dom)
 			local text = fishpalte_fault_str[fault] or fault
 				
 			local tcx, tcy = get_center_point(points)
-			OutlineTextOut(drawer, tcx, tcy, text, {fill_color={r=128, g=0, b=0}, line_color={r=128, g=128, b=0}})
+			OutlineTextOut(drawer, tcx, tcy+10, text, {fill_color={r=128, g=0, b=0}, line_color={r=128, g=128, b=0}})
 		end
 	end
-
 end
+
+local function DrawConnectors(drawer, frame, dom)
+	local colors = {
+		[0] = {r=0, g=128, b=128},
+		[1] = {r=255, g=128, b=0},
+	}
+	
+	--OutlineTextOut(drawer, 100, 100, 'test', {})
+	
+	local cur_frame_coord = frame.coord.raw
+	local req = '\z
+			/ACTION_RESULTS\z
+			/PARAM[@name="ACTION_RESULTS" and @value="Connector"]\z
+			/PARAM[@name="FrameNumber" and @value and @coord]\z
+			/PARAM[@name="Result" and @value="main"]'
+	for node in SelectNodes(dom, req) do
+		local item_frame = node:SelectSingleNode("../@coord").nodeValue
+		local fig_channel = node:SelectSingleNode("../../@channel")
+		fig_channel = fig_channel and tonumber(fig_channel.nodeValue)
+		
+		local elipse = node:SelectSingleNode('PARAM[@name="Coord" and @type="ellipse" and @value]/@value').nodeValue
+		local fault = tonumber(node:SelectSingleNode('PARAM[@name="ConnectorFault" and @value]/@value').nodeValue)
+		local color = colors[fault] or {r=128, g=128, b=128}
+		
+		if not fig_channel or not frame.channel or fig_channel == frame.channel then
+			local cx, cy, rx, ry = elipse:match('(%d+),(%d+),(%d+),(%d+)')
+			
+			cx, cy = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, cx, cy)
+			if cx and cy then
+				rx, ry = Convertor:ScalePoint(rx, ry)
+				
+				drawer.prop:lineWidth(1)
+				drawer.prop:fillColor( color.r, color.g, color.b,  50 )
+				drawer.prop:lineColor( color.r, color.g, color.b, 255 )
+				drawer.fig:ellipse(cx, cy, rx, ry)
+			end
+		end
+	end	
+end
+
 
 local function DrawCrewJoint(drawer, frame, dom)
 	local colors = {
@@ -394,6 +433,7 @@ local function DrawRecognitionMark(drawer, frame, mark)
 		DrawBeacon(drawer, frame, xmlDom)
 		ProcessRailGapStep(drawer, frame, xmlDom)
 		DrawFishplateFailt(drawer, frame, xmlDom)
+		DrawConnectors(drawer, frame, xmlDom)
 	end
 end
 
@@ -563,16 +603,13 @@ local function DrawSurfDefectMark(drawer, frame, mark)
 				local points = parse_polygon(polygon, cur_frame_coord, item_frame)
 				
 				if #points == 8 then
-					drawer.prop:lineWidth(2)
-					drawer.prop:fillColor(255, 0, 0, 20)
-					drawer.prop:lineColor(255, 0, 0, 200)
-					drawer.fig:polygon(points)
-					
-					--local strWidth = sprintf('%.1f mm', tonumber(width))
-					local strText = sprintf('Type: %s\nArea: %d', prm.SurfaceFault, prm.SurfaceArea)
-					
+					drawer.prop:lineWidth(1)			
+					drawer.prop:fillColor(192, 0, 192, 20)
+					drawer.prop:lineColor(192, 0, 192, 200)
+					drawer.fig:polygon(points)					
+					local strText = sprintf('Пов.деф.(l=%dмм,w=%dмм,s=%dмм2)',prm.SurfaceLength, prm.SurfaceWidth, prm.SurfaceArea )					
 					local tcx, tcy = get_center_point(points)
-					OutlineTextOut(drawer, tcx, tcy + 10, strText)
+					OutlineTextOut(drawer, tcx, tcy+20, strText)					
 				end
 			end
 			

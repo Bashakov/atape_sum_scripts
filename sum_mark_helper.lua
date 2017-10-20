@@ -146,8 +146,8 @@ local function GetGapWidthName(mark, name)
 	elseif name == 'active' then -- рабочая: боковая по 17,18 каналу
 		local w = widths.CalcRailGap_Head_Side
 		if w then
-			if w[19] then return w[19], 19 end
-			if w[20] then return w[20], 20 end
+			if w[17] then return w[17], 17 end
+			if w[18] then return w[18], 18 end
 			if w[0] then 
 				local video_channel = mark_helper.GetSelectedBits(mark.prop.ChannelMask)
 				video_channel = video_channel and video_channel[1]
@@ -378,6 +378,56 @@ local function GetSurfDefectPrm(mark)
 	end
 end
 
+-- =================== Коннекторы ===================
+
+-- получить массив коннекторов болтов (если распз по неск каналам, то данные берутся последовательно из 17/18 потом из 19/20)
+local function GetConnectorsArray(mark)
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom)
+	
+	local ext = mark.ext
+	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA)	then
+		return nil
+	end
+	
+	local req = '\z
+		/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Connector"]\z
+		/PARAM[@name="FrameNumber" and @value]\z
+		/PARAM[@name="Result" and @value="main"]\z
+		/PARAM[@name="ConnectorFault" and @value]/@value'
+
+	local res = {}
+
+	for node in SelectNodes(xmlDom, req) do
+		local video_channel = node:SelectSingleNode("../../../../@channel")
+		video_channel = video_channel and tonumber(video_channel.nodeValue) or 0
+		local fault = tonumber(node.nodeValue)
+		
+		if not res[video_channel] then
+			res[video_channel] = {}
+		end
+		table.insert(res[video_channel], fault)
+	end
+
+	res = res[17] or res[18] or res[19] or res[20] or res[0]
+	return res
+end
+
+-- получить полное количество, колич. дефектных
+local function GetConnectorsCount(mark)
+	local arr = GetConnectorsArray(mark)
+	if not arr then
+		return nil
+	end
+	local all, fault = #arr, 0
+	for _, f in ipairs(arr) do
+		if f ~= 0 then
+			fault = fault + 1
+		end
+	end
+	return all, fault
+end
+
 
 -- =================== Вспомогательные ===================
 
@@ -467,6 +517,9 @@ return{
 	GetFastenetParams = GetFastenetParams,
 	
 	GetSurfDefectPrm = GetSurfDefectPrm,
+	
+	GetConnectorsArray = GetConnectorsArray,
+	GetConnectorsCount = GetConnectorsCount,
 	
 	GetCrewJointArray = GetCrewJointArray,
 	GetCrewJointCount = GetCrewJointCount,
