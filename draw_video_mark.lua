@@ -607,7 +607,7 @@ local function DrawSurfDefectMark(drawer, frame, mark)
 					drawer.prop:fillColor(192, 0, 192, 20)
 					drawer.prop:lineColor(192, 0, 192, 200)
 					drawer.fig:polygon(points)					
-					local strText = sprintf('Пов.деф.(l=%dмм,w=%dмм,s=%dмм2)',prm.SurfaceLength, prm.SurfaceWidth, prm.SurfaceArea )					
+					local strText = sprintf('Пов.деф.(l=%dмм,w=%dмм,s=%dмм2)',prm.SurfaceLength or 0, prm.SurfaceWidth or 0, prm.SurfaceArea or 0)
 					local tcx, tcy = get_center_point(points)
 					OutlineTextOut(drawer, tcx, tcy+20, strText)					
 				end

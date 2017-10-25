@@ -50,7 +50,19 @@ local NPU_guids = {
 	"{19FF08BB-C344-495B-82ED-10B6CBAD5090}",
 }
 
+local beacon_rep_filter_guids = 
+{
+	"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}",
+	"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",
+}
 
+local surface_defects_guids = 
+{
+	"{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}",
+}
+
+
+-- ========================================================= 
 
 -- сделать строку ссылку для открытия атейпа на данной отметке
 local function make_mark_uri(markid)
@@ -1326,22 +1338,78 @@ local function report_NPU(params)
 	excel:SaveAndShow()
 end
 
+-- отчет по неспецифицированным объектам
+local function report_surface_defects(params)
+	
+	local function filter_fn(mark)
+		local accept = table_find(surface_defects_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
+		
+--		if accept and filter_mode ~= 1 then  -- если отметка еще подходит и нужно выбрать не все (только тефектные или только нормальные)
+--			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
+--			accept = valid_on_half and valid_on_half >= 2  		-- нормальные те, у которых как минимум 2 болта
+--			if filter_mode == 2 then accept = not accept end	-- если нужны ненормальные, инвертируем
+--		end
+		return accept
+	end
+	
+	local dlg = luaiup_helper.ProgressDlg()
+	local marks = Driver:GetMarks()
+	
+	marks = mark_helper.filter_marks(marks, filter_fn, make_filter_progress_fn(dlg))
+	marks = sort_mark_by_coord(marks)
+
+	if #marks == 0 then
+		iup.Message('Info', "Подходящих отметок не найдено")
+		return
+	end
+
+	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
+	excel:ApplyPassportValues(Passport)
+	local data_range = excel:CloneTemplateRow(#marks)
+
+	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
+
+	for line, mark in ipairs(marks) do
+		
+		local prop = mark.prop
+		local ext = mark.ext
+		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
+		
+		local uri = make_mark_uri(prop.ID)
+		
+		data_range.Cells(line, 1).Value2 = get_rail_name(mark)
+		data_range.Cells(line, 2).Value2 = km
+		excel:InsertLink(data_range.Cells(line, 3), uri, sprintf("%.02f", m + mm/1000))
+		
+		local prm = mark_helper.GetSurfDefectPrm(mark)
+		data_range.Cells(line, 4).Value2 = sprintf('%d', prm.SurfaceArea)	 -- prm.SurfaceLength, prm.SurfaceWidth, 
+		
+		insert_frame(excel, data_range, mark, line, 5)
+		
+		if not dlg:step(line / #marks, stuff.sprintf(' Process %d / %d mark', line, #marks)) then 
+			break
+		end
+	end 
+
+	if ShowVideo == 0 then 
+		excel:AutoFitDataRows()
+		data_range.Cells(5).ColumnWidth = 0
+	end
+	excel:SaveAndShow()
+end
+
+
+
 -- ====================================================================================
 
-
-local beacon_rep_filter_guids = 
-{
-	"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}",
-	"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",
-}
 
 local Report_Functions = {
 	-- {name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 	--{name="Сохранить в Excel",			fn=mark2excel,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="test",}, 					},
-	{name="Ведомость болтовых стыков",		fn=report_crew_join,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Болтов",}, 		guids=gap_rep_filter_guids},
-	{name="Ведомость болтовых стыков ЕКСУИ",fn=report_crew_join,	params={ eksui=true }, 		guids=gap_rep_filter_guids},
-	{name="Ведомость Зазоров",				fn=report_gaps,			params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Зазоров",}, 		guids=gap_rep_filter_guids},
-	{name="Ведомость Зазоров ЕКСУИ",		fn=report_gaps,			params={ eksui=true }, 		guids=gap_rep_filter_guids},
+	{name="Ведомость болтовых стыков|Excel",fn=report_crew_join,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Болтов",}, 		guids=gap_rep_filter_guids},
+	{name="Ведомость болтовых стыков|ЕКСУИ ",fn=report_crew_join,	params={ eksui=true }, 		guids=gap_rep_filter_guids},	
+	{name="Ведомость Зазоров|Excel",		fn=report_gaps,			params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Зазоров",}, 		guids=gap_rep_filter_guids},
+	{name="Ведомость Зазоров|ЕКСУИ",		fn=report_gaps,			params={ eksui=true }, 		guids=gap_rep_filter_guids},	
 	{name="Ведомость сварной плети",		fn=report_welding,		params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость сварной плети",}, 	guids=beacon_rep_filter_guids},
 	{name="Ведомость ненормативных объектов",fn=report_unspec_obj,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ненормативные объекты",},	guids=unspec_obj_filter_guids},	
 	--{name="КоордСтыков | 1",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=1}, 	guids=joint_filter_guids},
@@ -1355,6 +1423,8 @@ local Report_Functions = {
 	{name="Ведомость скреплений",		fn=report_fasteners,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Скреплений",}, 		guids=fastener_guids},
 	{name="Горизонтальные ступеньки",	fn=report_recog_joint_step,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Горизонтальные ступеньки",}, 		guids=gap_rep_filter_guids},
 	{name="Рубки",						fn=report_short_rails,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Рубки",}, 		guids=gap_rep_filter_guids},
+	{name="Поверхн. дефекты",			fn=report_surface_defects,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Поверхн. дефекты"}, guids=surface_defects_guids,}, 
+	
 	{name="НПУ",						fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls",}, 		guids=NPU_guids},
 }
 
