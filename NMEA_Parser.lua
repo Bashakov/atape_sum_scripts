@@ -166,7 +166,7 @@ local data_block_desc = {
 		Speed		= {	fields={7}, 	fn = tonumber,				can_empty = true},
 		TMG			= {	fields={8}, 	fn = tonumber,				can_empty = true},
 		Date		= {	fields={9}, 	fn = details.DateToOsTime,	can_empty = true},
-		MagnVar		= {	fields={10,11},	fn = details.DecodeCoord,	can_empty = true},
+--		MagnVar		= {	fields={10,11},	fn = details.DecodeCoord,	can_empty = true},
 		},
 }
 
@@ -239,7 +239,7 @@ tests.parser = function ()
 		for n, v in pairs(expected_res) do
 			local is_equal = false
 			if type(v) == 'number' then
-				print (n, res[n], v)
+				--print (n, res[n], v)
 				is_equal = math.abs(res[n] - v) < math.abs(res[n] + v + 0.001) * 1.0e-10
 			else
 				is_equal = res[n] == v
@@ -283,7 +283,7 @@ tests.parser = function ()
 				BlockType = "GGA",
 				UTC = 56090000,
 				Latitude = 38.8566166666666,
-				Longitude = 94.7998,
+				Longitude = -94.7998,
 				Quality = 0,
 				NoS	= 0,
 				HDOP = "",
@@ -297,7 +297,7 @@ tests.parser = function ()
 				BlockType = "GGA",
 				UTC = 35120590,
 				Latitude = 37.391097950667,
-				Longitude = 122.03782631066667,
+				Longitude = -122.03782631066667,
 				Quality = 2,
 				NoS	= 6,
 				HDOP = 1.2,
@@ -310,7 +310,7 @@ tests.parser = function ()
 			res = {
 				BlockType = "GLL",
 				Latitude = -37.86083333333333,
-				Longitude = -145.12266666666667,
+				Longitude = 145.12266666666667,
 				UTC = 82484000,
 				Status = 1}
 		},
@@ -320,11 +320,10 @@ tests.parser = function ()
 				UTC = 41810000,
 				Status = 1,
 				Latitude = 55.810116666666666,
-				Longitude = -37.65645,
+				Longitude = 37.65645,
 				Speed = 0.01,
 				TMG	= 5.6,
-				Date = 1050883200,
-				MagnVar = -8.7,}
+				Date = 1050883200}
 		},
 		{
 			block = "$GPGGA,094433,3851.3970,N,09447.9880,W,8,12,0.9,186.6,M,-28.6,M,,*77",
@@ -332,7 +331,7 @@ tests.parser = function ()
 				BlockType = "GGA",
 				UTC = 35073000,
 				Latitude = 38.85661666666667,
-				Longitude = 94.7998,
+				Longitude = -94.7998,
 				Quality = 8,
 				NoS	= 12,
 				HDOP = 0.9,
@@ -341,6 +340,20 @@ tests.parser = function ()
 				AgeDiff	= "",
 				DiffStID = "", }
 		}, 
+		{
+			block = '$GPRMC,124929.00,A,5953.3237,N,03037.4521,E,28.60,322.8,291117,,,A,S*24',
+			res = {
+				BlockType = "RMC",
+				UTC = 46169000,
+				Status = 1,
+				Latitude = 59.88872833333333,
+				Longitude = 30.624201666666668,
+				Speed = 28.60,
+				TMG	= 322.8,
+				Date = 1511913600,
+			}
+		},
+			
 	}
 	local error_count = 0
 	for _,t in ipairs(tests_data) do
@@ -365,9 +378,9 @@ end
 -- ================================================================ 
 
 
---tests.parser()
---tests.benchmark()
---tests.empty_data()
+-- tests.parser()
+-- tests.benchmark()
+-- tests.empty_data()
 
 -- print(os.time{year=1970, month=1, day=2, hour=0} + stuff.GetUtcOffset() * 3600)
 --NMEA_PARSER.details.dump( os.date("*t", 100))
