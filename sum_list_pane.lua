@@ -479,6 +479,20 @@ local column_mark_type_name =
 	end
 }
 
+local column_user_accept = 
+{
+	name = 'Пдт', 
+	width = 33, 
+	align = 'c', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local ua = mark.ext.ACCEPT_USER
+		return ua and (ua == 1 and 'Да' or 'нет') or ''
+	end,
+	sorter = function(mark)
+		return { mark.ext.ACCEPT_USER or -1 }
+	end
+}
 
 --=========================================================================== --
 
@@ -523,6 +537,7 @@ local Filters =
 			column_recogn_width_user,
 			column_recogn_bolt,
 			column_recogn_video_channel,
+			column_user_accept,
 			}, 
 		GUIDS = recognition_guids,
 	},
@@ -536,6 +551,7 @@ local Filters =
 			column_joint_speed_limit,
 			--column_recogn_reability,
 			column_recogn_video_channel,
+			column_user_accept,
 			}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
@@ -550,6 +566,7 @@ local Filters =
 			column_path_coord, 
 			column_rail,
 			column_beacon_offset,
+			column_user_accept,
 			}, 
 		GUIDS = {
 			"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}",
@@ -599,17 +616,17 @@ local Filters =
 			return all 
 		end,
 	},
-	{
-		name = 'Поверхн. дефекты', 
-		columns = {
-			column_num, 
-			column_path_coord, 
-			column_rail,
-			column_surf_defect_type,
-			column_surf_defect_area,
-			}, 
-		GUIDS = recognition_surface_defects,
-	},	
+	--{
+	--	name = 'Поверхн. дефекты', 
+	--	columns = {
+	--		column_num, 
+	--		column_path_coord, 
+	--		column_rail,
+	--		column_surf_defect_type,
+	--		column_surf_defect_area,
+	--		}, 
+	--	GUIDS = recognition_surface_defects,
+	--},	
 	{
 		name = 'Дефекты Накладок', 
 		columns = {
@@ -645,6 +662,7 @@ local Filters =
 			--column_rail,
 			column_rail_lr,
 			column_mark_type_name,
+			column_recogn_video_channel,
 			}, 
 		visible = true,
 	},

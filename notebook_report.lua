@@ -367,8 +367,6 @@ local function report_make_dump(records)
 end
 
 
-
-
 local function excel_defectogram(records)
 	local insert_us_img = true
 	local insert_video_img = true

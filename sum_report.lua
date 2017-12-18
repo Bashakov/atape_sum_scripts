@@ -384,6 +384,7 @@ local function make_rail_len_table(marks)
 end
 
 
+
 -- =================================================================================
 
 local function dump_mark_list(template_name, sheet_name)
@@ -479,15 +480,32 @@ end
 -- Ведомость болтовых стыков 
 local function report_crew_join(params)
 	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
-	local filters_names = {"Показать все", "Дефектные", "Нормальные"}
-	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', filters_names, 2)
+
+	local res, filter_mode, show_accepted, show_rejected = iup.GetParam("Параметры отчета", nil, 
+		"Тип отчета: %l|Показать все|Дефектные|Нормальные|\n\z
+		Показать подтвержденные: %b[Нет,Да]\n\z
+		Показать Отброшенные: %b[Нет,Да]\n",
+		1, 1, 0)
 	
-	if not filter_mode then
+	if not res then
 		return
 	end
+	filter_mode = filter_mode + 1
 	
 	local function filter_fn(mark)
 		local accept = table_find(gap_rep_filter_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
+		
+		if accept then
+			local ua = mark.ext.ACCEPT_USER or -1
+			if ua == 1 then
+				accept = show_accepted == 1
+			elseif ua == 0 then
+				accept = show_rejected == 1
+			else
+				--accept = false
+			end
+			print(ua, accept)
+		end
 		
 		if accept and filter_mode ~= 1 then  -- если отметка еще подходит и нужно выбрать не все (только тефектные или только нормальные)
 			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
@@ -502,6 +520,7 @@ local function report_crew_join(params)
 	
 	marks = mark_helper.filter_marks(marks, filter_fn, make_filter_progress_fn(dlg))
 	marks = sort_mark_by_coord(marks)
+	print('accept mark count = ', #marks)
 	
 	local mark_pairs = BuildMarkPairs(marks, 500)
 	if #mark_pairs == 0 then
@@ -610,12 +629,19 @@ end
 -- отчет Ведомость Зазоров
 local function report_gaps(params)
 	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
-	local filters_names = {"Меньше 3 мм", "Все", "Больше 22 мм", "Слепые подряд", "Больше 35 мм"}
-	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', filters_names, 2)
 	
-	if not filter_mode then
+	local res, filter_mode, show_accepted, show_rejected = iup.GetParam("Параметры отчета", nil, 
+		"Тип отчета: %l|Меньше 3 мм|Все|Больше 22 мм|Слепые подряд|Больше 35 мм|\n\z
+		Показать подтвержденные: %b[Нет,Да]\n\z
+		Показать Отброшенные: %b[Нет,Да]\n",
+		1, 1, 0)
+	
+	if not res then
 		return
 	end
+
+	filter_mode = filter_mode + 1
+	local ua_filter = {[-1] = true, [0] = show_rejected==1, [1] = show_accepted==1}
 	
 	local dlg = luaiup_helper.ProgressDlg()
 	local marks = Driver:GetMarks()
@@ -628,6 +654,8 @@ local function report_gaps(params)
 	marks = sort_mark_by_coord(marks)
 	
 	local mark_rail_len = make_rail_len_table(marks)
+	
+	marks = mark_helper.filter_user_accept(marks, ua_filter, make_filter_progress_fn(dlg))
 
 	if filter_mode == 1 or filter_mode == 3 or filter_mode == 5 then
 		local function filter_width_fn(mark)
@@ -1407,7 +1435,7 @@ local Report_Functions = {
 	-- {name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 	--{name="Сохранить в Excel",			fn=mark2excel,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="test",}, 					},
 	{name="Ведомость болтовых стыков|Excel",fn=report_crew_join,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Болтов",}, 		guids=gap_rep_filter_guids},
-	{name="Ведомость болтовых стыков|ЕКСУИ ",fn=report_crew_join,	params={ eksui=true }, 		guids=gap_rep_filter_guids},	
+	{name="Ведомость болтовых стыков|ЕКСУИ",fn=report_crew_join,	params={ eksui=true }, 		guids=gap_rep_filter_guids},	
 	{name="Ведомость Зазоров|Excel",		fn=report_gaps,			params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Зазоров",}, 		guids=gap_rep_filter_guids},
 	{name="Ведомость Зазоров|ЕКСУИ",		fn=report_gaps,			params={ eksui=true }, 		guids=gap_rep_filter_guids},	
 	{name="Ведомость сварной плети",		fn=report_welding,		params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость сварной плети",}, 	guids=beacon_rep_filter_guids},
@@ -1423,7 +1451,7 @@ local Report_Functions = {
 	{name="Ведомость скреплений",		fn=report_fasteners,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Скреплений",}, 		guids=fastener_guids},
 	{name="Горизонтальные ступеньки",	fn=report_recog_joint_step,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Горизонтальные ступеньки",}, 		guids=gap_rep_filter_guids},
 	{name="Рубки",						fn=report_short_rails,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Рубки",}, 		guids=gap_rep_filter_guids},
-	{name="Поверхн. дефекты",			fn=report_surface_defects,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Поверхн. дефекты"}, guids=surface_defects_guids,}, 
+	--{name="Поверхн. дефекты",			fn=report_surface_defects,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Поверхн. дефекты"}, guids=surface_defects_guids,}, 
 	
 	{name="НПУ",						fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls",}, 		guids=NPU_guids},
 }

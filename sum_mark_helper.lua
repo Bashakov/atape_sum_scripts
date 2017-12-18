@@ -450,6 +450,27 @@ local function filter_marks(marks, fn, progress_callback)
 	return res
 end
 
+-- фильтрация отметок по USER_ACCEPT. values = {[-1]=true, [0]=false, [1]=true}
+local function filter_user_accept(marks, values, progress_callback)
+	if not values then
+		return marks
+	end
+	
+	local res = {}
+	for i = 1, #marks do
+		local mark = marks[i]
+		local ua = mark.ext.ACCEPT_USER or -1
+		
+		if values[ua] then
+			res[#res+1] = mark
+		end
+		print(i, mark.prop.dwID, ua, #res)
+		if progress_callback then
+			progress_callback(#marks, i, #res)
+		end
+	end
+	return res
+end
 
 -- сортировка отметок 
 local function sort_marks(marks, fn, inc, progress_callback)
@@ -503,6 +524,7 @@ return{
 	filter_marks = filter_marks,
 	SelectNodes = SelectNodes,
 	GetSelectedBits = GetSelectedBits,
+	filter_user_accept = filter_user_accept,
 	
 	GetAllGapWidth = GetAllGapWidth,
 	GetGapWidth = GetGapWidth,
