@@ -481,13 +481,13 @@ local column_mark_type_name =
 
 local column_user_accept = 
 {
-	name = 'Пдт', 
+	name = 'Подт.', 
 	width = 33, 
 	align = 'c', 
 	text = function(row)
 		local mark = work_marks_list[row]
 		local ua = mark.ext.ACCEPT_USER
-		return ua and (ua == 1 and 'Да' or 'нет') or ''
+		return ua and (ua == 1 and 'да' or 'нет') or ''
 	end,
 	sorter = function(mark)
 		return { mark.ext.ACCEPT_USER or -1 }
@@ -616,17 +616,17 @@ local Filters =
 			return all 
 		end,
 	},
-	--{
-	--	name = 'Поверхн. дефекты', 
-	--	columns = {
-	--		column_num, 
-	--		column_path_coord, 
-	--		column_rail,
-	--		column_surf_defect_type,
-	--		column_surf_defect_area,
-	--		}, 
-	--	GUIDS = recognition_surface_defects,
-	--},	
+	{
+		name = 'Поверхностные дефекты', 
+		columns = {
+			column_num, 
+			column_path_coord, 
+			column_rail,
+			column_surf_defect_type,
+			column_surf_defect_area,
+			}, 
+		GUIDS = recognition_surface_defects,
+	},	
 	{
 		name = 'Дефекты Накладок', 
 		columns = {
@@ -653,19 +653,19 @@ local Filters =
 			}, 
 		GUIDS = NPU_guids,
 	},
-	{
-		name = 'Видимые', 
-		columns = {
-			column_num, 
-			column_path_coord, 
-			column_length,
-			--column_rail,
-			column_rail_lr,
-			column_mark_type_name,
-			column_recogn_video_channel,
-			}, 
-		visible = true,
-	},
+	--{
+	--	name = 'Видимые', 
+	--	columns = {
+	--		column_num, 
+	--		column_path_coord, 
+	--		column_length,
+	--		--column_rail,
+	--		column_rail_lr,
+	--		column_mark_type_name,
+	--		column_recogn_video_channel,
+	--		}, 
+	--	visible = true,
+	--},
 }
 
 -- внутренняя функция, возвращает описание фильтра по его имени

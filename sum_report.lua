@@ -1434,10 +1434,10 @@ end
 local Report_Functions = {
 	-- {name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 	--{name="Сохранить в Excel",			fn=mark2excel,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="test",}, 					},
-	{name="Ведомость болтовых стыков|Excel",fn=report_crew_join,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Болтов",}, 		guids=gap_rep_filter_guids},
-	{name="Ведомость болтовых стыков|ЕКСУИ",fn=report_crew_join,	params={ eksui=true }, 		guids=gap_rep_filter_guids},	
 	{name="Ведомость Зазоров|Excel",		fn=report_gaps,			params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Зазоров",}, 		guids=gap_rep_filter_guids},
 	{name="Ведомость Зазоров|ЕКСУИ",		fn=report_gaps,			params={ eksui=true }, 		guids=gap_rep_filter_guids},	
+	{name="Ведомость болтовых стыков|Excel",fn=report_crew_join,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Болтов",}, 		guids=gap_rep_filter_guids},
+	{name="Ведомость болтовых стыков|ЕКСУИ",fn=report_crew_join,	params={ eksui=true }, 		guids=gap_rep_filter_guids},	
 	{name="Ведомость сварной плети",		fn=report_welding,		params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость сварной плети",}, 	guids=beacon_rep_filter_guids},
 	{name="Ведомость ненормативных объектов",fn=report_unspec_obj,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ненормативные объекты",},	guids=unspec_obj_filter_guids},	
 	--{name="КоордСтыков | 1",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=1}, 	guids=joint_filter_guids},
@@ -1451,7 +1451,7 @@ local Report_Functions = {
 	{name="Ведомость скреплений",		fn=report_fasteners,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Скреплений",}, 		guids=fastener_guids},
 	{name="Горизонтальные ступеньки",	fn=report_recog_joint_step,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Горизонтальные ступеньки",}, 		guids=gap_rep_filter_guids},
 	{name="Рубки",						fn=report_short_rails,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Рубки",}, 		guids=gap_rep_filter_guids},
-	--{name="Поверхн. дефекты",			fn=report_surface_defects,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Поверхн. дефекты"}, guids=surface_defects_guids,}, 
+	{name="Поверхностные дефекты",			fn=report_surface_defects,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Поверхн. дефекты"}, guids=surface_defects_guids,}, 
 	
 	{name="НПУ",						fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls",}, 		guids=NPU_guids},
 }
