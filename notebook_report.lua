@@ -78,11 +78,37 @@ local function get_str_sved(record)
 	return res
 end
 	
-local function get_video_frame(record, base64)
+local function GetBase64EncodedFrame(record)
 	local rail = get_record_rail(record)
 	local video_channel = rail==1 and 18 or 17
-	local video_img = Driver:GetFrame( video_channel, record.MARK_COORD, {mode=3, panoram_width=700, width=400, height=300, base64=base64} )
+	local video_img
+	local ok, err = pcall(function()
+		video_img = Driver:GetFrame(video_channel, record.MARK_COORD, {mode=3, panoram_width=700, width=400, height=300, base64=true} )
+	end)
+	if not ok then 
+		video_img = err
+	end
 	return video_img
+end
+
+
+local function InsertVideoFrame(cell, record)
+	local rail = get_record_rail(record)
+	local video_channel = rail==1 and 18 or 17
+	local prms = {mode=3, panoram_width=700, width=800, height=500, base64=base64}
+	
+	local ok, res = pcall(function() 
+		return Driver:GetFrame(video_channel, record.MARK_COORD, prm)
+	end)
+	
+	if ok then
+		if res and #res then
+			excel:InsertImage(cell, video_img_path)
+		end
+	else
+		cell.Value2 = res
+		--cell.RowHeight = 2
+	end
 end
 
 -- =================== Отчеты =====================
@@ -128,17 +154,11 @@ local function vedomost_with_US_images_excel(records)
 			local us_img_path = Driver:GetUltrasoundImage{note_rec=record, width=800, height=600, color=1, coord=record.MARK_COORD}
 			if us_img_path and #us_img_path then
 				excel:InsertImage(data_range.Cells(line, 18), us_img_path)
-				increase_height = true
 			end
 		end
 		
 		if insert_video_img and Driver.GetFrame then
-			local video_img_path = get_video_frame(record, false)
-			if video_img_path and #video_img_path then
-				excel:InsertImage(data_range.Cells(line, 19), video_img_path)
-				increase_height = true
-				data_range.Cells(line, 20).Value2 = video_channel
-			end
+			InsertVideoFrame(data_range.Cells(line, 19), record)
 		end
 
 		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then 
@@ -370,7 +390,6 @@ end
 local function excel_defectogram(records)
 	local insert_us_img = true
 	local insert_video_img = true
-	
 	local dlg = luaiup_helper.ProgressDlg()
 	
 	records = filter_selected_mark(records, dlg)
@@ -399,12 +418,7 @@ local function excel_defectogram(records)
 		end
 		
 		if insert_video_img and Driver.GetFrame then
-			local rail = get_record_rail(record)
-			local video_channel = rail==1 and 18 or 17
-			local video_img_path = Driver:GetFrame( video_channel, record.MARK_COORD, {mode=3, panoram_width=700, width=800, height=600} )
-			if video_img_path and #video_img_path then
-				excel:InsertImage(dst_tbl.Cells(12, 1), video_img_path)
-			end
+			InsertVideoFrame(dst_tbl.Cells(12, 1), record)
 		else
 			dst_tbl.Cells(12, 1).RowHeight = 1
 		end
@@ -453,8 +467,7 @@ local function report_EKSUI(records)
 			error("Прервано пользователем")
 		end
 		mark_processed = mark_processed + 1 
-		local frame_data = get_video_frame(record, true)
-		return frame_data
+		return GetBase64EncodedFrame(record)
 	end
 		
 	local res = view{Passport=Passport, records=records,get_encoded_frame=get_encoded_frame}
@@ -473,9 +486,9 @@ end
 
 local REPORTS = 
 {
-	{ name = 'Создать дамп отметок', fn = report_make_dump, user_select_range=true },
-	{ name = 'Свойства отметок', fn = report_html_properties, user_select_range=true },
-	{ name = 'Ведомость HTML с изображениями УЗ', fn = vedomost_with_US_images_html, user_select_range=true },
+	--{ name = 'Создать дамп отметок', fn = report_make_dump, user_select_range=true },
+	--{ name = 'Свойства отметок', fn = report_html_properties, user_select_range=true },
+	--{ name = 'Ведомость HTML с изображениями УЗ', fn = vedomost_with_US_images_html, user_select_range=true },
 	{ name = 'Ведомость EXCEL с изображениями УЗ', fn = vedomost_with_US_images_excel, user_select_range=true },
 	{ name = 'Дефектограмма', fn = excel_defectogram, user_select_range=false },
 	{ name = 'Выделенные в отчет ЕКСУИ', fn = report_EKSUI, user_select_range=false },
