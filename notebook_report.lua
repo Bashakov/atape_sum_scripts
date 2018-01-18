@@ -92,7 +92,7 @@ local function GetBase64EncodedFrame(record)
 end
 
 
-local function InsertVideoFrame(cell, record)
+local function InsertVideoFrame(excel, cell, record)
 	local rail = get_record_rail(record)
 	local video_channel = rail==1 and 18 or 17
 	local prms = {mode=3, panoram_width=700, width=800, height=500, base64=base64}
@@ -144,7 +144,7 @@ local function vedomost_with_US_images_excel(records)
 		local km, m, mm = Driver:GetPathCoord(record.MARK_COORD)
 		
 		local dst_row = data_range.Rows(line)
-		excel:ReplaceTemplates(dst_row, {record,})
+		excel:ReplaceTemplates(dst_row, {record, {N=line}})
 		
 		if insert_us_img or insert_video_img then
 			data_range.Rows(line).RowHeight = 100.0
@@ -158,7 +158,7 @@ local function vedomost_with_US_images_excel(records)
 		end
 		
 		if insert_video_img and Driver.GetFrame then
-			InsertVideoFrame(data_range.Cells(line, 19), record)
+			InsertVideoFrame(excel, data_range.Cells(line, 19), record)
 		end
 
 		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then 
@@ -418,7 +418,7 @@ local function excel_defectogram(records)
 		end
 		
 		if insert_video_img and Driver.GetFrame then
-			InsertVideoFrame(dst_tbl.Cells(12, 1), record)
+			InsertVideoFrame(excel, dst_tbl.Cells(12, 1), record)
 		else
 			dst_tbl.Cells(12, 1).RowHeight = 1
 		end

@@ -1340,13 +1340,20 @@ local function report_NPU(params)
 		end
 		
 		local uri = make_mark_uri(prop.ID)
-		excel:InsertLink(data_range.Cells(line, 13), uri, tonumber(line))
+		excel:InsertLink(data_range.Cells(line, 2), uri, tonumber(line))
 	
-		data_range.Cells(line, 14).Value2 = sprintf("%d км %.1f м", km1, m1 + mm1/1000)
-		data_range.Cells(line, 15).Value2 = sprintf("%d км %.1f м", km2, m2 + mm2/1000)
-		data_range.Cells(line, 16).Value2 = get_rail_name(mark)
-		data_range.Cells(line, 17).Value2 = sprintf('%.2f', prop.Len / 1000):gsub('%.', ',')
-		data_range.Cells(line, 18).Value2 = prop.Description
+--		data_range.Cells(line, 4).Value2 = sprintf("%d км %.1f м", km1, m1 + mm1/1000)
+--		data_range.Cells(line, 5).Value2 = sprintf("%d км %.1f м", km2, m2 + mm2/1000)
+
+
+		data_range.Cells(line, 7).Value2 = sprintf("%d км", km1)
+		data_range.Cells(line, 9).Value2 = sprintf("%d м",  m1 )
+		data_range.Cells(line,10).Value2 = sprintf("%d км", km2)
+		data_range.Cells(line,12).Value2 = sprintf("%d м",  m2 )
+
+		data_range.Cells(line, 6).Value2 = get_rail_name(mark)
+		data_range.Cells(line,13).Value2 = sprintf('%.2f', prop.Len / 1000):gsub('%.', ',')
+		data_range.Cells(line,14).Value2 = prop.Description
 		
 		if not dlg:step(line / #marks, stuff.sprintf(' Out %d / %d line', line, #marks)) then 
 			break
@@ -1356,7 +1363,7 @@ local function report_NPU(params)
 		printf("%d: %f %f %s %f = %.2f\n", line, prop.Len, full_len, full_len/1000, full_len/1000, full_len/1000)
 	end 
 	
-	data_range.Cells(#marks+1, 17).Value2 = sprintf('%.2f', full_len / 1000.0):gsub('%.', ',')
+	data_range.Cells(#marks+2, 13).Value2 = sprintf('%.2f', full_len / 1000.0):gsub('%.', ',')
 
 --	if ShowVideo == 0 then 
 --		excel:AutoFitDataRows()

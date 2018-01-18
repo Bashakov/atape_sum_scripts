@@ -653,19 +653,19 @@ local Filters =
 			}, 
 		GUIDS = NPU_guids,
 	},
-	--{
-	--	name = 'Видимые', 
-	--	columns = {
-	--		column_num, 
-	--		column_path_coord, 
-	--		column_length,
-	--		--column_rail,
-	--		column_rail_lr,
-	--		column_mark_type_name,
-	--		column_recogn_video_channel,
-	--		}, 
-	--	visible = true,
-	--},
+	{
+		name = 'Видимые', 
+		columns = {
+			column_num, 
+			column_path_coord, 
+			column_length,
+			--column_rail,
+			column_rail_lr,
+			column_mark_type_name,
+			column_recogn_video_channel,
+			}, 
+		visible = true,
+	},
 }
 
 -- внутренняя функция, возвращает описание фильтра по его имени
