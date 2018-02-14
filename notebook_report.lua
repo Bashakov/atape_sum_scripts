@@ -102,8 +102,8 @@ local function InsertVideoFrame(excel, cell, record)
 	end)
 	
 	if ok then
-		if res and #res then
-			excel:InsertImage(cell, video_img_path)
+		if res and #res > 1 then
+			excel:InsertImage(cell, res)
 		end
 	else
 		cell.Value2 = res
