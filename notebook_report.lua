@@ -482,10 +482,111 @@ local function report_EKSUI(records)
 end
 
 
+
+local function AddCustomRecordProperties(record)
+	record.PATH = format_path_coord(record)
+	record.STR_SVED = get_str_sved(record)
+end
+
+local function GetRailImages(record)
+	local rail = get_record_rail(record)
+	local video_channels = {}
+	
+	if rail == 0 then
+		video_channels = {
+			{19, 1},
+			{21, 1},
+			{17, 1},}
+	else
+		video_channels = {
+			{18, 3},
+			{22, 1},
+			{20, 3},}
+	end
+	
+	local prms = {mode=3, panoram_width=700, width=500, height=800, rotate_fixed=0}
+	
+	local frames = {}
+	local errors = {}
+	
+	for i, num_rot in ipairs(video_channels) do
+		local num = num_rot[1]
+		prms.rotate_fixed = num_rot[2]
+		
+		local ok, res = pcall(function() 
+			return Driver:GetFrame(num, record.MARK_COORD, prms)
+		end)
+		
+		if ok and res and #res > 1 then
+			table.insert(frames, res)
+		else
+			table.insert(errors, res)
+			print(res)
+		end
+	end
+	return frames, errors
+end
+
+
+local function report_videogram(records)
+	local dlg = luaiup_helper.ProgressDlg()
+	
+	records = filter_selected_mark(records, dlg)
+
+	if #records == 0 then
+		iup.Message('Info', "Выделенных отметок не найдено")
+		return
+	end
+	local common_name = Passport.NAME .. os.date('%y%m%d-%H%M%S') .. '_'
+	
+	for line, record in ipairs(records) do
+		local excel = excel_helper(Driver:GetAppPath() .. 'Telegrams\\Videogram.xlsm', nil, true, common_name .. record.INNER)
+		local user_range = excel._worksheet.UsedRange
+		
+		excel:ApplyPassportValues(Passport)
+		
+		AddCustomRecordProperties(record)
+		excel:ReplaceTemplates(user_range, {record})
+		
+		local cell_video = nil
+		
+		for n = 1, user_range.Cells.count do						-- пройдем по всем ячейкам	
+			local cell = user_range.Cells(n)
+			local val = cell.Value2
+			if val == '$VIDEO$' then
+				cell_video = cell
+				break
+			end
+		end
+		
+		if cell_video and Driver.GetFrame then
+			local frames, errors = GetRailImages(record)
+			if #frames > 1 then
+				local width = cell_video.MergeArea.Width / #frames
+				local shapes = cell_video.worksheet.Shapes
+				
+				for i, img_path in ipairs(frames) do
+					local left = cell_video.Left + (i-1) * width
+					
+					local picture = shapes:AddPicture(img_path, false, true, left, cell_video.Top, width, cell_video.MergeArea.Height)
+					picture.Placement = 1
+				end
+			end
+		end
+		
+		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then 
+			break
+		end
+		
+		excel:SaveAndShow()
+	end 
+end
+
 -- =================== Описание отчетов =====================
 
 local REPORTS = 
 {
+	{ name = 'Видеограмма Выделенных', fn = report_videogram, user_select_range=false },
 	--{ name = 'Создать дамп отметок', fn = report_make_dump, user_select_range=true },
 	--{ name = 'Свойства отметок', fn = report_html_properties, user_select_range=true },
 	--{ name = 'Ведомость HTML с изображениями УЗ', fn = vedomost_with_US_images_html, user_select_range=true },

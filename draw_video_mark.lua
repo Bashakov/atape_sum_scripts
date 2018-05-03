@@ -185,7 +185,8 @@ local function ProcessRailGapStep(drawer, frame, dom)
 				local strWidth = sprintf('%d mm', tonumber(width)/1000)
 				
 				local tcx, tcy = get_center_point(points)
-				OutlineTextOut(drawer, tcx, tcy + 10, strWidth)
+				--OutlineTextOut(drawer, tcx, tcy + 10, strWidth)
+				OutlineTextOut(drawer, tcx, tcy + 10, strWidth, {fill_color={r=0, g=0, b=192}, line_color={r=128, g=128, b=128}})
 			end
 		end
 	end
@@ -285,7 +286,7 @@ end
 
 local function DrawConnectors(drawer, frame, dom)
 	local colors = {
-		[0] = {r=0, g=128, b=128},
+		[0] = {r=0, g=192, b=128}, -- хороший соединитель
 		[1] = {r=255, g=128, b=0},
 	}
 	
@@ -607,7 +608,8 @@ local function DrawSurfDefectMark(drawer, frame, mark)
 					drawer.prop:fillColor(192, 0, 192, 20)
 					drawer.prop:lineColor(192, 0, 192, 200)
 					drawer.fig:polygon(points)					
-					local strText = sprintf('Пов.деф.(l=%dмм,w=%dмм,s=%dмм2)',prm.SurfaceLength or 0, prm.SurfaceWidth or 0, prm.SurfaceArea or 0)
+					--local strText = sprintf('Пов.деф.(l=%dмм,w=%dмм,s=%dмм2)',prm.SurfaceLength or 0, prm.SurfaceWidth or 0, prm.SurfaceArea or 0)
+					local strText = sprintf('Пов.деф.(w=%dмм,h=%dмм,S=%dсм2)', prm.SurfaceWidth or 0, prm.SurfaceLength or 0 ,prm.SurfaceLength*prm.SurfaceWidth/100 or 0)					
 					local tcx, tcy = get_center_point(points)
 					OutlineTextOut(drawer, tcx, tcy+20, strText)					
 				end

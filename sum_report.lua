@@ -854,7 +854,7 @@ local function report_welding(params)
 	local marks = Driver:GetMarks()
 	
 	marks = FilterSort(marks, 
-		function(mark) return guids[mark.prop.Guid] and mark.ext.RAWXMLDATA and  mark.ext.VIDEOIDENTCHANNEL end,
+		function(mark) return guids[mark.prop.Guid] and mark.ext.RAWXMLDATA end,
 		get_sys_coord_key,
 		function(val, desc) dlg:step(val, desc) end)
 
@@ -880,10 +880,11 @@ local function report_welding(params)
 		local prop = mark.prop
 		local ext = mark.ext
 		
+		local vch = bit32.btest(prop.RailMask, 1) and 17 or 18
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
 		local temperature = Driver:GetTemperature(bit32.band(prop.RailMask, 3)-1, prop.SysCoord)
 		local img_path = ShowVideo ~= 0 and Driver:GetFrame( 
-			ext.VIDEOIDENTCHANNEL, 
+			vch, 
 			prop.SysCoord, {
 				mark_id=(ShowVideo == 1) and prop.ID or 0,
 				mode=3,
@@ -951,7 +952,7 @@ local function report_unspec_obj(params)
 	for _, g in ipairs(unspec_obj_filter_guids) do guids[g] = true end 
 	
 	marks = FilterSort(marks, 
-		function(mark) return guids[mark.prop.Guid] and mark.ext.VIDEOFRAMECOORD and mark.ext.VIDEOIDENTCHANNEL and mark.ext.UNSPCOBJPOINTS end,
+		function(mark) return guids[mark.prop.Guid] and mark.ext.VIDEOFRAMECOORD  and mark.ext.UNSPCOBJPOINTS end,
 		get_sys_coord_key,
 		function(val, desc) dlg:step(val, desc) end)
 
@@ -971,8 +972,9 @@ local function report_unspec_obj(params)
 		local prop = mark.prop
 		local ext = mark.ext
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
+		local vch = bit32.btest(prop.RailMask, 1) and 17 or 18
 		
-		local img_path = ShowVideo ~= 0 and Driver:GetFrame( ext.VIDEOIDENTCHANNEL, prop.SysCoord, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
+		local img_path = ShowVideo ~= 0 and Driver:GetFrame( vch, prop.SysCoord, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
 		local uri = make_mark_uri(prop.ID)
 		
 		data_range.Cells(line, 1).Value2 = get_rail_name(mark)
@@ -1436,31 +1438,39 @@ end
 
 
 -- ====================================================================================
-
+local ProcessSumFile = "Scripts\\ProcessSum.xlsm"
 
 local Report_Functions = {
+	--{name="Ведомость Стыковых зазоров|Excel" , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
+	--{name="Ведомость Стыковых зазоров|ЕКСУИ" , fn=report_gaps            , params={ eksui=true }, guids=gap_rep_filter_guids},	
+	--{name="Ведомость Болтовых стыков|Excel"  , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },
+	--{name="Ведомость Болтовых стыков|ЕКСУИ"  , fn=report_crew_join       , params={ eksui=true }, guids=gap_rep_filter_guids},	
+
+	{name="Ведомость Стыковых зазоров"       , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
+	{name="Ведомость Болтовых стыков"        , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },	
+	{name="Ведомость Коротких рубок"         , fn=report_short_rails     , params={ filename=ProcessSumFile, sheetname="Рубки"                   }, guids=gap_rep_filter_guids   },	
+	{name="Ведомость Скреплений"             , fn=report_fasteners       , params={ filename=ProcessSumFile, sheetname="Ведомость Скреплений"    }, guids=fastener_guids         },
+	{name="Ведомость Горизонтальных уступов" , fn=report_recog_joint_step, params={ filename=ProcessSumFile, sheetname="Горизонтальные ступеньки"}, guids=gap_rep_filter_guids   },
+	{name="Ведомость Поверхностных дефектов" , fn=report_surface_defects , params={ filename=ProcessSumFile, sheetname="Поверхн. дефекты"        }, guids=surface_defects_guids  }, 
+	{name="Ведомость Сварной плети"          , fn=report_welding         , params={ filename=ProcessSumFile, sheetname="Ведомость сварной плети" }, guids=beacon_rep_filter_guids},
+	{name="Ведомость Ненормативных объектов" , fn=report_unspec_obj      , params={ filename=ProcessSumFile, sheetname="Ненормативные объекты"   }, guids=unspec_obj_filter_guids},	
+	
+	{name="НПУ", fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls" }, guids=NPU_guids},
+	
+
+
 	-- {name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 	--{name="Сохранить в Excel",			fn=mark2excel,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="test",}, 					},
-	{name="Ведомость Зазоров|Excel",		fn=report_gaps,			params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Зазоров",}, 		guids=gap_rep_filter_guids},
-	{name="Ведомость Зазоров|ЕКСУИ",		fn=report_gaps,			params={ eksui=true }, 		guids=gap_rep_filter_guids},	
-	{name="Ведомость болтовых стыков|Excel",fn=report_crew_join,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Болтов",}, 		guids=gap_rep_filter_guids},
-	{name="Ведомость болтовых стыков|ЕКСУИ",fn=report_crew_join,	params={ eksui=true }, 		guids=gap_rep_filter_guids},	
-	{name="Ведомость сварной плети",		fn=report_welding,		params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость сварной плети",}, 	guids=beacon_rep_filter_guids},
-	{name="Ведомость ненормативных объектов",fn=report_unspec_obj,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ненормативные объекты",},	guids=unspec_obj_filter_guids},	
+	
 	--{name="КоордСтыков | 1",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=1}, 	guids=joint_filter_guids},
 	--{name="КоордСтыков | 2",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=2}, 	guids=joint_filter_guids},
---	{name=" коорд. cтыков (магн.) | 17",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=17}, 	guids=joint_filter_guids},
---	{name=" коорд. cтыков (магн.) | 18",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=18}, 	guids=joint_filter_guids},
+	--	{name=" коорд. cтыков (магн.) | 17",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=17}, 	guids=joint_filter_guids},
+	--	{name=" коорд. cтыков (магн.) | 18",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=18}, 	guids=joint_filter_guids},
 	
---	{name=" коорд. cтыков (магн.) | 17_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=17, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
---	{name=" коорд. cтыков (магн.) | 18_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=18, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
+	--	{name=" коорд. cтыков (магн.) | 17_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=17, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
+	--	{name=" коорд. cтыков (магн.) | 18_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=18, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
 	
-	{name="Ведомость скреплений",		fn=report_fasteners,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Ведомость Скреплений",}, 		guids=fastener_guids},
-	{name="Горизонтальные ступеньки",	fn=report_recog_joint_step,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Горизонтальные ступеньки",}, 		guids=gap_rep_filter_guids},
-	{name="Рубки",						fn=report_short_rails,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Рубки",}, 		guids=gap_rep_filter_guids},
-	{name="Поверхностные дефекты",			fn=report_surface_defects,	params={ filename="Scripts\\ProcessSum.xlsx",	sheetname="Поверхн. дефекты"}, guids=surface_defects_guids,}, 
 	
-	{name="НПУ",						fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls",}, 		guids=NPU_guids},
 }
 
 

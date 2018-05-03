@@ -43,8 +43,19 @@ local function CopyFile(src, dst)
 	return fso:FileExists(dst)
 end
 
-local function CopyTemplate(template_path, sheet_name)		-- скопировать файл шаблона в папку отчетов
-	local new_name = os.getenv('USERPROFILE') .. '\\ATapeReport\\' .. os.date('%y%m%d-%H%M%S_') .. sheet_name .. '.xls'
+local function CopyTemplate(template_path, sheet_name, dest_name)		-- скопировать файл шаблона в папку отчетов
+	
+	local file_name
+	if dest_name then
+		file_name = dest_name
+	else
+		file_name = os.date('%y%m%d-%H%M%S')
+		if sheet_name then
+			file_name = file_name .. '_' .. sheet_name
+		end
+	end
+	
+	local new_name = os.getenv('USERPROFILE') .. '\\ATapeReport\\' .. file_name .. '.xls'
 	if not CopyFile(template_path, new_name) then
 		stuff.errorf('copy file %s -> %s failed', template_path, new_name)
 	end
@@ -110,7 +121,7 @@ end
 
 excel_helper = OOP.class
 {
-	ctor = function(self, template_path, sheet_name, visible)
+	ctor = function(self, template_path, sheet_name, visible, dest_name)
 		
 		sheet_name = sheet_name or ""
 		self._excel = luacom.CreateObject("Excel.Application") 		-- запустить экземпляр excel
@@ -118,7 +129,7 @@ excel_helper = OOP.class
 		
 		self._excel.Visible = visible 								-- сделать его видимым если нужно
 		
-		local file_path = CopyTemplate(template_path, sheet_name)	-- скопируем шаблон в папку отчетов
+		local file_path = CopyTemplate(template_path, sheet_name, dest_name)	-- скопируем шаблон в папку отчетов
 		
 		self._workbook = OpenWorkbook(self._excel, file_path)	
 		assert(self._workbook, stuff.sprintf("can not open %s", file_path))

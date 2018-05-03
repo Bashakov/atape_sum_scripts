@@ -587,7 +587,7 @@ local Filters =
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
 	},
 	{
-		name = 'Горизонтальные ступеньки', 
+		name = 'Горизонтальные уступы', 
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -628,7 +628,7 @@ local Filters =
 		GUIDS = recognition_surface_defects,
 	},	
 	{
-		name = 'Дефекты Накладок', 
+		name = 'Дефекты накладок', 
 		columns = {
 			column_num, 
 			column_path_coord, 
