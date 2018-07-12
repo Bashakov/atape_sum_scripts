@@ -62,6 +62,20 @@ local surface_defects_guids =
 }
 
 
+local REPORT_GAPS_IDs =
+{
+	"000001",--Код
+	"vZazorov",--Имя
+	"Ведомость стыковых зазоров",--Описание
+}
+
+local REPORT_BOLTS_IDs =
+{
+	"000002",--Код
+	"vBoltov",--Имя
+	"Ведомость болтовых стыков",--Описание
+}
+
 -- ========================================================= 
 
 -- сделать строку ссылку для открытия атейпа на данной отметке
@@ -320,7 +334,7 @@ local eksui_template_column = resty.compile([[
 -- шаблон xml с выводом по строкам
 local eksui_template_rows = resty.compile([[
 <?xml version="1.0" encoding="UTF-8"?>
-<report name="{{report_name}}" report_filter="{{report_filter}}" date="{{os.date('%Y-%m-%d')}}" time="{{os.date('%H:%M:%S')}}"
+<report code="{{report_code}}" name="{{report_name}}" desc="{{report_desc}}" report_filter="{{report_filter}}" date="{{os.date('%Y-%m-%d')}}" time="{{os.date('%H:%M:%S')}}"
 	{% for name, value in pairs(os.date('*t')) do %}
 		{{name}}="{{value}}"
 	{% end %}
@@ -612,9 +626,10 @@ local function report_crew_join(params)
 			end
 		end
 		
-		local res = eksui_template_rows{rows=rows, get_encoded_frame=get_encoded_frame, report_name='vedomost boltovih stykov', report_filter=filters_names[filter_mode]}
+		local filters_names = {"Показать все", "Дефектные", "Нормальные"}
+		local res = eksui_template_rows{rows=rows, get_encoded_frame=get_encoded_frame, report_code=REPORT_BOLTS_IDs[1], report_name=REPORT_BOLTS_IDs[2],report_desc=REPORT_BOLTS_IDs[3], report_filter=filters_names[filter_mode]}
 
-		local file_name = "c:\\1.xml"
+		local file_name = sprintf("c:\\%s.xml", REPORT_BOLTS_IDs[2]) 		
 		local dst_file = assert(io.open(file_name, 'w+'))
 		dst_file:write(res)
 		dst_file:close()
@@ -825,9 +840,10 @@ local function report_gaps(params)
 			end
 		end
 		
-		local res = eksui_template_rows{rows=rows, get_encoded_frame=get_encoded_frame, report_name='vedomost zazorov', report_filter=filters_names[filter_mode]}
+		local filters_names = {"Меньше 3 мм", "Все", "Больше 22 мм", "Слепые подряд", "Больше 35 мм"}
+		local res = eksui_template_rows{rows=rows, get_encoded_frame=get_encoded_frame, report_code=REPORT_GAPS_IDs[1], report_name=REPORT_GAPS_IDs[2],report_desc=REPORT_GAPS_IDs[3], report_filter=filters_names[filter_mode]}
 
-		local file_name = "c:\\1.xml"
+		local file_name = sprintf("c:\\%s.xml", REPORT_GAPS_IDs[2]) 
 		local dst_file = assert(io.open(file_name, 'w+'))
 		dst_file:write(res)
 		dst_file:close()
@@ -1214,6 +1230,7 @@ local function scan_for_short_rail(marks, min_length)
 	return res
 end
 
+-- найти все стрелки
 local function scan_for_rr_switch()
 	local marks = Driver:GetMarks{ListType='all', GUIDS=switch_guids}
 	local res = {}
@@ -1246,10 +1263,19 @@ end
 
 -- отчет по коротким стыкам
 local function report_short_rails(params)
-	local ok, min_length = iup.GetParam(params.sheetname, nil, "Пороговая длинна рельса: %i м\n", 8)
+	local ok, min_length = iup.GetParam(params.sheetname, nil, "Верхний порог длины рельса (м): %i\n", 30 )
 	if not ok then	
 		return
 	end
+
+	-- вычислить длинну рельса между двума сытками с учетом ширины зазора
+	local function get_rail_len(mark1, mark2)
+		local l = math.abs(mark2.prop.SysCoord - mark1.prop.SysCoord)
+		local w1 = mark_helper.GetGapWidth(mark1) or 0
+		local w2 = mark_helper.GetGapWidth(mark2) or 0
+		return l - (w1 + w2) / 2
+	end
+		
 
 	local function filter_type_fn(mark)
 		return table_find(gap_rep_filter_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
@@ -1285,13 +1311,24 @@ local function report_short_rails(params)
 		local uri = make_mark_uri(prop1.ID)
 		local text_pos = sprintf("%d km %.1f = %d km %.1f", km1, m1 + mm1/1000, km2, m2 + mm2/1000)
 		excel:InsertLink(data_range.Cells(line, 1), uri, text_pos)
-		data_range.Cells(line, 2).Value2 = sprintf("%.1f", (prop2.SysCoord - prop1.SysCoord) / 1000)
+		--data_range.Cells(line, 2).Value2 = sprintf("%.1f", (prop2.SysCoord - prop1.SysCoord) / 1000)
+		data_range.Cells(line, 2).Value2 = sprintf("%.3f", get_rail_len(mark1, mark2) / 1000)
 		data_range.Cells(line, 3).Value2 = get_rail_name(mark1)
 		if switch_id then
 			local switch_uri = make_mark_uri(switch_id)
 			excel:InsertLink(data_range.Cells(line, 4), switch_uri, "Да")
 		end
-		insert_frame(excel, data_range, mark1, line, 5, nil, {prop1.SysCoord-500, prop2.SysCoord+500})
+		
+		
+		
+		local temperature = Driver:GetTemperature(bit32.band(prop1.RailMask, 3)-1, (prop1.SysCoord+prop2.SysCoord)/2 )
+        local temperature_msg = temperature and sprintf("%.1f", temperature.target) or '-'
+		data_range.Cells(line, 5).Value2 = temperature_msg:gsub('%.', ',')
+		
+		if math.abs(prop1.SysCoord - prop2.SysCoord) < 30000 then
+			insert_frame(excel, data_range, mark1, line, 6, nil, {prop1.SysCoord-500, prop2.SysCoord+500})
+		end
+		--insert_frame(excel, data_range, mark1, line, 5, nil, {prop1.SysCoord-500, prop2.SysCoord+500})
 		
 		if not dlg:step(line / #short_rails, stuff.sprintf(' Out %d / %d line', line, #short_rails)) then 
 			break
@@ -1441,13 +1478,18 @@ end
 local ProcessSumFile = "Scripts\\ProcessSum.xlsm"
 
 local Report_Functions = {
-	--{name="Ведомость Стыковых зазоров|Excel" , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
-	--{name="Ведомость Стыковых зазоров|ЕКСУИ" , fn=report_gaps            , params={ eksui=true }, guids=gap_rep_filter_guids},	
-	--{name="Ведомость Болтовых стыков|Excel"  , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },
-	--{name="Ведомость Болтовых стыков|ЕКСУИ"  , fn=report_crew_join       , params={ eksui=true }, guids=gap_rep_filter_guids},	
+	---------------------------------------
+	-- c ЕКАСУИ 
+	{name="Ведомость Стыковых зазоров|Excel" , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
+	{name="Ведомость Стыковых зазоров|ЕКАСУИ " , fn=report_gaps            , params={ eksui=true }, guids=gap_rep_filter_guids},	
+	{name="Ведомость Болтовых стыков|Excel"  , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },
+	{name="Ведомость Болтовых стыков|ЕКАСУИ "  , fn=report_crew_join       , params={ eksui=true }, guids=gap_rep_filter_guids},	
 
-	{name="Ведомость Стыковых зазоров"       , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
-	{name="Ведомость Болтовых стыков"        , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },	
+	-- без ЕКАСУИ
+	--{name="Ведомость Стыковых зазоров"       , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
+	--{name="Ведомость Болтовых стыков"        , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },	
+	------------------------------------------
+
 	{name="Ведомость Коротких рубок"         , fn=report_short_rails     , params={ filename=ProcessSumFile, sheetname="Рубки"                   }, guids=gap_rep_filter_guids   },	
 	{name="Ведомость Скреплений"             , fn=report_fasteners       , params={ filename=ProcessSumFile, sheetname="Ведомость Скреплений"    }, guids=fastener_guids         },
 	{name="Ведомость Горизонтальных уступов" , fn=report_recog_joint_step, params={ filename=ProcessSumFile, sheetname="Горизонтальные ступеньки"}, guids=gap_rep_filter_guids   },

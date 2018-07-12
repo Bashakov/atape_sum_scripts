@@ -619,6 +619,51 @@ local function DrawSurfDefectMark(drawer, frame, mark)
 	end
 end
 	
+local function DrawSleeperMark(drawer, frame, mark)
+	local color = {r=128, g=0, b=0}
+	
+	local cur_frame_coord = frame.coord.raw
+	local cur_frame_channel = frame.channel
+	
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom)
+	local raw_xml = mark.ext.RAWXMLDATA
+	if raw_xml and xmlDom:loadXML(raw_xml) then 
+		local req = sprintf('\z
+			/ACTION_RESULTS\z
+			/PARAM[@name="ACTION_RESULTS" and @value="Sleeper" and @channel="%d"]\z
+			/PARAM[@name="FrameNumber" and @value and @coord]\z
+			/PARAM[@name="Result" and @value="main"]', cur_frame_channel) -- 			
+		for nodeResult in SelectNodes(xmlDom, req) do
+			
+			local item_frame = nodeResult:SelectSingleNode("../@coord").nodeValue
+			local Angle_mrad = nodeResult:SelectSingleNode('PARAM[@name="Angle_mrad" and @value]/@value').nodeValue
+			local AxisSysCoord_mm = nodeResult:SelectSingleNode('PARAM[@name="AxisSysCoord_mm" and @value]/@value').nodeValue
+			
+			local points
+			for nodeDraw in SelectNodes(nodeResult, 'PARAM[@name="Coord" and (@type="polygon" or @type="line") and @value]') do
+				local obj = nodeDraw:SelectSingleNode('@value').nodeValue
+				points = parse_polygon(obj, cur_frame_coord, item_frame)
+				print(obj)
+			
+				drawer.prop:lineWidth(1)
+				drawer.prop:fillColor(color.r, color.g, color.b,  20)
+				drawer.prop:lineColor(color.r, color.g, color.b, 200)
+				drawer.fig:polygon(points)
+			end
+			
+			if points then
+				local tcx, tcy = get_center_point(points)
+				--local text = sprintf('Angle=%d\nSysCoord=%d', Angle_mrad, AxisSysCoord_mm)
+				local text = sprintf('разв.=%4.1f', Angle_mrad*180/3.14/1000 ) 				
+				OutlineTextOut(drawer, tcx+35, tcy+15, text, {fill_color={r=0, g=0, b=0}, line_color={r=255, g=255, b=255}})
+			end
+		end
+	end
+	
+end
+
+	
 
 local recorn_guids = 
 {
@@ -636,6 +681,8 @@ local recorn_guids =
 	["{28C82406-2773-48CB-8E7D-61089EEB86ED}"] = DrawRecognitionMark,
 	
 	["{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}"] = DrawSurfDefectMark,
+	
+	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"] = DrawSleeperMark,
 }
 
 
