@@ -494,6 +494,23 @@ local column_user_accept =
 	end
 }
 
+local column_sleeper_angle = 
+{
+	name = 'Разворот', 
+	width = 60, 
+	align = 'r', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local params = mark_helper.GetSleeperParam(mark)
+		local val = params and params.Angle_mrad 
+		return val and sprintf('%4.1f', val*180/3.14/1000 ) or ''
+	end,
+	sorter = function(mark)
+		local params = mark_helper.GetSleeperParam(mark)
+		return {params and params.Angle_mrad or 0}
+	end
+}
+
 --=========================================================================== --
 
 local recognition_guids = {
@@ -506,9 +523,7 @@ local recognition_guids = {
 local recognition_surface_defects = {
 	"{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}",
 }
-		
 
-		
 --=========================================================================== --
 
 local Filters = 
@@ -594,6 +609,7 @@ local Filters =
 			column_rail,
 			column_recogn_width,
 			column_recogn_rail_gap_step,
+			column_recogn_video_channel,
 			}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
@@ -609,6 +625,7 @@ local Filters =
 			column_rail,
 			column_connections_all,
 			column_connections_defect,
+			column_recogn_video_channel,
 			}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
@@ -624,6 +641,7 @@ local Filters =
 			column_rail,
 			column_surf_defect_type,
 			column_surf_defect_area,
+			column_recogn_video_channel,
 			}, 
 		GUIDS = recognition_surface_defects,
 	},	
@@ -634,6 +652,7 @@ local Filters =
 			column_path_coord, 
 			column_rail,
 			column_fishplate_state,
+			column_recogn_video_channel,
 			}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
@@ -652,6 +671,16 @@ local Filters =
 			column_npu_type,
 			}, 
 		GUIDS = NPU_guids,
+	},
+	{
+		name = 'Шпалы',
+		columns = {
+			column_num,
+			column_path_coord, 
+			column_sleeper_angle,
+			}, 
+		GUIDS = {
+			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"}
 	},
 	{
 		name = 'Видимые', 

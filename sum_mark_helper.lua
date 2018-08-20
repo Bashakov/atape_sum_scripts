@@ -428,6 +428,32 @@ local function GetConnectorsCount(mark)
 	return all, fault
 end
 
+-- =================== Шпалы ===================
+
+-- получить параметры шпалы
+local function GetSleeperParam(mark)
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom)
+	
+	local ext = mark.ext
+	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA)	then
+		return nil
+	end
+	
+	local req = '\z
+		/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Sleepers"]\z
+		/PARAM[@name and @value]'
+
+	local res = {}
+
+	for node in SelectNodes(xmlDom, req) do
+		local name = node:SelectSingleNode("@name").nodeValue
+		local val = node:SelectSingleNode("@value").nodeValue
+		res[name] = tonumber(val)
+	end
+	
+	return res
+end
 
 -- =================== Вспомогательные ===================
 
@@ -546,4 +572,6 @@ return{
 	GetCrewJointArray = GetCrewJointArray,
 	GetCrewJointCount = GetCrewJointCount,
 	CalcValidCrewJointOnHalf = CalcValidCrewJointOnHalf,
+	
+	GetSleeperParam = GetSleeperParam,
 }
