@@ -7,6 +7,9 @@ local table_find = stuff.table_find
 
 local SelectNodes = mark_helper.SelectNodes
 local sort_marks = mark_helper.sort_marks
+local reverse = mark_helper.reverse
+local sort_stable = mark_helper.sort_stable
+
 
 local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 assert(xmlDom)
@@ -83,7 +86,7 @@ local column_path_coord =
 		return string.format('%3d км %05.1f', km, m + mm/1000.0)
 	end,
 	sorter = function(mark)
-		return {mark.prop.SysCoord}
+		return mark.prop.SysCoord
 	end
 }
 
@@ -98,7 +101,7 @@ local column_length =
 		return sprintf("%.2f", prop.Len / 1000)
 	end,
 	sorter = function(mark)
-		return {mark.prop.Len}
+		return mark.prop.Len
 	end
 }
 
@@ -115,7 +118,7 @@ local column_rail =
 		return rail_mask == 1 and 'Куп' or 'Кор'
 	end,
 	sorter = function(mark)
-		return { bit32.band(mark.prop.RailMask, 0x3) }
+		return bit32.band(mark.prop.RailMask, 0x3)
 	end
 }
 
@@ -132,7 +135,7 @@ local column_rail_lr =
 		return left_mask == rail_mask and "Прв" or "Лв"
 	end,
 	sorter = function(mark)
-		return { bit32.band(mark.prop.RailMask, 0x3) }
+		return bit32.band(mark.prop.RailMask, 0x3)
 	end
 }
 
@@ -154,7 +157,7 @@ local column_mag_use_recog =
 	end,
 	sorter = function(mark)
 		local r = mark.ext.VIDEO_RECOGNITION
-		return {r or -2}
+		return r or -2
 	end
 }
 
@@ -170,7 +173,7 @@ local function make_column_recogn_width(name, source)
 		end,
 		sorter = function(mark)
 			local w = mark_helper.GetGapWidthName(mark, source)
-			return {w or 0}
+			return w or 0
 		end
 	}
 end
@@ -194,7 +197,7 @@ local column_recogn_rail_gap_step =
 	sorter = function(mark)
 		local r = mark_helper.GetRailGapStep(mark)
 		r = r and r or 0
-		return {r}
+		return r
 	end
 }
 
@@ -211,7 +214,7 @@ local column_recogn_reability =
 	sorter = function(mark)
 		local r = mark.ext.VIDEOIDENTRLBLT
 		r = r and tonumber(r) or 0
-		return {r}
+		return r
 	end
 }
 
@@ -243,8 +246,8 @@ local column_recogn_bolt =
 	end,
 	sorter = function(mark)
 		local all, defect = mark_helper.GetCrewJointCount(mark)
-		defect = (all and all ~= 0) and -1 or defect
-		return {defect}
+		defect = (all and all ~= 0) and -1 or defect or 0
+		return defect
 	end
 }
 
@@ -266,7 +269,7 @@ local column_joint_speed_limit =
 	end,
 	sorter = function(mark)
 		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
-		return {valid_on_half or -1}
+		return valid_on_half or -1
 	end
 }
 
@@ -283,7 +286,7 @@ local column_beacon_offset =
 	sorter = function(mark)
 		local r = mark.ext.VIDEO_RECOGNITION
 		local offset = mark_helper.GetBeaconOffset(mark)
-		return {offset}
+		return offset
 	end
 }
 	
@@ -311,7 +314,7 @@ local column_fastener_type =
 	end,
 	sorter = function(mark)
 		local FastenerType = GetFastenerParamName1(mark, 'FastenerType')
-		return {FastenerType and tonumber(FastenerType) or 0}
+		return FastenerType and tonumber(FastenerType) or 0
 	end
 }
 
@@ -327,7 +330,7 @@ local column_fastener_fault =
 	end,
 	sorter = function(mark)
 		local FastenerFault = GetFastenerParamName1(mark, 'FastenerFault')
-		return {FastenerFault and tonumber(FastenerFault) or 0}
+		return FastenerFault and tonumber(FastenerFault) or 0
 	end
 }
 
@@ -353,7 +356,7 @@ local column_fastener_width =
 	end,
 	sorter = function(mark)
 		local w = GetFastenerWidth(mark)
-		return {w}
+		return w
 	end
 }
 
@@ -376,7 +379,7 @@ local function make_column_surf_defect(col_name, attrib)
 		end,
 		sorter = function(mark)
 			local val = get_val(mark)
-			return {val or 0}
+			return val or 0
 		end,
 	}
 end
@@ -404,7 +407,7 @@ local column_fishplate_state =
 	end,
 	sorter = function(mark)
 		local fault = mark_helper.GetFishplateState(mark)
-		return {fault}
+		return fault
 	end,
 }
 
@@ -428,7 +431,7 @@ local column_npu_type =
 		return text
 	end,
 	sorter = function(mark)
-		return {mark.prop.Guid}
+		return mark.prop.Guid
 	end
 }
 
@@ -444,7 +447,7 @@ local column_connections_all =
 	end,
 	sorter = function(mark)
 		local all, fault = mark_helper.GetConnectorsCount(mark)
-		return {all or 0}
+		return all or 0
 	end
 }
 
@@ -460,7 +463,7 @@ local column_connections_defect =
 	end,
 	sorter = function(mark)
 		local all, fault = mark_helper.GetConnectorsCount(mark)
-		return {fault or 0}
+		return fault or 0
 	end
 }
 
@@ -475,7 +478,7 @@ local column_mark_type_name =
 		return name
 	end,
 	sorter = function(mark)
-		return {mark.prop.Guid}
+		return mark.prop.Guid
 	end
 }
 
@@ -490,7 +493,7 @@ local column_user_accept =
 		return ua and (ua == 1 and 'да' or 'нет') or ''
 	end,
 	sorter = function(mark)
-		return { mark.ext.ACCEPT_USER or -1 }
+		return mark.ext.ACCEPT_USER or -1 
 	end
 }
 
@@ -501,13 +504,12 @@ local column_sleeper_angle =
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
-		local params = mark_helper.GetSleeperParam(mark)
-		local val = params and params.Angle_mrad 
-		return val and sprintf('%4.1f', val*180/3.14/1000 ) or ''
+		local angle = mark_helper.GetSleeperAngle(mark)
+		return angle and sprintf('%4.1f', angle*180/3.14/1000 ) or ''
 	end,
 	sorter = function(mark)
-		local params = mark_helper.GetSleeperParam(mark)
-		return {params and params.Angle_mrad or 0}
+		local angle = mark_helper.GetSleeperAngle(mark)
+		return angle or 0
 	end
 }
 
@@ -774,16 +776,18 @@ end
 
 -- функция вызывается из программы, при переключении пользователем режима сортировки
 function SortMarks(col, inc)
-	if work_sort_param[0] ~= col or work_sort_param[1] ~= inc then 
-		work_sort_param[0] = col
-		work_sort_param[1] = inc
-		
+	if work_sort_param[0] ~= col then 
 		if work_marks_list and work_filter and col > 0 and col <= #(work_filter.columns) then
 			local column = work_filter.columns[col]
 			local fn = column.sorter
 			if fn then
-				work_marks_list = sort_marks(work_marks_list, fn, inc)
+				work_marks_list = sort_stable(work_marks_list, fn, inc)
 			end
 		end
+	elseif work_sort_param[1] ~= inc then
+		reverse(work_marks_list)
 	end
+	
+	work_sort_param[0] = col
+	work_sort_param[1] = inc
 end

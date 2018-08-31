@@ -1,5 +1,14 @@
 require "luacom"
 
+function printf (s,...) return print(s:format(...)) end
+
+
+local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+if not xmlDom then
+	error("no Msxml2.DOMDocument: " .. luacom.config.last_error)
+end
+
+
 -- итератор по нодам xml
 local function SelectNodes(xml, xpath)
 	return function(nodes)
@@ -44,8 +53,6 @@ end
 -- получить все ширины из отметки
 -- возвращает таблицу [тип][номер канала] = ширина
 local function GetAllGapWidth(mark)
-	local dom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(dom)
 	local res = {}
 	
 	local ext = mark.ext
@@ -56,8 +63,7 @@ local function GetAllGapWidth(mark)
 		end
 	end
 	
-	if ext.RAWXMLDATA and dom:loadXML(ext.RAWXMLDATA) then
-	
+	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
 		local req = '\z
 		/ACTION_RESULTS\z
 		/PARAM[@name="ACTION_RESULTS" and starts-with(@value, "CalcRailGap")]\z
@@ -65,7 +71,7 @@ local function GetAllGapWidth(mark)
 		/PARAM[@name="Result" and @value="main"]\z
 		/PARAM[@name="RailGapWidth_mkm" and @value]/@value'
 		
-		for node in SelectNodes(dom, req) do
+		for node in SelectNodes(xmlDom, req) do
 			local node_gap_type =  node:SelectSingleNode("../../../../@value").nodeValue
 			local width = tonumber(node.nodeValue) / 1000
 			
@@ -170,9 +176,8 @@ end
 
 -- получить высоты ступеньки на стыке
 local function GetRailGapStep(mark)
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom)
-	if not xmlDom:loadXML(mark.ext.RAWXMLDATA) then 
+	local ext = mark.ext
+	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA) then 
 		return nil
 	end 
 	local node = xmlDom:SelectSingleNode('\z
@@ -189,9 +194,8 @@ end
 
 --получить смещенеи маячной отметки
 local function GetBeaconOffset(mark)
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom)
-	local node = xmlDom:loadXML(mark.ext.RAWXMLDATA) and xmlDom:SelectSingleNode('\z
+	local ext = mark.ext
+	local node = ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) and xmlDom:SelectSingleNode('\z
 		/ACTION_RESULTS\z
 		/PARAM[@name="ACTION_RESULTS" and @value="Beacon_Web"]\z
 		/PARAM[@name="FrameNumber" and @value and @coord]\z
@@ -204,9 +208,6 @@ end
 
 -- получить массив с качествами болтов
 local function GetCrewJointArray(mark)
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom)
-	
 	local ext = mark.ext
 	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA)	then
 		return nil
@@ -286,9 +287,6 @@ end
 -- =================== Накладка ===================
 
 local function GetFishplateState(mark)
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom)
-	
 	local res = -1
 	
 	local ext = mark.ext
@@ -313,9 +311,6 @@ end
 -- =================== Скрепления ===================
 
 local function IsFastenerDefect(mark)
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom)
-	
 	local ext = mark.ext
 	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
 		local node = xmlDom:SelectSingleNode('/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Fastener"]//PARAM[@name="FastenerFault" and @value]/@value')
@@ -327,9 +322,6 @@ local function IsFastenerDefect(mark)
 end
 
 local function GetFastenetParams(mark)
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom)
-	
 	local ext = mark.ext
 	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA)	then
 		local res = {}
@@ -354,8 +346,6 @@ end
 -- =================== Поверхностные дефекты ===================
 
 local function GetSurfDefectPrm(mark)
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom)
 	local res = {}
 	
 	local ext = mark.ext
@@ -382,9 +372,6 @@ end
 
 -- получить массив коннекторов болтов (если распз по неск каналам, то данные берутся последовательно из 17/18 потом из 19/20)
 local function GetConnectorsArray(mark)
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom)
-	
 	local ext = mark.ext
 	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA)	then
 		return nil
@@ -432,8 +419,6 @@ end
 
 -- получить параметры шпалы
 local function GetSleeperParam(mark)
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom)
 	
 	local ext = mark.ext
 	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA)	then
@@ -453,6 +438,23 @@ local function GetSleeperParam(mark)
 	end
 	
 	return res
+end
+
+-- получить разворот шпалы
+local function GetSleeperAngle(mark)
+	local ext = mark.ext
+	
+	if ext.TESTTEST then
+		return ext.TESTTEST
+	end
+	
+	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
+		local req = '\z
+			/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Sleepers"]\z
+			/PARAM[@name="Angle_mrad" and @value]'
+		local node = xmlDom:SelectSingleNode(req)
+		return node and tonumber(node.nodeValue)
+	end
 end
 
 -- =================== Вспомогательные ===================
@@ -500,6 +502,7 @@ end
 
 -- сортировка отметок 
 local function sort_marks(marks, fn, inc, progress_callback)
+	inc = inc and inc ~= 0
 	local start_time = os.clock()
 	
 	local keys = {}	-- массив ключей, который будем сортировать
@@ -515,15 +518,12 @@ local function sort_marks(marks, fn, inc, progress_callback)
 	
 	assert(#keys == #marks)
 	local fetch_time = os.clock()
-
+	
 	local compare_fn = function(t1, t2)  -- функция сравнения массивов, поэлементное сравнение 
-		if inc and inc ~= 0 then 
-			t1, t2 = t2, t1
-		end
 		for i = 1, #t1 do
 			local a, b = t1[i], t2[i]
-			if a < b then return true end
-			if b < a then return false end
+			if a < b then return inc end
+			if b < a then return not inc end
 		end
 		return false
 	end
@@ -535,11 +535,85 @@ local function sort_marks(marks, fn, inc, progress_callback)
 		local mark_pos = key[#key] -- номер отметки в изначальном списке мы поместили последним элементом ключа
 		tmp[i] = marks[mark_pos] -- берем эту отметку и помещаем на нужное место
 	end
+	local copy_res_time = os.clock()
 	-- print(inc, #marks, #tmp)
-	-- printf('fetch: %.2f,  sort = %.2f', fetch_time - start_time, sort_time-fetch_time)
+	printf('fetch: %.2f,  sort = %.2f, copy_res = %.2f', fetch_time - start_time, sort_time-fetch_time, copy_res_time-sort_time)
+	print("mem before KB: ", collectgarbage("count"))
+	marks = nil
+	key = nil
+	collectgarbage()
+	print("mem after KB: ", collectgarbage("count"))
 	return tmp
 end
 
+
+
+local function reverse(arr)
+	local i, j = 1, #arr
+	while i < j do
+		arr[i], arr[j] = arr[j], arr[i]
+		i = i + 1
+		j = j - 1
+	end
+end
+
+-- другой способ сортировки, должен быть быстрее чем sort_marks
+local function sort_stable(marks, fn, inc, progress_callback)
+	local start_time = os.clock()
+	
+	local keys = {}	-- массив ключей, который будем сортировать
+	local key_nums = {} -- таблица ключ - массив позиций исходных отметок
+	
+	for i = 1, #marks do
+		local mark = marks[i]
+		local key = fn(mark) or 0	-- создадим ключ (каждый ключ - массив), с сортируемой характеристикой
+		-- if type(key) == 'table' then
+			-- assert (#key == 1)
+			-- key = key[1] or 0
+		-- end
+		
+		local nms = key_nums[key]
+		if not nms then
+			nms = {i}
+			key_nums[key] = nms
+			keys[#keys+1] = key 	-- вставим в таблицу ключей 
+		else
+			nms[#nms + 1] = i
+		end
+		
+		if progress_callback then
+			progress_callback(#marks, i)
+		end
+	end
+	local fetch_time = os.clock()
+	
+	table.sort(keys)  -- сортируем массив с ключами
+	local sort_time = os.clock()
+
+	if not inc or inc == 0 then
+		reverse(keys)
+	end
+	local rev_time = os.clock()
+
+	local tmp = {}	-- сюда скопируем отметки в нужном порядке
+	for _, key in ipairs(keys) do
+		local nums = key_nums[key]
+		for _, i in ipairs(nums) do
+			tmp[#tmp + 1] = marks[i]
+		end
+	end
+	local copy_res_time = os.clock()
+	-- print(inc, #marks, #tmp)
+	printf('fetch: %.2f,  sort = %.2f, rev = %.2f copy_res = %.2f', fetch_time - start_time, sort_time-fetch_time, rev_time-sort_time, copy_res_time-rev_time)
+	
+	print("mem before KB: ", collectgarbage("count"))
+	marks = nil
+	key = nil
+	key_nums = nil
+	collectgarbage()
+	print("mem after KB: ", collectgarbage("count"))
+	return tmp
+end
 
 -- =================== ЭКПОРТ ===================
 
@@ -547,10 +621,12 @@ end
 
 return{
 	sort_marks = sort_marks,
+	sort_stable = sort_stable,
 	filter_marks = filter_marks,
 	SelectNodes = SelectNodes,
 	GetSelectedBits = GetSelectedBits,
 	filter_user_accept = filter_user_accept,
+	reverse = reverse,
 	
 	GetAllGapWidth = GetAllGapWidth,
 	GetGapWidth = GetGapWidth,
@@ -574,4 +650,5 @@ return{
 	CalcValidCrewJointOnHalf = CalcValidCrewJointOnHalf,
 	
 	GetSleeperParam = GetSleeperParam,
+	GetSleeperAngle = GetSleeperAngle,
 }
