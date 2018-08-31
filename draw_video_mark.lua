@@ -481,9 +481,10 @@ local function DrawUnspecifiedObject(drawer, frame, mark)
 end
 
 local fastener_type_names = {
-	[0] = 'КБ-65',
-	[1] = 'Аpc',
-	[2] = 'КД',
+	[0] = 'КБ-65', 
+	[1] = 'Аpc',  
+	[2] = 'ДО', -- скрепление на деревянной шпале на костылях 
+	[3] = 'КД', -- скрепление на деревянной шпале как КБ-65 но на двух шурупах 
 }
 	
 local fastener_fault_names = {
