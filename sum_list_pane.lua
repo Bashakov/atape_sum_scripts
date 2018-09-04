@@ -7,7 +7,7 @@ local table_find = stuff.table_find
 
 local SelectNodes = mark_helper.SelectNodes
 local sort_marks = mark_helper.sort_marks
-local reverse = mark_helper.reverse
+local reverse_array = mark_helper.reverse_array
 local sort_stable = mark_helper.sort_stable
 
 
@@ -84,6 +84,23 @@ local column_path_coord =
 		local prop = mark.prop
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
 		return string.format('%3d км %05.1f', km, m + mm/1000.0)
+	end,
+	sorter = function(mark)
+		return mark.prop.SysCoord
+	end
+}
+
+local column_sys_coord = 
+{
+	name = 'Сист.', 
+	width = 70, 
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local prop = mark.prop
+		local s = string.format("%d", prop.SysCoord)
+		s = s:reverse():gsub('(%d%d%d)','%1.'):reverse()
+		return s
 	end,
 	sorter = function(mark)
 		return mark.prop.SysCoord
@@ -499,8 +516,8 @@ local column_user_accept =
 
 local column_sleeper_angle = 
 {
-	name = 'Разворот', 
-	width = 60, 
+	name = 'Разв.', 
+	width = 40, 
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
@@ -510,6 +527,47 @@ local column_sleeper_angle =
 	sorter = function(mark)
 		local angle = mark_helper.GetSleeperAngle(mark)
 		return angle or 0
+	end
+}
+
+local sleeper_meterial_names = 
+{
+	[1] = "бетон",
+	[2] = "дерево",
+}
+
+local column_sleeper_meterial = 
+{
+	name = 'Матер.', 
+	width = 55, 
+	align = 'r', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local material = mark_helper.GetSleeperMeterial(mark)
+		return sleeper_meterial_names[material] or ''
+	end,
+	sorter = function(mark)
+		local material = mark_helper.GetSleeperMeterial(mark)
+		return material or 0
+	end
+}
+
+local column_sleeper_dist_next = 
+{
+	name = 'Слд. Ш.', 
+	width = 60, 
+	align = 'r', 
+	text = function(row)
+		local mark = work_marks_list[row]
+--		local nmark = work_marks_list[row+1]
+--		return mark and nmark and (nmark.prop.SysCoord - mark.prop.SysCoord) or ''
+		local dist = mark.user.dist
+		return dist or ''
+		
+	end,
+	sorter = function(mark)
+		local dist = mark.user.dist
+		return dist or 0
 	end
 }
 
@@ -680,9 +738,26 @@ local Filters =
 			column_num,
 			column_path_coord, 
 			column_sleeper_angle,
+			column_sleeper_meterial,
+			column_sleeper_dist_next,
+			column_sys_coord,
 			}, 
 		GUIDS = {
-			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"}
+			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
+		post_load = function(marks)
+			marks = sort_stable(marks, column_sys_coord.sorter, true)
+			for i = 1,#marks do
+				local cur_mark = marks[i]
+				local nxt_mark = marks[i+1]
+				if cur_mark and nxt_mark then
+					local s1 = cur_mark.prop.SysCoord
+					local s2 = nxt_mark.prop.SysCoord
+					local dist = s2 - s1
+					cur_mark.user.dist = dist
+				end
+			end
+			return marks
+		end,
 	},
 	{
 		name = 'Видимые', 
@@ -740,6 +815,9 @@ function InitMark(name)
 					table.insert(work_marks_list, mark)
 				end
 			end
+			if filter.post_load then
+				work_marks_list = filter.post_load(work_marks_list)
+			end
 		end
 	else
 		work_marks_list = {}
@@ -776,16 +854,16 @@ end
 
 -- функция вызывается из программы, при переключении пользователем режима сортировки
 function SortMarks(col, inc)
-	if work_sort_param[0] ~= col then 
-		if work_marks_list and work_filter and col > 0 and col <= #(work_filter.columns) then
-			local column = work_filter.columns[col]
-			local fn = column.sorter
-			if fn then
+	if work_marks_list and work_filter and col > 0 and col <= #(work_filter.columns) then
+		local column = work_filter.columns[col]
+		local fn = column.sorter
+		if fn then
+			if work_sort_param[0] ~= col then 
 				work_marks_list = sort_stable(work_marks_list, fn, inc)
+			elseif work_sort_param[1] ~= inc then
+				reverse_array(work_marks_list)
 			end
 		end
-	elseif work_sort_param[1] ~= inc then
-		reverse(work_marks_list)
 	end
 	
 	work_sort_param[0] = col

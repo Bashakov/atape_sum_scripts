@@ -444,8 +444,8 @@ end
 local function GetSleeperAngle(mark)
 	local ext = mark.ext
 	
-	if ext.TESTTEST then
-		return ext.TESTTEST
+	if ext.SLEEPERS_ANGLE then
+		return ext.SLEEPERS_ANGLE
 	end
 	
 	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
@@ -457,6 +457,23 @@ local function GetSleeperAngle(mark)
 	end
 end
 
+
+-- получить материал шпалы
+local function GetSleeperMeterial(mark)
+	local ext = mark.ext
+	
+	if ext.SLEEPERS_METERIAL then
+		return ext.SLEEPERS_METERIAL
+	end
+	
+	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
+		local req = '\z
+			/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Sleepers"]\z
+			/PARAM[@name="Material" and @value]'
+		local node = xmlDom:SelectSingleNode(req)
+		return node and tonumber(node.nodeValue)
+	end
+end
 -- =================== Вспомогательные ===================
 
 -- фильтрация отметок
@@ -548,7 +565,7 @@ end
 
 
 
-local function reverse(arr)
+local function reverse_array(arr)
 	local i, j = 1, #arr
 	while i < j do
 		arr[i], arr[j] = arr[j], arr[i]
@@ -591,7 +608,7 @@ local function sort_stable(marks, fn, inc, progress_callback)
 	local sort_time = os.clock()
 
 	if not inc or inc == 0 then
-		reverse(keys)
+		reverse_array(keys)
 	end
 	local rev_time = os.clock()
 
@@ -626,7 +643,7 @@ return{
 	SelectNodes = SelectNodes,
 	GetSelectedBits = GetSelectedBits,
 	filter_user_accept = filter_user_accept,
-	reverse = reverse,
+	reverse_array = reverse_array,
 	
 	GetAllGapWidth = GetAllGapWidth,
 	GetGapWidth = GetGapWidth,
@@ -651,4 +668,5 @@ return{
 	
 	GetSleeperParam = GetSleeperParam,
 	GetSleeperAngle = GetSleeperAngle,
+	GetSleeperMeterial = GetSleeperMeterial,
 }

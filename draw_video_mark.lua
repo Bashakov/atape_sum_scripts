@@ -645,7 +645,7 @@ local function DrawSleeperMark(drawer, frame, mark)
 			for nodeDraw in SelectNodes(nodeResult, 'PARAM[@name="Coord" and (@type="polygon" or @type="line") and @value]') do
 				local obj = nodeDraw:SelectSingleNode('@value').nodeValue
 				points = parse_polygon(obj, cur_frame_coord, item_frame)
-				print(obj)
+				--print(obj)
 			
 				drawer.prop:lineWidth(1)
 				drawer.prop:fillColor(color.r, color.g, color.b,  20)
