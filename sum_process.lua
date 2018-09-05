@@ -166,6 +166,23 @@ local function  _get_beacon_mark(mark, desc)
 	return desc
 end
 
+local function _get_sleeper_mark(mark, desc)
+	local prop = mark:GetProperties()                                -- get mark property
+	if prop then
+		if prop.SLEEPERS_ANGLE then
+			desc = desc .. sprintf('\nразв.=%4.1f', prop.SLEEPERS_ANGLE*180/3.14/1000 ) 
+		end
+		
+		if prop.SLEEPERS_METERIAL == 1 then
+			desc = desc .. "\nМатериал: бетон"
+		end
+		if prop.SLEEPERS_METERIAL == 2 then
+			desc = desc .. "\nМатериал: дерево"
+		end
+	end
+	return desc
+end
+
 
 -- ================================ EXPORT FUNCTIONS ================================= --
 local Img_DA_guids = {
@@ -210,6 +227,9 @@ local Img_guid2idx = {
 	["{D4607B05-17C2-4C30-A303-69005A08C001}"] = 11, -- move backward
 }
 
+local guidSleeper = "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"	
+
+
 function GetMarkImage(mark) -- exported (return ico desc from mark)
 	local RailMask = mark.RailMask
 	local chMask = mark.ChannelMask
@@ -229,12 +249,28 @@ function GetMarkImage(mark) -- exported (return ico desc from mark)
 		return res                                                                -- return desc
 	end
 
+	local img_x = 0
+	local img_y = 0
+	
+	if typeGuid == guidSleeper then
+		img_x = 13
+		img_y = 0
+		local prop = mark:GetProperties()
+		if prop then
+			local angle = prop.SLEEPERS_ANGLE
+			if angle and math.abs(angle) > 10 then
+				img_y = 1
+			end
+		end
+	else
+		img_x = Img_guid2idx[typeGuid]                -- chack atape guids
+		img_y = rail - 1                                        -- rail to y offset (1,2,3 -> 0,1,2)
 
-	local img_x = Img_guid2idx[typeGuid]                -- chack atape guids
-	local img_y = rail - 1                                        -- rail to y offset (1,2,3 -> 0,1,2)
+		if not img_x then                             -- if guid not found, use default for video or regular
+			img_x = video and 2 or 1
+		end
 
-	if not img_x then                                                -- if guid not found, use default for video or regular
-		img_x = video and 2 or 1
+		-- print (RailMask, rail, coord, typeGuid, img_x, img_y)
 	end
 
 	img_x = img_x or 0 -- or default
@@ -244,9 +280,7 @@ function GetMarkImage(mark) -- exported (return ico desc from mark)
 		img_x = 0
 		img_y = 0
 	end
-
-	-- print (RailMask, rail, coord, typeGuid, img_x, img_y)
-
+	
 	local img_size = { x=16, y=16 }                        -- set img size
 	local res = {
 		filename = 'Images/sum.bmp',                -- filename
@@ -273,7 +307,7 @@ local desc_vguids = {
 	
 	["{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}"] = _get_beacon_mark,			-- beacon  (user)
 	["{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"] = _get_beacon_mark,			-- beacon
-	
+	[guidSleeper]   						   = _get_sleeper_mark,	
 }
 
 
