@@ -323,6 +323,38 @@ local function DrawConnectors(drawer, frame, dom)
 	end	
 end
 
+local function DrawWeldedBond(drawer, frame, dom)
+	local colors = {
+		[0] = {r=0, g=192, b=128}, -- хороший соединитель
+		[1] = {r=255, g=128, b=0},
+	}
+	
+	local cur_frame_coord = frame.coord.raw
+	local req = '\z
+			/ACTION_RESULTS\z
+			/PARAM[@name="ACTION_RESULTS" and @value="WeldedBond"]\z
+			/PARAM[@name="FrameNumber" and @value and @coord]\z
+			/PARAM[@name="Result" and @value="main"]'
+	for node in SelectNodes(dom, req) do
+		local item_frame = node:SelectSingleNode("../@coord").nodeValue
+		local fig_channel = node:SelectSingleNode("../../@channel")
+		fig_channel = fig_channel and tonumber(fig_channel.nodeValue)
+		
+		local polygon = node:SelectSingleNode('PARAM[@name="Coord" and @type="polygon" and @value]/@value').nodeValue
+		local fault = tonumber(node:SelectSingleNode('PARAM[@name="ConnectorFault" and @value]/@value').nodeValue)
+		local color = colors[fault] or {r=128, g=128, b=128}
+		
+		if not fig_channel or not frame.channel or fig_channel == frame.channel then
+			local points = parse_polygon(polygon, cur_frame_coord, item_frame)
+			
+			drawer.prop:lineWidth(1)
+			drawer.prop:fillColor(color.r, color.g, color.b, 20)
+			drawer.prop:lineColor(color.r, color.g, color.b, 255)
+			drawer.fig:polygon(points)
+		end
+	end	
+end
+
 
 local function DrawCrewJoint(drawer, frame, dom)
 	local colors = {
@@ -435,6 +467,7 @@ local function DrawRecognitionMark(drawer, frame, mark)
 		ProcessRailGapStep(drawer, frame, xmlDom)
 		DrawFishplateFailt(drawer, frame, xmlDom)
 		DrawConnectors(drawer, frame, xmlDom)
+		DrawWeldedBond(drawer, frame, xmlDom)
 	end
 end
 
