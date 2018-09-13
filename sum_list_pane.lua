@@ -130,8 +130,10 @@ local column_rail =
 	text = function(row)
 		local mark = work_marks_list[row]
 		local rail_mask = bit32.band(mark.prop.RailMask, 0x3)
+		if rail_mask == 3 then
+			return 'Оба'
+		end
 		
-		local left_mask = tonumber(Passport.FIRST_LEFT) + 1
 		return rail_mask == 1 and 'Куп' or 'Кор'
 	end,
 	sorter = function(mark)
@@ -147,6 +149,9 @@ local column_rail_lr =
 	text = function(row)
 		local mark = work_marks_list[row]
 		local rail_mask = bit32.band(mark.prop.RailMask, 0x3)
+		if rail_mask == 3 then
+			return 'Оба'
+		end
 		
 		local left_mask = tonumber(Passport.FIRST_LEFT) + 1
 		return left_mask == rail_mask and "Прв" or "Лв"
@@ -552,25 +557,38 @@ local column_sleeper_meterial =
 	end
 }
 
-local column_sleeper_dist_next = 
+local column_sleeper_dist_prev = 
 {
-	name = 'Слд. Ш.', 
-	width = 60, 
+	name = 'Пред.', 
+	width = 40, 
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
---		local nmark = work_marks_list[row+1]
---		return mark and nmark and (nmark.prop.SysCoord - mark.prop.SysCoord) or ''
-		local dist = mark.user.dist
+		local dist = mark.user.dist_prev
 		return dist or ''
 		
 	end,
 	sorter = function(mark)
-		local dist = mark.user.dist
+		local dist = mark.user.dist_prev
 		return dist or 0
 	end
 }
-
+local column_sleeper_dist_next = 
+{
+	name = 'След.', 
+	width = 40, 
+	align = 'r', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local dist = mark.user.dist_next
+		return dist or ''
+		
+	end,
+	sorter = function(mark)
+		local dist = mark.user.dist_next
+		return dist or 0
+	end
+}
 --=========================================================================== --
 
 local recognition_guids = {
@@ -737,24 +755,23 @@ local Filters =
 		columns = {
 			column_num,
 			column_path_coord, 
+			column_rail, 
 			column_sleeper_angle,
 			column_sleeper_meterial,
+			column_recogn_video_channel,
+			column_sleeper_dist_prev,
 			column_sleeper_dist_next,
 			column_sys_coord,
 			}, 
 		GUIDS = {
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
 		post_load = function(marks)
+			local prev_pos = nil
 			marks = sort_stable(marks, column_sys_coord.sorter, true)
-			for i = 1,#marks do
-				local cur_mark = marks[i]
-				local nxt_mark = marks[i+1]
-				if cur_mark and nxt_mark then
-					local s1 = cur_mark.prop.SysCoord
-					local s2 = nxt_mark.prop.SysCoord
-					local dist = s2 - s1
-					cur_mark.user.dist = dist
-				end
+			for left, cur, right in mark_helper.enum_group(marks, 3) do
+				local pp, cp, np = left.prop.SysCoord, cur.prop.SysCoord, right.prop.SysCoord
+				cur.user.dist_prev = cp - pp
+				cur.user.dist_next = np - cp
 			end
 			return marks
 		end,

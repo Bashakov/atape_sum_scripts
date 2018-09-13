@@ -53,12 +53,29 @@ local sys2path_coord = {}
 
 Driver = 
 {
-	GetMarks = function()
-		for _, m in ipairs(marks) do
-			sys2path_coord[m.prop.SysCoord] = m.path
+	GetMarks = function(self, filter)
+		local fg
+		if filter and filter.GUIDS then
+			fg = {}
+			for _, g in ipairs(filter.GUIDS) do	fg[g] = true end
 		end
-		return marks
-	end	,
+			
+		local res = {}
+		for _, m in ipairs(marks) do
+			local skip = false
+			local prop = m.prop
+			sys2path_coord[prop.SysCoord] = m.path
+			
+			if fg then
+				skip = skip or (fg and not fg[prop.Guid])
+			end
+			
+			if not skip then
+				res[#res+1] = m
+			end
+		end
+		return res
+	end,
 	
 	GetAppPath = function()
 		local cd = io.popen"cd":read'*l'
@@ -85,11 +102,4 @@ Driver =
 
 
 dofile('sum_report.lua')
-
---MakeReport("Ведомость болтовых стыков")
---MakeReport("Сохранить в Excel")
---MakeReport("Ведомость Зазоров")
---MakeReport("Ведомость ненормативных объектов")
---MakeReport("Ведомость сварной плети")
--- MakeReport("Ведомость болтовых стыков ЕКСУИ")
-MakeReport("Ведомость Зазоров ЕКСУИ")
+MakeReport("Шпалы|График")

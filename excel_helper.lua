@@ -184,7 +184,7 @@ excel_helper = OOP.class
 			end
 		end
 		
-		return self._data_range
+		return self._data_range, user_range
 	end,
 
 	InsertLink = function (self, cell, url, text)					-- вставка ссылки в ячейку
@@ -248,8 +248,8 @@ excel_helper = OOP.class
 		return cells[1], cells[2]
 	end,
 
-	-- генератор, для использования в цикле for, возвращает номер и диаппазон, куда следует вставлять данные
-	EnumDstTable = function(self, count)
+	-- генератор, для использования в цикле for, возвращает номер и диапазон, куда следует вставлять данные
+	EnumDstTable = function(self, count, progress_callback)
 		local const = {
 			xlDown = -4121,
 			xlShiftToRight = -4161
@@ -277,6 +277,9 @@ excel_helper = OOP.class
 			src_table:Copy(dst_table)
 			for r = 1, src_table.Rows.count do
 				dst_table.Rows(r).RowHeight = src_table.Rows(r).RowHeight
+			end
+			if progress_callback then
+				progress_callback(i, count)
 			end
 		end
 		

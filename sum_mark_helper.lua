@@ -1,6 +1,7 @@
 require "luacom"
 
 function printf (s,...) return print(s:format(...)) end
+function sprintf (s,...) return s:format(...) end
 
 
 local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
@@ -46,6 +47,17 @@ local function GetSelectedBits(mask)
 		end
 	end
 	return res
+end
+
+-- разбивает массив на переекающиеся отрезки указанной длинны. enum_group({1,2,3,4,5}, 3) ->  {1,2,3}, {2,3,4}, {3,4,5}
+local function enum_group(arr, len)
+	local i = 0
+	return function()
+		i = i + 1
+		if i + len <= #arr+1 then
+			return table.unpack(arr, i, i + len)
+		end
+	end
 end
 
 -- =================== ШИРИНА ЗАЗОРА ===================
@@ -607,7 +619,7 @@ local function sort_stable(marks, fn, inc, progress_callback)
 	table.sort(keys)  -- сортируем массив с ключами
 	local sort_time = os.clock()
 
-	if not inc or inc == 0 then
+	if inc == false or inc == 0 then
 		reverse_array(keys)
 	end
 	local rev_time = os.clock()
@@ -632,6 +644,12 @@ local function sort_stable(marks, fn, inc, progress_callback)
 	return tmp
 end
 
+local function format_path_coord(mark)
+	local km, m, mm = Driver:GetPathCoord(mark.prop.SysCoord)
+	local res = sprintf('%d км %.1f м', km, m + mm/1000)
+	return res
+end
+
 -- =================== ЭКПОРТ ===================
 
 
@@ -644,6 +662,8 @@ return{
 	GetSelectedBits = GetSelectedBits,
 	filter_user_accept = filter_user_accept,
 	reverse_array = reverse_array,
+	enum_group = enum_group,
+	format_path_coord = format_path_coord,
 	
 	GetAllGapWidth = GetAllGapWidth,
 	GetGapWidth = GetGapWidth,

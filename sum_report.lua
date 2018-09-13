@@ -14,6 +14,8 @@ mark_helper = require 'sum_mark_helper'
 stuff = require 'stuff'
 luaiup_helper = require 'luaiup_helper'
 excel_helper = require 'excel_helper'
+report_sleepers = require 'sum_report_sleepers'
+
 
 local table_find = stuff.table_find
 local sprintf = stuff.sprintf
@@ -425,6 +427,7 @@ local function dump_mark_list(template_name, sheet_name)
 		out[i] = {
 			prop = prop, 
 			ext = mark.ext, 
+			user = {},
 			path = { Driver:GetPathCoord(prop.SysCoord) }, 
 			name = Driver:GetSumTypeName(prop.Guid)
 		}
@@ -1480,28 +1483,28 @@ local ProcessSumFile = "Scripts\\ProcessSum.xlsm"
 local Report_Functions = {
 	---------------------------------------
 	-- c ЕКАСУИ 
-	{name="Ведомость Стыковых зазоров|Excel" , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
-	{name="Ведомость Стыковых зазоров|ЕКАСУИ " , fn=report_gaps            , params={ eksui=true }, guids=gap_rep_filter_guids},	
-	{name="Ведомость Болтовых стыков|Excel"  , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },
-	{name="Ведомость Болтовых стыков|ЕКАСУИ "  , fn=report_crew_join       , params={ eksui=true }, guids=gap_rep_filter_guids},	
+--	{name="Ведомость Стыковых зазоров|Excel" , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
+--	{name="Ведомость Стыковых зазоров|ЕКАСУИ " , fn=report_gaps            , params={ eksui=true }, guids=gap_rep_filter_guids},	
+--	{name="Ведомость Болтовых стыков|Excel"  , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },
+--	{name="Ведомость Болтовых стыков|ЕКАСУИ "  , fn=report_crew_join       , params={ eksui=true }, guids=gap_rep_filter_guids},	
 
 	-- без ЕКАСУИ
 	--{name="Ведомость Стыковых зазоров"       , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
 	--{name="Ведомость Болтовых стыков"        , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },	
 	------------------------------------------
 
-	{name="Ведомость Коротких рубок"         , fn=report_short_rails     , params={ filename=ProcessSumFile, sheetname="Рубки"                   }, guids=gap_rep_filter_guids   },	
-	{name="Ведомость Скреплений"             , fn=report_fasteners       , params={ filename=ProcessSumFile, sheetname="Ведомость Скреплений"    }, guids=fastener_guids         },
-	{name="Ведомость Горизонтальных уступов" , fn=report_recog_joint_step, params={ filename=ProcessSumFile, sheetname="Горизонтальные ступеньки"}, guids=gap_rep_filter_guids   },
-	{name="Ведомость Поверхностных дефектов" , fn=report_surface_defects , params={ filename=ProcessSumFile, sheetname="Поверхн. дефекты"        }, guids=surface_defects_guids  }, 
-	{name="Ведомость Сварной плети"          , fn=report_welding         , params={ filename=ProcessSumFile, sheetname="Ведомость сварной плети" }, guids=beacon_rep_filter_guids},
-	{name="Ведомость Ненормативных объектов" , fn=report_unspec_obj      , params={ filename=ProcessSumFile, sheetname="Ненормативные объекты"   }, guids=unspec_obj_filter_guids},	
+--	{name="Ведомость Коротких рубок"         , fn=report_short_rails     , params={ filename=ProcessSumFile, sheetname="Рубки"                   }, guids=gap_rep_filter_guids   },	
+--	{name="Ведомость Скреплений"             , fn=report_fasteners       , params={ filename=ProcessSumFile, sheetname="Ведомость Скреплений"    }, guids=fastener_guids         },
+--	{name="Ведомость Горизонтальных уступов" , fn=report_recog_joint_step, params={ filename=ProcessSumFile, sheetname="Горизонтальные ступеньки"}, guids=gap_rep_filter_guids   },
+--	{name="Ведомость Поверхностных дефектов" , fn=report_surface_defects , params={ filename=ProcessSumFile, sheetname="Поверхн. дефекты"        }, guids=surface_defects_guids  }, 
+--	{name="Ведомость Сварной плети"          , fn=report_welding         , params={ filename=ProcessSumFile, sheetname="Ведомость сварной плети" }, guids=beacon_rep_filter_guids},
+--	{name="Ведомость Ненормативных объектов" , fn=report_unspec_obj      , params={ filename=ProcessSumFile, sheetname="Ненормативные объекты"   }, guids=unspec_obj_filter_guids},	
 	
-	{name="НПУ", fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls" }, guids=NPU_guids},
+--	{name="НПУ", fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls" }, guids=NPU_guids},
 	
 
 
-	-- {name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
+	 {name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 	--{name="Сохранить в Excel",			fn=mark2excel,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="test",}, 					},
 	
 	--{name="КоордСтыков | 1",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=1}, 	guids=joint_filter_guids},
@@ -1511,9 +1514,9 @@ local Report_Functions = {
 	
 	--	{name=" коорд. cтыков (магн.) | 17_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=17, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
 	--	{name=" коорд. cтыков (магн.) | 18_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=18, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
-	
-	
 }
+
+report_sleepers.AppendReports(Report_Functions)
 
 
 -- ================================ EXPORT FUNCTIONS ================================= --

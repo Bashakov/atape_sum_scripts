@@ -170,7 +170,7 @@ local function _get_sleeper_mark(mark, desc)
 	local prop = mark:GetProperties()                                -- get mark property
 	if prop then
 		if prop.SLEEPERS_ANGLE then
-			desc = desc .. sprintf('\nразв.=%4.1f', prop.SLEEPERS_ANGLE*180/3.14/1000 ) 
+			desc = desc .. sprintf('\nРазворот: %4.1f', prop.SLEEPERS_ANGLE*180/3.14/1000 ) 
 		end
 		
 		if prop.SLEEPERS_METERIAL == 1 then
