@@ -527,18 +527,23 @@ local column_sleeper_angle =
 	text = function(row)
 		local mark = work_marks_list[row]
 		local angle = mark_helper.GetSleeperAngle(mark)
-		return angle and sprintf('%4.1f', angle*180/3.14/1000 ) or ''
+		if angle then
+			angle = math.abs(angle)
+			angle = angle*180/3.14/1000
+			return sprintf('%4.1f', angle)
+		end
+		return ''
 	end,
 	sorter = function(mark)
 		local angle = mark_helper.GetSleeperAngle(mark)
-		return angle or 0
+		return math.abs(angle or 0)
 	end
 }
 
 local sleeper_meterial_names = 
 {
-	[1] = "бетон",
-	[2] = "дерево",
+	[1] = "бет",
+	[2] = "дер",
 }
 
 local column_sleeper_meterial = 

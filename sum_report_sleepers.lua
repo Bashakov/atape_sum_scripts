@@ -30,12 +30,12 @@ end
 
 -- запросить у пользователя эпюру шпал
 local function ask_user_report_param()
-	local ok, sleeper_count, mek, angle_threshold = true, 1840, 4, 1
-	if true then
-		ok, sleeper_count,mek  = iup.GetParam("Отчет оп шпалам", nil, 
+	local ok, sleeper_count, mek, angle_threshold = true, 1840, 4, 5.7
+	if true then -- показывать ли диалог
+		ok, sleeper_count, mek, angle_threshold  = iup.GetParam("Отчет оп шпалам", nil, 
 			"Эпюра шпал: %i\n\z
 			МКЭ: %i\n\z
-			Разворот: %i\n\z", 
+			Разворот: %r\n\z", 
 			sleeper_count, mek, angle_threshold)
 	end
 	if not ok then	
@@ -49,7 +49,7 @@ local function check_distance(ref_dist, MEK, max_diff, cur_dist)
 		return true
 	end
 	for i = 1, MEK do
-		if math.abs(cur_dist - ref_dist/i) <= max_diff then
+		if math.abs(cur_dist/i - ref_dist) <= max_diff then
 			return true
 		end
 	end
@@ -61,8 +61,8 @@ end
 local function check_sleeper_error(left, cur, right, ref_dist, MEK, angle_threshold)
 	local diffs = 
 	{
-		[1] = 40, -- "бетон",
-		[2] = 80, -- "дерево",
+		[1] = 2*40, -- "бетон",
+		[2] = 2*80, -- "дерево",
 	}
 	local defect_codes = 
 	{
@@ -76,10 +76,13 @@ local function check_sleeper_error(left, cur, right, ref_dist, MEK, angle_thresh
 	
 	local dist_prev = cur.prop.SysCoord - left.prop.SysCoord 
 	local dist_next = right.prop.SysCoord - cur.prop.SysCoord 
+	cur.user.SLEEPER_DIST_PREV = dist_prev
+	cur.user.SLEEPER_DIST_NEXT = dist_next
 	
 	local ret_defects = {}
 	
-	local dist_ok = check_distance(ref_dist, MEK, max_diff, dist_prev) and check_distance(ref_dist, MEK, max_diff, dist_next)
+	--local dist_ok = check_distance(ref_dist, MEK, max_diff, dist_prev) and check_distance(ref_dist, MEK, max_diff, dist_next)
+	local dist_ok = check_distance(ref_dist, MEK, max_diff, dist_next)
 	if not dist_ok then
 		table.insert(ret_defects, defect_codes[cur_material])
 	end
@@ -89,7 +92,7 @@ local function check_sleeper_error(left, cur, right, ref_dist, MEK, angle_thresh
 		table.insert(ret_defects, 90004000999)
 	end
 	
-	printf("%d  %d | %+8.1f  %+8.1f | %s", cur.prop.SysCoord, max_diff, dist_prev-ref_dist, dist_next-ref_dist, table.concat(ret_defects, ','))
+	printf("%9d %3d | %+8.1f  %+8.1f deg | %s", cur.prop.SysCoord, max_diff,  dist_next-ref_dist, cur_angle, table.concat(ret_defects, ','))
 	return ret_defects
 end
 
@@ -108,8 +111,22 @@ local function make_result_row(pos, mark)
 	row.PK = ''
 	row.PATH = sprintf('%d км %.1f м', km, m + mm/1000)
 	row.DEFECT_CODE = table.concat(mark.user.arr_defect_codes, ', ')
-	row.MATERIAL = material == 1 and "ЖБШ" or "ДШ"
+	row.SLEEPER_MATERIAL = material == 1 and "ЖБШ" or "ДШ"
+	row.SLEEPER_DIST_PREV = mark.user.SLEEPER_DIST_PREV
+	row.SLEEPER_DIST_NEXT = mark.user.SLEEPER_DIST_NEXT
 	return row
+end
+
+-- проход по таблице в сортированном порядке 
+local function sorted(tbl)
+	local keys = {}
+	for n, _ in pairs(tbl) do table.insert(keys, n) end
+	table.sort(keys)
+	local i = 0
+	return function()
+		i = i + 1
+		return keys[i], tbl[keys[i]]
+	end
 end
 
 -- клонируем шаблонную строку нужное число раз, и вставляем данные
@@ -130,6 +147,47 @@ local function apply_rows_to_excel(excel, marks, dlgProgress)
 		end
 	end
 end
+
+-- добавить лист с доступными заменителями
+local function append_available_variable_list(excel, marks, max_marks_count)
+	local workbook = excel._workbook
+	
+	local worksheet = workbook.Sheets:Add(nil, excel._worksheet)
+	excel._worksheet:Activate()
+	worksheet.Name = 'Шаблоны'
+	local user_range = worksheet.UsedRange
+	
+	user_range.Columns(1).ColumnWidth = 50
+	user_range.Columns(2).ColumnWidth = 50
+	
+	local row = 1
+	for n,v in sorted(Passport) do
+		user_range.Cells(row, 1).Value2 = n
+		user_range.Cells(row, 2).Value2 = v
+		row = row + 1
+	end
+	
+	--if 1 then return 1 end
+	
+	user_range.Cells(row, 1).Value2 = '++++++++++++++++++++++++++++'
+	row = row + 1
+	
+	for i = 1, #marks do
+		if i > max_marks_count then break end
+		
+		local mark = marks[i]
+		local row_data = make_result_row(i, mark)
+		
+		for n,v in sorted(row_data) do
+			user_range.Cells(row, 1).Value2 = n
+			user_range.Cells(row, 2).Value2 = v
+			row = row + 1
+		end
+		
+		user_range.Cells(row, 1).Value2 = '-------------------------------'
+		row = row + 1
+	end
+end	
 
 local function make_report()
 	local template_path = Driver:GetAppPath() .. 'Scripts/ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ ШПАЛ.xlsm'
@@ -157,7 +215,7 @@ local function make_report()
 	local i = 0
 	for left, cur, right in mark_helper.enum_group(marks, 3) do
 		i = i + 1
-		if not dlgProgress:step(i / #marks, stuff.sprintf('Check %d / %d mark found %d mark', i, #marks, #out_marks)) then 
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, stuff.sprintf('Check %d / %d mark found %d mark', i, #marks, #out_marks)) then 
 			return
 		end
 		
@@ -165,6 +223,8 @@ local function make_report()
 		if #arr_defect_codes > 0 then
 			cur.user.arr_defect_codes = arr_defect_codes
 			table.insert(out_marks, cur)
+			
+			--if #out_marks > 10 then	break end
 		end
 	end
 	
@@ -175,12 +235,13 @@ local function make_report()
 			return
 		end
 	end
-	--print(#out_rows)
 	
 	local excel = excel_helper(template_path, "В3 ШП", false)
 	excel:ApplyPassportValues(Passport)
 	
 	apply_rows_to_excel(excel, out_marks, dlgProgress)
+	
+	append_available_variable_list(excel, out_marks, 3)
 	
 	excel:SaveAndShow()
 end
@@ -258,9 +319,7 @@ local function sleepers_report_plot()
 		end
 		fo:close()
 		
-		local workbooks = excel.Workbooks
-		local workbook = workbooks:Open(fn)
-
+		local workbook = excel.Workbooks:Open(fn)
 		worksheet = workbook.Sheets(1)
 	end
 

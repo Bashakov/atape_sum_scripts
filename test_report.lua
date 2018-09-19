@@ -102,4 +102,4 @@ Driver =
 
 
 dofile('sum_report.lua')
-MakeReport("Шпалы|График")
+MakeReport("Шпалы|Эпюра")

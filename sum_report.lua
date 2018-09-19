@@ -1329,7 +1329,12 @@ local function report_short_rails(params)
 		data_range.Cells(line, 5).Value2 = temperature_msg:gsub('%.', ',')
 		
 		if math.abs(prop1.SysCoord - prop2.SysCoord) < 30000 then
-			insert_frame(excel, data_range, mark1, line, 6, nil, {prop1.SysCoord-500, prop2.SysCoord+500})
+			local s1 = prop1.SysCoord
+			local s2 = prop2.SysCoord
+			if s1 > s2 then 
+				s1, s2 = s2, s1 
+			end
+			insert_frame(excel, data_range, mark1, line, 6, nil, {s1-500, s2+500})
 		end
 		--insert_frame(excel, data_range, mark1, line, 5, nil, {prop1.SysCoord-500, prop2.SysCoord+500})
 		
@@ -1493,7 +1498,7 @@ local Report_Functions = {
 	--{name="Ведомость Болтовых стыков"        , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },	
 	------------------------------------------
 
---	{name="Ведомость Коротких рубок"         , fn=report_short_rails     , params={ filename=ProcessSumFile, sheetname="Рубки"                   }, guids=gap_rep_filter_guids   },	
+	{name="Ведомость Коротких рубок"         , fn=report_short_rails     , params={ filename=ProcessSumFile, sheetname="Рубки"                   }, guids=gap_rep_filter_guids   },	
 --	{name="Ведомость Скреплений"             , fn=report_fasteners       , params={ filename=ProcessSumFile, sheetname="Ведомость Скреплений"    }, guids=fastener_guids         },
 --	{name="Ведомость Горизонтальных уступов" , fn=report_recog_joint_step, params={ filename=ProcessSumFile, sheetname="Горизонтальные ступеньки"}, guids=gap_rep_filter_guids   },
 --	{name="Ведомость Поверхностных дефектов" , fn=report_surface_defects , params={ filename=ProcessSumFile, sheetname="Поверхн. дефекты"        }, guids=surface_defects_guids  }, 
