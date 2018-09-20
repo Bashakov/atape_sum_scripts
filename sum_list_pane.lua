@@ -144,17 +144,17 @@ local column_rail =
 local column_rail_lr = 
 {
 	name = 'Р', 
-	width = 33, 
+	width = 35, 
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
-		local rail_mask = bit32.band(mark.prop.RailMask, 0x3)
-		if rail_mask == 3 then
-			return 'Оба'
-		end
-		
-		local left_mask = tonumber(Passport.FIRST_LEFT) + 1
-		return left_mask == rail_mask and "Прв" or "Лв"
+		local rail_pos = mark_helper.GetMarkRailPos(mark)
+		local rails_names = {
+			[-1]= 'Лв.', 
+			[0] = 'Оба',
+			[1] = 'Прв.'
+		}
+		return rails_names[rail_pos]
 	end,
 	sorter = function(mark)
 		return bit32.band(mark.prop.RailMask, 0x3)
@@ -594,6 +594,23 @@ local column_sleeper_dist_next =
 		return dist or 0
 	end
 }
+
+local column_weldedbond_status = {
+	name = 'Статус.', 
+	width = 70, 
+	align = 'r', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local status = mark_helper.GetWeldedBondStatus(mark)
+		if not status then return '' end
+		return status == 0 and 'исправен' or 'неисправен'
+	end,
+	sorter = function(mark)
+		local status = mark_helper.GetWeldedBondStatus(mark)
+		return status or -1
+	end
+}
+
 --=========================================================================== --
 
 local recognition_guids = {
@@ -706,6 +723,7 @@ local Filters =
 			column_num, 
 			column_path_coord, 
 			column_rail,
+			column_rail_lr,
 			column_connections_all,
 			column_connections_defect,
 			column_recogn_video_channel,
@@ -714,6 +732,21 @@ local Filters =
 		filter = function(mark)
 			local all, fault = mark_helper.GetConnectorsCount(mark)
 			return all 
+		end,
+	},
+	{
+		name = 'WeldedBond', 
+		columns = {
+			column_num, 
+			column_path_coord, 
+			column_rail,
+			column_rail_lr,
+			column_weldedbond_status,
+		}, 
+		GUIDS = recognition_guids,
+		filter = function(mark)
+			local status = mark_helper.GetWeldedBondStatus(mark)
+			return status 
 		end,
 	},
 	{

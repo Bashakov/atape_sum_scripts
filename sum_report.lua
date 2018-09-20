@@ -14,7 +14,6 @@ mark_helper = require 'sum_mark_helper'
 stuff = require 'stuff'
 luaiup_helper = require 'luaiup_helper'
 excel_helper = require 'excel_helper'
-report_sleepers = require 'sum_report_sleepers'
 
 
 local table_find = stuff.table_find
@@ -151,7 +150,7 @@ end
 
 -- отсортировать отметки по системной координате
 local function sort_mark_by_coord(marks)
-	return mark_helper.sort_marks(marks, get_sys_coord_key)
+	return mark_helper.sort_marks(marks, get_sys_coord_key, true)
 end
 
 -- разбивает отметки на пары, marks должен быть отсортирован по сиситемной координате
@@ -443,7 +442,7 @@ local function dump_mark_list(template_name, sheet_name)
 			)
 		end
 
-		if not dlg:step(1.0 * i / #marks, stuff.sprintf('progress %d / %d mark', i, #marks)) then 
+		if i % 10 == 1 and not dlg:step(1.0 * i / #marks, stuff.sprintf('progress %d / %d mark', i, #marks)) then 
 			return 
 		end
 	end
@@ -1329,14 +1328,8 @@ local function report_short_rails(params)
 		data_range.Cells(line, 5).Value2 = temperature_msg:gsub('%.', ',')
 		
 		if math.abs(prop1.SysCoord - prop2.SysCoord) < 30000 then
-			local s1 = prop1.SysCoord
-			local s2 = prop2.SysCoord
-			if s1 > s2 then 
-				s1, s2 = s2, s1 
-			end
-			insert_frame(excel, data_range, mark1, line, 6, nil, {s1-500, s2+500})
+			insert_frame(excel, data_range, mark1, line, 6, nil, {prop1.SysCoord-500, prop2.SysCoord+500})
 		end
-		--insert_frame(excel, data_range, mark1, line, 5, nil, {prop1.SysCoord-500, prop2.SysCoord+500})
 		
 		if not dlg:step(line / #short_rails, stuff.sprintf(' Out %d / %d line', line, #short_rails)) then 
 			break
@@ -1387,20 +1380,27 @@ local function report_NPU(params)
 		end
 		
 		local uri = make_mark_uri(prop.ID)
-		excel:InsertLink(data_range.Cells(line, 2), uri, tonumber(line))
+--		excel:InsertLink(data_range.Cells(line, 2), uri, tonumber(line))
 	
+	
+		excel:InsertLink(data_range.Cells(line, 13), uri, tonumber(line))
+		data_range.Cells(line, 14).Value2 = sprintf("%d км %.1f м", km1, m1 + mm1/1000)
+		data_range.Cells(line, 15).Value2 = sprintf("%d км %.1f м", km2, m2 + mm2/1000)
+		data_range.Cells(line, 16).Value2 = get_rail_name(mark)
+		data_range.Cells(line, 17).Value2 = sprintf('%.2f', prop.Len / 1000):gsub('%.', ',')
+		data_range.Cells(line, 18).Value2 = prop.Description
 --		data_range.Cells(line, 4).Value2 = sprintf("%d км %.1f м", km1, m1 + mm1/1000)
 --		data_range.Cells(line, 5).Value2 = sprintf("%d км %.1f м", km2, m2 + mm2/1000)
 
 
-		data_range.Cells(line, 7).Value2 = sprintf("%d км", km1)
-		data_range.Cells(line, 9).Value2 = sprintf("%d м",  m1 )
-		data_range.Cells(line,10).Value2 = sprintf("%d км", km2)
-		data_range.Cells(line,12).Value2 = sprintf("%d м",  m2 )
-
-		data_range.Cells(line, 6).Value2 = get_rail_name(mark)
-		data_range.Cells(line,13).Value2 = sprintf('%.2f', prop.Len / 1000):gsub('%.', ',')
-		data_range.Cells(line,14).Value2 = prop.Description
+--		data_range.Cells(line, 7).Value2 = sprintf("%d км", km1)
+--		data_range.Cells(line, 9).Value2 = sprintf("%d м",  m1 )
+--		data_range.Cells(line,10).Value2 = sprintf("%d км", km2)
+--		data_range.Cells(line,12).Value2 = sprintf("%d м",  m2 )
+--
+--		data_range.Cells(line, 6).Value2 = get_rail_name(mark)
+--		data_range.Cells(line,13).Value2 = sprintf('%.2f', prop.Len / 1000):gsub('%.', ',')
+--		data_range.Cells(line,14).Value2 = prop.Description
 		
 		if not dlg:step(line / #marks, stuff.sprintf(' Out %d / %d line', line, #marks)) then 
 			break
@@ -1505,7 +1505,7 @@ local Report_Functions = {
 --	{name="Ведомость Сварной плети"          , fn=report_welding         , params={ filename=ProcessSumFile, sheetname="Ведомость сварной плети" }, guids=beacon_rep_filter_guids},
 --	{name="Ведомость Ненормативных объектов" , fn=report_unspec_obj      , params={ filename=ProcessSumFile, sheetname="Ненормативные объекты"   }, guids=unspec_obj_filter_guids},	
 	
---	{name="НПУ", fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls" }, guids=NPU_guids},
+	{name="НПУ", fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls" }, guids=NPU_guids},
 	
 
 
@@ -1521,7 +1521,12 @@ local Report_Functions = {
 	--	{name=" коорд. cтыков (магн.) | 18_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=18, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
 }
 
+
+local report_sleepers = require 'sum_report_sleepers'
 report_sleepers.AppendReports(Report_Functions)
+
+local report_joints = require 'sum_report_joints'
+report_joints.AppendReports(Report_Functions)
 
 
 -- ================================ EXPORT FUNCTIONS ================================= --

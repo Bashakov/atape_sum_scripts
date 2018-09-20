@@ -7,6 +7,18 @@ OOP = require 'OOP'
 
 -- ======================  stuff  ============================= -- 
 
+-- проход по таблице в сортированном порядке 
+local function sorted(tbl)
+	local keys = {}
+	for n, _ in pairs(tbl) do table.insert(keys, n) end
+	table.sort(keys)
+	local i = 0
+	return function()
+		i = i + 1
+		return keys[i], tbl[keys[i]]
+	end
+end
+
 local function SplitPath(path)
 	local res = {}
 	for p in path:gmatch('([^\\]+)') do
@@ -290,6 +302,69 @@ excel_helper = OOP.class
 			end
 		end, 0, 0
 	end,
+	
+	-- клонируем шаблонную строку нужное число раз, и вставляем данные
+	ApplyRows = function (self, marks, fn_get_templates_data, dlgProgress)
+		local dst_row_count = #marks
+		local data_range, user_range = self:CloneTemplateRow(dst_row_count)
+		for line = 1, dst_row_count do 
+			local mark = marks[line]
+			
+			local row_data = fn_get_templates_data(mark)
+			row_data.N = line
+				
+			local cell_LT = data_range.Cells(line, 1)
+			local cell_RB = data_range.Cells(line, data_range.Columns.count)
+			local row_range = user_range:Range(cell_LT, cell_RB)
+
+			self:ReplaceTemplates(row_range, {row_data})
+			if dlgProgress and not dlgProgress:step(line / dst_row_count, stuff.sprintf('Save %d / %d mark', line, dst_row_count)) then 
+				break
+			end
+		end
+	end,
+	
+	-- добавить лист с доступными заменителями
+	AppendTemaplateSheet = function(self, marks, fn_get_templates_data, max_marks_count)
+		max_marks_count = max_marks_count or 3
+		local workbook = self._workbook
+		
+		local worksheet = workbook.Sheets:Add(nil, self._worksheet)
+		self._worksheet:Activate()
+		worksheet.Name = 'Шаблоны'
+		local user_range = worksheet.UsedRange
+		
+		user_range.Columns(1).ColumnWidth = 50
+		user_range.Columns(2).ColumnWidth = 50
+		
+		local row = 1
+		for n,v in sorted(Passport) do
+			user_range.Cells(row, 1).Value2 = n
+			user_range.Cells(row, 2).Value2 = v
+			row = row + 1
+		end
+		
+		user_range.Cells(row, 1).Value2 = '++++++++++++++++++++++++++++'
+		row = row + 1
+		
+		for i = 1, #marks do
+			if i > max_marks_count then break end
+			
+			local mark = marks[i]
+			local row_data = fn_get_templates_data(mark)
+			row_data.N = i
+		
+			for n,v in sorted(row_data) do
+				user_range.Cells(row, 1).Value2 = n
+				user_range.Cells(row, 2).Value2 = v
+				row = row + 1
+			end
+			
+			user_range.Cells(row, 1).Value2 = '-------------------------------'
+			row = row + 1
+		end
+	end,
+
 }
 
 -- ======================  TEST HELPERS  ============================= -- 

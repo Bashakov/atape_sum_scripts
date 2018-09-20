@@ -102,4 +102,6 @@ Driver =
 
 
 dofile('sum_report.lua')
-MakeReport("Шпалы|Эпюра")
+--MakeReport("Шпалы|Эпюра")
+--MakeReport("Ведомость Коротких рубок")
+MakeReport("СТЫК|Определение наличия и состояния рельсовых соединителей")

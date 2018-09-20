@@ -274,7 +274,7 @@ local function GetCrewJointCount(mark)
 	end
 end
 
--- проверить стык на дефектность по наличие болтов (не больше одного млохого в половине накладки)
+-- проверить стык на дефектность по наличие болтов (не больше одного плохого в половине накладки)
 local function CalcValidCrewJointOnHalf(mark)
 	local joints = mark_helper.GetCrewJointArray(mark)
 	
@@ -414,6 +414,7 @@ end
 
 -- получить полное количество, колич. дефектных
 local function GetConnectorsCount(mark)
+	
 	local arr = GetConnectorsArray(mark)
 	if not arr then
 		return nil
@@ -425,6 +426,23 @@ local function GetConnectorsCount(mark)
 		end
 	end
 	return all, fault
+end
+
+-- получить статус конектора (WeldedBond) из описания стыка
+local function GetWeldedBondStatus(mark)
+	local ext = mark.ext
+	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
+		local req = '\z
+			/ACTION_RESULTS\z
+			/PARAM[@name="ACTION_RESULTS" and @value="WeldedBond"]\z
+			/PARAM[@name="FrameNumber" and @value]\z
+			/PARAM[@name="Result" and @value="main"]\z
+			/PARAM[@name="ConnectorFault" and @value]\z
+			/@value'
+
+		local nodeFault = xmlDom:SelectSingleNode(req)
+		return nodeFault and tonumber(nodeFault.nodeValue)
+	end
 end
 
 -- =================== Шпалы ===================
@@ -531,6 +549,7 @@ end
 
 -- сортировка отметок 
 local function sort_marks(marks, fn, inc, progress_callback)
+	if inc == nil then inc = true end
 	inc = inc and inc ~= 0
 	local start_time = os.clock()
 	
@@ -644,11 +663,58 @@ local function sort_stable(marks, fn, inc, progress_callback)
 	return tmp
 end
 
+
+-- возвращает форматированную путейскую координату начала отметки
 local function format_path_coord(mark)
 	local km, m, mm = Driver:GetPathCoord(mark.prop.SysCoord)
 	local res = sprintf('%d км %.1f м', km, m + mm/1000)
 	return res
 end
+
+-- отсортировать отметки по системной координате
+local function sort_mark_by_coord(marks)
+	return mark_helper.sort_stable(marks, function(mark) 
+		return mark.prop.SysCoord 
+	end)
+end
+
+-- определяет рельсовое расположение отметки. возвращает: -1 = левый, 0 = оба, 1 = правый
+local function GetMarkRailPos(mark)
+	local rail_mask = bit32.band(mark.prop.RailMask, 0x3)
+	if rail_mask == 3 then
+		return 0
+	end
+	
+	local left_mask = tonumber(Passport.FIRST_LEFT) + 1
+	return left_mask == rail_mask and 1 or -1
+end
+
+
+-- создание таблицы подстановок с общими параметрами отметки
+local function MakeCommonMarkTemaple(mark)
+	local rails_names = {
+		[-1]= 'лев.', 
+		[0] = 'оба',
+		[1] = 'прав.'}
+	local prop = mark.prop
+	local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
+	local temperature = Driver:GetTemperature(bit32.band(prop.RailMask, 3)-1, prop.SysCoord)
+	temperature = temperature and temperature.target
+	
+	local row = {}
+	
+	row.SYS = prop.SysCoord
+	row.KM = km
+	row.M = m
+	row.MM = mm
+	row.PK = ''
+	row.PATH = sprintf('%d км %.1f м', km, m + mm/1000)
+	row.RAIL_POS = GetMarkRailPos(mark)
+	row.RAIL_NAME = rails_names[row.RAIL_POS]
+	row.RAIL_TEMP = temperature and sprintf('%+.1f', temperature) or ''
+	return row
+end
+
 
 -- =================== ЭКПОРТ ===================
 
@@ -663,7 +729,10 @@ return{
 	filter_user_accept = filter_user_accept,
 	reverse_array = reverse_array,
 	enum_group = enum_group,
+	sort_mark_by_coord = sort_mark_by_coord,
 	format_path_coord = format_path_coord,
+	GetMarkRailPos = GetMarkRailPos,
+	MakeCommonMarkTemaple = MakeCommonMarkTemaple,
 	
 	GetAllGapWidth = GetAllGapWidth,
 	GetGapWidth = GetGapWidth,
@@ -682,6 +751,8 @@ return{
 	GetConnectorsArray = GetConnectorsArray,
 	GetConnectorsCount = GetConnectorsCount,
 	
+	GetWeldedBondStatus = GetWeldedBondStatus,
+	
 	GetCrewJointArray = GetCrewJointArray,
 	GetCrewJointCount = GetCrewJointCount,
 	CalcValidCrewJointOnHalf = CalcValidCrewJointOnHalf,
@@ -689,4 +760,6 @@ return{
 	GetSleeperParam = GetSleeperParam,
 	GetSleeperAngle = GetSleeperAngle,
 	GetSleeperMeterial = GetSleeperMeterial,
+	
+	
 }

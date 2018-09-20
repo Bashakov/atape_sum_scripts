@@ -12,6 +12,8 @@ require "luacom"
 local excel_helper = require 'excel_helper'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
+local DEFECT_CODES = require 'report_defect_codes'
+
 
 function printf(s,...)  print(s:format(...)) end
 function sprintf(s,...) return s:format(...) end
@@ -21,12 +23,6 @@ local guigs_sleepers =
 	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"
 }
 
--- отсортировать отметки по системной координате
-local function sort_mark_by_coord(marks)
-	return mark_helper.sort_stable(marks, function(mark) 
-		return mark.prop.SysCoord 
-	end)
-end
 
 -- запросить у пользователя эпюру шпал
 local function ask_user_report_param()
@@ -64,12 +60,7 @@ local function check_sleeper_error(left, cur, right, ref_dist, MEK, angle_thresh
 		[1] = 2*40, -- "бетон",
 		[2] = 2*80, -- "дерево",
 	}
-	local defect_codes = 
-	{
-		[1] = 090004000375, -- "бетон",
-		[2] = 090004000370, -- "дерево",
-	}
-	
+
 	local cur_material = mark_helper.GetSleeperMeterial(cur)
 	local cur_angle = mark_helper.GetSleeperAngle(cur) or 0
 	local max_diff = diffs[cur_material] or 80
@@ -84,12 +75,16 @@ local function check_sleeper_error(left, cur, right, ref_dist, MEK, angle_thresh
 	--local dist_ok = check_distance(ref_dist, MEK, max_diff, dist_prev) and check_distance(ref_dist, MEK, max_diff, dist_next)
 	local dist_ok = check_distance(ref_dist, MEK, max_diff, dist_next)
 	if not dist_ok then
-		table.insert(ret_defects, defect_codes[cur_material])
+		if cur_material == 1 then -- "бетон",
+			table.insert(ret_defects, DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE)
+		elseif cur_material == 2 then -- "дерево",
+			table.insert(ret_defects, DEFECT_CODES.SLEEPER_DISTANCE_WOODEN)
+		end
 	end
 	
 	cur_angle = cur_angle * 180/3.14/1000
 	if math.abs(cur_angle) > angle_threshold then
-		table.insert(ret_defects, 90004000999)
+		table.insert(ret_defects, DEFECT_CODES.SLEEPER_ANGLE)
 	end
 	
 	printf("%9d %3d | %+8.1f  %+8.1f deg | %s", cur.prop.SysCoord, max_diff,  dist_next-ref_dist, cur_angle, table.concat(ret_defects, ','))
@@ -97,102 +92,22 @@ local function check_sleeper_error(left, cur, right, ref_dist, MEK, angle_thresh
 end
 
 -- сделать из отметки таблицу и подставновками
-local function make_result_row(pos, mark)
-	local material = mark_helper.GetSleeperMeterial(mark) or 0
-	local prop = mark.prop
-	local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
+local function make_result_row(mark)
+	local row = mark_helper.MakeCommonMarkTemaple(mark)
+	local material = mark_helper.GetSleeperMeterial(mark) 
 	
-	local row = {}
-	row.N = pos
-	row.SYS = prop.SysCoord
-	row.KM = km
-	row.M = m
-	row.MM = mm
-	row.PK = ''
-	row.PATH = sprintf('%d км %.1f м', km, m + mm/1000)
 	row.DEFECT_CODE = table.concat(mark.user.arr_defect_codes, ', ')
-	row.SLEEPER_MATERIAL = material == 1 and "ЖБШ" or "ДШ"
-	row.SLEEPER_DIST_PREV = mark.user.SLEEPER_DIST_PREV
-	row.SLEEPER_DIST_NEXT = mark.user.SLEEPER_DIST_NEXT
+	row.SLEEPER_MATERIAL = material and (material == 1 and "ЖБШ" or "ДШ") or ''
+	row.SLEEPER_DIST_PREV = mark.user.SLEEPER_DIST_PREV or ''
+	row.SLEEPER_DIST_NEXT = mark.user.SLEEPER_DIST_NEXT or ''
 	return row
 end
 
--- проход по таблице в сортированном порядке 
-local function sorted(tbl)
-	local keys = {}
-	for n, _ in pairs(tbl) do table.insert(keys, n) end
-	table.sort(keys)
-	local i = 0
-	return function()
-		i = i + 1
-		return keys[i], tbl[keys[i]]
-	end
-end
-
--- клонируем шаблонную строку нужное число раз, и вставляем данные
-local function apply_rows_to_excel(excel, marks, dlgProgress)
-	local dst_row_count = #marks
-	local data_range, user_range = excel:CloneTemplateRow(dst_row_count)
-	for line = 1, dst_row_count do 
-		local mark = marks[line]
-		local row_data = make_result_row(line, mark)
-			
-		local cell_LT = data_range.Cells(line, 1)
-		local cell_RB = data_range.Cells(line, data_range.Columns.count)
-		local row_range = user_range:Range(cell_LT, cell_RB)
-
-		excel:ReplaceTemplates(row_range, {row_data})
-		if not dlgProgress:step(line / dst_row_count, stuff.sprintf('Save %d / %d mark', line, dst_row_count)) then 
-			break
-		end
-	end
-end
-
--- добавить лист с доступными заменителями
-local function append_available_variable_list(excel, marks, max_marks_count)
-	local workbook = excel._workbook
-	
-	local worksheet = workbook.Sheets:Add(nil, excel._worksheet)
-	excel._worksheet:Activate()
-	worksheet.Name = 'Шаблоны'
-	local user_range = worksheet.UsedRange
-	
-	user_range.Columns(1).ColumnWidth = 50
-	user_range.Columns(2).ColumnWidth = 50
-	
-	local row = 1
-	for n,v in sorted(Passport) do
-		user_range.Cells(row, 1).Value2 = n
-		user_range.Cells(row, 2).Value2 = v
-		row = row + 1
-	end
-	
-	--if 1 then return 1 end
-	
-	user_range.Cells(row, 1).Value2 = '++++++++++++++++++++++++++++'
-	row = row + 1
-	
-	for i = 1, #marks do
-		if i > max_marks_count then break end
-		
-		local mark = marks[i]
-		local row_data = make_result_row(i, mark)
-		
-		for n,v in sorted(row_data) do
-			user_range.Cells(row, 1).Value2 = n
-			user_range.Cells(row, 2).Value2 = v
-			row = row + 1
-		end
-		
-		user_range.Cells(row, 1).Value2 = '-------------------------------'
-		row = row + 1
-	end
-end	
 
 local function make_report()
 	local template_path = Driver:GetAppPath() .. 'Scripts/ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ ШПАЛ.xlsm'
 	local marks = Driver:GetMarks{GUIDS=guigs_sleepers}
-	marks = sort_mark_by_coord(marks)
+	marks = mark_helper.sort_mark_by_coord(marks)
 	
 	if false then
 		marks = mark_helper.filter_marks(marks, function(mark) 
@@ -230,7 +145,7 @@ local function make_report()
 	
 	if #out_marks > 1000 then
 		local msg = sprintf('Найдено %d проблемных шпал, построение отчета может занять большое время, продолжить?', #out_marks)
-		local cont = iup.Alarm("Sleeper Report", msg, "Yes", "No")
+		local cont = iup.Alarm("Warning", msg, "Yes", "No")
 		if cont == 2 then
 			return
 		end
@@ -238,18 +153,15 @@ local function make_report()
 	
 	local excel = excel_helper(template_path, "В3 ШП", false)
 	excel:ApplyPassportValues(Passport)
-	
-	apply_rows_to_excel(excel, out_marks, dlgProgress)
-	
-	append_available_variable_list(excel, out_marks, 3)
-	
+	excel:ApplyRows(out_marks, make_result_row, dlgProgress)
+	excel:AppendTemaplateSheet(out_marks, make_result_row, 3)
 	excel:SaveAndShow()
 end
 
 
 local function sleepers_report_plot()
 	local marks = Driver:GetMarks{GUIDS=guigs_sleepers}
-	marks = sort_mark_by_coord(marks)
+	marks = mark_helper.sort_mark_by_coord(marks)
 	
 	local excel = luacom.CreateObject("Excel.Application")
 	assert(excel, "Error! Could not run EXCEL object!")
