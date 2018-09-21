@@ -715,6 +715,60 @@ local function MakeCommonMarkTemaple(mark)
 	return row
 end
 
+-- получить описания запусков распознавания
+local function GetRecognitionStartInfo()
+	local guids_recog_info = {'{1D5095ED-AF51-43C2-AA13-6F6C86302FB0}'}
+	local marks = Driver:GetMarks{ListType='all', GUIDS=guids_recog_info}
+	marks = sort_stable(marks, function(mark) return mark.prop.ID end)
+	
+	-- for i, mark in ipairs(marks) do print(i, mark.prop.ID, park.prop.SysCoord) end
+	
+	local infos  = {}
+	for _, mark in ipairs(marks) do
+		local desc = mark and mark.prop.Description
+		if desc and #desc > 0 then
+			local info = {}
+			for k, v in string.gmatch(desc, '([%w_]+)=([%w%.]+)') do
+				info[k] = v
+			end
+			table.insert(infos, info)
+		end
+	end
+	return infos
+end
+
+-- получить таблицу паспорта с доп параметрами
+local function GetExtPassport(psp)
+	psp = psp or Passport
+	
+	if not _ext_passport_table then
+		_ext_passport_table = {}
+		for n,v in pairs(psp) do
+			_ext_passport_table[n] = v 
+		end
+		
+		local data_format = '%Y-%m-%d %H:%M:%S'
+		_ext_passport_table.REPORT_DATE = os.date(data_format)
+		
+		local recog_info = GetRecognitionStartInfo()
+		if recog_info and #recog_info > 0 then
+			local info = recog_info[#recog_info]
+			
+			if info.RECOGNITION_START then 
+				_ext_passport_table.RECOGNITION_START = os.date(data_format, info.RECOGNITION_START)
+			end
+			
+			if info.RECOGNITION_DLL_CTIME then 
+				_ext_passport_table.RECOG_VERSION_DATE = os.date(data_format, info.RECOGNITION_DLL_CTIME)
+			end
+			
+			if info.RECOGNITION_DLL_VERSION then 
+				_ext_passport_table.RECOG_VESION = info.RECOGNITION_DLL_VERSION
+			end
+		end
+	end
+	return _ext_passport_table
+end
 
 -- =================== ЭКПОРТ ===================
 
@@ -733,6 +787,8 @@ return{
 	format_path_coord = format_path_coord,
 	GetMarkRailPos = GetMarkRailPos,
 	MakeCommonMarkTemaple = MakeCommonMarkTemaple,
+	GetRecognitionStartInfo = GetRecognitionStartInfo,
+	GetExtPassport = GetExtPassport,
 	
 	GetAllGapWidth = GetAllGapWidth,
 	GetGapWidth = GetGapWidth,
@@ -760,6 +816,5 @@ return{
 	GetSleeperParam = GetSleeperParam,
 	GetSleeperAngle = GetSleeperAngle,
 	GetSleeperMeterial = GetSleeperMeterial,
-	
-	
+
 }

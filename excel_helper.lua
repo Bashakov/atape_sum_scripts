@@ -56,7 +56,6 @@ local function CopyFile(src, dst)
 end
 
 local function CopyTemplate(template_path, sheet_name, dest_name)		-- скопировать файл шаблона в папку отчетов
-	
 	local file_name
 	if dest_name then
 		file_name = dest_name
@@ -325,7 +324,7 @@ excel_helper = OOP.class
 	end,
 	
 	-- добавить лист с доступными заменителями
-	AppendTemaplateSheet = function(self, marks, fn_get_templates_data, max_marks_count)
+	AppendTemplateSheet = function(self, psp, marks, fn_get_templates_data, max_marks_count)
 		max_marks_count = max_marks_count or 3
 		local workbook = self._workbook
 		
@@ -338,9 +337,13 @@ excel_helper = OOP.class
 		user_range.Columns(2).ColumnWidth = 50
 		
 		local row = 1
-		for n,v in sorted(Passport) do
+		for n, v in sorted(psp or {}) do
 			user_range.Cells(row, 1).Value2 = n
-			user_range.Cells(row, 2).Value2 = v
+			local cell = user_range.Cells(row, 2)
+			cell.NumberFormat = "@"
+			cell.HorizontalAlignment = -4131 --xlLeft
+			cell.Value2 = v
+				
 			row = row + 1
 		end
 		
@@ -356,7 +359,11 @@ excel_helper = OOP.class
 		
 			for n,v in sorted(row_data) do
 				user_range.Cells(row, 1).Value2 = n
-				user_range.Cells(row, 2).Value2 = v
+				local cell = user_range.Cells(row, 2)
+				cell.NumberFormat = "@"
+				cell.HorizontalAlignment = -4131 --xlLeft
+				cell.Value2 = v
+				
 				row = row + 1
 			end
 			

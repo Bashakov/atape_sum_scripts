@@ -29,7 +29,6 @@ local video_joints_juids =
 
 -- ============================================================================= 
 
-
 local function make_result_row(mark)
 	local row = mark_helper.MakeCommonMarkTemaple(mark)
 	row.DEFECT_CODE = table.concat(mark.user.arr_defect_codes, ', ')
@@ -70,11 +69,12 @@ local function report_WeldedBond()
 		end
 	end
 	
-	local excel = excel_helper(template_path, "В2 СТК", false)
+	local ext_psp = mark_helper.GetExtPassport(Passport)
 	
-	excel:ApplyPassportValues(Passport)
+	local excel = excel_helper(template_path, "В2 СТК", false)
+	excel:ApplyPassportValues(ext_psp)
 	excel:ApplyRows(out_marks, make_result_row, dlgProgress)
-	excel:AppendTemaplateSheet(out_marks, make_result_row, 3)
+	excel:AppendTemplateSheet(ext_psp, out_marks, make_result_row, 3)
 	excel:SaveAndShow()
 end	
 
@@ -85,7 +85,7 @@ end
 local function AppendReports(reports)
 	local sleppers_reports = 
 	{
-		{name = 'СТЫК|Определение наличия и состояния рельсовых соединителей',    	fn = report_WeldedBond, 		guids = video_joints_juids},
+		{name = 'Ведомость отступлений в содержании рельсовых стыков|Определение наличия и состояния приварных рельсовых соединителей',    	fn = report_WeldedBond, 		guids = video_joints_juids},
 	}
 
 	for _, report in ipairs(sleppers_reports) do

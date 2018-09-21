@@ -23,7 +23,6 @@ local guigs_sleepers =
 	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"
 }
 
-
 -- запросить у пользователя эпюру шпал
 local function ask_user_report_param()
 	local ok, sleeper_count, mek, angle_threshold = true, 1840, 4, 5.7
@@ -87,7 +86,7 @@ local function check_sleeper_error(left, cur, right, ref_dist, MEK, angle_thresh
 		table.insert(ret_defects, DEFECT_CODES.SLEEPER_ANGLE)
 	end
 	
-	printf("%9d %3d | %+8.1f  %+8.1f deg | %s", cur.prop.SysCoord, max_diff,  dist_next-ref_dist, cur_angle, table.concat(ret_defects, ','))
+	--printf("%9d %3d | %+8.1f  %+8.1f deg | %s", cur.prop.SysCoord, max_diff,  dist_next-ref_dist, cur_angle, table.concat(ret_defects, ','))
 	return ret_defects
 end
 
@@ -151,10 +150,12 @@ local function make_report()
 		end
 	end
 	
+	local ext_psp = mark_helper.GetExtPassport(Passport)
+	
 	local excel = excel_helper(template_path, "В3 ШП", false)
-	excel:ApplyPassportValues(Passport)
+	excel:ApplyPassportValues(ext_psp)
 	excel:ApplyRows(out_marks, make_result_row, dlgProgress)
-	excel:AppendTemaplateSheet(out_marks, make_result_row, 3)
+	excel:AppendTemplateSheet(ext_psp, out_marks, make_result_row, 3)
 	excel:SaveAndShow()
 end
 
@@ -259,8 +260,8 @@ end
 local function AppendReports(reports)
 	local sleppers_reports = 
 	{
-		{name = 'Шпалы|Эпюра',    	fn=make_report, 		guids=guigs_sleepers},
-		{name = 'Шпалы|График',		fn=sleepers_report_plot, 	guids=guigs_sleepers},
+		{name = 'Ведомость отступлений в содержании шпал|Эпюра и перпендикулярность шпал',    	fn=make_report, 		guids=guigs_sleepers},
+		{name = 'Ведомость отступлений в содержании шпал|график',		                        fn=sleepers_report_plot,guids=guigs_sleepers},		
 	}
 
 	for _, report in ipairs(sleppers_reports) do

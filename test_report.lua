@@ -4,6 +4,7 @@ require "luacom"
 local dump_path = 'C:\\1\\[494]_2017_06_08_12\\dump.lua'
 dofile(dump_path)
 
+
 os.sleep = function(sec)
 	socket.select(nil, nil, sec)
 end
@@ -104,4 +105,4 @@ Driver =
 dofile('sum_report.lua')
 --MakeReport("Шпалы|Эпюра")
 --MakeReport("Ведомость Коротких рубок")
-MakeReport("СТЫК|Определение наличия и состояния рельсовых соединителей")
+MakeReport("Ведомость отступлений в содержании рельсовых стыков|Определение наличия и состояния приварных рельсовых соединителей")
