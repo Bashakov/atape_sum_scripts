@@ -763,7 +763,9 @@ local function GetExtPassport(psp)
 			end
 			
 			if info.RECOGNITION_DLL_VERSION then 
-				_ext_passport_table.RECOG_VESION = info.RECOGNITION_DLL_VERSION
+				local ver = info.RECOGNITION_DLL_VERSION
+				_ext_passport_table.RECOG_VERSION = ver
+				_ext_passport_table.RECOG_VERSION_MAJOR = string.match(ver, '(%d+)%.')
 			end
 		end
 	end
