@@ -152,7 +152,7 @@ local column_rail_lr =
 		local rails_names = {
 			[-1]= 'Лв.', 
 			[0] = 'Оба',
-			[1] = 'Прв.'
+			[1] = 'Пр.'
 		}
 		return rails_names[rail_pos]
 	end,
@@ -392,7 +392,7 @@ local function make_column_surf_defect(col_name, attrib)
 	
 	return {
 		name = col_name, 
-		width = 60, 
+		width = 40, 
 		align = 'r', 
 		text = function(row)
 			local mark = work_marks_list[row]
@@ -408,6 +408,8 @@ end
 
 local column_surf_defect_type = make_column_surf_defect('Тип', 'SurfaceFault')
 local column_surf_defect_area = make_column_surf_defect('Плщ', 'SurfaceArea')
+local column_surf_defect_len = make_column_surf_defect('Длн', 'SurfaceLength')
+local column_surf_defect_wdh = make_column_surf_defect('Шрш', 'SurfaceWidth')
 
 local fishpalte_fault_str = 
 {
@@ -597,13 +599,13 @@ local column_sleeper_dist_next =
 
 local column_weldedbond_status = {
 	name = 'Статус.', 
-	width = 70, 
+	width = 90, 
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
 		local status = mark_helper.GetWeldedBondStatus(mark)
 		if not status then return '' end
-		return status == 0 and 'исправен' or 'неисправен'
+		return status == 0 and '  исправен' or 'НЕИСПРАВЕН'
 	end,
 	sorter = function(mark)
 		local status = mark_helper.GetWeldedBondStatus(mark)
@@ -718,7 +720,7 @@ local Filters =
 		end,
 	},
 	{
-		name = 'Соединители', 
+		name = 'Штепсельные соединители', 
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -735,7 +737,7 @@ local Filters =
 		end,
 	},
 	{
-		name = 'WeldedBond', 
+		name = 'Приварные соединители', 
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -757,6 +759,8 @@ local Filters =
 			column_rail,
 			column_surf_defect_type,
 			column_surf_defect_area,
+			column_surf_defect_len,
+			column_surf_defect_wdh,
 			column_recogn_video_channel,
 			}, 
 		GUIDS = recognition_surface_defects,
@@ -789,7 +793,7 @@ local Filters =
 		GUIDS = NPU_guids,
 	},
 	{
-		name = 'Шпалы',
+		name = 'Шпалы(эпюра,перпедикулярность)',
 		columns = {
 			column_num,
 			column_path_coord, 
