@@ -139,7 +139,9 @@ end
 
 local function make_filter_progress_fn(dlg)
 	return function(all, checked, accepted)
-		dlg:step(checked / all, string.format('Check %d / %d mark, accept %d', checked, all, accepted))
+		if checked % 20 == 0 then
+			dlg:step(checked / all, string.format('Check %d / %d mark, accept %d', checked, all, accepted))
+		end
 	end
 end
 
@@ -1422,15 +1424,39 @@ end
 
 -- отчет по неспецифицированным объектам
 local function report_surface_defects(params)
+	local res, user_width, user_lenght, user_area = iup.GetParam("Фильтрация дефектов", nil, 
+		"Ширина (мм): %s\n\z
+		Высота (мм): %s\n\z
+		Площадь (мм): %i\n",
+		'', '', 1000)
+	if not res then
+		return
+	end
+	
+	user_width = #user_width > 0 and tonumber(user_width)
+	user_lenght = #user_lenght > 0 and tonumber(user_lenght)
 	
 	local function filter_fn(mark)
 		local accept = table_find(surface_defects_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
+		local surf_prm = accept and mark_helper.GetSurfDefectPrm(mark)
 		
---		if accept and filter_mode ~= 1 then  -- если отметка еще подходит и нужно выбрать не все (только тефектные или только нормальные)
---			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
---			accept = valid_on_half and valid_on_half >= 2  		-- нормальные те, у которых как минимум 2 болта
---			if filter_mode == 2 then accept = not accept end	-- если нужны ненормальные, инвертируем
---		end
+		if surf_prm  then
+			-- https://bt.abisoft.spb.ru/view.php?id=251#c592
+			local mark_length = surf_prm.SurfaceWidth	
+			local mark_width = surf_prm.SurfaceLength
+			local mark_area = surf_prm.SurfaceArea
+			
+			if mark_length and mark_length >= 60 then
+				accept = true
+			else
+				accept =
+					(not user_width or (mark_width and mark_width >= user_width)) and
+					(not user_lenght or (mark_length and mark_length >= user_lenght)) and
+					(mark_area >= user_area)
+			end
+			print(user_width, user_lenght, user_area, '|', mark_width, mark_length,  mark_area,  '=', accept)
+		end
+		
 		return accept
 	end
 	
@@ -1444,7 +1470,11 @@ local function report_surface_defects(params)
 		iup.Message('Info', "Подходящих отметок не найдено")
 		return
 	end
-
+	
+	if true then
+		-- return 
+	end
+	
 	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
 	excel:ApplyPassportValues(Passport)
 	local data_range = excel:CloneTemplateRow(#marks)
@@ -1464,7 +1494,8 @@ local function report_surface_defects(params)
 		excel:InsertLink(data_range.Cells(line, 3), uri, sprintf("%.02f", m + mm/1000))
 		
 		local prm = mark_helper.GetSurfDefectPrm(mark)
-		data_range.Cells(line, 4).Value2 = sprintf('%d', prm.SurfaceArea)	 -- prm.SurfaceLength, prm.SurfaceWidth, 
+		--data_range.Cells(line, 4).Value2 = sprintf('%d (%s, %s)', prm.SurfaceArea, prm.SurfaceLength, prm.SurfaceWidth)
+		data_range.Cells(line, 4).Value2 = sprintf('%d', prm.SurfaceArea)
 		
 		insert_frame(excel, data_range, mark, line, 5)
 		
