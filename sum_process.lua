@@ -127,9 +127,9 @@ local function _get_video_recog_desc(mark, desc)
 	desc = desc .. sprintf('\n Видео канал [%s]', ChannelMask2videoChannels(mark.ChannelMask))
 
 	local gf = "" --1 and ' стык найден' or ' стык НЕ найден'
-	desc = desc .. sprintf('\nдостоверность : %d | %s\n', prop.VIDEOIDENTRLBLT, gf)
+	desc = desc .. sprintf('\nдостоверность : %d | %s\n', prop.VIDEOIDENTRLBLT or 0, gf)
 
-	local ar = parse_ActionResult(prop.RAWXMLDATA) -- convert XML to widths
+	local ar = prop.RAWXMLDATA and parse_ActionResult(prop.RAWXMLDATA) or {} -- convert XML to widths
 	local kvnrt = {
 		['CalcRailGap_User'] =  'пользователь',
 		['CalcRailGap_Head_Top'] =  'по пов.  катания',
