@@ -8,15 +8,15 @@ end
 
 require "luacom"
 
-
+local OOP = require 'OOP'
+local stuff = require 'stuff'
 local excel_helper = require 'excel_helper'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 local DEFECT_CODES = require 'report_defect_codes'
 
-
-function printf(s,...)  print(s:format(...)) end
-function sprintf(s,...) return s:format(...) end
+local printf = stuff.printf
+local sprintf = stuff.sprintf
 
 
 local video_joints_juids = 
@@ -32,6 +32,15 @@ local video_joints_juids =
 local template_name = 'ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ РЕЛЬСОВЫХ СТЫКОВ.xlsm'
 
 
+function MakeJointMarkRow(mark)
+	local row = mark_helper.MakeCommonMarkTemplate(mark)
+	row.SPEED_LIMIT = ''
+	row.DEFECT_CODE = ''
+	row.GAP_WIDTH = ''
+	row.BLINK_GAP_COUNT = ''
+	return row
+end
+
 local function report_WeldedBond()
 	local template_path = Driver:GetAppPath() .. 'Scripts/' .. template_name
 	
@@ -45,12 +54,12 @@ local function report_WeldedBond()
 		
 		local status = mark_helper.GetWeldedBondStatus(mark)
 		if status == 1 then  -- <PARAM name='ConnectorFault' value='1' value_='0-исправен, 1-неисправен'/>
-			local row = mark_helper.MakeCommonMarkTemplate(mark)
+			local row = MakeJointMarkRow(mark)
 			row.DEFECT_CODE = DEFECT_CODES.JOINT_WELDED_BOND_FAULT
 			table.insert(report_rows, row)
 		end
 		
-		if i % 10 == 0 and not dlgProgress:step(i / #marks, stuff.sprintf('Сканирование %d / %d отметок, найдено %d', i, #marks, #report_rows)) then 
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d отметок, найдено %d', i, #marks, #report_rows)) then 
 			return
 		end
 	end
@@ -90,7 +99,7 @@ local function report_joint_width()
 	for i, mark in ipairs(marks) do
 		local gap_width = mark_helper.GetGapWidth(mark)
 		if gap_width and gap_width > 24 then
-			local row = mark_helper.MakeCommonMarkTemplate(mark)
+			local row = MakeJointMarkRow(mark)
 			row.DEFECT_CODE = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH
 			row.GAP_WIDTH = gap_width
 			
@@ -103,7 +112,138 @@ local function report_joint_width()
 			table.insert(report_rows, row)
 		end
 		
-		if i % 10 == 0 and not dlgProgress:step(i / #marks, stuff.sprintf('Сканирование %d / %d отметок, найдено %d', i, #marks, #report_rows)) then 
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d отметок, найдено %d', i, #marks, #report_rows)) then 
+			return
+		end
+	end
+	
+	if #report_rows == 0 then
+		iup.Message('Info', "Подходящих отметок не найдено")
+		return
+	end
+	
+	if #report_rows > 1000 then
+		local msg = sprintf('Найдено %d отметок, построение отчета может занять большое время, продолжить?', #report_rows)
+		local cont = iup.Alarm("Warning", msg, "Yes", "No")
+		if cont == 2 then
+			return
+		end
+	end
+	
+	local ext_psp = mark_helper.GetExtPassport(Passport)
+	
+	local excel = excel_helper(template_path, "В2 СТК", false)
+	excel:ApplyPassportValues(ext_psp)
+	excel:ApplyRows(report_rows, nil, dlgProgress)
+	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
+	excel:SaveAndShow()
+
+end	
+
+
+local function scan_for_neigh_blind_joint(marks, dlg)
+	
+	local width_threshold = 3
+	
+	local RailData = OOP.class
+	{
+		ctor = function(self, groups)
+			self.prev_width = nil
+			self.prev_mark = nil
+			self.groups = groups
+			self.cur_group = {}
+		end,
+		
+		_push_group = function(self, prev_mark, cur_mark)
+			if #self.cur_group == 0 then
+				self.cur_group[1] = prev_mark
+			end
+			table.insert(self.cur_group, cur_mark)
+		end,
+		
+		close = function(self, prev_mark, cur_mark)
+			if #self.cur_group > 1 then
+				table.insert(self.groups, self.cur_group)
+			end
+			self.cur_group = {}
+		end,
+		
+		append = function(self, mark)
+			local width = mark_helper.GetGapWidth(mark) or 100000	
+			if self.prev_mark and self.prev_width <= width_threshold and width <= width_threshold then
+				self:_push_group(self.prev_mark, mark)
+			else 
+				self:close()
+			end
+			self.prev_mark = mark
+			self.prev_width = width
+		end,
+	}
+	
+	local groups = {}
+	local rails = {}
+	
+	marks = mark_helper.sort_mark_by_coord(marks)
+	for i, mark in ipairs(marks) do
+		local rm = mark.prop.RailMask
+		local r = rails[rm]
+		if not r then
+			r = RailData(groups)
+			rails[rm] = r
+		end
+		r:append(mark)
+		if dlg and i % 10 == 0 then
+			dlg:step(i / #marks, string.format('Поиск %d / %d', i, #marks))
+		end
+	end
+	
+	for _, r in pairs(rails) do
+		r:close()
+	end
+	
+	groups = mark_helper.sort_stable(groups, function(group)
+		local c = group[1].prop.SysCoord
+		return c
+	end)
+	
+--	for c,g in pairs(groups) do
+--		print(c)
+--		for _,m in ipairs(g) do
+--			print('\t', m.prop.ID, m.prop.SysCoord, m.prop.RailMask)
+--		end
+--	end
+	
+	return groups
+end
+
+
+local function report_neigh_blind_joint()
+	local template_path = Driver:GetAppPath() .. 'Scripts/' .. template_name
+	
+	local dlgProgress = luaiup_helper.ProgressDlg()
+	local marks = Driver:GetMarks{GUIDS=video_joints_juids}
+	local groups = scan_for_neigh_blind_joint(marks, dlgProgress)
+	
+--	if 1 then
+--		return
+--	end
+	
+	local report_rows = {}
+	for i, group in ipairs(groups) do
+		local first_mark = group[1]
+		local last_mark = group[#group]
+		
+		local length = last_mark.prop.SysCoord - first_mark.prop.SysCoord
+		local temperature = mark_helper.GetTemperature(first_mark)
+		
+		if 1 or length > 26000 then
+			local row = MakeJointMarkRow(first_mark)
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP
+			row.BLINK_GAP_COUNT = #group
+			table.insert(report_rows, row)
+		end
+
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Отработка %d / %d отметок, найдено %d', i, #groups, #report_rows)) then 
 			return
 		end
 	end
@@ -134,12 +274,13 @@ end
 -- ============================================================================= 
 
 
-
 local function AppendReports(reports)
 	local sleppers_reports = 
 	{
 		{name = 'Ведомость отступлений в содержании рельсовых стыков|Определение наличия и состояния приварных рельсовых соединителей',    	fn = report_WeldedBond, 		guids = video_joints_juids},
 		{name = 'Ведомость отступлений в содержании рельсовых стыков|Ширина стыкового зазора, мм',    										fn = report_joint_width, 		guids = video_joints_juids},
+		{name = 'Ведомость отступлений в содержании рельсовых стыков|Определение двух подряд и более нулевых зазоров',    					fn = report_neigh_blind_joint,	guids = video_joints_juids},
+		
 	}
 
 	for _, report in ipairs(sleppers_reports) do

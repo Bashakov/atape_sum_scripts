@@ -8,7 +8,6 @@ if iup then
  iup.SetGlobal('UTF8MODE', 1)
 end
 
--- OOP = require 'OOP'
 
 mark_helper = require 'sum_mark_helper'
 stuff = require 'stuff'
@@ -683,7 +682,7 @@ local function report_gaps(params)
 		end
 		marks = mark_helper.filter_marks(marks, filter_width_fn, make_filter_progress_fn(dlg))
 
-	elseif filter_mode == 4 then
+	elseif filter_mode == 4 then -- слепые подряд
 		local mark_ids = {}
 		local prev_gap_width = {}
 		

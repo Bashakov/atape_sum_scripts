@@ -585,12 +585,12 @@ local function sort_marks(marks, fn, inc, progress_callback)
 	end
 	local copy_res_time = os.clock()
 	-- print(inc, #marks, #tmp)
-	printf('fetch: %.2f,  sort = %.2f, copy_res = %.2f', fetch_time - start_time, sort_time-fetch_time, copy_res_time-sort_time)
-	print("mem before KB: ", collectgarbage("count"))
+	--printf('fetch: %.2f,  sort = %.2f, copy_res = %.2f', fetch_time - start_time, sort_time-fetch_time, copy_res_time-sort_time)
+	--print("mem before KB: ", collectgarbage("count"))
 	marks = nil
 	key = nil
 	collectgarbage()
-	print("mem after KB: ", collectgarbage("count"))
+	--print("mem after KB: ", collectgarbage("count"))
 	return tmp
 end
 
@@ -614,11 +614,7 @@ local function sort_stable(marks, fn, inc, progress_callback)
 	
 	for i = 1, #marks do
 		local mark = marks[i]
-		local key = fn(mark) or 0	-- создадим ключ (каждый ключ - массив), с сортируемой характеристикой
-		-- if type(key) == 'table' then
-			-- assert (#key == 1)
-			-- key = key[1] or 0
-		-- end
+		local key = fn(mark) or 0	-- создадим ключ, с сортируемой характеристикой
 		
 		local nms = key_nums[key]
 		if not nms then
@@ -652,14 +648,14 @@ local function sort_stable(marks, fn, inc, progress_callback)
 	end
 	local copy_res_time = os.clock()
 	-- print(inc, #marks, #tmp)
-	printf('fetch: %.2f,  sort = %.2f, rev = %.2f copy_res = %.2f', fetch_time - start_time, sort_time-fetch_time, rev_time-sort_time, copy_res_time-rev_time)
+	--printf('fetch: %.2f,  sort = %.2f, rev = %.2f copy_res = %.2f', fetch_time - start_time, sort_time-fetch_time, rev_time-sort_time, copy_res_time-rev_time)
 	
-	print("mem before KB: ", collectgarbage("count"))
+	--print("mem before KB: ", collectgarbage("count"))
 	marks = nil
 	key = nil
 	key_nums = nil
 	collectgarbage()
-	print("mem after KB: ", collectgarbage("count"))
+	--print("mem after KB: ", collectgarbage("count"))
 	return tmp
 end
 
@@ -689,7 +685,14 @@ local function GetMarkRailPos(mark)
 	return left_mask == rail_mask and 1 or -1
 end
 
-
+-- получить температуру у отметки
+local function GetTemperature(mark)
+	local prop = mark.prop
+	local r = bit32.band(prop.RailMask, 3)-1
+	local temperature = Driver:GetTemperature(r, prop.SysCoord)
+	return temperature and temperature.target
+end
+	
 -- создание таблицы подстановок с общими параметрами отметки
 local function MakeCommonMarkTemplate(mark)
 	local rails_names = {
@@ -698,8 +701,7 @@ local function MakeCommonMarkTemplate(mark)
 		[1] = 'прав.'}
 	local prop = mark.prop
 	local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-	local temperature = Driver:GetTemperature(bit32.band(prop.RailMask, 3)-1, prop.SysCoord)
-	temperature = temperature and temperature.target
+	local temperature = GetTemperature(mark)
 	
 	local row = {}
 	
@@ -712,9 +714,7 @@ local function MakeCommonMarkTemplate(mark)
 	row.RAIL_POS = GetMarkRailPos(mark)
 	row.RAIL_NAME = rails_names[row.RAIL_POS]
 	row.RAIL_TEMP = temperature and sprintf('%+.1f', temperature) or ''
-	row.SPEED_LIMIT = ''
-	row.DEFECT_CODE = ''
-	row.GAP_WIDTH = ''
+
 	return row
 end
 
@@ -793,6 +793,7 @@ return{
 	GetMarkRailPos = GetMarkRailPos,
 	MakeCommonMarkTemaple = MakeCommonMarkTemplate,
 	MakeCommonMarkTemplate = MakeCommonMarkTemplate,
+	GetTemperature = GetTemperature,
 	GetRecognitionStartInfo = GetRecognitionStartInfo,
 	GetExtPassport = GetExtPassport,
 	

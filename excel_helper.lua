@@ -317,7 +317,7 @@ excel_helper = OOP.class
 			local row_range = user_range:Range(cell_LT, cell_RB)
 
 			self:ReplaceTemplates(row_range, {row_data})
-			if dlgProgress and not dlgProgress:step(line / dst_row_count, stuff.sprintf('Save %d / %d mark', line, dst_row_count)) then 
+			if dlgProgress and not dlgProgress:step(line / dst_row_count, stuff.sprintf('Сохранение %d / %d', line, dst_row_count)) then 
 				break
 			end
 		end

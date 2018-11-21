@@ -97,12 +97,12 @@ Driver =
 	
 	GetFrame = function(self, channel, sys, params)
 		local path = string.format("c:\\out\\%s\\img\\%d_%d.jpg", Passport.NAME, sys, channel)
-		return  path
+		return path
 	end,
 }
 
 
-local name = 'Ведомость отступлений в содержании рельсовых стыков|Ширина стыкового зазора, мм'
+local name = 'Ведомость отступлений в содержании рельсовых стыков|Определение двух подряд и более нулевых зазоров'
 
 dofile('sum_report.lua')
 MakeReport(name)
