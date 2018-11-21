@@ -309,7 +309,7 @@ excel_helper = OOP.class
 		for line = 1, dst_row_count do 
 			local mark = marks[line]
 			
-			local row_data = fn_get_templates_data(mark)
+			local row_data = fn_get_templates_data and fn_get_templates_data(mark) or mark
 			row_data.N = line
 				
 			local cell_LT = data_range.Cells(line, 1)
@@ -354,7 +354,7 @@ excel_helper = OOP.class
 			if i > max_marks_count then break end
 			
 			local mark = marks[i]
-			local row_data = fn_get_templates_data(mark)
+			local row_data = fn_get_templates_data and fn_get_templates_data(mark) or mark
 			row_data.N = i
 		
 			for n,v in sorted(row_data) do

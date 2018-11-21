@@ -30,7 +30,7 @@ local video_joints_juids =
 -- ============================================================================= 
 
 local function make_result_row(mark)
-	local row = mark_helper.MakeCommonMarkTemaple(mark)
+	local row = mark_helper.MakeCommonMarkTemplate(mark)
 	row.DEFECT_CODE = table.concat(mark.user.arr_defect_codes, ', ')
 	return row
 end

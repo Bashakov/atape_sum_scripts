@@ -108,5 +108,24 @@ function stuff.table_find(tbl, val)
 	end
 end
 
+local function _table_merge(...)
+	local res = {}
+	
+	for _, item in ipairs{...} do
+		if type(item) == 'table' then
+			local v = _table_merge(table.unpack(item))
+			for _, i in ipairs(v) do
+				res[#res+1] = i
+			end
+		else
+			res[#res+1] = item
+		end
+	end
+
+	return res
+end
+
+-- создать таблицу из переданных аргументов, если аргумент таблица, то она распаковывается рекурсивно
+stuff.table_merge = _table_merge
 
 return stuff

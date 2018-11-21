@@ -92,7 +92,7 @@ end
 
 -- сделать из отметки таблицу и подставновками
 local function make_result_row(mark)
-	local row = mark_helper.MakeCommonMarkTemaple(mark)
+	local row = mark_helper.MakeCommonMarkTemplate(mark)
 	local material = mark_helper.GetSleeperMeterial(mark) 
 	
 	row.DEFECT_CODE = table.concat(mark.user.arr_defect_codes, ', ')

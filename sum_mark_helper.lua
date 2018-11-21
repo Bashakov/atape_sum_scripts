@@ -691,7 +691,7 @@ end
 
 
 -- создание таблицы подстановок с общими параметрами отметки
-local function MakeCommonMarkTemaple(mark)
+local function MakeCommonMarkTemplate(mark)
 	local rails_names = {
 		[-1]= 'лев.', 
 		[0] = 'оба',
@@ -788,7 +788,8 @@ return{
 	sort_mark_by_coord = sort_mark_by_coord,
 	format_path_coord = format_path_coord,
 	GetMarkRailPos = GetMarkRailPos,
-	MakeCommonMarkTemaple = MakeCommonMarkTemaple,
+	MakeCommonMarkTemaple = MakeCommonMarkTemplate,
+	MakeCommonMarkTemplate = MakeCommonMarkTemplate,
 	GetRecognitionStartInfo = GetRecognitionStartInfo,
 	GetExtPassport = GetExtPassport,
 	

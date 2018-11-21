@@ -1552,12 +1552,15 @@ local Report_Functions = {
 	--	{name=" коорд. cтыков (магн.) | 18_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=18, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
 }
 
+local report_rails = require 'sum_report_rails'
+report_rails.AppendReports(Report_Functions)
 
 local report_sleepers = require 'sum_report_sleepers'
 report_sleepers.AppendReports(Report_Functions)
 
 local report_joints = require 'sum_report_joints'
 report_joints.AppendReports(Report_Functions)
+
 
 
 -- ================================ EXPORT FUNCTIONS ================================= --
