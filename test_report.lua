@@ -121,29 +121,33 @@ Driver = OOP.class
 		if not sum_path then
 			sum_path = string.gsub(psp_path, '.xml', '.sum')
 		end
-		self.marks = read_sum_file(sum_path)
+		self._sum_path = sum_path
+		--self._marks = read_sum_file(self._sum_path)
 		
 		_G.Driver = self
 		_G.Passport = self._passport
 	end,
 	
 	GetMarks = function(self, filter)
-		if filter and filter.GUIDS then
-			local fg = {}
-			for _, g in ipairs(filter.GUIDS) do	
-				fg[g] = true 
-			end
+		local g = filter and filter.GUIDS
+		local marks = read_sum_file(self._sum_path, g)
+		return marks
+--		if filter and filter.GUIDS then
+--			local fg = {}
+--			for _, g in ipairs(filter.GUIDS) do	
+--				fg[g] = true 
+--			end
 
-			local res = {}
-			for _, m in ipairs(self.marks) do
-				if fg[m.prop.Guid] then
-					res[#res+1] = m
-				end
-			end
-			return res
-		else
-			return self.marks 
-		end
+--			local res = {}
+--			for _, m in ipairs(self.marks) do
+--				if fg[m.prop.Guid] then
+--					res[#res+1] = m
+--				end
+--			end
+--			return res
+--		else
+--			return self.marks 
+--		end
 	end,
 	
 	GetAppPath = function(self)
