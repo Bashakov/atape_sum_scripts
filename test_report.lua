@@ -1,15 +1,82 @@
-socket = require "socket"
 require "luacom"
+local sqlite3 = require "lsqlite3"
+local OOP = require "OOP"
 
-local dump_path = 'C:\\1\\[494]_2017_06_08_12\\dump.lua'
-dofile(dump_path)
+local function read_sum_file(file_path, guids)
+	local function format_guid(hex_guid)
+		-- print(hex_guid)
+		local m = table.pack(string.match(hex_guid, '\z
+			(%x%x)(%x%x)(%x%x)(%x%x)\z
+			(%x%x)(%x%x)\z
+			(%x%x)(%x%x)\z
+			(%x%x%x%x)\z
+			(%x%x%x%x%x%x%x%x%x%x%x%x)'))
+		assert(m.n == 10)
+		local s = string.format('{%s%s%s%s-%s%s-%s%s-%s-%s}', m[4], m[3], m[2], m[1], m[6], m[5], m[8], m[7], m[9], m[10])
+		-- print(s)
+		return s
+	end
+	
+	local db = sqlite3.open(file_path)
+	
+	local tids = nil
+	if guids then
+		local ids = {}
+		for tid, tg in db:urows('SELECT TYPEID, hex(GUID) FROM SumrkMarkTypeTable') do
+			tg = format_guid(tg)
+			for _, ig in ipairs(guids) do
+				if tg == ig then 
+					table.insert(ids, tid)
+					break
+				end
+			end
+		end
+		tids = table.concat(ids, ',')
+		-- print(tids)
+	end
+	
+	local str_stat = [[
+		SELECT 
+			m.MARKID as ID, hex(t.GUID) as Guid, m.SYSCOORD as SysCoord, m.LENGTH as Len, m.RAILMASK as RailMask, d.DESCRIPTION as Description
+		FROM SumrkMainTable as m
+		JOIN SumrkMarkTypeTable as t ON m.TYPEID = t.TYPEID
+		LEFT JOIN SumrkDescTable as d ON m.MARKID = d.MARKID
+		WHERE ( m.INNERFLAGS & 1) = 0 
+		]]
+	if tids then
+		str_stat = str_stat .. ' AND t.TYPEID in (' .. tids .. ') '
+	end
+	
+	local st = assert( db:prepare(str_stat) )
+	local marks = {}
+	while st:step() == sqlite3.ROW do
+		local prop = st:get_named_values()
+		prop.Guid = format_guid(prop.Guid)
+		local mark = {
+			prop = prop,
+			ext = {},
+		}
+		marks[mark.prop.ID] = mark
+	end
+	
+	for ext_name in db:urows('SELECT NAME FROM SumrkPropDescTable') do
+		--print(ext_name)
+		for markid, value in db:urows('SELECT * FROM SumrkXtndParamTable_' .. ext_name) do
+			if marks[markid] then
+				marks[markid].ext[ext_name] = value
+			end
+		end
+	end
 
-
-os.sleep = function(sec)
-	socket.select(nil, nil, sec)
+	local res = {}
+	for _, mark in pairs(marks) do
+		res[#res + 1] = mark
+	end
+	--print(#res)
+	return res
 end
 
-function Passport2Table(psp_path)						-- открыть xml паспорт и сохранить в таблицу его свойства
+local function psp2table(psp_path)						-- открыть xml паспорт и сохранить в таблицу его свойства
 	xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 	assert(xmlDom, 'can not create MSXML object')
 	assert(xmlDom:load(psp_path), "can not open xml file: " .. psp_path)
@@ -46,49 +113,49 @@ function Passport2Table(psp_path)						-- открыть xml паспорт и �
 end
 
 
--- Passport = Passport2Table('C:\\1\\[480]_2013_11_09_14\\[480]_2013_11_09_14.xml')
-Passport = data.Passport
-marks = data.marks
-
-local sys2path_coord = {}
-
-Driver = 
+Driver = OOP.class
 {
-	GetMarks = function(self, filter)
-		local fg
-		if filter and filter.GUIDS then
-			fg = {}
-			for _, g in ipairs(filter.GUIDS) do	fg[g] = true end
+	ctor = function(self, psp_path, sum_path)
+		self._passport = psp2table(psp_path)
+		
+		if not sum_path then
+			sum_path = string.gsub(psp_path, '.xml', '.sum')
 		end
-			
-		local res = {}
-		for _, m in ipairs(marks) do
-			local skip = false
-			local prop = m.prop
-			sys2path_coord[prop.SysCoord] = m.path
-			
-			if fg then
-				skip = skip or (fg and not fg[prop.Guid])
-			end
-			
-			if not skip then
-				res[#res+1] = m
-			end
-		end
-		return res
+		self.marks = read_sum_file(sum_path)
+		
+		_G.Driver = self
+		_G.Passport = self._passport
 	end,
 	
-	GetAppPath = function()
+	GetMarks = function(self, filter)
+		if filter and filter.GUIDS then
+			local fg = {}
+			for _, g in ipairs(filter.GUIDS) do	
+				fg[g] = true 
+			end
+
+			local res = {}
+			for _, m in ipairs(self.marks) do
+				if fg[m.prop.Guid] then
+					res[#res+1] = m
+				end
+			end
+			return res
+		else
+			return self.marks 
+		end
+	end,
+	
+	GetAppPath = function(self)
 		local cd = io.popen"cd":read'*l'
 		return cd:match('(.+\\)%S+')
 	end,
 	
 	GetPathCoord = function(self, sys)
-		t = sys2path_coord[sys] 
-		if t then 
-			return table.unpack(t)
-		end
-		return 0, 0, 0
+		local km = math.floor(sys / 1000000)
+		local m = math.floor(sys / 1000) % 1000
+		local mm = math.floor(sys) % 1000
+		return km, m, mm
 	end,
 	
 	GetTemperature = function(self, rail, sys)
@@ -99,11 +166,12 @@ Driver =
 		local path = string.format("c:\\out\\%s\\img\\%d_%d.jpg", Passport.NAME, sys, channel)
 		return path
 	end,
+
 }
 
+return Driver
 
-local name = 'Ведомость отступлений в содержании рельсовых стыков|Определение двух подряд и более нулевых зазоров'
 
-dofile('sum_report.lua')
-MakeReport(name)
+
+
 

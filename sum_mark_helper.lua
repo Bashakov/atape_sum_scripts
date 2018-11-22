@@ -669,7 +669,7 @@ end
 
 -- отсортировать отметки по системной координате
 local function sort_mark_by_coord(marks)
-	return mark_helper.sort_stable(marks, function(mark) 
+	return sort_stable(marks, function(mark) 
 		return mark.prop.SysCoord 
 	end)
 end
@@ -709,6 +709,8 @@ local function MakeCommonMarkTemplate(mark)
 	row.KM = km
 	row.M = m
 	row.MM = mm
+	row.M_MM1 = sprintf('%.1f', m + mm/1000)
+	row.M_MM2 = sprintf('%.2f', m + mm/1000)
 	row.PK = ''
 	row.PATH = sprintf('%d км %.1f м', km, m + mm/1000)
 	row.RAIL_POS = GetMarkRailPos(mark)
