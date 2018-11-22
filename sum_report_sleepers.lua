@@ -181,7 +181,11 @@ local function report_sleeper_angle()
 	SaveAndShow(report_rows, dlgProgress)
 end
 
-local function report_sleeper_angle()
+local function report_not_implement()
+	iup.Message('Error', "Отчет не реализован")
+end
+
+local function report_sleeper_angle1()
 	local dlgProgress = luaiup_helper.ProgressDlg()
 	local marks = GetMarks()
 	
@@ -278,9 +282,12 @@ local function AppendReports(reports)
 	
 	local sleppers_reports = 
 	{
-		{name = name_pref..'Эпюра и перпендикулярность шпал',    					fn=report_sleeper_dist, 			},
-		-- {name = name_pref..'график',		                       					fn=sleepers_report_plot,	},
-		{name = name_pref..'Перпендикулярность шпалы относительно оси пути, рад',	fn=report_sleeper_angle,	},
+				-- {name = name_pref..'график',		                       					fn=sleepers_report_plot,	},
+		{name = name_pref..'Отслеживание соблюдения эпюры шпал',    								fn=report_sleeper_dist, 			},
+		{name = name_pref..'Перпендикулярность шпалы относительно оси пути, рад',					fn=report_sleeper_angle,	},
+		{name = name_pref..'*Параметры и размеры дефектов шпал, мостовых и переводных брусьев, мм',	fn=report_not_implement,	},
+		{name = name_pref..'*Определение кустовой негодности шпал',									fn=report_not_implement,	},
+		{name = name_pref..'*Фиксация шпал с разворотом относительно своей оси',					fn=report_not_implement,	},
 	}
 
 	for _, report in ipairs(sleppers_reports) do

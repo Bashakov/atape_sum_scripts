@@ -387,7 +387,7 @@ local function AppendReports(reports)
 		{name = name_pref..'Определение наличия и состояния (надрыв, трещина, излом) накладок',			fn = report_fishplate,					},
 		{name = name_pref..'Определение наличия и состояния (ослаблен, раскручен, не типовой) стыковых болтов',		fn = report_missing_bolt,	},
 		{name = name_pref..'Определение наличия и состояния приварных рельсовых соединителей',    		fn = report_WeldedBond, 				},
-		{name = name_pref..'Определение наличия и видимых повреждений изоляции в изолирующих стыках',	fn = report_broken_insulation,			},
+		{name = name_pref..'*Определение наличия и видимых повреждений изоляции в изолирующих стыках',	fn = report_broken_insulation,			},
 	}
 
 	for _, report in ipairs(sleppers_reports) do
