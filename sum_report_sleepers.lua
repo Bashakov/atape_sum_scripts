@@ -171,7 +171,6 @@ local function report_sleeper_angle()
 		
 		if math.abs(cur_angle) > angle_threshold then
 			-- printf("%9d  %+8.1f\n", mark.prop.SysCoord, cur_angle)
-			
 			local row = MakeSleeperMarkRow(mark)
 			row.SLEEPER_ANGLE = cur_angle
 			row.DEFECT_CODE = DEFECT_CODES.SLEEPER_ANGLE
@@ -182,6 +181,38 @@ local function report_sleeper_angle()
 	SaveAndShow(report_rows, dlgProgress)
 end
 
+local function report_sleeper_angle()
+	local dlgProgress = luaiup_helper.ProgressDlg()
+	local marks = GetMarks()
+	
+	local ok, angle_threshold = true, 5.7
+	ok, angle_threshold  = iup.GetParam("Отчет оп шпалам", nil, "Разворот: %r\n", angle_threshold)
+	if not ok then	
+		return
+	end
+	
+	local report_rows = {}
+	
+	for i, mark in ipairs(marks) do
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, stuff.sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then 
+			return
+		end
+
+		local cur_angle = mark_helper.GetSleeperAngle(mark) or 0
+		cur_angle = cur_angle * 180/3.14/1000
+		
+		if math.abs(cur_angle) > angle_threshold then
+			-- printf("%9d  %+8.1f\n", mark.prop.SysCoord, cur_angle)
+			
+			local row = MakeSleeperMarkRow(mark)
+			row.SLEEPER_ANGLE = cur_angle
+			row.DEFECT_CODE = DEFECT_CODES.SLEEPER_ANGLE
+			table.insert(report_rows, row)
+		end
+	end
+	
+	SaveAndShow(report_rows, dlgProgress)
+end
 
 local function sleepers_report_plot()
 	local marks = Driver:GetMarks{GUIDS=guigs_sleepers}
