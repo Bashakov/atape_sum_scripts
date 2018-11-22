@@ -244,6 +244,7 @@ end
 
 
 local function report_fishplate()
+
 	local dlgProgress = luaiup_helper.ProgressDlg()
 	local marks = GetMarks()
 	
@@ -257,12 +258,23 @@ local function report_fishplate()
 --			[4] = 'изл.',
 --		}
 
-		local fishpalte_fault = mark_helper.GetFishplateState(mark)
+--[[ Дмитрий 14:23
+	Закрытие движения при изломе накладки. 
+	Замечание при трещине одной накладки.
+	40 км/ч при трещине двух накладок.
+]]
+		local fishpalte_fault, fishpalte_fault_cnt = mark_helper.GetFishplateState(mark)
 		if fishpalte_fault and fishpalte_fault > 0 then 
 			local row = MakeJointMarkRow(mark)
 			row.DEFECT_CODE = DEFECT_CODES.JOINT_FISHPLATE_DEFECT
 			if fishpalte_fault == 4 then
-				row.SPEED_LIMIT = 'Движение закрывается' 	
+				row.SPEED_LIMIT = 'Движение закрывается'
+			elseif fishpalte_fault == 3 then
+				if fishpalte_fault_cnt > 1 then
+					row.SPEED_LIMIT = '40'
+				else
+					row.SPEED_LIMIT = 'Замечание'
+				end
 			end
 			table.insert(report_rows, row)
 		end
@@ -389,7 +401,7 @@ if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	report_missing_bolt()
+	report_fishplate()
 end
 
 

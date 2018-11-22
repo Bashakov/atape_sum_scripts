@@ -300,7 +300,7 @@ end
 
 local function GetFishplateState(mark)
 	local res = -1
-	
+	local cnt = 0
 	local ext = mark.ext
 	if ext and ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
 	
@@ -311,13 +311,15 @@ local function GetFishplateState(mark)
 			/PARAM[@name="Result" and @value="main"]\z
 			/PARAM[@name="FishplateState"]\z
 			/PARAM[@name="FishplateFault" and @value]/@value'
-
+		
+		
 		for nodeFault in SelectNodes(xmlDom, req) do
 			local fault = tonumber(nodeFault.nodeValue)
 			res = math.max(res, fault)
+			cnt = cnt + 1
 		end
 	end
-	return res
+	return res, cnt
 end
 
 -- =================== Скрепления ===================
