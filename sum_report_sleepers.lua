@@ -8,36 +8,23 @@ end
 
 require "luacom"
 
-
+local stuff = require 'stuff'
 local excel_helper = require 'excel_helper'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 local DEFECT_CODES = require 'report_defect_codes'
 
-
-function printf(s,...)  print(s:format(...)) end
-function sprintf(s,...) return s:format(...) end
+local printf = stuff.printf
+local sprintf = stuff.sprintf
 
 local guigs_sleepers = 
 {
 	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"
 }
 
--- запросить у пользователя эпюру шпал
-local function ask_user_report_param()
-	local ok, sleeper_count, mek, angle_threshold = true, 1840, 4, 5.7
-	if true then -- показывать ли диалог
-		ok, sleeper_count, mek, angle_threshold  = iup.GetParam("Отчет оп шпалам", nil, 
-			"Эпюра шпал: %i\n\z
-			МКЭ: %i\n\z
-			Разворот: %r\n\z", 
-			sleeper_count, mek, angle_threshold)
-	end
-	if not ok then	
-		return -1
-	end
-	return 1000000 / sleeper_count, mek, angle_threshold
-end
+-- =================================================================== 
+
+
 
 local function check_distance(ref_dist, MEK, max_diff, cur_dist)
 	if cur_dist < 200 then
@@ -52,98 +39,36 @@ local function check_distance(ref_dist, MEK, max_diff, cur_dist)
 end
 
 
--- проверить список из 3х отметок шпал, если у средней проблемы, добавить ее в выходной список
-local function check_sleeper_error(left, cur, right, ref_dist, MEK, angle_threshold)
-	local diffs = 
-	{
-		[1] = 2*40, -- "бетон",
-		[2] = 2*80, -- "дерево",
-	}
-
-	local cur_material = mark_helper.GetSleeperMeterial(cur)
-	local cur_angle = mark_helper.GetSleeperAngle(cur) or 0
-	local max_diff = diffs[cur_material] or 80
-	
-	local dist_prev = cur.prop.SysCoord - left.prop.SysCoord 
-	local dist_next = right.prop.SysCoord - cur.prop.SysCoord 
-	cur.user.SLEEPER_DIST_PREV = dist_prev
-	cur.user.SLEEPER_DIST_NEXT = dist_next
-	
-	local ret_defects = {}
-	
-	--local dist_ok = check_distance(ref_dist, MEK, max_diff, dist_prev) and check_distance(ref_dist, MEK, max_diff, dist_next)
-	local dist_ok = check_distance(ref_dist, MEK, max_diff, dist_next)
-	if not dist_ok then
-		if cur_material == 1 then -- "бетон",
-			table.insert(ret_defects, DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE)
-		elseif cur_material == 2 then -- "дерево",
-			table.insert(ret_defects, DEFECT_CODES.SLEEPER_DISTANCE_WOODEN)
-		end
-	end
-	
-	cur_angle = cur_angle * 180/3.14/1000
-	if math.abs(cur_angle) > angle_threshold then
-		table.insert(ret_defects, DEFECT_CODES.SLEEPER_ANGLE)
-	end
-	
-	--printf("%9d %3d | %+8.1f  %+8.1f deg | %s", cur.prop.SysCoord, max_diff,  dist_next-ref_dist, cur_angle, table.concat(ret_defects, ','))
-	return ret_defects
-end
-
 -- сделать из отметки таблицу и подставновками
-local function make_result_row(mark)
+local function MakeSleeperMarkRow(mark)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
 	local material = mark_helper.GetSleeperMeterial(mark) 
 	
-	row.DEFECT_CODE = table.concat(mark.user.arr_defect_codes, ', ')
 	row.SLEEPER_MATERIAL = material and (material == 1 and "ЖБШ" or "ДШ") or ''
-	row.SLEEPER_DIST_PREV = mark.user.SLEEPER_DIST_PREV or ''
-	row.SLEEPER_DIST_NEXT = mark.user.SLEEPER_DIST_NEXT or ''
+	row.DEFECT_CODE = ''
+	row.SLEEPER_ANGLE = ''
+	row.SLEEPER_DIST = ''
+	row.SPEED_LIMIT = ''
+	
 	return row
 end
 
-
-local function make_report()
-	local template_path = Driver:GetAppPath() .. 'Scripts/ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ ШПАЛ.xlsm'
+local function GetMarks()
 	local marks = Driver:GetMarks{GUIDS=guigs_sleepers}
 	marks = mark_helper.sort_mark_by_coord(marks)
+	return marks
+end
+
+local function SaveAndShow(report_rows, dlgProgress)
+	local template_path = Driver:GetAppPath() .. 'Scripts/ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ ШПАЛ.xlsm'
 	
-	if false then
-		marks = mark_helper.filter_marks(marks, function(mark) 
-			return bit32.btest(mark.prop.RailMask, 0x01)
-		end)
-	end
-	
-	if #marks  < 3 then
+	if #report_rows == 0 then
+		iup.Message('Info', "Подходящих отметок не найдено")
 		return
 	end
 	
-	local ref_dist, MEK, angle_threshold = ask_user_report_param()
-	if ref_dist < 0 then
-		return
-	end
-		
-	local dlgProgress = luaiup_helper.ProgressDlg()
-	
-	local out_marks = {}
-	local i = 0
-	for left, cur, right in mark_helper.enum_group(marks, 3) do
-		i = i + 1
-		if i % 10 == 0 and not dlgProgress:step(i / #marks, stuff.sprintf('Check %d / %d mark found %d mark', i, #marks, #out_marks)) then 
-			return
-		end
-		
-		local arr_defect_codes = check_sleeper_error(left, cur, right, ref_dist, MEK, angle_threshold)
-		if #arr_defect_codes > 0 then
-			cur.user.arr_defect_codes = arr_defect_codes
-			table.insert(out_marks, cur)
-			
-			--if #out_marks > 10 then	break end
-		end
-	end
-	
-	if #out_marks > 1000 then
-		local msg = sprintf('Найдено %d проблемных шпал, построение отчета может занять большое время, продолжить?', #out_marks)
+	if #report_rows > 1000 then
+		local msg = sprintf('Найдено %d проблемных шпал, построение отчета может занять большое время, продолжить?', #report_rows)
 		local cont = iup.Alarm("Warning", msg, "Yes", "No")
 		if cont == 2 then
 			return
@@ -154,9 +79,107 @@ local function make_report()
 	
 	local excel = excel_helper(template_path, "В3 ШП", false)
 	excel:ApplyPassportValues(ext_psp)
-	excel:ApplyRows(out_marks, make_result_row, dlgProgress)
-	excel:AppendTemplateSheet(ext_psp, out_marks, make_result_row, 3)
+	excel:ApplyRows(report_rows, nil, dlgProgress)
+	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
 	excel:SaveAndShow()
+end
+
+-- ==========================================================================
+
+local function report_sleeper_dist()
+	local dlgProgress = luaiup_helper.ProgressDlg()
+	local marks = GetMarks()
+	
+	if #marks  < 3 then
+		return
+	end
+	
+	local ok, sleeper_count, MEK = true, 1840, 4
+	if true then -- показывать ли диалог
+		ok, sleeper_count, MEK  = iup.GetParam("Отчет оп шпалам", nil, 
+			"Эпюра шпал: %i\n\z
+			МКЭ: %i\n", 
+			sleeper_count, MEK)
+	end
+	if not ok then	
+		return
+	end
+	local ref_dist = 1000000 / sleeper_count
+	
+	local material_diffs = 
+	{
+		[1] = 2*40, -- "бетон",
+		[2] = 2*80, -- "дерево",
+	}
+	
+	local report_rows = {}
+	local i = 0
+	for left, cur, right in mark_helper.enum_group(marks, 3) do
+		i = i + 1
+		
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, stuff.sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then 
+			return
+		end
+
+		local cur_material = mark_helper.GetSleeperMeterial(cur)
+		local max_diff = material_diffs[cur_material] or 80
+	
+		local dist_prev = cur.prop.SysCoord - left.prop.SysCoord 
+		local dist_next = right.prop.SysCoord - cur.prop.SysCoord 
+		
+		local dist_ok = check_distance(ref_dist, MEK, max_diff, dist_next)
+		
+		--printf("%s | %9d %3d | %+8.1f\n", dist_ok and '    ' or '!!!!', cur.prop.SysCoord, max_diff,  dist_next-ref_dist)
+		
+		if not dist_ok then
+			local row = MakeSleeperMarkRow(cur)
+			row.SLEEPER_DIST = dist_next
+		
+			if cur_material == 1 then -- "бетон",
+				row.DEFECT_CODE = DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE
+			elseif cur_material == 2 then -- "дерево",
+				row.DEFECT_CODE = DEFECT_CODES.SLEEPER_DISTANCE_WOODEN
+			end
+			
+			table.insert(report_rows, row)
+		end
+	end
+	
+	SaveAndShow(report_rows, dlgProgress)
+end
+
+
+local function report_sleeper_angle()
+	local dlgProgress = luaiup_helper.ProgressDlg()
+	local marks = GetMarks()
+	
+	local ok, angle_threshold = true, 5.7
+	ok, angle_threshold  = iup.GetParam("Отчет оп шпалам", nil, "Разворот: %r\n", angle_threshold)
+	if not ok then	
+		return
+	end
+	
+	local report_rows = {}
+	
+	for i, mark in ipairs(marks) do
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, stuff.sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then 
+			return
+		end
+
+		local cur_angle = mark_helper.GetSleeperAngle(mark) or 0
+		cur_angle = cur_angle * 180/3.14/1000
+		
+		if math.abs(cur_angle) > angle_threshold then
+			-- printf("%9d  %+8.1f\n", mark.prop.SysCoord, cur_angle)
+			
+			local row = MakeSleeperMarkRow(mark)
+			row.SLEEPER_ANGLE = cur_angle
+			row.DEFECT_CODE = DEFECT_CODES.SLEEPER_ANGLE
+			table.insert(report_rows, row)
+		end
+	end
+	
+	SaveAndShow(report_rows, dlgProgress)
 end
 
 
@@ -171,70 +194,35 @@ local function sleepers_report_plot()
 
 	local worksheet = nil
 	
-	if false then
-		local dlgProgress = luaiup_helper.ProgressDlg()
+	
+	local fn = sprintf("%s\\sleepers_%s.csv", os.getenv("TEMP"), os.date('%y%m%d%H%M%S'))
+	local fo = io.open(fn, 'w+')
+	local prev = nil
+	for i = 1, #marks do
+		local mark = marks[i]
+		local prop = mark.prop
 		
-		local workbooks = excel.Workbooks
-		workbooks:Add()
-		local workbook = workbooks(1)
-		worksheet = workbook.Sheets(1)
-		-- worksheet.Name = 'Разворот'
+		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
+		local path = sprintf('%d km %5.1f m', km, m + mm/1000)
 		
-		local prev = nil
-		for i = 1, #marks do
-	--		if i > 100 then
-	--			break
-	--		end
-			local mark = marks[i]
-			local prop = mark.prop
-			
-			local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-			local path = sprintf('%d км %5.1f м', km, m + mm/1000)
-			
-			local angle = mark_helper.GetSleeperAngle(mark) or 0
-			angle = angle * 180/3.14/1000
-			
-			worksheet.Cells(i, 1).Value2 = i
-			worksheet.Cells(i, 2).Value2 = prop.SysCoord
-			worksheet.Cells(i, 3).Value2 = path
-			worksheet.Cells(i, 4).Value2 = angle
-			worksheet.Cells(i, 5).Value2 = prev and prop.SysCoord-prev or 0
-			
-			prev = prop.SysCoord
-			if i % 30 == 0 and not dlgProgress:step(i / #marks, stuff.sprintf('out %d / %d mark', i, #marks)) then 
-				break
-			end
-		end
-	else
-		local fn = sprintf("%s\\sleepers_%s.csv", os.getenv("TEMP"), os.date('%y%m%d%H%M%S'))
-		local fo = io.open(fn, 'w+')
-		local prev = nil
-		for i = 1, #marks do
-			local mark = marks[i]
-			local prop = mark.prop
-			
-			local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-			local path = sprintf('%d km %5.1f m', km, m + mm/1000)
-			
-			local angle = mark_helper.GetSleeperAngle(mark) or 0
-			--angle = angle * 180/3.14/1000
-			
-			local row = {
-				i, 
-				prop.SysCoord,
-				path,
-				angle,
-				prev and prop.SysCoord-prev or 0
-			}
-			fo:write(table.concat(row, ';') .. '\n')
-			
-			prev = prop.SysCoord
-		end
-		fo:close()
+		local angle = mark_helper.GetSleeperAngle(mark) or 0
+		--angle = angle * 180/3.14/1000
 		
-		local workbook = excel.Workbooks:Open(fn)
-		worksheet = workbook.Sheets(1)
+		local row = {
+			i, 
+			prop.SysCoord,
+			path,
+			angle,
+			prev and prop.SysCoord-prev or 0
+		}
+		fo:write(table.concat(row, ';') .. '\n')
+		
+		prev = prop.SysCoord
 	end
+	fo:close()
+		
+	local workbook = excel.Workbooks:Open(fn)
+	worksheet = workbook.Sheets(1)
 
 	excel.visible = true
 	
@@ -244,31 +232,40 @@ local function sleepers_report_plot()
     chart:SetSourceData(worksheet:Range("D:D"))
 	chart:SeriesCollection(1).XValues = worksheet:Range("C:C")
 	
-	
 	shape = worksheet.Shapes:AddChart2(1, 4, 250, 260, 800, 250)
 	chart = shape.Chart
 	chart.ChartTitle.Text = "Расстояние"
     chart:SetSourceData(worksheet:Range("E:E"))
 	chart:SeriesCollection(1).XValues = worksheet:Range("C:C")
     chart:Axes(2).MaximumScale = 1000
-	
 end
-
 
 -- ============================================================================= 
 
 local function AppendReports(reports)
+	local name_pref = 'Ведомость отступлений в содержании шпал|'
+	
 	local sleppers_reports = 
 	{
-		{name = 'Ведомость отступлений в содержании шпал|Эпюра и перпендикулярность шпал',    	fn=make_report, 		guids=guigs_sleepers},
-		{name = 'Ведомость отступлений в содержании шпал|график',		                        fn=sleepers_report_plot,guids=guigs_sleepers},		
+		{name = name_pref..'Эпюра и перпендикулярность шпал',    					fn=report_sleeper_dist, 			},
+		-- {name = name_pref..'график',		                       					fn=sleepers_report_plot,	},
+		{name = name_pref..'Перпендикулярность шпалы относительно оси пути, рад',	fn=report_sleeper_angle,	},
 	}
 
 	for _, report in ipairs(sleppers_reports) do
+		report.guids=guigs_sleepers
 		table.insert(reports, report)
 	end
 end
 
+
+-- тестирование
+if not ATAPE then
+	test_report  = require('test_report')
+	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	
+	report_sleeper_angle()
+end
 
 return {
 	AppendReports = AppendReports,
