@@ -152,29 +152,6 @@ end
 
 -- ============================================================================= 
 
-local function report_WeldedBond()
-	local dlgProgress = luaiup_helper.ProgressDlg()
-	local marks = GetMarks()
-	
-	local report_rows = {}
-	for i, mark in ipairs(marks) do
-		
-		local status = mark_helper.GetWeldedBondStatus(mark)
-		if status == 1 then  -- <PARAM name='ConnectorFault' value='1' value_='0-исправен, 1-неисправен'/>
-			local row = MakeJointMarkRow(mark)
-			row.DEFECT_CODE = DEFECT_CODES.JOINT_WELDED_BOND_FAULT
-			table.insert(report_rows, row)
-		end
-		
-		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d отметок, найдено %d', i, #marks, #report_rows)) then 
-			return
-		end
-	end
-	
-	SaveAndShow(report_rows, dlgProgress)
-end	
-
-
 local function report_joint_width()
 	local dlgProgress = luaiup_helper.ProgressDlg()
 	local marks = GetMarks()
@@ -328,6 +305,62 @@ local function report_missing_bolt()
 	
 	SaveAndShow(report_rows, dlgProgress)
 end
+
+
+local function report_WeldedBond()
+	local dlgProgress = luaiup_helper.ProgressDlg()
+	local marks = GetMarks()
+	
+	local report_rows = {}
+	for i, mark in ipairs(marks) do
+		
+		local status = mark_helper.GetWeldedBondStatus(mark)
+		if status == 1 then  -- <PARAM name='ConnectorFault' value='1' value_='0-исправен, 1-неисправен'/>
+			local row = MakeJointMarkRow(mark)
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_WELDED_BOND_FAULT
+			table.insert(report_rows, row)
+		end
+		
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d отметок, найдено %d', i, #marks, #report_rows)) then 
+			return
+		end
+	end
+	
+	SaveAndShow(report_rows, dlgProgress)
+end	
+
+local function report_broken_insulation()
+	iup.Message('Error', "Отчет не реализован")
+		
+--	local dlgProgress = luaiup_helper.ProgressDlg()
+--	local marks = GetMarks()
+	
+--	local report_rows = {}
+--	for i, mark in ipairs(marks) do
+	
+--		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
+--		if valid_on_half and valid_on_half < 2 then
+--			local row = MakeJointMarkRow(mark)
+--			row.DEFECT_CODE = DEFECT_CODES.JOINT_MISSING_BOLT
+			
+--			if valid_on_half == 1 then
+--				row.SPEED_LIMIT = '2'
+--			elseif valid_on_half == 0 then	
+--				row.SPEED_LIMIT = 'Закрытие движения'
+--			else
+--				row.SPEED_LIMIT = '??'
+--			end
+--			table.insert(report_rows, row)
+--		end
+		
+--		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then 
+--			return
+--		end
+--	end
+	
+--	SaveAndShow(report_rows, dlgProgress)
+end
+
 -- ============================================================================= 
 
 
@@ -336,11 +369,13 @@ local function AppendReports(reports)
 	
 	local sleppers_reports = 
 	{
-		{name = name_pref..'Определение наличия и состояния приварных рельсовых соединителей',    	fn = report_WeldedBond, 		},
-		{name = name_pref..'Ширина стыкового зазора, мм',    										fn = report_joint_width, 		},
-		{name = name_pref..'Определение двух подряд и более нулевых зазоров',    					fn = report_neigh_blind_joint,	},
-		{name = name_pref..'Горизонтальные ступеньки в стыках, мм',    								fn = report_joint_step,			},
-		{name = name_pref..'Определение наличия и состояния (надрыв, трещина, излом) накладок',		fn = report_fishplate,			},
+		{name = name_pref..'Ширина стыкового зазора, мм',    											fn = report_joint_width, 				},
+		{name = name_pref..'Определение двух подряд и более нулевых зазоров',    						fn = report_neigh_blind_joint,			},
+		{name = name_pref..'Горизонтальные ступеньки в стыках, мм',    									fn = report_joint_step,					},
+		{name = name_pref..'Определение наличия и состояния (надрыв, трещина, излом) накладок',			fn = report_fishplate,					},
+		{name = name_pref..'Определение наличия и состояния (ослаблен, раскручен, не типовой) стыковых болтов',		fn = report_missing_bolt,	},
+		{name = name_pref..'Определение наличия и состояния приварных рельсовых соединителей',    		fn = report_WeldedBond, 				},
+		{name = name_pref..'Определение наличия и видимых повреждений изоляции в изолирующих стыках',	fn = report_broken_insulation,			},
 	}
 
 	for _, report in ipairs(sleppers_reports) do

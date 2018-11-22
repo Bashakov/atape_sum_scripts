@@ -358,7 +358,6 @@ excel_helper = OOP.class
 			row_data.N = i
 		
 			for n,v in sorted(row_data) do
-				-- print(n, v)
 				user_range.Cells(row, 1).Value2 = n
 				local cell = user_range.Cells(row, 2)
 				cell.NumberFormat = "@"
