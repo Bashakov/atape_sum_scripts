@@ -36,6 +36,34 @@ local function get_template_path()
 	return template_path
 end
 
+local function GetMarks()
+	local marks = Driver:GetMarks{GUIDS=video_joints_juids}
+	marks = mark_helper.sort_mark_by_coord(marks)
+	return marks
+end
+
+local function SaveAndShow(report_rows, dlgProgress)
+	if #report_rows == 0 then
+		iup.Message('Info', "Подходящих отметок не найдено")
+		return
+	end
+	
+	if #report_rows > 1000 then
+		local msg = sprintf('Найдено %d проблемных стыков, построение отчета может занять большое время, продолжить?', #report_rows)
+		local cont = iup.Alarm("Warning", msg, "Yes", "No")
+		if cont == 2 then
+			return
+		end
+	end
+	
+	local template_path = get_template_path()
+	local ext_psp = mark_helper.GetExtPassport(Passport)
+	local excel = excel_helper(template_path, "В2 СТК", false)
+	excel:ApplyPassportValues(ext_psp)
+	excel:ApplyRows(report_rows, nil, dlgProgress)
+	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
+	excel:SaveAndShow()
+end
 
 local function MakeJointMarkRow(mark)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
@@ -125,12 +153,8 @@ end
 -- ============================================================================= 
 
 local function report_WeldedBond()
-	local template_path = get_template_path()
-	
-	local marks = Driver:GetMarks{GUIDS=video_joints_juids}
-	marks = mark_helper.sort_mark_by_coord(marks)
-	
 	local dlgProgress = luaiup_helper.ProgressDlg()
+	local marks = GetMarks()
 	
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
@@ -147,36 +171,13 @@ local function report_WeldedBond()
 		end
 	end
 	
-	if #report_rows == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-	
-	if #report_rows > 1000 then
-		local msg = sprintf('Найдено %d проблемных стыков, построение отчета может занять большое время, продолжить?', #report_rows)
-		local cont = iup.Alarm("Warning", msg, "Yes", "No")
-		if cont == 2 then
-			return
-		end
-	end
-	
-	local ext_psp = mark_helper.GetExtPassport(Passport)
-	
-	local excel = excel_helper(template_path, "В2 СТК", false)
-	excel:ApplyPassportValues(ext_psp)
-	excel:ApplyRows(report_rows, nil, dlgProgress)
-	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
-	excel:SaveAndShow()
+	SaveAndShow(report_rows, dlgProgress)
 end	
 
 
 local function report_joint_width()
-	local template_path = get_template_path()
-	
-	local marks = Driver:GetMarks{GUIDS=video_joints_juids}
-	marks = mark_helper.sort_mark_by_coord(marks)
-	
 	local dlgProgress = luaiup_helper.ProgressDlg()
+	local marks = GetMarks()
 	
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
@@ -200,34 +201,13 @@ local function report_joint_width()
 		end
 	end
 	
-	if #report_rows == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-	
-	if #report_rows > 1000 then
-		local msg = sprintf('Найдено %d отметок, построение отчета может занять большое время, продолжить?', #report_rows)
-		local cont = iup.Alarm("Warning", msg, "Yes", "No")
-		if cont == 2 then
-			return
-		end
-	end
-	
-	local ext_psp = mark_helper.GetExtPassport(Passport)
-	
-	local excel = excel_helper(template_path, "В2 СТК", false)
-	excel:ApplyPassportValues(ext_psp)
-	excel:ApplyRows(report_rows, nil, dlgProgress)
-	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
-	excel:SaveAndShow()
+	SaveAndShow(report_rows, dlgProgress)
 end	
 
 
 local function report_neigh_blind_joint()
-	local template_path = get_template_path()
-	
 	local dlgProgress = luaiup_helper.ProgressDlg()
-	local marks = Driver:GetMarks{GUIDS=video_joints_juids}
+	local marks = GetMarks()
 	local groups = scan_for_neigh_blind_joint(marks, dlgProgress)
 	
 	local report_rows = {}
@@ -252,36 +232,13 @@ local function report_neigh_blind_joint()
 		end
 	end
 	
-	if #report_rows == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-	
-	if #report_rows > 1000 then
-		local msg = sprintf('Найдено %d отметок, построение отчета может занять большое время, продолжить?', #report_rows)
-		local cont = iup.Alarm("Warning", msg, "Yes", "No")
-		if cont == 2 then
-			return
-		end
-	end
-	
-	local ext_psp = mark_helper.GetExtPassport(Passport)
-	
-	local excel = excel_helper(template_path, "В2 СТК", false)
-	excel:ApplyPassportValues(ext_psp)
-	excel:ApplyRows(report_rows, nil, dlgProgress)
-	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
-	excel:SaveAndShow()
+	SaveAndShow(report_rows, dlgProgress)
 end
 
 
 local function report_joint_step()
-	local template_path = get_template_path()
-	
-	local marks = Driver:GetMarks{GUIDS=video_joints_juids}
-	marks = mark_helper.sort_mark_by_coord(marks)
-	
 	local dlgProgress = luaiup_helper.ProgressDlg()
+	local marks = GetMarks()
 	
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
@@ -304,27 +261,42 @@ local function report_joint_step()
 		end
 	end
 	
-	if #report_rows == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
+	SaveAndShow(report_rows, dlgProgress)
+end
+
+
+local function report_fishplate()
+	local dlgProgress = luaiup_helper.ProgressDlg()
+	local marks = GetMarks()
 	
-	if #report_rows > 1000 then
-		local msg = sprintf('Найдено %d отметок, построение отчета может занять большое время, продолжить?', #report_rows)
-		local cont = iup.Alarm("Warning", msg, "Yes", "No")
-		if cont == 2 then
+	local report_rows = {}
+	for i, mark in ipairs(marks) do
+		
+--		local fishpalte_fault_str = {
+--			[0] = 'испр.',
+--			[1] = 'надр.',
+--			[3] = 'трещ.',
+--			[4] = 'изл.',
+--		}
+
+		local fishpalte_fault = mark_helper.GetFishplateState(mark)
+		if fishpalte_fault and fishpalte_fault > 0 then 
+			local row = MakeJointMarkRow(mark)
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_FISHPLATE_DEFECT
+			if fishpalte_fault == 4 then
+				row.SPEED_LIMIT = 'Движение закрывается' 	
+			end
+			table.insert(report_rows, row)
+		end
+		
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then 
 			return
 		end
 	end
 	
-	local ext_psp = mark_helper.GetExtPassport(Passport)
-	
-	local excel = excel_helper(template_path, "В2 СТК", false)
-	excel:ApplyPassportValues(ext_psp)
-	excel:ApplyRows(report_rows, nil, dlgProgress)
-	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
-	excel:SaveAndShow()
-end	
+	SaveAndShow(report_rows, dlgProgress)
+end
+
 -- ============================================================================= 
 
 
@@ -333,22 +305,24 @@ local function AppendReports(reports)
 	
 	local sleppers_reports = 
 	{
-		{name = name_pref..'Определение наличия и состояния приварных рельсовых соединителей',    	fn = report_WeldedBond, 		guids = video_joints_juids},
-		{name = name_pref..'Ширина стыкового зазора, мм',    										fn = report_joint_width, 		guids = video_joints_juids},
-		{name = name_pref..'Определение двух подряд и более нулевых зазоров',    					fn = report_neigh_blind_joint,	guids = video_joints_juids},
-		{name = name_pref..'Горизонтальные ступеньки в стыках, мм',    								fn = report_joint_step,			guids = video_joints_juids},
+		{name = name_pref..'Определение наличия и состояния приварных рельсовых соединителей',    	fn = report_WeldedBond, 		},
+		{name = name_pref..'Ширина стыкового зазора, мм',    										fn = report_joint_width, 		},
+		{name = name_pref..'Определение двух подряд и более нулевых зазоров',    					fn = report_neigh_blind_joint,	},
+		{name = name_pref..'Горизонтальные ступеньки в стыках, мм',    								fn = report_joint_step,			},
+		{name = name_pref..'Определение наличия и состояния (надрыв, трещина, излом) накладок',		fn = report_fishplate,			},
 	}
 
 	for _, report in ipairs(sleppers_reports) do
+		report.guids = video_joints_juids
 		table.insert(reports, report)
 	end
 end
 
 if not ATAPE then
-	test_report  = require 'test_report'
+	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	report_joint_step()
+	report_fishplate()
 end
 
 return {
