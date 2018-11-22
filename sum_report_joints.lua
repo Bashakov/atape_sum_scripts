@@ -243,6 +243,7 @@ local function report_joint_step()
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		local step_vert = mark_helper.GetRailGapStep(mark) or 0
+		step_vert = math.abs(step_vert)
 		if step_vert > 1 then
 			local row = MakeJointMarkRow(mark)
 			row.DEFECT_CODE = DEFECT_CODES.JOINT_VER_STEP
@@ -297,6 +298,36 @@ local function report_fishplate()
 	SaveAndShow(report_rows, dlgProgress)
 end
 
+
+local function report_missing_bolt()
+	local dlgProgress = luaiup_helper.ProgressDlg()
+	local marks = GetMarks()
+	
+	local report_rows = {}
+	for i, mark in ipairs(marks) do
+	
+		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
+		if valid_on_half and valid_on_half < 2 then
+			local row = MakeJointMarkRow(mark)
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_MISSING_BOLT
+			
+			if valid_on_half == 1 then
+				row.SPEED_LIMIT = '2'
+			elseif valid_on_half == 0 then	
+				row.SPEED_LIMIT = 'Закрытие движения'
+			else
+				row.SPEED_LIMIT = '??'
+			end
+			table.insert(report_rows, row)
+		end
+		
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then 
+			return
+		end
+	end
+	
+	SaveAndShow(report_rows, dlgProgress)
+end
 -- ============================================================================= 
 
 
@@ -318,12 +349,14 @@ local function AppendReports(reports)
 	end
 end
 
+-- тестирование
 if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	report_fishplate()
+	report_missing_bolt()
 end
+
 
 return {
 	AppendReports = AppendReports,

@@ -276,7 +276,7 @@ end
 
 -- проверить стык на дефектность по наличие болтов (не больше одного плохого в половине накладки)
 local function CalcValidCrewJointOnHalf(mark)
-	local joints = mark_helper.GetCrewJointArray(mark)
+	local joints = GetCrewJointArray(mark)
 	
 	local valid_on_half = nil
 	if not joints or #joints == 0 then
