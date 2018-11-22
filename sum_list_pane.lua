@@ -320,8 +320,8 @@ local fastener_type_names = {
 	
 local fastener_fault_names = {
 	[0] = 'норм.',
-	[1] = 'От.ЗБ', 
-	[2] = 'От.Кл',
+	[1] = 'От.ЗБ',  -- отсутствие закладного болта kb65
+	[2] = 'От.Кл',	-- отсуствие клеммы apc
 }
 	
 local column_fastener_type = 
