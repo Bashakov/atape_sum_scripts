@@ -27,7 +27,6 @@ local juids_beacon =
 }
 
 
-
 local function GetMarks()
 	local marks = Driver:GetMarks{GUIDS=video_joints_juids}
 	marks = mark_helper.sort_mark_by_coord(marks)
@@ -101,8 +100,8 @@ local function AppendReports(reports)
 	
 	local sleppers_reports = 
 	{
-		{name = name_pref..'Смещения рельсовых плетей относительно «маячных» шпал, мм',    					fn=report_beacon, 			},
-		{name = name_pref..'*Определение наличия отсутствующих и неработающих противоугонов',    			fn=report_not_implement, 			},
+		{name = name_pref..'Смещения рельсовых плетей относительно «маячных» шпал, мм',    		fn=report_beacon, 			},
+		{name = name_pref..'*Определение наличия отсутствующих и неработающих противоугонов',   fn=report_not_implement, 	},
 	}
 
 	for _, report in ipairs(sleppers_reports) do

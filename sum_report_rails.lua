@@ -15,9 +15,12 @@ local luaiup_helper = require 'luaiup_helper'
 local DEFECT_CODES = require 'report_defect_codes'
 
 
-function printf(s,...)  print(s:format(...)) end
-function sprintf(s,...) return s:format(...) end
+local table_find = stuff.table_find
+local sprintf = stuff.sprintf
+local printf = stuff.printf
+local errorf = stuff.errorf
 
+-- ==================================================================
 
 local guid_surface_defects = 
 {
@@ -26,22 +29,31 @@ local guid_surface_defects =
 
 local filter_juids = stuff.table_merge(guid_surface_defects)
 
+local function get_user_filter_surface()
+		local res, user_width, user_lenght, user_area = iup.GetParam("Фильтрация дефектов", nil, 
+		"Ширина (мм): %s\n\z
+		Высота (мм): %s\n\z
+		Площадь (мм): %i\n",
+		'', '', 1000)
+	
+	if not res then
+		return
+	end
+	
+	user_width = #user_width > 0 and tonumber(user_width)
+	user_lenght = #user_lenght > 0 and tonumber(user_lenght)
+	return user_area, user_width, user_lenght
+end
 
 -- ============================================================================= 
 
-local function mark_is_surface_defect(mark)
-	local mg = mark.prop.Guid
-	for i, g in ipairs(guid_surface_defects) do
-		if mg == g then
-			return true
-		end
-	end
-	return false
-end
-
 
 local function report_rails()
-	local template_path = Driver:GetAppPath() .. 'Scripts/ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ РЕЛЬСОВ.xlsm'
+	local user_area, user_width, user_lenght = get_user_filter_surface()
+	if not user_area then
+		return
+	end
+
 	local marks = Driver:GetMarks{GUIDS=filter_juids}
 	marks = mark_helper.sort_mark_by_coord(marks)
 	
@@ -49,14 +61,32 @@ local function report_rails()
 	
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
-		if mark_is_surface_defect(mark) then
---			local prm = mark_helper.GetSurfDefectPrm(mark)
---			if prm and prm['SurfaceFault'] == 0 then  -- <PARAM name="SurfaceFault" value="0" value_="0-черный пов.дефект; 1-"/>
+		if table_find(guid_surface_defects, mark.prop.Guid) and mark.ext.RAWXMLDATA then
+			local surf_prm = mark_helper.GetSurfDefectPrm(mark)
+			if surf_prm then
 			
-			local row = mark_helper.MakeCommonMarkTemplate(mark)
-			row.DEFECT_CODE = DEFECT_CODES.RAIL_SURF_DEFECT
-	
-			table.insert(report_rows, row)
+				-- https://bt.abisoft.spb.ru/view.php?id=251#c592
+				local mark_length = surf_prm.SurfaceWidth	
+				local mark_width = surf_prm.SurfaceLength
+				local mark_area = surf_prm.SurfaceArea
+				
+				local accept = true
+				if mark_length and mark_length >= 60 then
+					accept = true
+				else
+					accept =
+						(not user_width or (mark_width and mark_width >= user_width)) and
+						(not user_lenght or (mark_length and mark_length >= user_lenght)) and
+						(mark_area >= user_area)
+				end
+				print(user_width, user_lenght, user_area, '|', mark_width, mark_length,  mark_area,  '=', accept)
+				
+				if accept then
+					local row = mark_helper.MakeCommonMarkTemplate(mark)
+					row.DEFECT_CODE = DEFECT_CODES.RAIL_SURF_DEFECT
+					table.insert(report_rows, row)
+				end
+			end
 		end
 	
 		if i % 10 == 0 and not dlgProgress:step(i / #marks, stuff.sprintf('Scan %d / %d mark, found %d', i, #marks, #report_rows)) then 
@@ -80,6 +110,7 @@ local function report_rails()
 	
 	local ext_psp = mark_helper.GetExtPassport(Passport)
 	
+	local template_path = Driver:GetAppPath() .. 'Scripts/ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ РЕЛЬСОВ.xlsm'
 	local excel = excel_helper(template_path, "В4 РЛС", false)
 	excel:ApplyPassportValues(ext_psp)
 	excel:ApplyRows(report_rows, nil, dlgProgress)
@@ -92,16 +123,27 @@ end
 
 
 local function AppendReports(reports)
+	local name_pref = 'Ведомость отступлений в содержании рельсов|'
+	
 	local sleppers_reports = 
 	{
-		{name = 'Ведомость отступлений в содержании рельсов|Определение и вычисление размеров поверхностных дефектов рельсов, седловин, в том числе в местах сварки, пробуксовок (длина, ширина и площадь)',    	fn = report_rails, 		guids = filter_juids},
+		{name = name_pref .. 'Определение и вычисление размеров поверхностных дефектов рельсов, седловин, в том числе в местах сварки, пробуксовок (длина, ширина и площадь)',    	fn = report_rails},
 	}
 
 	for _, report in ipairs(sleppers_reports) do
+		report.guids = filter_juids
 		table.insert(reports, report)
 	end
 end
 
+-- тестирование
+if not ATAPE then
+
+	test_report  = require('test_report')
+	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	
+	report_rails()
+end
 
 return {
 	AppendReports = AppendReports,

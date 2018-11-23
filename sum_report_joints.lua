@@ -398,10 +398,11 @@ end
 
 -- тестирование
 if not ATAPE then
+
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	report_fishplate()
+	report_neigh_blind_joint()
 end
 
 
