@@ -133,9 +133,11 @@ local function generate_rows_sleeper_dist(marks, dlgProgress)
 			row.SLEEPER_DIST = dist_next
 		
 			if cur_material == 1 then -- "бетон",
-				row.DEFECT_CODE = DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE
+				row.DEFECT_CODE = DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1]
+				row.DEFECT_DESC = DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[2]
 			elseif cur_material == 2 then -- "дерево",
-				row.DEFECT_CODE = DEFECT_CODES.SLEEPER_DISTANCE_WOODEN
+				row.DEFECT_CODE = DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[1]
+				row.DEFECT_DESC = DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[2]
 			end
 			
 			table.insert(report_rows, row)
@@ -167,7 +169,8 @@ local function generate_rows_sleeper_angle(marks, dlgProgress)
 			-- printf("%9d  %+8.1f\n", mark.prop.SysCoord, cur_angle)
 			local row = MakeSleeperMarkRow(mark)
 			row.SLEEPER_ANGLE = cur_angle
-			row.DEFECT_CODE = DEFECT_CODES.SLEEPER_ANGLE
+			row.DEFECT_CODE = DEFECT_CODES.SLEEPER_ANGLE[1]
+			row.DEFECT_DESC = DEFECT_CODES.SLEEPER_ANGLE[2]
 			table.insert(report_rows, row)
 		end
 	end
@@ -300,7 +303,7 @@ if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	report_ALL()
+	report_sleeper_angle()
 end
 
 return {

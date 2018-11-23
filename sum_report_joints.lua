@@ -152,7 +152,8 @@ local function generate_rows_joint_width(marks, dlgProgress)
 		local gap_width = mark_helper.GetGapWidth(mark)
 		if gap_width and gap_width > 24 then
 			local row = MakeJointMarkRow(mark)
-			row.DEFECT_CODE = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[1]
+			row.DEFECT_DESC = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[2]
 			row.GAP_WIDTH = gap_width
 			
 			if     gap_width <= 26 then 					row.SPEED_LIMIT = '100'
@@ -184,7 +185,8 @@ local function generate_rows_neigh_blind_joint(marks, dlgProgress)
 		local temperature = mark_helper.GetTemperature(first_mark) or 0
 		
 		local row = MakeJointMarkRow(first_mark)
-		row.DEFECT_CODE = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP
+		row.DEFECT_CODE = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1]
+		row.DEFECT_DESC = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[2]
 		row.BLINK_GAP_COUNT = #group
 		table.insert(report_rows, row)
 		
@@ -209,7 +211,8 @@ local function generate_rows_joint_step(marks, dlgProgress)
 		step_vert = math.abs(step_vert)
 		if step_vert > 1 then
 			local row = MakeJointMarkRow(mark)
-			row.DEFECT_CODE = DEFECT_CODES.JOINT_VER_STEP
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_VER_STEP[1]
+			row.DEFECT_DESC = DEFECT_CODES.JOINT_VER_STEP[2]
 			row.GAP_WIDTH = mark_helper.GetGapWidth(mark) or ''
 			local temperature = mark_helper.GetTemperature(mark) or 0
 			
@@ -248,7 +251,8 @@ local function generate_rows_fishplate(marks, dlgProgress)
 		local fishpalte_fault, fishpalte_fault_cnt = mark_helper.GetFishplateState(mark)
 		if fishpalte_fault and fishpalte_fault > 0 then 
 			local row = MakeJointMarkRow(mark)
-			row.DEFECT_CODE = DEFECT_CODES.JOINT_FISHPLATE_DEFECT
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_FISHPLATE_DEFECT[1]
+			row.DEFECT_DESC = DEFECT_CODES.JOINT_FISHPLATE_DEFECT[2]
 			if fishpalte_fault == 4 then
 				row.SPEED_LIMIT = 'Движение закрывается'
 			elseif fishpalte_fault == 3 then
@@ -277,7 +281,8 @@ local function generate_rows_missing_bolt(marks, dlgProgress)
 		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
 		if valid_on_half and valid_on_half < 2 then
 			local row = MakeJointMarkRow(mark)
-			row.DEFECT_CODE = DEFECT_CODES.JOINT_MISSING_BOLT
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_MISSING_BOLT[1]
+			row.DEFECT_DESC = DEFECT_CODES.JOINT_MISSING_BOLT[2]
 			
 			if valid_on_half == 1 then
 				row.SPEED_LIMIT = '2'
@@ -303,7 +308,8 @@ local function generate_rows_WeldedBond(marks, dlgProgress)
 		local status = mark_helper.GetWeldedBondStatus(mark)
 		if status == 1 then  -- <PARAM name='ConnectorFault' value='1' value_='0-исправен, 1-неисправен'/>
 			local row = MakeJointMarkRow(mark)
-			row.DEFECT_CODE = DEFECT_CODES.JOINT_WELDED_BOND_FAULT
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_WELDED_BOND_FAULT[1]
+			row.DEFECT_DESC = DEFECT_CODES.JOINT_WELDED_BOND_FAULT[2]
 			table.insert(report_rows, row)
 		end
 		

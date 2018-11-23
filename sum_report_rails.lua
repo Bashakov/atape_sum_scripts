@@ -83,7 +83,8 @@ local function report_rails()
 				
 				if accept then
 					local row = mark_helper.MakeCommonMarkTemplate(mark)
-					row.DEFECT_CODE = DEFECT_CODES.RAIL_SURF_DEFECT
+					row.DEFECT_CODE = DEFECT_CODES.RAIL_SURF_DEFECT[1]
+					row.DEFECT_DESC = DEFECT_CODES.RAIL_SURF_DEFECT[2]
 					table.insert(report_rows, row)
 				end
 			end
