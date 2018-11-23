@@ -25,7 +25,6 @@ local guigs_sleepers =
 -- =================================================================== 
 
 
-
 local function check_distance(ref_dist, MEK, max_diff, cur_dist)
 	if cur_dist < 200 then
 		return true
@@ -86,10 +85,7 @@ end
 
 -- ==========================================================================
 
-local function report_sleeper_dist()
-	local dlgProgress = luaiup_helper.ProgressDlg()
-	local marks = GetMarks()
-	
+local function generate_rows_sleeper_dist(marks, dlgProgress)
 	if #marks  < 3 then
 		return
 	end
@@ -104,6 +100,7 @@ local function report_sleeper_dist()
 	if not ok then	
 		return
 	end
+	
 	local ref_dist = 1000000 / sleeper_count
 	
 	local material_diffs = 
@@ -145,13 +142,10 @@ local function report_sleeper_dist()
 		end
 	end
 	
-	SaveAndShow(report_rows, dlgProgress)
+	return report_rows
 end
 
-
-local function report_sleeper_angle()
-	local dlgProgress = luaiup_helper.ProgressDlg()
-	local marks = GetMarks()
+local function generate_rows_sleeper_angle(marks, dlgProgress)
 	
 	local ok, angle_threshold = true, 5.7
 	ok, angle_threshold  = iup.GetParam("Отчет оп шпалам", nil, "Разворот: %r\n", angle_threshold)
@@ -178,44 +172,11 @@ local function report_sleeper_angle()
 		end
 	end
 	
-	SaveAndShow(report_rows, dlgProgress)
+	return report_rows
 end
 
 local function report_not_implement()
 	iup.Message('Error', "Отчет не реализован")
-end
-
-local function report_sleeper_angle1()
-	local dlgProgress = luaiup_helper.ProgressDlg()
-	local marks = GetMarks()
-	
-	local ok, angle_threshold = true, 5.7
-	ok, angle_threshold  = iup.GetParam("Отчет оп шпалам", nil, "Разворот: %r\n", angle_threshold)
-	if not ok then	
-		return
-	end
-	
-	local report_rows = {}
-	
-	for i, mark in ipairs(marks) do
-		if i % 10 == 0 and not dlgProgress:step(i / #marks, stuff.sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then 
-			return
-		end
-
-		local cur_angle = mark_helper.GetSleeperAngle(mark) or 0
-		cur_angle = cur_angle * 180/3.14/1000
-		
-		if math.abs(cur_angle) > angle_threshold then
-			-- printf("%9d  %+8.1f\n", mark.prop.SysCoord, cur_angle)
-			
-			local row = MakeSleeperMarkRow(mark)
-			row.SLEEPER_ANGLE = cur_angle
-			row.DEFECT_CODE = DEFECT_CODES.SLEEPER_ANGLE
-			table.insert(report_rows, row)
-		end
-	end
-	
-	SaveAndShow(report_rows, dlgProgress)
 end
 
 local function sleepers_report_plot()
@@ -277,13 +238,50 @@ end
 
 -- ============================================================================= 
 
+local function make_report_generator(...)
+	local row_generators = {...}
+	
+
+	function gen()
+		local dlgProgress = luaiup_helper.ProgressDlg()
+		local marks = GetMarks()
+		
+		local report_rows = {}
+		for _, fn_gen in ipairs(row_generators) do
+			local cur_rows = fn_gen(marks, dlgProgress)
+			for _, row in ipairs(cur_rows) do
+				table.insert(report_rows, row)
+			end
+		end
+		
+		report_rows = mark_helper.sort_stable(report_rows, function(row)
+			local c = row.SYS
+			return c
+		end)
+		SaveAndShow(report_rows, dlgProgress)
+	end
+	
+	return gen
+end	
+
+local report_sleeper_dist = make_report_generator(generate_rows_sleeper_dist)
+local report_sleeper_angle = make_report_generator(generate_rows_sleeper_angle)
+
+local report_ALL = make_report_generator(
+	generate_rows_sleeper_dist,
+	generate_rows_sleeper_angle
+	)
+
+-- ============================================================================= 
+
 local function AppendReports(reports)
 	local name_pref = 'Ведомость отступлений в содержании шпал|'
 	
 	local sleppers_reports = 
 	{
 				-- {name = name_pref..'график',		                       					fn=sleepers_report_plot,	},
-		{name = name_pref..'Отслеживание соблюдения эпюры шпал',    								fn=report_sleeper_dist, 			},
+		{name = name_pref..'ВСЕ',    																fn=report_ALL, 			},
+		{name = name_pref..'Отслеживание соблюдения эпюры шпал',    								fn=report_sleeper_dist, 	},
 		{name = name_pref..'Перпендикулярность шпалы относительно оси пути, рад',					fn=report_sleeper_angle,	},
 		{name = name_pref..'*Параметры и размеры дефектов шпал, мостовых и переводных брусьев, мм',	fn=report_not_implement,	},
 		{name = name_pref..'*Определение кустовой негодности шпал',									fn=report_not_implement,	},
@@ -302,7 +300,7 @@ if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	report_sleeper_angle()
+	report_ALL()
 end
 
 return {

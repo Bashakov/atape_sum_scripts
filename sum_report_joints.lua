@@ -30,12 +30,6 @@ local video_joints_juids =
 -- ============================================================================= 
 
 
-local function get_template_path()
-	local template_name = 'ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ РЕЛЬСОВЫХ СТЫКОВ.xlsm'
-	local template_path = Driver:GetAppPath() .. 'Scripts/' .. template_name
-	return template_path
-end
-
 local function GetMarks()
 	local marks = Driver:GetMarks{GUIDS=video_joints_juids}
 	marks = mark_helper.sort_mark_by_coord(marks)
@@ -56,7 +50,7 @@ local function SaveAndShow(report_rows, dlgProgress)
 		end
 	end
 	
-	local template_path = get_template_path()
+	local template_path = Driver:GetAppPath() .. 'Scripts/ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ РЕЛЬСОВЫХ СТЫКОВ.xlsm' 
 	local ext_psp = mark_helper.GetExtPassport(Passport)
 	local excel = excel_helper(template_path, "В2 СТК", false)
 	excel:ApplyPassportValues(ext_psp)
@@ -152,10 +146,7 @@ end
 
 -- ============================================================================= 
 
-local function report_joint_width()
-	local dlgProgress = luaiup_helper.ProgressDlg()
-	local marks = GetMarks()
-	
+local function generate_rows_joint_width(marks, dlgProgress)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		local gap_width = mark_helper.GetGapWidth(mark)
@@ -178,13 +169,11 @@ local function report_joint_width()
 		end
 	end
 	
-	SaveAndShow(report_rows, dlgProgress)
+	return report_rows
 end	
 
 
-local function report_neigh_blind_joint()
-	local dlgProgress = luaiup_helper.ProgressDlg()
-	local marks = GetMarks()
+local function generate_rows_neigh_blind_joint(marks, dlgProgress)
 	local groups = scan_for_neigh_blind_joint(marks, dlgProgress)
 	
 	local report_rows = {}
@@ -209,14 +198,11 @@ local function report_neigh_blind_joint()
 		end
 	end
 	
-	SaveAndShow(report_rows, dlgProgress)
+	return report_rows
 end
 
 
-local function report_joint_step()
-	local dlgProgress = luaiup_helper.ProgressDlg()
-	local marks = GetMarks()
-	
+local function generate_rows_joint_step(marks, dlgProgress)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		local step_vert = mark_helper.GetRailGapStep(mark) or 0
@@ -239,15 +225,11 @@ local function report_joint_step()
 		end
 	end
 	
-	SaveAndShow(report_rows, dlgProgress)
+	return report_rows
 end
 
 
-local function report_fishplate()
-
-	local dlgProgress = luaiup_helper.ProgressDlg()
-	local marks = GetMarks()
-	
+local function generate_rows_fishplate(marks, dlgProgress)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		
@@ -284,14 +266,11 @@ local function report_fishplate()
 		end
 	end
 	
-	SaveAndShow(report_rows, dlgProgress)
+	return report_rows
 end
 
 
-local function report_missing_bolt()
-	local dlgProgress = luaiup_helper.ProgressDlg()
-	local marks = GetMarks()
-	
+local function generate_rows_missing_bolt(marks, dlgProgress)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 	
@@ -314,15 +293,10 @@ local function report_missing_bolt()
 			return
 		end
 	end
-	
-	SaveAndShow(report_rows, dlgProgress)
+	return report_rows
 end
 
-
-local function report_WeldedBond()
-	local dlgProgress = luaiup_helper.ProgressDlg()
-	local marks = GetMarks()
-	
+local function generate_rows_WeldedBond(marks, dlgProgress)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		
@@ -337,41 +311,58 @@ local function report_WeldedBond()
 			return
 		end
 	end
-	
-	SaveAndShow(report_rows, dlgProgress)
-end	
+	return report_rows
+end
+
 
 local function report_broken_insulation()
 	iup.Message('Error', "Отчет не реализован")
-		
---	local dlgProgress = luaiup_helper.ProgressDlg()
---	local marks = GetMarks()
-	
---	local report_rows = {}
---	for i, mark in ipairs(marks) do
-	
---		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
---		if valid_on_half and valid_on_half < 2 then
---			local row = MakeJointMarkRow(mark)
---			row.DEFECT_CODE = DEFECT_CODES.JOINT_MISSING_BOLT
-			
---			if valid_on_half == 1 then
---				row.SPEED_LIMIT = '2'
---			elseif valid_on_half == 0 then	
---				row.SPEED_LIMIT = 'Закрытие движения'
---			else
---				row.SPEED_LIMIT = '??'
---			end
---			table.insert(report_rows, row)
---		end
-		
---		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then 
---			return
---		end
---	end
-	
---	SaveAndShow(report_rows, dlgProgress)
 end
+
+-- ============================================================================= 
+
+local function make_report_generator(...)
+	local row_generators = {...}
+	
+
+	function gen()
+		local dlgProgress = luaiup_helper.ProgressDlg()
+		local marks = GetMarks()
+		
+		local report_rows = {}
+		for _, fn_gen in ipairs(row_generators) do
+			local cur_rows = fn_gen(marks, dlgProgress)
+			for _, row in ipairs(cur_rows) do
+				table.insert(report_rows, row)
+			end
+		end
+		
+		report_rows = mark_helper.sort_stable(report_rows, function(row)
+			local c = row.SYS
+			return c
+		end)
+		SaveAndShow(report_rows, dlgProgress)
+	end
+	
+	return gen
+end	
+
+
+local report_joint_width = make_report_generator(generate_rows_joint_width)
+local report_neigh_blind_joint = make_report_generator(generate_rows_neigh_blind_joint)
+local report_joint_step = make_report_generator(generate_rows_joint_step)
+local report_fishplate = make_report_generator(generate_rows_fishplate)
+local report_missing_bolt = make_report_generator(generate_rows_missing_bolt)
+local report_WeldedBond = make_report_generator(generate_rows_WeldedBond)
+
+local report_ALL = make_report_generator(
+	generate_rows_joint_width, 
+	generate_rows_neigh_blind_joint, 
+	generate_rows_joint_step, 
+	generate_rows_fishplate, 
+	generate_rows_missing_bolt, 
+	generate_rows_rows_WeldedBond
+)
 
 -- ============================================================================= 
 
@@ -381,6 +372,7 @@ local function AppendReports(reports)
 	
 	local sleppers_reports = 
 	{
+		{name = name_pref..'ВСЕ',    											fn = report_ALL, 				},
 		{name = name_pref..'Ширина стыкового зазора, мм',    											fn = report_joint_width, 				},
 		{name = name_pref..'Определение двух подряд и более нулевых зазоров',    						fn = report_neigh_blind_joint,			},
 		{name = name_pref..'Горизонтальные ступеньки в стыках, мм',    									fn = report_joint_step,					},
@@ -402,7 +394,7 @@ if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	report_neigh_blind_joint()
+	report_ALL()
 end
 
 
