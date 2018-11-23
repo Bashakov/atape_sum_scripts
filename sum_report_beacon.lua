@@ -59,7 +59,6 @@ end
 
 local function MakeBeaconMarkRow(mark)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
-	row.DEFECT_CODE = ''
 	return row
 end
 

@@ -44,7 +44,6 @@ local function MakeSleeperMarkRow(mark)
 	local material = mark_helper.GetSleeperMeterial(mark) 
 	
 	row.SLEEPER_MATERIAL = material and (material == 1 and "ЖБШ" or "ДШ") or ''
-	row.DEFECT_CODE = ''
 	row.SLEEPER_ANGLE = ''
 	row.SLEEPER_DIST = ''
 	row.SPEED_LIMIT = ''
@@ -273,7 +272,7 @@ local report_sleeper_angle = make_report_generator(generate_rows_sleeper_angle)
 local report_ALL = make_report_generator(
 	generate_rows_sleeper_dist,
 	generate_rows_sleeper_angle
-	)
+)
 
 -- ============================================================================= 
 

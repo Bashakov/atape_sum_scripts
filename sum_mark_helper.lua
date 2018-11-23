@@ -720,6 +720,9 @@ local function MakeCommonMarkTemplate(mark)
 	row.RAIL_NAME = rails_names[row.RAIL_POS]
 	row.RAIL_TEMP = temperature and sprintf('%+.1f', temperature) or ''
 
+	row.DEFECT_CODE = ''
+	row.DEFECT_DESC = ''
+	
 	return row
 end
 

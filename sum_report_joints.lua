@@ -43,7 +43,7 @@ local function SaveAndShow(report_rows, dlgProgress)
 	end
 	
 	if #report_rows > 1000 then
-		local msg = sprintf('Найдено %d проблемных стыков, построение отчета может занять большое время, продолжить?', #report_rows)
+		local msg = sprintf('Найдено %d отметок, построение отчета может занять большое время, продолжить?', #report_rows)
 		local cont = iup.Alarm("Warning", msg, "Yes", "No")
 		if cont == 2 then
 			return
@@ -62,7 +62,6 @@ end
 local function MakeJointMarkRow(mark)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
 	row.SPEED_LIMIT = ''
-	row.DEFECT_CODE = ''
 	row.GAP_WIDTH = ''
 	row.BLINK_GAP_COUNT = ''
 	return row
