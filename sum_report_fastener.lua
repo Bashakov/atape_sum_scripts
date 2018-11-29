@@ -145,11 +145,11 @@ local function AppendReports(reports)
 	
 	local sleppers_reports = 
 	{
-		{name = name_pref..'*Определение параметров и состояния рельсовых скреплений (наличие визуально фиксируемых ослабленных скреплений, сломанных подкладок, отсутствие болтов, негодные прокладки, закладные и клеммные болты, шурупы, клеммы, анкеры)',    					fn=report_fastener, 			},
+		{name = name_pref..'Определение параметров и состояния рельсовых скреплений (наличие визуально фиксируемых ослабленных скреплений, сломанных подкладок, отсутствие болтов, негодные прокладки, закладные и клеммные болты, шурупы, клеммы, анкеры)',    					fn=report_fastener, 			},
 	}
 
 	for _, report in ipairs(sleppers_reports) do
-		report.guids=guigs_sleepers
+		report.guids=guids_fasteners
 		table.insert(reports, report)
 	end
 end

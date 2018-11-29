@@ -110,7 +110,7 @@ local function AppendReports(reports)
 	}
 
 	for _, report in ipairs(sleppers_reports) do
-		report.guids=guigs_sleepers
+		report.guids=juids_beacon
 		table.insert(reports, report)
 	end
 end
