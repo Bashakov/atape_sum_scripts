@@ -40,7 +40,7 @@ local function SaveAndShow(report_rows, dlgProgress)
 	end
 	
 	if #report_rows > 1000 then
-		local msg = sprintf('Найдено %d проблемных стыков, построение отчета может занять большое время, продолжить?', #report_rows)
+		local msg = sprintf('Найдено %d отметок, построение отчета может занять большое время, продолжить?', #report_rows)
 		local cont = iup.Alarm("Warning", msg, "Yes", "No")
 		if cont == 2 then
 			return
@@ -65,14 +65,20 @@ end
 -- ========================================================================= 
 
 local function report_beacon()
-		local dlgProgress = luaiup_helper.ProgressDlg()
+	local dlgProgress = luaiup_helper.ProgressDlg()
 	local marks = GetMarks()
+	
+	local ok, max_offset = true, 10
+	ok, max_offset  = iup.GetParam("Отчет по маячным отметкам", nil, "Смещение: %i\n", max_offset)
+	if not ok then	
+		return
+	end
 	
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		local offset = mark_helper.GetBeaconOffset(mark)
 		
-		if offset and math.abs(offset) > 0 then
+		if offset and math.abs(offset) > max_offset then
 			local row = MakeBeaconMarkRow(mark)
 			row.BEACON_OFFSET = offset
 			row.OUT_PARAM = offset
