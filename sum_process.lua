@@ -185,6 +185,9 @@ end
 
 
 -- ================================ EXPORT FUNCTIONS ================================= --
+
+local guidSleeper = "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"	
+
 local Img_DA_guids = {
 
 		["{A77EC705-1E6D-4035-BCA5-84B6D338EB8D}"]=2, -- USER_SET="1" INTERNAL_NAME="VID_BEACON_INDT" VALUE="расп. МАЯЧ (R=50-70)"/>
@@ -202,6 +205,7 @@ local Img_DA_guids = {
 		
 		["{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}"]=18, --"П.Деф."
 		
+		[guidSleeper]                             =19, --"Шпалы"
 }
 
 local Img_guid2idx = {
@@ -227,7 +231,7 @@ local Img_guid2idx = {
 	["{D4607B05-17C2-4C30-A303-69005A08C001}"] = 11, -- move backward
 }
 
-local guidSleeper = "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"	
+
 
 
 function GetMarkImage(mark) -- exported (return ico desc from mark)
@@ -249,28 +253,12 @@ function GetMarkImage(mark) -- exported (return ico desc from mark)
 		return res                                                                -- return desc
 	end
 
-	local img_x = 0
-	local img_y = 0
-	
-	if typeGuid == guidSleeper then
-		img_x = 13
-		img_y = 0
-		local prop = mark:GetProperties()
-		if prop then
-			local angle = prop.SLEEPERS_ANGLE
-			if angle and math.abs(angle) > 10 then
-				img_y = 1
-			end
-		end
-	else
-		img_x = Img_guid2idx[typeGuid]                -- chack atape guids
-		img_y = rail - 1                                        -- rail to y offset (1,2,3 -> 0,1,2)
 
-		if not img_x then                             -- if guid not found, use default for video or regular
-			img_x = video and 2 or 1
-		end
+	local img_x = Img_guid2idx[typeGuid]                -- chack atape guids
+	local img_y = rail - 1                                        -- rail to y offset (1,2,3 -> 0,1,2)
 
-		-- print (RailMask, rail, coord, typeGuid, img_x, img_y)
+	if not img_x then                                                -- if guid not found, use default for video or regular
+		img_x = video and 2 or 1
 	end
 
 	img_x = img_x or 0 -- or default
@@ -280,7 +268,9 @@ function GetMarkImage(mark) -- exported (return ico desc from mark)
 		img_x = 0
 		img_y = 0
 	end
-	
+
+	-- print (RailMask, rail, coord, typeGuid, img_x, img_y)
+
 	local img_size = { x=16, y=16 }                        -- set img size
 	local res = {
 		filename = 'Images/sum.bmp',                -- filename

@@ -719,7 +719,7 @@ local function MakeCommonMarkTemplate(mark)
 	row.MM = mm
 	row.M_MM1 = sprintf('%.1f', m + mm/1000)
 	row.M_MM2 = sprintf('%.2f', m + mm/1000)
-	row.PK = ''
+	row.PK = sprintf('%d', m/100+1) 
 	row.PATH = sprintf('%d км %.1f м', km, m + mm/1000)
 	row.RAIL_POS = GetMarkRailPos(mark)
 	row.RAIL_NAME = rails_names[row.RAIL_POS]
