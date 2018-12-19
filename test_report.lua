@@ -77,7 +77,7 @@ local function read_sum_file(file_path, guids)
 end
 
 local function psp2table(psp_path)						-- открыть xml паспорт и сохранить в таблицу его свойства
-	xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 	assert(xmlDom, 'can not create MSXML object')
 	assert(xmlDom:load(psp_path), "can not open xml file: " .. psp_path)
 	
@@ -112,6 +112,24 @@ local function psp2table(psp_path)						-- открыть xml паспорт и 
 	return res
 end
 
+local function read_EKASUI_cfg()
+	local pathCfg = os.getenv("ProgramFiles") .. '\\ATapeXP\\ekasui.cfg'
+	
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom, 'can not create MSXML object')
+	
+	if xmlDom:load(pathCfg) then
+		local nodes = xmlDom:SelectNodes('/EKASUI/@*')
+		local res = {}
+		while true do
+			local node = nodes:nextNode()
+			if not node then break end
+			res[node.nodeName] = node.nodeValue
+		end
+		return res
+	end
+end
+
 
 Driver = OOP.class
 {
@@ -126,28 +144,13 @@ Driver = OOP.class
 		
 		_G.Driver = self
 		_G.Passport = self._passport
+		_G.EKASUI_PARAMS = read_EKASUI_cfg()
 	end,
 	
 	GetMarks = function(self, filter)
 		local g = filter and filter.GUIDS
 		local marks = read_sum_file(self._sum_path, g)
 		return marks
---		if filter and filter.GUIDS then
---			local fg = {}
---			for _, g in ipairs(filter.GUIDS) do	
---				fg[g] = true 
---			end
-
---			local res = {}
---			for _, m in ipairs(self.marks) do
---				if fg[m.prop.Guid] then
---					res[#res+1] = m
---				end
---			end
---			return res
---		else
---			return self.marks 
---		end
 	end,
 	
 	GetAppPath = function(self)
@@ -171,6 +174,16 @@ Driver = OOP.class
 		return path
 	end,
 
+	GetRunTime = function(self, sys)
+		local date = self._passport.DATE
+		local year, month, day, hour, min = string.match(date, "(%d+):(%d+):(%d+):(%d+):(%d+)")
+		local res = os.time({day=day, month=month, year=year, hour=hour, min=min, sec=0})
+		return res
+	end,
+
+	GetGPS = function(self, sys)
+		return 60.01, 30.02
+	end,
 }
 
 return Driver

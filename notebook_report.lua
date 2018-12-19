@@ -592,7 +592,7 @@ local REPORTS =
 	--{ name = 'Ведомость HTML с изображениями УЗ', fn = vedomost_with_US_images_html, user_select_range=true },
 	{ name = 'Ведомость EXCEL с изображениями УЗ', fn = vedomost_with_US_images_excel, user_select_range=true },
 	{ name = 'Дефектограмма', fn = excel_defectogram, user_select_range=false },
-	{ name = 'Выделенные в отчет ЕКСУИ', fn = report_EKSUI, user_select_range=false },
+	-- { name = 'Выделенные в отчет ЕКСУИ', fn = report_EKSUI, user_select_range=false },
 }
 
 -- =================== EXPORT FUNCTION =====================

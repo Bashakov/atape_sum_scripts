@@ -60,6 +60,40 @@ local function enum_group(arr, len)
 	end
 end
 
+-- итератор разбивающий входной массив на массив массивов заданной длинны, последний может быть короче
+local function split_chunks_iter(chunk_len, arr)
+	assert(chunk_len > 0)
+	local i = 0
+	local n = 0
+	return function()
+		if i > #arr - 1 then
+			return nil
+		end
+		
+		local t = {}
+		for j = 1, chunk_len do
+			t[j] = arr[j+i]
+		end
+		i = i + chunk_len
+		n = n + 1
+		return n, t
+	end	
+end
+
+ -- разбивает входной массив на массив массивов заданной длинны, последний может быть короче
+local function split_chunks(chunk_len, arr)
+	assert(chunk_len > 0)
+	local res = {}
+	for i = 0, #arr - 1, chunk_len do
+		local t = {}
+		for j = 1, chunk_len do
+			t[j] = arr[j+i]
+		end
+		res[#res + 1] = t
+	end
+	return res
+end
+
 -- =================== ШИРИНА ЗАЗОРА ===================
 
 -- получить все ширины из отметки
@@ -721,9 +755,17 @@ local function MakeCommonMarkTemplate(mark)
 	row.M_MM2 = sprintf('%.2f', m + mm/1000)
 	row.PK = sprintf('%d', m/100+1) 
 	row.PATH = sprintf('%d км %.1f м', km, m + mm/1000)
+	row.RAIL_RAW_MASK = prop.RailMask
 	row.RAIL_POS = GetMarkRailPos(mark)
 	row.RAIL_NAME = rails_names[row.RAIL_POS]
 	row.RAIL_TEMP = temperature and sprintf('%+.1f', temperature) or ''
+	
+	if Driver:GetGPS then
+		row.LAT, row.LON = Driver:GetGPS(prop.SysCoord)
+	else
+		row.LAT = ''
+		row.LON = ''
+	end
 
 	row.DEFECT_CODE = ''
 	row.DEFECT_DESC = ''
@@ -793,6 +835,8 @@ end
 
 
 return{
+	printf = printf,
+	sprintf = sprintf,
 	sort_marks = sort_marks,
 	sort_stable = sort_stable,
 	filter_marks = filter_marks,
@@ -801,6 +845,8 @@ return{
 	filter_user_accept = filter_user_accept,
 	reverse_array = reverse_array,
 	enum_group = enum_group,
+	split_chunks = split_chunks,
+	split_chunks_iter = split_chunks_iter,
 	sort_mark_by_coord = sort_mark_by_coord,
 	format_path_coord = format_path_coord,
 	GetMarkRailPos = GetMarkRailPos,
@@ -836,5 +882,4 @@ return{
 	GetSleeperParam = GetSleeperParam,
 	GetSleeperAngle = GetSleeperAngle,
 	GetSleeperMeterial = GetSleeperMeterial,
-
 }

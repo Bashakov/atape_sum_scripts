@@ -1519,9 +1519,9 @@ local Report_Functions = {
 	---------------------------------------
 	-- c ЕКАСУИ 
 	{name="Стыковые зазоры|Excel" , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
-	{name="Стыковые зазоры|ЕКАСУИ " , fn=report_gaps            , params={ eksui=true }, guids=gap_rep_filter_guids},	
+	--{name="Стыковые зазоры|ЕКАСУИ " , fn=report_gaps            , params={ eksui=true }, guids=gap_rep_filter_guids},	
 	{name="Болтовые стыки|Excel"  , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },
-	{name="Болтовые стыки|ЕКАСУИ "  , fn=report_crew_join       , params={ eksui=true }, guids=gap_rep_filter_guids},	
+	--{name="Болтовые стыки|ЕКАСУИ "  , fn=report_crew_join       , params={ eksui=true }, guids=gap_rep_filter_guids},	
 
 	-- без ЕКАСУИ
 	--{name="Ведомость Стыковых зазоров"       , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
@@ -1536,19 +1536,8 @@ local Report_Functions = {
 --	{name="Ненормативные объекты" , fn=report_unspec_obj      , params={ filename=ProcessSumFile, sheetname="Ненормативные объекты"   }, guids=unspec_obj_filter_guids},	
 	
 	{name="НПУ", fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls" }, guids=NPU_guids},
-	
 
-
-	{name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
-	--{name="Сохранить в Excel",			fn=mark2excel,			params={ filename="Scripts\\ProcessSum.xls",	sheetname="test",}, 					},
-	
-	--{name="КоордСтыков | 1",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=1}, 	guids=joint_filter_guids},
-	--{name="КоордСтыков | 2",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=2}, 	guids=joint_filter_guids},
-	--	{name=" коорд. cтыков (магн.) | 17",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=17}, 	guids=joint_filter_guids},
-	--	{name=" коорд. cтыков (магн.) | 18",				fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордСтыков.xls",sheetname="КоордСтыковКадр", ch=18}, 	guids=joint_filter_guids},
-	
-	--	{name=" коорд. cтыков (магн.) | 17_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=17, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
-	--	{name=" коорд. cтыков (магн.) | 18_АТС",			fn=report_coord,		params={ filename="Scripts\\ProcessSum_КоордАТСтыков.xls",sheetname="КоордСтыковКадр", ch=18, guids=ats_joint_filter_guids}, 	guids=ats_joint_filter_guids},
+	--{name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 }
 
 local report_rails = require 'sum_report_rails'
@@ -1571,7 +1560,9 @@ report_beacon.AppendReports(Report_Functions)
 function GetAvailableReports() -- exported
 	local res = {}
 	for _, n in ipairs(Report_Functions) do 
-		table.insert(res, n.name)
+		if not string.find(n.name, "ЕКАСУИ") or EKASUI_PARAMS then
+			table.insert(res, n.name)
+		end
 	end
 	return res
 end

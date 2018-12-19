@@ -13,7 +13,8 @@ local excel_helper = require 'excel_helper'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 local DEFECT_CODES = require 'report_defect_codes'
-
+local EKASUI_REPORT = require 'sum_report_ekasui'
+local AVIS_REPORT = require 'sum_report_avis'
 
 local table_find = stuff.table_find
 local sprintf = stuff.sprintf
@@ -45,19 +46,22 @@ local function get_user_filter_surface()
 	return user_area, user_width, user_lenght
 end
 
+
+local function GetMarks()
+	local marks = Driver:GetMarks{GUIDS=filter_juids}
+	marks = mark_helper.sort_mark_by_coord(marks)
+	return marks
+end
+
+
 -- ============================================================================= 
 
 
-local function report_rails()
+local function generate_rows_rails(marks, dlgProgress)
 	local user_area, user_width, user_lenght = get_user_filter_surface()
 	if not user_area then
 		return
 	end
-
-	local marks = Driver:GetMarks{GUIDS=filter_juids}
-	marks = mark_helper.sort_mark_by_coord(marks)
-	
-	local dlgProgress = luaiup_helper.ProgressDlg()
 	
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
@@ -90,34 +94,32 @@ local function report_rails()
 			end
 		end
 	
-		if i % 10 == 0 and not dlgProgress:step(i / #marks, stuff.sprintf('Scan %d / %d mark, found %d', i, #marks, #report_rows)) then 
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, stuff.sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then 
 			return
 		end
 	end
 
-		
-	if #report_rows == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-	
-	if #report_rows > 1000 then
-		local msg = sprintf('Найдено %d отметок, построение отчета может занять большое время, продолжить?', #report_rows)
-		local cont = iup.Alarm("Warning", msg, "Yes", "No")
-		if cont == 2 then
-			return
-		end
-	end
-	
-	local ext_psp = mark_helper.GetExtPassport(Passport)
-	
-	local template_path = Driver:GetAppPath() .. 'Scripts/ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ РЕЛЬСОВ.xlsm'
-	local excel = excel_helper(template_path, "В4 РЛС", false)
-	excel:ApplyPassportValues(ext_psp)
-	excel:ApplyRows(report_rows, nil, dlgProgress)
-	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
-	excel:SaveAndShow()
+	return report_rows
 end	
+
+-- ============================================================================= 
+
+
+local function make_report_generator(...)
+	local report_template_name = 'ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ РЕЛЬСОВ.xlsm'
+	local sheet_name = 'В4 РЛС'
+	
+	return AVIS_REPORT.make_report_generator(GetMarks, 
+		report_template_name, sheet_name, ...)
+end
+
+local function make_report_ekasui(...)
+	return EKASUI_REPORT.make_ekasui_generator(GetMarks, ...)
+end	
+
+
+local report_rails = make_report_generator(generate_rows_rails)
+local ekasui_rails = make_report_ekasui(generate_rows_rails)
 
 -- ============================================================================= 
 
@@ -129,6 +131,7 @@ local function AppendReports(reports)
 	local sleppers_reports = 
 	{
 		{name = name_pref .. 'Определение и вычисление размеров поверхностных дефектов рельсов, седловин, в том числе в местах сварки, пробуксовок (длина, ширина и площадь)',    	fn = report_rails},
+		{name = name_pref .. 'ЕКАСУИ Определение и вычисление размеров поверхностных дефектов рельсов, седловин, в том числе в местах сварки, пробуксовок (длина, ширина и площадь)',    	fn = ekasui_rails},
 	}
 
 	for _, report in ipairs(sleppers_reports) do
@@ -143,7 +146,8 @@ if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	report_rails()
+	--report_rails()
+	ekasui_rails()
 end
 
 return {

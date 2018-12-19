@@ -8,17 +8,15 @@ end
 
 require "luacom"
 
-local OOP = require 'OOP'
-local stuff = require 'stuff'
-local excel_helper = require 'excel_helper'
+
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 local DEFECT_CODES = require 'report_defect_codes'
+local EKASUI_REPORT = require 'sum_report_ekasui'
+local AVIS_REPORT = require 'sum_report_avis'
 
-local printf = stuff.printf
-local sprintf = stuff.sprintf
-
-
+local printf = mark_helper.printf
+local sprintf = mark_helper.sprintf
 
 -- ========================================================================= 
 
@@ -30,29 +28,6 @@ local function GetMarks()
 	local marks = Driver:GetMarks{GUIDS=guids_fasteners}
 	marks = mark_helper.sort_mark_by_coord(marks)
 	return marks
-end
-
-local function SaveAndShow(report_rows, dlgProgress)
-	if #report_rows == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-	
-	if #report_rows > 1000 then
-		local msg = sprintf('Найдено %d отметок, построение отчета может занять большое время, продолжить?', #report_rows)
-		local cont = iup.Alarm("Warning", msg, "Yes", "No")
-		if cont == 2 then
-			return
-		end
-	end
-	
-	local template_path = Driver:GetAppPath() .. 'Scripts/ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ СКРЕПЛЕНИЙ.xlsm' 
-	local ext_psp = mark_helper.GetExtPassport(Passport)
-	local excel = excel_helper(template_path, "В1 СКР", false)
-	excel:ApplyPassportValues(ext_psp)
-	excel:ApplyRows(report_rows, nil, dlgProgress)
-	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
-	excel:SaveAndShow()
 end
 
 local function MakeFastenerMarkRow(mark)
@@ -106,37 +81,29 @@ local fastener_type_names = {
 	return report_rows
 end
 
+local function report_not_implement()
+	iup.Message('Error', "Отчет не реализован")
+end
 
 -- ============================================================================= 
 
 local function make_report_generator(...)
-	local row_generators = {...}
 	
-	function gen()
-		local dlgProgress = luaiup_helper.ProgressDlg()
-		local marks = GetMarks()
-		
-		local report_rows = {}
-		for _, fn_gen in ipairs(row_generators) do
-			local cur_rows = fn_gen(marks, dlgProgress)
-			for _, row in ipairs(cur_rows) do
-				table.insert(report_rows, row)
-			end
-		end
-		
-		report_rows = mark_helper.sort_stable(report_rows, function(row)
-			local c = row.SYS
-			return c
-		end)
-		SaveAndShow(report_rows, dlgProgress)
-	end
+	local report_template_name = 'ВВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ СКРЕПЛЕНИЙ.xlsm'
+	local sheet_name = 'В1 СКР'
 	
-	return gen
+	return AVIS_REPORT.make_report_generator(GetMarks, 
+		report_template_name, sheet_name, ...)
+end
+
+local function make_report_ekasui(...)
+	return EKASUI_REPORT.make_ekasui_generator(GetMarks, ...)
 end	
 
-local report_fastener = make_report_generator(generate_rows_fastener)
 
-local report_not_implement = function()	iup.Message('Error', "Отчет не реализован") end
+local report_fastener = make_report_generator(generate_rows_fastener)
+local ekasui_fastener = make_report_ekasui(generate_rows_fastener)
+
 
 -- ========================================================================= 
 
@@ -145,7 +112,8 @@ local function AppendReports(reports)
 	
 	local sleppers_reports = 
 	{
-		{name = name_pref..'Определение параметров и состояния рельсовых скреплений (наличие визуально фиксируемых ослабленных скреплений, сломанных подкладок, отсутствие болтов, негодные прокладки, закладные и клеммные болты, шурупы, клеммы, анкеры)',    					fn=report_fastener, 			},
+		{name = name_pref..'Определение параметров и состояния рельсовых скреплений (наличие визуально фиксируемых ослабленных скреплений, сломанных подкладок, отсутствие болтов, негодные прокладки, закладные и клеммные болты, шурупы, клеммы, анкеры)',    			fn=report_fastener, },
+		{name = name_pref..'ЕКАСУИ Определение параметров и состояния рельсовых скреплений (наличие визуально фиксируемых ослабленных скреплений, сломанных подкладок, отсутствие болтов, негодные прокладки, закладные и клеммные болты, шурупы, клеммы, анкеры)',    		fn=ekasui_fastener, },
 	}
 
 	for _, report in ipairs(sleppers_reports) do
@@ -159,7 +127,8 @@ if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	report_fastener()
+	--report_fastener()
+	ekasui_fastener()
 end
 
 return {

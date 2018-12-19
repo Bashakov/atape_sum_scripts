@@ -8,15 +8,14 @@ end
 
 require "luacom"
 
-local OOP = require 'OOP'
-local stuff = require 'stuff'
-local excel_helper = require 'excel_helper'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 local DEFECT_CODES = require 'report_defect_codes'
+local EKASUI_REPORT = require 'sum_report_ekasui'
+local AVIS_REPORT = require 'sum_report_avis'
 
-local printf = stuff.printf
-local sprintf = stuff.sprintf
+local printf = mark_helper.printf
+local sprintf = mark_helper.sprintf
 
 
 
@@ -33,30 +32,6 @@ local function GetMarks()
 	return marks
 end
 
-local function SaveAndShow(report_rows, dlgProgress)
-	if #report_rows == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-	
-	if #report_rows > 1000 then
-		local msg = sprintf('Найдено %d отметок, построение отчета может занять большое время, продолжить?', #report_rows)
-		local cont = iup.Alarm("Warning", msg, "Yes", "No")
-		if cont == 2 then
-			return
-		end
-	end
-	
-	local template_path = Driver:GetAppPath() .. 'Scripts/ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ БЕССТЫКОВОГО ПУТИ.xlsm'
-	local ext_psp = mark_helper.GetExtPassport(Passport)
-	local excel = excel_helper(template_path, "В6 БП", false)
-	excel:ApplyPassportValues(ext_psp)
-	excel:ApplyRows(report_rows, nil, dlgProgress)
-	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
-	excel:SaveAndShow()
-end
-
-
 local function MakeBeaconMarkRow(mark)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
 	return row
@@ -64,9 +39,7 @@ end
 
 -- ========================================================================= 
 
-local function report_beacon()
-	local dlgProgress = luaiup_helper.ProgressDlg()
-	local marks = GetMarks()
+local function generate_row_beacon(marks, dlgProgress)
 	
 	local ok, max_offset = true, 10
 	ok, max_offset  = iup.GetParam("Отчет по маячным отметкам", nil, "Смещение: %i\n", max_offset)
@@ -91,12 +64,32 @@ local function report_beacon()
 		end
 	end
 	
-	SaveAndShow(report_rows, dlgProgress)
+	return report_rows
 end
 
 local function report_not_implement()
 	iup.Message('Error', "Отчет не реализован")
 end
+
+-- ========================================================================= 
+
+local function make_report_generator(...)
+	
+	local report_template_name = 'ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ БЕССТЫКОВОГО ПУТИ.xlsm'
+	local sheet_name = 'В6 БП'
+	
+	return AVIS_REPORT.make_report_generator(GetMarks, 
+		report_template_name, sheet_name, ...)
+end
+
+local function make_report_ekasui(...)
+	return EKASUI_REPORT.make_ekasui_generator(GetMarks, ...)
+end	
+
+-- ============================================================================= 
+
+local report_beacon = make_report_generator(generate_row_beacon)
+local ekasui_beacon = make_report_ekasui(generate_row_beacon)
 
 -- ========================================================================= 
 
@@ -107,6 +100,8 @@ local function AppendReports(reports)
 	{
 		{name = name_pref..'Смещения рельсовых плетей относительно «маячных» шпал, мм',    		fn=report_beacon, 			},
 		{name = name_pref..'*Определение наличия отсутствующих и неработающих противоугонов',   fn=report_not_implement, 	},
+		
+		{name = name_pref..'ЕКАСУИ Смещения рельсовых плетей относительно «маячных» шпал, мм',  fn=ekasui_beacon, 			},
 	}
 
 	for _, report in ipairs(sleppers_reports) do
@@ -120,7 +115,8 @@ if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	report_beacon()
+	--report_beacon()
+	ekasui_beacon()
 end
 
 return {

@@ -9,14 +9,13 @@ end
 require "luacom"
 
 local OOP = require 'OOP'
-local stuff = require 'stuff'
-local excel_helper = require 'excel_helper'
 local mark_helper = require 'sum_mark_helper'
-local luaiup_helper = require 'luaiup_helper'
 local DEFECT_CODES = require 'report_defect_codes'
+local EKASUI_REPORT = require 'sum_report_ekasui'
+local AVIS_REPORT = require 'sum_report_avis'
 
-local printf = stuff.printf
-local sprintf = stuff.sprintf
+local printf = mark_helper.printf
+local sprintf = mark_helper.sprintf
 
 
 local video_joints_juids = 
@@ -36,28 +35,6 @@ local function GetMarks()
 	return marks
 end
 
-local function SaveAndShow(report_rows, dlgProgress)
-	if #report_rows == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-	
-	if #report_rows > 1000 then
-		local msg = sprintf('Найдено %d отметок, построение отчета может занять большое время, продолжить?', #report_rows)
-		local cont = iup.Alarm("Warning", msg, "Yes", "No")
-		if cont == 2 then
-			return
-		end
-	end
-	
-	local template_path = Driver:GetAppPath() .. 'Scripts/ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ РЕЛЬСОВЫХ СТЫКОВ.xlsm' 
-	local ext_psp = mark_helper.GetExtPassport(Passport)
-	local excel = excel_helper(template_path, "В2 СТК", false)
-	excel:ApplyPassportValues(ext_psp)
-	excel:ApplyRows(report_rows, nil, dlgProgress)
-	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
-	excel:SaveAndShow()
-end
 
 local function MakeJointMarkRow(mark)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
@@ -327,31 +304,19 @@ end
 -- ============================================================================= 
 
 local function make_report_generator(...)
-	local row_generators = {...}
 	
+	local report_template_name = 'ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ РЕЛЬСОВЫХ СТЫКОВ.xlsm'
+	local sheet_name = 'В2 СТК'
+	
+	return AVIS_REPORT.make_report_generator(GetMarks, 
+		report_template_name, sheet_name, ...)
+end
 
-	function gen()
-		local dlgProgress = luaiup_helper.ProgressDlg()
-		local marks = GetMarks()
-		
-		local report_rows = {}
-		for _, fn_gen in ipairs(row_generators) do
-			local cur_rows = fn_gen(marks, dlgProgress)
-			for _, row in ipairs(cur_rows) do
-				table.insert(report_rows, row)
-			end
-		end
-		
-		report_rows = mark_helper.sort_stable(report_rows, function(row)
-			local c = row.SYS
-			return c
-		end)
-		SaveAndShow(report_rows, dlgProgress)
-	end
-	
-	return gen
+local function make_report_ekasui(...)
+	return EKASUI_REPORT.make_ekasui_generator(GetMarks, ...)
 end	
 
+-- ============================================================================= 
 
 local report_joint_width = make_report_generator(generate_rows_joint_width)
 local report_neigh_blind_joint = make_report_generator(generate_rows_neigh_blind_joint)
@@ -369,6 +334,24 @@ local report_ALL = make_report_generator(
 	generate_rows_rows_WeldedBond
 )
 
+
+local ekasui_joint_width = make_report_ekasui(generate_rows_joint_width)
+local ekasui_neigh_blind_joint = make_report_ekasui(generate_rows_neigh_blind_joint)
+local ekasui_joint_step = make_report_ekasui(generate_rows_joint_step)
+local ekasui_fishplate = make_report_ekasui(generate_rows_fishplate)
+local ekasui_missing_bolt = make_report_ekasui(generate_rows_missing_bolt)
+local ekasui_WeldedBond = make_report_ekasui(generate_rows_WeldedBond)
+
+local ekasui_ALL = make_report_ekasui( 
+	generate_rows_joint_width, 
+	generate_rows_neigh_blind_joint, 
+	generate_rows_joint_step, 
+	generate_rows_fishplate, 
+	generate_rows_missing_bolt, 
+	generate_rows_rows_WeldedBond
+)
+
+
 -- ============================================================================= 
 
 
@@ -377,7 +360,7 @@ local function AppendReports(reports)
 	
 	local sleppers_reports = 
 	{
-		{name = name_pref..'ВСЕ',    											fn = report_ALL, 				},
+		{name = name_pref..'ВСЕ',    																	fn = report_ALL, 				},
 		{name = name_pref..'Ширина стыкового зазора, мм',    											fn = report_joint_width, 				},
 		{name = name_pref..'Определение двух подряд и более нулевых зазоров',    						fn = report_neigh_blind_joint,			},
 		{name = name_pref..'Горизонтальные ступеньки в стыках, мм',    									fn = report_joint_step,					},
@@ -385,11 +368,16 @@ local function AppendReports(reports)
 		{name = name_pref..'Определение наличия и состояния (ослаблен, раскручен, не типовой) стыковых болтов',		fn = report_missing_bolt,	},
 		{name = name_pref..'Определение наличия и состояния приварных рельсовых соединителей',    		fn = report_WeldedBond, 				},
 		{name = name_pref..'*Определение наличия и видимых повреждений изоляции в изолирующих стыках',	fn = report_broken_insulation,			},
+		
+		{name = name_pref..'ЕКАСУИ ВСЕ',																fn = ekasui_ALL,			},
+		{name = name_pref..'ЕКАСУИ Определение двух подряд и более нулевых зазоров',					fn = ekasui_neigh_blind_joint,			},
 	}
 
 	for _, report in ipairs(sleppers_reports) do
-		report.guids = video_joints_juids
-		table.insert(reports, report)
+		if report.fn then
+			report.guids = video_joints_juids
+			table.insert(reports, report)
+		end
 	end
 end
 
@@ -399,8 +387,10 @@ if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	report_ALL()
+	--report_ALL()
+	ekasui_ALL()
 end
+
 
 
 return {
