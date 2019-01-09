@@ -44,6 +44,9 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg)
 	
 	local dom = luacom.CreateObject("Msxml2.DOMDocument.6.0")	
 	assert(dom)
+	local pi = dom:createProcessingInstruction("xml", "version='1.0' encoding='utf-8'");
+	dom:appendChild(pi);
+	
 	local node_header = dom:createElement('header')
 	dom:appendChild(node_header)
 	
