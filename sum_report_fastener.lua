@@ -89,7 +89,7 @@ end
 
 local function make_report_generator(...)
 	
-	local report_template_name = 'ВВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ СКРЕПЛЕНИЙ.xlsm'
+	local report_template_name = 'ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ СКРЕПЛЕНИЙ.xlsm'
 	local sheet_name = 'В1 СКР'
 	
 	return AVIS_REPORT.make_report_generator(GetMarks, 

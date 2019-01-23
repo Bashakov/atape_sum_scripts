@@ -187,8 +187,8 @@ local function generate_rows_joint_step(marks, dlgProgress)
 		step_vert = math.abs(step_vert)
 		if step_vert > 1 then
 			local row = MakeJointMarkRow(mark)
-			row.DEFECT_CODE = DEFECT_CODES.JOINT_VER_STEP[1]
-			row.DEFECT_DESC = DEFECT_CODES.JOINT_VER_STEP[2]
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_HOR_STEP[1]
+			row.DEFECT_DESC = DEFECT_CODES.JOINT_HOR_STEP[2]
 			row.GAP_WIDTH = mark_helper.GetGapWidth(mark) or ''
 			local temperature = mark_helper.GetTemperature(mark) or 0
 			
@@ -369,8 +369,13 @@ local function AppendReports(reports)
 		{name = name_pref..'Определение наличия и состояния приварных рельсовых соединителей',    		fn = report_WeldedBond, 				},
 		{name = name_pref..'*Определение наличия и видимых повреждений изоляции в изолирующих стыках',	fn = report_broken_insulation,			},
 		
-		{name = name_pref..'ЕКАСУИ ВСЕ',																fn = ekasui_ALL,			},
-		{name = name_pref..'ЕКАСУИ Определение двух подряд и более нулевых зазоров',					fn = ekasui_neigh_blind_joint,			},
+		{name = name_pref..'ЕКАСУИ ВСЕ',																		fn = ekasui_ALL,			},
+		{name = name_pref..'ЕКАСУИ Ширина стыкового зазора, мм',    											fn = ekasui_joint_width, 				},
+		{name = name_pref..'ЕКАСУИ Определение двух подряд и более нулевых зазоров',    						fn = ekasui_neigh_blind_joint,			},
+		{name = name_pref..'ЕКАСУИ  ступеньки в стыках, мм',    												fn = ekasui_joint_step,					},
+		{name = name_pref..'ЕКАСУИ Определение наличия и состояния (надрыв, трещина, излом) накладок',			fn = ekasui_fishplate,					},
+		{name = name_pref..'ЕКАСУИ Определение наличия и состояния (ослаблен, раскручен, не типовой) стыковых болтов',		fn = ekasui_missing_bolt,	},
+		{name = name_pref..'ЕКАСУИ Определение наличия и состояния приварных рельсовых соединителей',    		fn = ekasui_WeldedBond, 				},
 	}
 
 	for _, report in ipairs(sleppers_reports) do
