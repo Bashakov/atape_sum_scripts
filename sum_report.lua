@@ -399,8 +399,6 @@ local function make_rail_len_table(marks)
 	return mark_rail_len
 end
 
-
-
 -- =================================================================================
 
 local function dump_mark_list(template_name, sheet_name)
@@ -1554,6 +1552,9 @@ report_fastener.AppendReports(Report_Functions)
 
 local report_beacon = require 'sum_report_beacon'
 report_beacon.AppendReports(Report_Functions)
+
+local report_videogram = require 'sum_report_videogram'
+report_videogram.AppendReports(Report_Functions)
 
 -- ================================ EXPORT FUNCTIONS ================================= --
 

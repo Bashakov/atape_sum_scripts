@@ -74,6 +74,21 @@ local column_num =
 	end,
 }
 
+local column_mark_id = 
+{
+	name = 'ID', 
+	width = 80, 
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local mark_id = mark.prop.ID
+		return mark_id
+	end,
+	sorter = function(mark)
+		return mark.prop.ID
+	end
+}
+
 local column_path_coord = 
 {
 	name = 'Коорд.', 
@@ -744,6 +759,7 @@ local Filters =
 			column_rail,
 			column_rail_lr,
 			column_weldedbond_status,
+			column_mark_id,
 		}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
