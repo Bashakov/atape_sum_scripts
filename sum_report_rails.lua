@@ -31,11 +31,11 @@ local guid_surface_defects =
 local filter_juids = stuff.table_merge(guid_surface_defects)
 
 local function get_user_filter_surface()
-		local res, user_width, user_lenght, user_area = iup.GetParam("Фильтрация дефектов", nil, 
-		"Ширина (мм): %s\n\z
-		Высота (мм): %s\n\z
-		Площадь (мм): %i\n",
-		'', '', 1000)
+		local res, user_width, user_lenght, user_area = iup.GetParam("Фильтрация ( AND ) дефектов", nil, 
+		"Ширина(поперек рельса), мм  >=: %s\n\z
+		 Длина(вдоль рельса), мм >=: %s\n\z
+		 Площадь(д.б. число), см**2 >=: %i\n",
+		'', '', 10)
 	
 	if not res then
 		return
@@ -75,14 +75,11 @@ local function generate_rows_rails(marks, dlgProgress)
 				local mark_area = surf_prm.SurfaceArea
 				
 				local accept = true
-				if mark_length and mark_length >= 60 then
-					accept = true
-				else
 					accept =
 						(not user_width or (mark_width and mark_width >= user_width)) and
 						(not user_lenght or (mark_length and mark_length >= user_lenght)) and
 						(mark_area >= user_area)
-				end
+
 				print(user_width, user_lenght, user_area, '|', mark_width, mark_length,  mark_area,  '=', accept)
 				
 				if accept then
@@ -144,10 +141,11 @@ end
 if not ATAPE then
 
 	test_report  = require('test_report')
+	test_report('D:\\ATapeXP\\Main\\494\\hi\\2019_03_05\\Avikon-03M\\10352\\[494]_2018_09_27_01.xml')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	--report_rails()
-	ekasui_rails()
+	report_rails()
+	--ekasui_rails()
 end
 
 return {

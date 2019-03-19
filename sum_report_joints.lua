@@ -187,8 +187,8 @@ local function generate_rows_joint_step(marks, dlgProgress)
 		step_vert = math.abs(step_vert)
 		if step_vert > 1 then
 			local row = MakeJointMarkRow(mark)
-			row.DEFECT_CODE = DEFECT_CODES.JOINT_HOR_STEP[1]
-			row.DEFECT_DESC = DEFECT_CODES.JOINT_HOR_STEP[2]
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_VER_STEP[1]
+			row.DEFECT_DESC = DEFECT_CODES.JOINT_VER_STEP[2]
 			row.GAP_WIDTH = mark_helper.GetGapWidth(mark) or ''
 			local temperature = mark_helper.GetTemperature(mark) or 0
 			
@@ -331,7 +331,7 @@ local report_ALL = make_report_generator(
 	generate_rows_joint_step, 
 	generate_rows_fishplate, 
 	generate_rows_missing_bolt, 
-	generate_rows_rows_WeldedBond
+	generate_rows_WeldedBond
 )
 
 
@@ -348,7 +348,7 @@ local ekasui_ALL = make_report_ekasui(
 	generate_rows_joint_step, 
 	generate_rows_fishplate, 
 	generate_rows_missing_bolt, 
-	generate_rows_rows_WeldedBond
+	generate_rows_WeldedBond
 )
 
 
