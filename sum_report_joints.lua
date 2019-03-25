@@ -393,7 +393,8 @@ if not ATAPE then
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
 	--report_ALL()
-	ekasui_ALL()
+	--ekasui_ALL()
+	ekasui_joint_width()
 end
 
 

@@ -628,6 +628,21 @@ local column_weldedbond_status = {
 	end
 }
 
+local column_mark_desc = 
+{
+	name = 'Описание', 
+	---name = 'Description', 
+	width = 80, 
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		return mark.prop.Description
+	end,
+	sorter = function(mark)
+		return mark.prop.Description
+	end
+}
+
 --=========================================================================== --
 
 local recognition_guids = {
@@ -639,6 +654,10 @@ local recognition_guids = {
 			
 local recognition_surface_defects = {
 	"{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}",
+}
+
+local recognition_NonNormal_defects = {
+	"{0860481C-8363-42DD-BBDE-8A2366EFAC90}",
 }
 
 --=========================================================================== --
@@ -705,6 +724,17 @@ local Filters =
 			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",}
 	},
 	{
+		name = 'Ненормативный объект', 
+		columns = {
+			column_num, 
+			column_path_coord, 
+			column_rail,
+			column_mark_desc,
+			column_recogn_video_channel,
+			}, 
+		GUIDS = recognition_NonNormal_defects,
+	},			
+	{
 		name = 'Скрепления',
 		columns = {
 			column_num,
@@ -759,7 +789,7 @@ local Filters =
 			column_rail,
 			column_rail_lr,
 			column_weldedbond_status,
-			column_mark_id,
+			--column_mark_id, для проверки
 		}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
@@ -943,4 +973,38 @@ function SortMarks(col, inc)
 	
 	work_sort_param[0] = col
 	work_sort_param[1] = inc
+end
+
+
+-- тестирование
+if not ATAPE then
+
+	test_report  = require('test_report')
+	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	
+	local name  = 'Шпалы(эпюра,перпедикулярность)'
+	
+	local columns = GetColumnDescription(name)
+	local col_fmt = {}
+	local col_names = {}
+	
+	for _, col in ipairs (columns) do
+		table.insert(col_names, col.name)
+		table.insert(col_fmt, sprintf('%%%ds', col.width/8))
+	end
+	col_fmt = table.concat(col_fmt, ' | ')
+	local str_header = sprintf(col_fmt, table.unpack(col_names))
+	print(str_header)
+	print(string.rep('=', #str_header))
+	
+	local cnt_row = InitMark(name)
+	for row = 1, cnt_row do
+		local values = {}
+		for col = 1, #columns do
+			local text = GetItemText(row, col)
+			table.insert(values, text)
+		end
+		local text_row = sprintf(col_fmt, table.unpack(values))
+		print(text_row)
+	end
 end

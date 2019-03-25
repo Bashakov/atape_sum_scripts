@@ -37,7 +37,13 @@ local function read_sum_file(file_path, guids)
 	
 	local str_stat = [[
 		SELECT 
-			m.MARKID as ID, hex(t.GUID) as Guid, m.SYSCOORD as SysCoord, m.LENGTH as Len, m.RAILMASK as RailMask, d.DESCRIPTION as Description
+			m.MARKID as ID, 
+			hex(t.GUID) as Guid, 
+			m.SYSCOORD as SysCoord, 
+			m.LENGTH as Len, 
+			m.RAILMASK as RailMask, 
+			m.ChannelMask as ChannelMask, 
+			d.DESCRIPTION as Description
 		FROM SumrkMainTable as m
 		JOIN SumrkMarkTypeTable as t ON m.TYPEID = t.TYPEID
 		LEFT JOIN SumrkDescTable as d ON m.MARKID = d.MARKID
@@ -55,6 +61,7 @@ local function read_sum_file(file_path, guids)
 		local mark = {
 			prop = prop,
 			ext = {},
+			user = {},
 		}
 		marks[mark.prop.ID] = mark
 	end
