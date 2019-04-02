@@ -423,8 +423,8 @@ end
 
 local column_surf_defect_type = make_column_surf_defect('Тип', 'SurfaceFault')
 local column_surf_defect_area = make_column_surf_defect('Плщ', 'SurfaceArea')
-local column_surf_defect_len = make_column_surf_defect('Длн', 'SurfaceWidth')  -- https://bt.abisoft.spb.ru/view.php?id=251#c592
-local column_surf_defect_wdh = make_column_surf_defect('Шрн', 'SurfaceLength') 
+local column_surf_defect_len = make_column_surf_defect('Длн', 'SurfaceLength')  -- https://bt.abisoft.spb.ru/view.php?id=251#c592
+local column_surf_defect_wdh = make_column_surf_defect('Шрн', 'SurfaceWidth') 
 
 local fishpalte_fault_str = 
 {
@@ -630,7 +630,7 @@ local column_weldedbond_status = {
 
 local column_mark_desc = 
 {
-	name = 'Описание', 
+	name = 'Опсисание', 
 	---name = 'Description', 
 	width = 80, 
 	align = 'r',
@@ -982,7 +982,7 @@ if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	local name  = 'Шпалы(эпюра,перпедикулярность)'
+	local name  = 'Штепсельные соединители'
 	
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}

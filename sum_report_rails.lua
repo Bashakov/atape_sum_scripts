@@ -70,8 +70,8 @@ local function generate_rows_rails(marks, dlgProgress)
 			if surf_prm then
 			
 				-- https://bt.abisoft.spb.ru/view.php?id=251#c592
-				local mark_length = surf_prm.SurfaceWidth	
-				local mark_width = surf_prm.SurfaceLength
+				local mark_length = surf_prm.SurfaceLength
+				local mark_width = surf_prm.SurfaceWidth	
 				local mark_area = surf_prm.SurfaceArea
 				
 				local accept = true

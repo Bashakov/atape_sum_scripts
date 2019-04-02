@@ -644,7 +644,7 @@ local function DrawSurfDefectMark(drawer, frame, mark)
 					drawer.fig:polygon(points)					
 					--local strText = sprintf('Пов.деф.(l=%dмм,w=%dмм,s=%dмм2)',prm.SurfaceLength or 0, prm.SurfaceWidth or 0, prm.SurfaceArea or 0)
 					--local strText = sprintf('Пов.деф.(l=%dмм,a=%dмм,s=%dсм2)', prm.SurfaceWidth or 0, prm.SurfaceLength or 0 ,prm.SurfaceLength*prm.SurfaceWidth/100 or 0)									
-					local strText = sprintf('ПДР[l=%d,a=%d]', prm.SurfaceLength or 0, prm.SurfaceWidth or 0 )	
+					local strText = sprintf('п.д.[a=%d,l=%d]', prm.SurfaceWidth or 0 , prm.SurfaceLength or 0) 
 					local tcx, tcy = get_center_point(points)
 					OutlineTextOut(drawer, tcx, tcy+20, strText)					
 				end
@@ -672,8 +672,11 @@ local function DrawSleeperMark(drawer, frame, mark)
 		for nodeResult in SelectNodes(xmlDom, req) do
 			
 			local item_frame = nodeResult:SelectSingleNode("../@coord").nodeValue
-			local Angle_mrad = nodeResult:SelectSingleNode('PARAM[@name="Angle_mrad" and @value]/@value').nodeValue
-			local AxisSysCoord_mm = nodeResult:SelectSingleNode('PARAM[@name="AxisSysCoord_mm" and @value]/@value').nodeValue
+			--local Angle_mrad = nodeResult:SelectSingleNode('PARAM[@name="Angle_mrad" and @value]/@value').nodeValue
+			local nodeAngleMrad = nodeResult:SelectSingleNode('PARAM[@name="Angle_mrad" and @value]/@value')
+			local Angle_mrad = nodeAngleMrad and nodeAngleMrad.nodeValue or 0
+            
+            local AxisSysCoord_mm = nodeResult:SelectSingleNode('PARAM[@name="AxisSysCoord_mm" and @value]/@value').nodeValue
 			
 			local points
 			for nodeDraw in SelectNodes(nodeResult, 'PARAM[@name="Coord" and (@type="polygon" or @type="line") and @value]') do

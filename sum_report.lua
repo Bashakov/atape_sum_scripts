@@ -401,6 +401,18 @@ end
 
 -- =================================================================================
 
+local function report_test()
+	local marks = Driver:GetMarks()	
+	-- iup.Message('Info', sprintf("load %d marks", #marks))
+	
+	local path1 = Driver:GetVideoImage(0, 100000, {rail=3})
+	os.execute("start " .. path1)
+	--iup.Message('Info', path1)
+	
+	local path2 = Driver:GetFrame(18, 100000)
+	--os.execute("start " .. path2)
+end
+
 local function dump_mark_list(template_name, sheet_name)
 	local filedlg = iup.filedlg{
 		dialogtype = "dir", 
@@ -1439,8 +1451,8 @@ local function report_surface_defects(params)
 		
 		if surf_prm  then
 			-- https://bt.abisoft.spb.ru/view.php?id=251#c592
-			local mark_length = surf_prm.SurfaceWidth	
-			local mark_width = surf_prm.SurfaceLength
+			local mark_length = surf_prm.SurfaceLength
+			local mark_width = surf_prm.SurfaceWidth	
 			local mark_area = surf_prm.SurfaceArea
 			
 			if mark_length and mark_length >= 60 then
@@ -1536,6 +1548,7 @@ local Report_Functions = {
 	{name="НПУ", fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls" }, guids=NPU_guids},
 
 	--{name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
+	--{name="TEST",			fn=report_test,		params={} },
 }
 
 local report_rails = require 'sum_report_rails'
