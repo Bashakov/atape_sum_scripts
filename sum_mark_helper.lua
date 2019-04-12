@@ -94,6 +94,38 @@ local function split_chunks(chunk_len, arr)
 	return res
 end
 
+-- поверхностное копирование
+local function shallowcopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in pairs(orig) do
+            copy[orig_key] = orig_value
+        end
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
+-- глубоукое копирование
+local function deepcopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[deepcopy(orig_key)] = deepcopy(orig_value)
+        end
+        setmetatable(copy, deepcopy(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
+
 -- =================== ШИРИНА ЗАЗОРА ===================
 
 -- получить все ширины из отметки
@@ -847,6 +879,9 @@ return{
 	enum_group = enum_group,
 	split_chunks = split_chunks,
 	split_chunks_iter = split_chunks_iter,
+	shallowcopy = shallowcopy,
+	deepcopy = deepcopy,
+	
 	sort_mark_by_coord = sort_mark_by_coord,
 	format_path_coord = format_path_coord,
 	GetMarkRailPos = GetMarkRailPos,
