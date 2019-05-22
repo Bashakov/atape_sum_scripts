@@ -1,12 +1,12 @@
 
 
-dofile "Scripts/sum_list_pane_columns.lua"
+-- dofile "Scripts/sum_list_pane_columns.lua"
 
 
 Filters = 
 {
 	{	
-		name = 'Магнитные Стыки', 		
+		name = 'Магнитные Стыки',
 		columns = {
 			column_num,
 			column_path_coord, 
@@ -264,5 +264,15 @@ Filters =
 			column_recogn_video_channel,
 			}, 
 		visible = true,
+	},
+	{	
+		name = 'Запуски распознавания',
+		columns = {
+			column_num,
+			column_recog_run_date,
+			column_recog_run_type,
+			column_recog_dll_ver
+			}, 
+		GUIDS = {"{1D5095ED-AF51-43C2-AA13-6F6C86302FB0}"},
 	},
 }

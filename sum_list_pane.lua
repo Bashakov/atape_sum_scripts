@@ -12,10 +12,21 @@ local sort_stable = mark_helper.sort_stable
 local shallowcopy = mark_helper.shallowcopy
 local deepcopy = mark_helper.deepcopy
 
+
+-- для запуска и из атейпа и из отладчика
+local function my_dofile(file_name)
+	local ok, err = pcall(function() dofile(file_name)	end)
+	if not ok then
+		local ok, err1 = pcall(function() dofile('Scripts/' .. file_name) end)
+		if not ok then	error(err .. '\n' .. err1) end
+	end
+end
+
 -- =====================================================================  
 
-dofile "Scripts/sum_list_pane_columns.lua"
-dofile "Scripts/sum_list_pane_filters.lua"
+my_dofile "sum_list_pane_guids.lua"
+my_dofile "sum_list_pane_columns.lua"
+my_dofile "sum_list_pane_filters.lua"
 
 
 -- =====================================================================  
@@ -193,7 +204,7 @@ end
 
 -- функция вызывается из программы, для запроса текста в ячейке
 function GetItemColor(row, col)
-	if selected_row == row and col == 1 then
+	if selected_row == row  then
 		return {0xffffff, 0x0000ff}
 	end
 			
@@ -236,10 +247,11 @@ function OnMouse(act, flags, cell, pos_client, pos_screen)
 end
 
 function OnKey(key, down, flags)
-	--print(key, down, flags)
+	print(key, down, flags)
 	if down then
 		local step_page = MarkTable:GetRowPerPage() - 1
-		local new_selected_row = 0
+		local new_selected_row = -1
+		
 		if key == "Up"   		then new_selected_row = selected_row - 1 			end
 		if key == "Down" 		then new_selected_row = selected_row + 1 			end
 		if key == "Home" 		then new_selected_row = 1 							end
@@ -247,16 +259,18 @@ function OnKey(key, down, flags)
 		if key == "Page Up" 	then new_selected_row = selected_row - step_page; 	end
 		if key == "Page Down" 	then new_selected_row = selected_row + step_page; 	end
 
-		new_selected_row = math.max(new_selected_row, 1)
-		new_selected_row = math.min(new_selected_row, #work_marks_list)
+		if new_selected_row ~= -1 then
+			new_selected_row = math.max(new_selected_row, 1)
+			new_selected_row = math.min(new_selected_row, #work_marks_list)
 
-		if new_selected_row > 0 and new_selected_row ~= selected_row then
-			set_selected_row(new_selected_row)
-			MarkTable:EnsureVisible(new_selected_row)
-			
-			local mark = work_marks_list[new_selected_row]
-			if mark and mark.prop and mark.prop.ID then 
-				Driver:JumpMark(mark.prop.ID)	
+			if new_selected_row > 0 and new_selected_row ~= selected_row then
+				set_selected_row(new_selected_row)
+				MarkTable:EnsureVisible(new_selected_row)
+				
+				local mark = work_marks_list[new_selected_row]
+				if mark and mark.prop and mark.prop.ID then 
+					Driver:JumpMark(mark.prop.ID)	
+				end
 			end
 		end
 	end
@@ -286,10 +300,11 @@ if not ATAPE then
 	--local n = GetFilterNames("Зазоры")
 
 	test_report  = require('test_report')
-	--test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
-	test_report('D:/ATapeXP/Main/494/multimagnetic/2018_01_25/Avikon-03M/12216/[494]_2018_01_03_01.xml')
+	local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+	--local psp_path = 'D:/ATapeXP/Main/494/multimagnetic/2018_01_25/Avikon-03M/12216/[494]_2018_01_03_01.xml'
+	test_report(psp_path)
 	
-	local name  = 'Отсутствующие болты (вне норматива)'
+	local name  = 'Запуски распознавания'
 	
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}

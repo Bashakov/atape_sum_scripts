@@ -522,14 +522,16 @@ local fastener_type_names = {
 	
 local fastener_fault_names = {
 	[0] = 'норм.',
-	[1] = 'От.ЗБ', 
-	[2] = 'От.Кл',
+	[1] = 'От.КБ',  -- отсутствие клемного болта kb65
+	[2] = 'От.КЛМ',	-- отсуствие клеммы apc
+	[10] = 'От.ЗБ',  -- отсутствие закладного болта kb65
+	[11] = 'От.КЗБ',  -- отсутствие клемного и закладного болта kb65	
 }
 
 local function DrawFastener(drawer, frame, mark)
 	local prop, ext = mark.prop, mark.ext
 	local cur_frame_coord = frame.coord.raw
-	local item_frame = ext.VIDEOFRAMECOORD
+
 	local raw_xml = ext.RAWXMLDATA
 	
 	local color = {r=127, g=0, b=127}
@@ -555,6 +557,7 @@ local function DrawFastener(drawer, frame, mark)
 		local fig_channel = node:SelectSingleNode("../../../@channel")
 		fig_channel = fig_channel and tonumber(fig_channel.nodeValue)
 		
+        local item_frame = tonumber(node:SelectSingleNode('../../@coord').nodeValue)
 		local polygon = node:SelectSingleNode('@value').nodeValue
 	
 		local points = parse_polygon(polygon, cur_frame_coord, item_frame)

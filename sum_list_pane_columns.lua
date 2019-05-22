@@ -14,7 +14,7 @@ deepcopy = mark_helper.deepcopy
 
 -- =====================================================================  
 
-dofile 'Scripts/sum_list_pane_guids.lua'
+-- dofile 'Scripts/sum_list_pane_guids.lua'
 
 -- =====================================================================  
 
@@ -636,7 +636,7 @@ column_weldedbond_status = {
 
 column_mark_desc = 
 {
-	name = 'Опсисание', 
+	name = 'Описание', 
 	---name = 'Description', 
 	width = 80, 
 	align = 'r',
@@ -649,3 +649,62 @@ column_mark_desc =
 	end
 }
 
+local function get_recognition_run_info(mark)
+	local info = {}
+	local desc = mark and mark.prop.Description
+	if desc and #desc > 0 then
+		for k, v in string.gmatch(desc, '([%w_]+)=([%w%.]+)') do
+			info[k] = v
+		end
+	end
+	return info
+end
+
+
+column_recog_run_date =
+{
+	name = 'Произведен', 
+	width = 120, 
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local info = get_recognition_run_info(mark)
+		return os.date('%Y-%m-%d %H:%M:%S', info.RECOGNITION_START)
+	end,
+	sorter = function(mark)
+		local info = get_recognition_run_info(mark)
+		return info.RECOGNITION_START
+	end
+}
+
+column_recog_run_type = 
+{
+	name = 'Тип', 
+	width = 100, 
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local info = get_recognition_run_info(mark)
+		return info.RECOGNITION_TYPE .. ' ' .. info.RECOGNITION_MODE
+	end,
+	sorter = function(mark)
+		local info = get_recognition_run_info(mark)
+		return info.RECOGNITION_TYPE .. ' ' .. info.RECOGNITION_MODE
+	end
+}
+
+column_recog_dll_ver =
+{
+	name = 'Версия', 
+	width = 50, 
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local info = get_recognition_run_info(mark)
+		return info.RECOGNITION_DLL_VERSION
+	end,
+	sorter = function(mark)
+		local info = get_recognition_run_info(mark)
+		return info.RECOGNITION_DLL_VERSION
+	end
+}

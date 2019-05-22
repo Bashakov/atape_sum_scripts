@@ -20,7 +20,7 @@ end
 
 local function GetBase64EncodedFrame(row)
 	local rail = bit32.band(row.RAIL_RAW_MASK, 0x03)
-	local video_channel = rail==1 and 18 or 17
+	local video_channel = rail==1 and 17 or 18
 	local video_img
 	local ok, err = pcall(function()
 		video_img = Driver:GetFrame(video_channel, row.SYS, {mode=3, panoram_width=700, width=400, height=300, base64=true} )
@@ -30,6 +30,7 @@ local function GetBase64EncodedFrame(row)
 	end
 	return video_img
 end
+
 
 -- ========================================
 
@@ -44,13 +45,13 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg)
 	
 	local dom = luacom.CreateObject("Msxml2.DOMDocument.6.0")	
 	assert(dom)
-	local pi = dom:createProcessingInstruction("xml", "version='1.0' encoding='utf-8'");
-	dom:appendChild(pi);
+	
+	local node_OutFile = dom:createElement('OutFile')
+	node_OutFile:setAttribute("NSIver", EKASUI_PARAMS.NSIver)
 	
 	local node_header = dom:createElement('header')
-	dom:appendChild(node_header)
+	node_OutFile:appendChild(node_header)
 	
-	node_header:setAttribute("NSIver", EKASUI_PARAMS.NSIver)
 	node_header:setAttribute("Manufacture", "Радиоавионика")
 	node_header:setAttribute("PackageID", PackageID)
 	node_header:setAttribute("PackageNUM", PackageNUM)
@@ -98,7 +99,11 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg)
 	end
 	
 	local path_dst = sprintf("%s\\video_%s_%s_%d.xml", EKASUI_PARAMS.ExportFolder, Passport.SOURCE, export_id, PackageNUM)
-	dom:save(path_dst)
+	--dom:save(path_dst)
+	local f = io.open(path_dst, 'w+')
+	f:write('<?xml version="1.0" encoding="utf-8"?>')
+	f:write(node_OutFile.xml)
+	f:close()
 	return path_dst
 end
 
