@@ -1,24 +1,7 @@
-
-
--- dofile "Scripts/sum_list_pane_columns.lua"
-
-
-Filters = 
+local filters = 
 {
-	{	
-		name = 'Магнитные Стыки',
-		columns = {
-			column_num,
-			column_path_coord, 
-			column_rail,
-			column_mag_use_recog,
-			}, 
-		GUIDS = {
-			"{19253263-2C0B-41EE-8EAA-000000000010}",
-			"{19253263-2C0B-41EE-8EAA-000000000040}",}
-	},
 	{
-		group = {'Зазоры', 'Распознавание'},
+		group = {'Группа Распознавание', 'Группа Стыки'},
 		name = 'Стыковые зазоры', 
 		columns = {
 			column_num, 
@@ -45,7 +28,7 @@ Filters =
 		end,
 	},
 	{
-		group = {'Зазоры', 'Распознавание'},
+		group = {'Группа Распознавание', 'Группа Ненормативные'},
 		name = 'Отсутствующие болты (вне норматива)', 
 		columns = {
 			column_num, 
@@ -79,7 +62,7 @@ Filters =
 		end
 	},
 	{
-		group = {'Маячные', 'Распознавание'},
+		group = {'Группа Распознавание'},
 		name = 'Маячные отметки',
 		columns = {
 			column_num,
@@ -93,7 +76,7 @@ Filters =
 			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",}
 	},
 	{
-		group = {'Ненормативные', 'Распознавание'},
+		group = {'Группа Ненормативные', 'Группа Распознавание'},
 		name = 'Ненормативный объект', 
 		columns = {
 			column_num, 
@@ -103,9 +86,9 @@ Filters =
 			column_recogn_video_channel,
 			}, 
 		GUIDS = recognition_NonNormal_defects,
-	},			
+	},
 	{
-		group = {'Скрепления', 'Распознавание'},
+		group = {'Группа Распознавание'},
 		name = 'Скрепления',
 		columns = {
 			column_num,
@@ -120,6 +103,7 @@ Filters =
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
 	},
 	{
+		group = {'Группа Распознавание'},
 		name = 'Горизонтальные уступы', 
 		columns = {
 			column_num, 
@@ -136,6 +120,7 @@ Filters =
 		end,
 	},
 	{
+		group = {'Группа Распознавание'},
 		name = 'Штепсельные соединители', 
 		columns = {
 			column_num, 
@@ -153,6 +138,7 @@ Filters =
 		end,
 	},
 	{
+		group = {'Группа Распознавание'},
 		name = 'Приварные соединители', 
 		columns = {
 			column_num, 
@@ -169,6 +155,7 @@ Filters =
 		end,
 	},
 	{
+		group = {'Группа Распознавание'},
 		name = 'Поверхностные дефекты', 
 		columns = {
 			column_num, 
@@ -183,6 +170,7 @@ Filters =
 		GUIDS = recognition_surface_defects,
 	},	
 	{
+		group = {'Группа Распознавание', 'Группа Ненормативные',},
 		name = 'Дефекты накладок', 
 		columns = {
 			column_num, 
@@ -198,35 +186,7 @@ Filters =
 		end,
 	},
 	{
-		group = 'НПУ',
-		name = 'НПУ', 
-		columns = {
-			column_num, 
-			column_path_coord, 
-			column_length_npu,
-			--column_rail,
-			column_rail_lr,
-			column_npu_type,
-			}, 
-		GUIDS = NPU_guids,
-		on_context_menu = function(row, col)
-			local mark = work_marks_list[row]
-			local prop = mark.prop
-			local pos = table_find(NPU_guids, prop.Guid)
-			if pos == 1 and MarkTable:PopupMenu({"Подтвр. НПУ"}) == 1 then
-				prop.Guid = NPU_guids[2]
-				mark:Save()
-				MarkTable:Invalidate(row)
-				Driver:RedrawView()
-			elseif pos == 2 and MarkTable:PopupMenu({"Возможн. НПУ"}) == 1 then
-				prop.Guid = NPU_guids[1]
-				mark:Save()
-				MarkTable:Invalidate(row)
-				Driver:RedrawView()
-			end
-		end,
-	},
-	{
+		group = {'Группа Распознавание'},
 		name = 'Шпалы(эпюра,перпедикулярность)',
 		columns = {
 			column_num,
@@ -252,19 +212,6 @@ Filters =
 			return marks
 		end,
 	},
-	{
-		name = 'Видимые', 
-		columns = {
-			column_num, 
-			column_path_coord, 
-			column_length,
-			--column_rail,
-			column_rail_lr,
-			column_mark_type_name,
-			column_recogn_video_channel,
-			}, 
-		visible = true,
-	},
 	{	
 		name = 'Запуски распознавания',
 		columns = {
@@ -276,3 +223,6 @@ Filters =
 		GUIDS = {"{1D5095ED-AF51-43C2-AA13-6F6C86302FB0}"},
 	},
 }
+
+
+return filters

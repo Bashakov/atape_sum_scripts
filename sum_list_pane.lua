@@ -12,21 +12,42 @@ local sort_stable = mark_helper.sort_stable
 local shallowcopy = mark_helper.shallowcopy
 local deepcopy = mark_helper.deepcopy
 
+-- =====================================================================  
 
 -- для запуска и из атейпа и из отладчика
 local function my_dofile(file_name)
-	local ok, err = pcall(function() dofile(file_name)	end)
-	if not ok then
-		local ok, err1 = pcall(function() dofile('Scripts/' .. file_name) end)
-		if not ok then	error(err .. '\n' .. err1) end
+	local errors = ''
+	
+	for _, path in ipairs{file_name, 'Scripts/' .. file_name} do
+		local ok, data = pcall(function() return dofile(path)	end)
+		if ok then
+			return data
+		end
+		errors = errors .. '\n' .. data
+	end
+
+	error(errors)
+end
+
+table.append = function (dst, src)
+	for _, item in ipairs(src) do
+		dst[#dst+1] = item
 	end
 end
 
 -- =====================================================================  
 
+
+
 my_dofile "sum_list_pane_guids.lua"
 my_dofile "sum_list_pane_columns.lua"
-my_dofile "sum_list_pane_filters.lua"
+
+local filters_uzk = my_dofile "sum_list_pane_filters_uzk.lua"
+local filters_video = my_dofile "sum_list_pane_filters_video.lua"
+
+local Filters = {}
+table.append(Filters, filters_uzk)
+table.append(Filters, filters_video)
 
 
 -- =====================================================================  
@@ -304,7 +325,7 @@ if not ATAPE then
 	--local psp_path = 'D:/ATapeXP/Main/494/multimagnetic/2018_01_25/Avikon-03M/12216/[494]_2018_01_03_01.xml'
 	test_report(psp_path)
 	
-	local name  = 'Запуски распознавания'
+	local name  = 'Стыковые зазоры'
 	
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}
