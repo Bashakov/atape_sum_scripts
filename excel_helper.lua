@@ -180,6 +180,9 @@ excel_helper = OOP.class
 		assert(template_row_num, 'Can not find table marker in tempalate')
 		template_row_num = template_row_num + correction
 		
+		if row_count == 0 then
+			user_range.Rows(template_row_num).EntireRow:Delete()
+		end
 		if row_count > 1 then
 			local row_template = user_range.Rows(template_row_num+1).EntireRow -- возьмем строку (включая размеремы EntireRow)
 			row_template:Resize(row_count-1):Insert()				-- размножим ее

@@ -1566,9 +1566,6 @@ report_fastener.AppendReports(Report_Functions)
 local report_beacon = require 'sum_report_beacon'
 report_beacon.AppendReports(Report_Functions)
 
-local report_videogram = require 'sum_report_videogram'
-report_videogram.AppendReports(Report_Functions)
-
 -- ================================ EXPORT FUNCTIONS ================================= --
 
 function GetAvailableReports() -- exported

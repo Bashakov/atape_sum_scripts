@@ -66,8 +66,9 @@ local function insert_video_image(excel, mark, report_row)
 	for n = 1, user_range.Cells.count do						-- пройдем по всем ячейкам	
 		local cell = user_range.Cells(n);
 		local val = cell.Value2	
+		
 		local num_channel_set = val and string.match(val, '%$VIDEO%((.-)%)%$')
-		if num_channel_set then
+		if num_channel_set and mark and report_row then
 			insert_video_chennel_set(excel, cell, num_channel_set, report_row.SYS, bit32.band(mark.prop.RailMask, 3), cell.MergeArea.Width, cell.MergeArea.Height)
 		end
 		
@@ -137,7 +138,7 @@ local function make_videogram_report_mark(mark)
 end
 
 
-local function report_videogram()
+local function videogram_mark()
 	local marks = Driver:GetMarks{}
 	marks = mark_helper.sort_mark_by_coord(marks)
 	
@@ -166,26 +167,61 @@ end
 
 
 
--- ============================================================================= 
+local function videogram_view()
+	local template_path = Driver:GetAppPath() .. 'Scripts\\'  .. 'ВЫХОДНАЯ ФОРМА ВИДЕОФИКСАЦИИ ВЕРХНЕГО СТРОЕНИЯ ПУТИ.xlsm'
+	local excel = excel_helper(template_path, 'В7 ВИД ПАК', false, dst_name)
+	
+	excel:ApplyPassportValues(Passport)
+	excel:ApplyRows({}, nil, nil)
 
-
--- регистрируем наш отчет
-local function AppendReports(reports)
-	table.insert(reports, 
-		{name = 'Видеограмма',    	fn = report_videogram}
-	)
+	insert_video_image(excel, nil, nil)
+	excel:AppendTemplateSheet(Passport, {}, nil, 3)
+	excel:SaveAndShow()
 end
 
--- тестирование
+
+
+local function get_videogram(name)
+	local videogram_list = 
+	{
+		{name = 'mark',    	fn = videogram_mark},
+		{name = 'view',    	fn = videogram_view}
+	}
+	
+	for _, r in ipairs(videogram_list) do
+		if r.name == name then
+			return r
+		end
+	end
+end
+
+
+-- ================================= ЭКСПОРТ ================================= 
+
+-- проверить что такая видеограмма известна
+function IsVideogramAvailable(name)
+	return get_videogram(name) ~= nil
+end
+
+-- сделать видеограмму
+function MakeVideogram(name)
+	local videogram = get_videogram(name)
+	if not videogram then 
+		errorf('unknown videogram [%s]', name)
+	end
+	
+	videogram.fn()
+end
+		
+
+-- ================================= теситрование ================================= 
+
 if not ATAPE then
 
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
 	--report_rails()
-	report_videogram()
+	videogram_view()
 end
 
-return {
-	AppendReports = AppendReports,
-}

@@ -166,10 +166,6 @@ local function vedomost_with_US_images_excel(records)
 		end
 	end 
 
---	if ShowVideo == 0 then 
---		excel:AutoFitDataRows()
---		data_range.Cells(5).ColumnWidth = 0
---	end
 	excel:SaveAndShow()
 end
 
