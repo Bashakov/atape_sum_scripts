@@ -374,6 +374,16 @@ excel_helper = OOP.class
 			row = row + 1
 		end
 	end,
+	
+	point2pixel =  function(excel, points)
+		-- перевод точек excel в пиксели
+		-- https://stackoverflow.com/questions/29402407/how-to-set-excel-column-widths-to-a-certain-number-of-pixels
+		local nPointsPerInch = 72.0
+		local nPixelsPerInch = excel._workbook.WebOptions.PixelsPerInch
+		local pixels = points / nPointsPerInch * nPixelsPerInch
+		-- printf('Point2Pixel point = %d, pixel = %d\n', points, pixels)
+		return pixels
+	end
 
 }
 

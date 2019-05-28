@@ -21,11 +21,11 @@ local errorf = stuff.errorf
 
 -- ============================================================================= 
 
-local function insert_video_chennel_set(excel, cell, num_channel_set, syscoord, rail, width, height)
+local function insert_video_channel_set(excel, cell, num_channel_set, syscoord, rail, width, height)
 	local prm = 
 	{
-		width = width,
-		height = height,
+		width = excel:point2pixel(width),
+		height = excel:point2pixel(height),
 		rail = rail
 	}
 	
@@ -69,7 +69,7 @@ local function insert_video_image(excel, mark, report_row)
 		
 		local num_channel_set = val and string.match(val, '%$VIDEO%((.-)%)%$')
 		if num_channel_set and mark and report_row then
-			insert_video_chennel_set(excel, cell, num_channel_set, report_row.SYS, bit32.band(mark.prop.RailMask, 3), cell.MergeArea.Width, cell.MergeArea.Height)
+			insert_video_channel_set(excel, cell, num_channel_set, report_row.SYS, bit32.band(mark.prop.RailMask, 3), cell.MergeArea.Width, cell.MergeArea.Height)
 		end
 		
 		if val and val == '$VIDEO_SCREEN$' then
@@ -77,6 +77,8 @@ local function insert_video_image(excel, mark, report_row)
 		end
 	end
 end
+
+
 
 -- ============================================================================= 
 
@@ -138,7 +140,7 @@ local function make_videogram_report_mark(mark)
 end
 
 
-local function videogram_mark()
+local function videogram_mark(params)
 	local marks = Driver:GetMarks{}
 	marks = mark_helper.sort_mark_by_coord(marks)
 	
@@ -166,20 +168,66 @@ local function videogram_mark()
 end
 
 
-
-local function videogram_view()
+local function videogram_view(params)
+	local param_names = {'video_set', 'width_mm', 'coord', 'rail'}
+	for _, name in ipairs(param_names) do
+		if not params[name] then
+			errorf('missing parameter [%s]', name)
+		end
+		printf('params.%s = %s\n', name, params[name])
+	end
+		
+		
 	local template_path = Driver:GetAppPath() .. 'Scripts\\'  .. 'ВЫХОДНАЯ ФОРМА ВИДЕОФИКСАЦИИ ВЕРХНЕГО СТРОЕНИЯ ПУТИ.xlsm'
+	-- local template_path = Driver:GetAppPath() .. 'Scripts\\'  .. '1.xlsx'
 	local excel = excel_helper(template_path, 'В7 ВИД ПАК', false, dst_name)
 	
 	excel:ApplyPassportValues(Passport)
 	excel:ApplyRows({}, nil, nil)
 
-	insert_video_image(excel, nil, nil)
+	local worksheet = excel._worksheet
+	local user_range = worksheet.UsedRange
+	
+	-- printf('excel user range: row = %d, col = %d, cells = %d\n', user_range.Rows.count, user_range.Columns.count, user_range.Cells.count)
+	for n = 1, user_range.Cells.count do						-- пройдем по всем ячейкам	
+		local cell = user_range.Cells(n);
+		local val = cell.Value2	
+		
+--		printf('cell (%s, %s) size = (%s, %s) (%s, %s)  text = %s\n', 
+--			cell.row, cell.column, 
+--			cell.Width, cell.Height, 
+--			cell.MergeArea.Width, cell.MergeArea.Height,
+--			val or '')
+		
+		if val and val == '$VIDEO$' then
+			local frame_prm = 
+			{
+				width 		= excel:point2pixel(cell.MergeArea.Width),
+				height 		= excel:point2pixel(cell.MergeArea.Height),
+				rail 		= params.rail,
+				width_mm	= params.width_mm,
+			}
+			
+			local ok, res = pcall(function() 
+				return Driver:GetVideoImage(params.video_set, params.coord, frame_prm)
+			end)
+			
+			if ok then
+				if res and #res > 1 then
+					excel:InsertImage(cell, res)
+				end
+			else
+				cell.Value2 = res  -- insert error string
+			end
+		end
+	end
+	
 	excel:AppendTemplateSheet(Passport, {}, nil, 3)
 	excel:SaveAndShow()
 end
 
 
+-- ================================= 
 
 local function get_videogram(name)
 	local videogram_list = 
@@ -204,13 +252,13 @@ function IsVideogramAvailable(name)
 end
 
 -- сделать видеограмму
-function MakeVideogram(name)
+function MakeVideogram(name, params)
 	local videogram = get_videogram(name)
 	if not videogram then 
 		errorf('unknown videogram [%s]', name)
 	end
 	
-	videogram.fn()
+	videogram.fn(params)
 end
 		
 
