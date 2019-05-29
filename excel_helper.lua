@@ -129,6 +129,13 @@ end
 
 -- ======================  EXCEL  ============================= -- 
 
+-- https://docs.microsoft.com/ru-ru/office/vba/api/excel.xlcalculation
+local XlCalculation = 
+{
+	xlCalculationAutomatic 		=	-4105, 	-- Excel controls recalculation.
+	xlCalculationManual 		=	-4135, 	-- Calculation is done when the user requests it.
+	xlCalculationSemiautomatic 	=	2, 		-- Excel controls recalculation but ignores changes in tables.
+}
 
 excel_helper = OOP.class
 {
@@ -147,6 +154,9 @@ excel_helper = OOP.class
 		
 		self._worksheet = FindWorkSheet(self._workbook, sheet_name)
 		assert(self._worksheet, stuff.sprintf('can not find "%s" worksheet', sheet_name))
+		
+		self._calc_state = self._excel.Calculation
+		self._excel.Calculation = XlCalculation.xlCalculationManual
 	end,
 
 	-- проити по всему диаппазону и заменить подстановки
@@ -234,6 +244,7 @@ excel_helper = OOP.class
 	end,
 	
 	SaveAndShow = function(self)
+		self._excel.Calculation = self._calc_state
 		self._excel.visible = true
 		self._workbook:Save()
 	end,

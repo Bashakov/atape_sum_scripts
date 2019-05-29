@@ -1127,17 +1127,21 @@ local function report_fasteners(params)
 	excel:ApplyPassportValues(Passport)
 	local data_range = excel:CloneTemplateRow(#marks)
 
-	local fastener_type_names = {
-		[0] = 'КБ-65',
-		[1] = 'Аpc',
-		[2] = 'КД',
-	}
-		
-	local fastener_fault_names = {
-		[0] = 'норм.',
-		[1] = 'От.ЗБ', 
-		[2] = 'От.Кл',
-	}
+local fastener_type_names = {
+	[0] = 'КБ-65', 
+	[1] = 'Аpc',  
+	[2] = 'ДО', -- скрепление на деревянной шпале на костылях 
+	[3] = 'КД', -- скрепление на деревянной шпале как КБ-65 но на двух шурупах 
+}
+	
+local fastener_fault_names = {
+	[0] = 'норм.',
+	[1] = 'От.КБ',  -- отсутствие клемного болта kb65
+	[2] = 'От.КЛМ',	-- отсуствие клеммы apc
+	[10] = 'От.ЗБ',  -- отсутствие закладного болта kb65
+	[11] = 'От.КЗБ',  -- отсутствие клемного и закладного болта kb65	
+}
+
 
 	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
 
@@ -1529,9 +1533,9 @@ local Report_Functions = {
 	---------------------------------------
 	-- c ЕКАСУИ 
 	{name="Стыковые зазоры|Excel" , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
-	--{name="Стыковые зазоры|ЕКАСУИ " , fn=report_gaps            , params={ eksui=true }, guids=gap_rep_filter_guids},	
+	{name="Стыковые зазоры|ЕКАСУИ " , fn=report_gaps            , params={ eksui=true }, guids=gap_rep_filter_guids},	
 	{name="Болтовые стыки|Excel"  , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },
-	--{name="Болтовые стыки|ЕКАСУИ "  , fn=report_crew_join       , params={ eksui=true }, guids=gap_rep_filter_guids},	
+	{name="Болтовые стыки|ЕКАСУИ "  , fn=report_crew_join       , params={ eksui=true }, guids=gap_rep_filter_guids},	
 
 	-- без ЕКАСУИ
 	--{name="Ведомость Стыковых зазоров"       , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
