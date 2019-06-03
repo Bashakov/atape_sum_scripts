@@ -137,7 +137,7 @@ local XlCalculation =
 	xlCalculationSemiautomatic 	=	2, 		-- Excel controls recalculation but ignores changes in tables.
 }
 
-excel_helper = OOP.class
+local excel_helper = OOP.class
 {
 	ctor = function(self, template_path, sheet_name, visible, dest_name)
 		
@@ -247,6 +247,9 @@ excel_helper = OOP.class
 		self._excel.Calculation = self._calc_state
 		self._excel.visible = true
 		self._workbook:Save()
+		self._worksheet = nil
+		self._workbook = nil
+		self._excel = nil
 	end,
 	
 	-- поиск диапазона с шаблоном таблицы, возвращает пару ячеек левую верхнюю и правую нижнюю
@@ -398,97 +401,14 @@ excel_helper = OOP.class
 
 }
 
--- ======================  TEST HELPERS  ============================= -- 
-
-local test_helper = {}
-
-function test_helper.Passport2Table(psp_path)						-- открыть xml паспорт и сохранить в таблицу его свойства
-	xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom, 'can not create MSXML object')
-	assert(xmlDom:load(psp_path), "can not open xml file: " .. psp_path)
-	
-	local function parse_attr(node) 						-- извлечение значений из атрибута
-		return node.nodeName, node.nodeValue 
-	end
-	local function parse_item(name, value)					-- извлеченеи значений из ноды по именам атрибутов
-		return function(node)
-			return node.attributes:getNamedItem(name).nodeValue, node.attributes:getNamedItem(value).nodeValue  
-		end
-	end
-	
-	local requests = {
-		{path = "/DATA_SET/DRIVER/@*",									fn = parse_attr },
-		{path = "/DATA_SET/DEVICE/@*",									fn = parse_attr },
-		{path = "/DATA_SET/REGISTRATION_DATA/@*",						fn = parse_attr },
-		{path = "/DATA_SET/REGISTRATION_DATA/DATA[@INNER and @VALUE]", 	fn = parse_item('INNER', 'VALUE')},
-	}
-	
-	local res = {}
-	for _, req in ipairs(requests) do
-		local nodes = xmlDom:SelectNodes(req.path)
-		while true do
-			local node = nodes:nextNode()
-			if not node then break end
-			local name, value = req.fn(node)
-			-- print(name, value)
-			res[name] = value
-		end
-	end
-	return res
-end
-
-
-function test_helper.GenerateTestMarks(cnt)									-- генерация тестовых отметок
-	local img_list = io.open('C:\\Users\\abashak\\Desktop\\lua_test\\image_list.txt')
-	local marks = {}
-	for i = 1, cnt do
-		local mark = {
-			desc =  'desc: ' .. tostring(i), 
-			sysCoord = i * 10000, 
-			img_path = 'C:\\1\\report_imgs\\' .. img_list:read(),
-		}
-		marks[i] = mark
-	end
-	img_list:close()
-	return marks
-end
-
-
-local function ProcessMarks(excel, data_range, marks)					-- вставка отметок в строки
-	if marks then 
-		assert(#marks == data_range.Rows.count, 'misamtch count of marks and table rows')
-		
-		for i = 1, #marks do									-- продем по отметкам
-			local mark = marks[i]
-			data_range.Cells(i, 1).Value2 = mark.sysCoord
-			data_range.Cells(i, 4).Value2 = mark.desc
-			data_range.Cells(i, 6).Value2 = "wwwww"
-			
-			excel:InsertImage(data_range.Cells(i, 8), mark.img_path)
-			excel:InsertLink(data_range.Cells(i, 10), 'http://google.com', 'google')
-		end
-	else														-- test
-		for r = 1, data_range.Rows.count do
-			for c = 1, data_range.Columns.count do
-				data_range.Cells(i, c).Value2 = stuff.sprintf('r=%s, c=%d', i, c)
-			end
-		end
-	end
-end
-
 -- ======================TEST ============================= -- 
 
 if false and not ATAPE then
-
-	psp = test_helper.Passport2Table('C:\\Users\\abashak\\Desktop\\lua_test\\[480]_2014_03_19_01.xml')
-	marks = test_helper.GenerateTestMarks(4)
-
-	excel = excel_helper('C:\\Users\\abashak\\Desktop\\lua_test\\ProcessSum.xls', 'Ведомость Зазоров', true)
-	excel:ApplyPassportValues(psp)
-	local data_range = excel:CloneTemplateRow(#marks)
-
-	ProcessMarks(excel, data_range, marks)
-	--excel:AutoFitDataRows()
+	local excel = excel_helper('C:\\2\\ВЫХОДНАЯ ФОРМА ВИДЕОФИКСАЦИИ ВЕРХНЕГО СТРОЕНИЯ ПУТИ.xlsm', nil, true)
+	--excel:ApplyPassportValues({})
+	
+	excel:SaveAndShow()
+	print('Bye')
 end
 
 return excel_helper
