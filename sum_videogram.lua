@@ -110,7 +110,9 @@ local function make_videogram_report_mark(mark)
 	excel:ApplyRows(report_rows, nil, nil)
 	
 	insert_video_image(excel, mark, report_row)
-
+	
+	excel:CleanUnknownTemplates()
+	
 	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
 	excel:SaveAndShow()
 end
@@ -129,10 +131,6 @@ local function videogram_mark(params)
 	if #marks > 1 then
 		local msg = sprintf('Отмечено %d отметок, построение отчета может занять большое время, продолжить?', #marks)
 		cont = iup.Alarm("Warning", msg, "Yes", "Only First", "No")
-	end
-	
-	if cont == 3 then
-		return
 	end
 	
 	for i, mark in ipairs(marks) do
@@ -322,8 +320,15 @@ if not ATAPE then
 		}
 	end
 	
-	--report_rails()
+	
+	local savedGetMarks = Driver.GetMarks 
+	-- тестовая функция обертка: возвращает только одну отметку, для videogram_mark
+	Driver.GetMarks = function(self, filter)
+		return savedGetMarks(self, {mark_id=786})
+	end
+	
+	videogram_mark()
 	
 	--videogram_view_packet({width_show_mm=9000, left_coord=100000})
-	videogram_view_single()
+	--videogram_view_single()
 end

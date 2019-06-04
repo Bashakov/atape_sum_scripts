@@ -2,7 +2,7 @@ require "luacom"
 local sqlite3 = require "lsqlite3"
 local OOP = require "OOP"
 
-local function read_sum_file(file_path, guids)
+local function read_sum_file(file_path, guids, mark_id)
 	local function format_guid(hex_guid)
 		-- print(hex_guid)
 		local m = table.pack(string.match(hex_guid, '\z
@@ -52,6 +52,9 @@ local function read_sum_file(file_path, guids)
 	if tids then
 		str_stat = str_stat .. ' AND t.TYPEID in (' .. tids .. ') '
 	end
+	if mark_id then
+		str_stat = str_stat .. ' AND m.MARKID == ' .. mark_id .. ' '
+	end
 	
 	local st = assert( db:prepare(str_stat) )
 	local marks = {}
@@ -68,7 +71,11 @@ local function read_sum_file(file_path, guids)
 	
 	for ext_name in db:urows('SELECT NAME FROM SumrkPropDescTable') do
 		--print(ext_name)
-		for markid, value in db:urows('SELECT * FROM SumrkXtndParamTable_' .. ext_name) do
+		local req_params = 'SELECT * FROM SumrkXtndParamTable_' .. ext_name
+		if mark_id then
+			req_params = req_params .. ' WHERE MARKID == ' .. mark_id .. ' '
+		end
+		for markid, value in db:urows(req_params) do
 			if marks[markid] then
 				marks[markid].ext[ext_name] = value
 			end
@@ -156,7 +163,8 @@ Driver = OOP.class
 	
 	GetMarks = function(self, filter)
 		local g = filter and filter.GUIDS
-		local marks = read_sum_file(self._sum_path, g)
+		local mark_id = filter and filter.mark_id
+		local marks = read_sum_file(self._sum_path, g, mark_id)
 		return marks
 	end,
 	

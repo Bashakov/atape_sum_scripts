@@ -397,8 +397,24 @@ local excel_helper = OOP.class
 		local pixels = points / nPointsPerInch * nPixelsPerInch
 		-- printf('Point2Pixel point = %d, pixel = %d\n', points, pixels)
 		return pixels
-	end
+	end,
 
+	-- удаление не примененных подстановки
+	CleanUnknownTemplates = function(self)
+		local user_range = self._worksheet.UsedRange
+		for r = 1, user_range.Rows.count do						-- по всем строкам
+			for c = 1, user_range.Columns.count do				-- и столбцам
+				local cell = user_range.Cells(r, c) 
+				local val = cell.Value2							-- проверяем ячейку
+				if val then
+					local val_new = string.gsub(val, '%$([%w_]+)%$', '-') 	-- и заменим шаблон
+					if val ~= val_new then
+						cell.Value2 = val_new
+					end
+				end
+			end
+		end
+	end,
 }
 
 -- ======================TEST ============================= -- 
