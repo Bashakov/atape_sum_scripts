@@ -42,8 +42,10 @@ local function generate_rows_fastener(marks, dlgProgress)
 local fastener_type_names = {
 	[0] = 'КБ-65',
 	[1] = 'Аpc',
-	[2] = 'КД',
+	[2] = 'ДО', -- скрепление на деревянной шпале на костылях 
+	[3] = 'КД', -- скрепление на деревянной шпале как КБ-65 но на двух шурупах 
 }
+	
 	
 --local fastener_fault_names = {
 --	[0] = 'норм.',
@@ -62,13 +64,23 @@ local fastener_type_names = {
 			local row = MakeFastenerMarkRow(mark)
 			
 			row.FASTENER_TYPE = fastener_type_names[FastenerType] or ''
-			if prm.FastenerFault == 1 then -- отсутствие закладного болта kb65
-				row.DEFECT_CODE = DEFECT_CODES.FASTENER_MISSING_BOLT[1]
-				row.DEFECT_DESC = DEFECT_CODES.FASTENER_MISSING_BOLT[2]
-			elseif prm.FastenerFault == 2 then -- отсуствие клеммы apc
+			if prm.FastenerFault == 1 then -- отсутствие клемного болта kb65
 				row.DEFECT_CODE = DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1]
 				row.DEFECT_DESC = DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[2]
+			elseif prm.FastenerFault == 2 then -- отсуствие клеммы apc
+				row.DEFECT_CODE = DEFECT_CODES.FASTENER_MISSING_CLAMP[1]
+				row.DEFECT_DESC = DEFECT_CODES.FASTENER_MISSING_CLAMP[2]		
+			elseif prm.FastenerFault == 10 then -- отсутствие закладного болта kb65
+				row.DEFECT_CODE = DEFECT_CODES.FASTENER_MISSING_BOLT[1]
+				row.DEFECT_DESC = DEFECT_CODES.FASTENER_MISSING_BOLT[2]
+			elseif prm.FastenerFault == 11 then -- отсутствие клемного и закладного болта kb65 - имитируем закладной
+				row.DEFECT_CODE = DEFECT_CODES.FASTENER_MISSING_BOLT[1]
+				row.DEFECT_DESC = DEFECT_CODES.FASTENER_MISSING_BOLT[2]
 			end
+			
+			
+			
+			
 			
 			table.insert(report_rows, row)
 		end

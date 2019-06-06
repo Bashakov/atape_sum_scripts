@@ -42,13 +42,18 @@ end
 my_dofile "sum_list_pane_guids.lua"
 my_dofile "sum_list_pane_columns.lua"
 
-local filters_uzk = my_dofile "sum_list_pane_filters_uzk.lua"
 local filters_video = my_dofile "sum_list_pane_filters_video.lua"
+local filters_uzk = my_dofile "sum_list_pane_filters_uzk.lua"
+local filters_magn = my_dofile "sum_list_pane_filters_magn.lua"
+local filters_npu = my_dofile "sum_list_pane_filters_npu.lua"
+local filters_visible = my_dofile "sum_list_pane_filters_visible.lua" 
 
 local Filters = {}
-table.append(Filters, filters_uzk)
 table.append(Filters, filters_video)
-
+table.append(Filters, filters_uzk)
+table.append(Filters, filters_magn)
+table.append(Filters, filters_npu)
+table.append(Filters, filters_visible)
 
 -- =====================================================================  
 

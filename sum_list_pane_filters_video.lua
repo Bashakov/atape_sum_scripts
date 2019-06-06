@@ -1,7 +1,7 @@
 local filters = 
 {
 	{
-		group = {'Группа Распознавание', 'Группа Стыки'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
 		name = 'Стыковые зазоры', 
 		columns = {
 			column_num, 
@@ -28,7 +28,7 @@ local filters =
 		end,
 	},
 	{
-		group = {'Группа Распознавание', 'Группа Ненормативные'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
 		name = 'Отсутствующие болты (вне норматива)', 
 		columns = {
 			column_num, 
@@ -62,7 +62,7 @@ local filters =
 		end
 	},
 	{
-		group = {'Группа Распознавание'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Маячные отметки',
 		columns = {
 			column_num,
@@ -76,7 +76,7 @@ local filters =
 			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",}
 	},
 	{
-		group = {'Группа Ненормативные', 'Группа Распознавание'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Ненормативный объект', 
 		columns = {
 			column_num, 
@@ -88,7 +88,7 @@ local filters =
 		GUIDS = recognition_NonNormal_defects,
 	},
 	{
-		group = {'Группа Распознавание'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Скрепления',
 		columns = {
 			column_num,
@@ -103,7 +103,7 @@ local filters =
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
 	},
 	{
-		group = {'Группа Распознавание'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Горизонтальные уступы', 
 		columns = {
 			column_num, 
@@ -120,7 +120,7 @@ local filters =
 		end,
 	},
 	{
-		group = {'Группа Распознавание'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Штепсельные соединители', 
 		columns = {
 			column_num, 
@@ -138,7 +138,7 @@ local filters =
 		end,
 	},
 	{
-		group = {'Группа Распознавание'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Приварные соединители', 
 		columns = {
 			column_num, 
@@ -155,7 +155,7 @@ local filters =
 		end,
 	},
 	{
-		group = {'Группа Распознавание'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Поверхностные дефекты', 
 		columns = {
 			column_num, 
@@ -170,7 +170,7 @@ local filters =
 		GUIDS = recognition_surface_defects,
 	},	
 	{
-		group = {'Группа Распознавание', 'Группа Ненормативные',},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ',},
 		name = 'Дефекты накладок', 
 		columns = {
 			column_num, 
@@ -186,7 +186,7 @@ local filters =
 		end,
 	},
 	{
-		group = {'Группа Распознавание'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Шпалы(эпюра,перпедикулярность)',
 		columns = {
 			column_num,

@@ -1,8 +1,8 @@
 local filters = 
 {
 	{
-		group = {'РАСПОЗНАВАНИЕ УЗ'},
-		name = 'Нпу для примера', 
+		group = {'НПУ'},
+		name = 'Нпу', 
 		columns = {
 			column_num, 
 			column_path_coord, 
