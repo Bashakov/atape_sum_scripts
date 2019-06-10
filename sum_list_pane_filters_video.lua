@@ -16,16 +16,6 @@ local filters =
 			column_user_accept,
 			}, 
 		GUIDS = recognition_guids,
-		on_context_menu = function(row, col)
-			local mark = work_marks_list[row]
-			if 1 == MarkTable:PopupMenu({"Удалить отметку"}) then
-				mark:Delete()
-				table.remove(work_marks_list, row)
-				MarkTable:SetItemCount(#work_marks_list)
-				Driver:RedrawView()
-				-- MarkTable:Invalidate(row)
-			end
-		end,
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},

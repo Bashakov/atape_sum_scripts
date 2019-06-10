@@ -2,7 +2,7 @@ local filters =
 {
 	{
 		group = {'НПУ'},
-		name = 'Нпу', 
+		name = 'НПУ', 
 		columns = {
 			column_num, 
 			column_path_coord, 

@@ -12,6 +12,10 @@ local sort_stable = mark_helper.sort_stable
 local shallowcopy = mark_helper.shallowcopy
 local deepcopy = mark_helper.deepcopy
 
+if iup then
+	iup.SetGlobal('UTF8MODE', 1)
+end
+
 -- =====================================================================  
 
 -- для запуска и из атейпа и из отладчика
@@ -29,6 +33,7 @@ local function my_dofile(file_name)
 	error(errors)
 end
 
+-- добавляет содержимое таблицы src в конец dst
 table.append = function (dst, src)
 	for _, item in ipairs(src) do
 		dst[#dst+1] = item
@@ -65,8 +70,7 @@ selected_row = 0
 --=========================================================================== --
 --=========================================================================== --
 
-
--- внутренняя функция, находи фильтр по его имени
+-- внутренняя функция, находит фильтр по его имени
 local function get_filter_by_name(name)
 	for _, filter in ipairs(Filters) do
 		if filter.name == name then
@@ -75,6 +79,7 @@ local function get_filter_by_name(name)
 	end
 end
 
+-- уснтановка выделения на строку (снимает выделенеи с предыдущей)
 local function set_selected_row(row)
 	local prev_sel = selected_row
 	selected_row = row
@@ -87,7 +92,7 @@ local function set_selected_row(row)
 end
 
 
-
+-- проходит по всем фильтрам, строит список групп
 local function fetch_groups()
 	local lst = {}
 	
@@ -113,6 +118,25 @@ local function fetch_groups()
 	end
 	
 	return groups
+end
+
+-- удалить из файла отметку в указанной строке
+local function delete_mark(row)
+	local mark = work_marks_list[row]
+	if mark and mark.prop and mark.ext then -- проверим что объект является именно специальной пользовательской отметкой
+		mark:Delete()
+		table.remove(work_marks_list, row)
+		MarkTable:SetItemCount(#work_marks_list)
+		Driver:RedrawView()
+	end
+end
+
+-- дефолтный обработчик ПКМ
+local function default_mark_contextmenu(row, col)
+	local r = MarkTable:PopupMenu({"Удалить отметку"})
+	if r == 1 then
+		delete_mark(row)
+	end
 end
 
 -- ======================================================================= -- 
@@ -267,6 +291,9 @@ function OnMouse(act, flags, cell, pos_client, pos_screen)
 			local fn_context_menu = work_filter.on_context_menu or work_filter.columns[cell.col].on_context_menu
 			if fn_context_menu then
 				fn_context_menu(cell.row, cell.col)
+			else
+				-- если не нащли обработчик в фильтре или в колонке, то применяем дефолтный с удалением
+				default_mark_contextmenu(cell.row, cell.col)
 			end
 		end
 	end
@@ -274,6 +301,7 @@ end
 
 function OnKey(key, down, flags)
 	print(key, down, flags)
+	
 	if down then
 		local step_page = MarkTable:GetRowPerPage() - 1
 		local new_selected_row = -1
@@ -300,11 +328,26 @@ function OnKey(key, down, flags)
 			end
 		end
 	end
+	
+	if down and selected_row > 0 then
+		-- спрятать отметку
+		if key == 'H' then	
+			table.remove(work_marks_list, selected_row)
+			MarkTable:SetItemCount(#work_marks_list)
+			selected_row = 0	
+		end
+		
+		-- удалить
+		if key == 'D' and 1 == iup.Alarm("ATape", "Подтвердите удаление отметки", "Да", "Нет") then
+			delete_mark(selected_row)
+		end
+	end
 end
 
 
 
 -- функция вызывается из программы, для получения ID отметки в заданной строке
+-- устаревашя функция, для старой панели отметок
 function GetMarkID(row)
 	-- print (row, col, #work_marks_list, #work_columns)
 	if row > 0 and row <= #work_marks_list then
