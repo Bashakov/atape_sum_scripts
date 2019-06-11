@@ -837,7 +837,7 @@ local function GetExtPassport(psp)
 			_ext_passport_table[n] = v 
 		end
 		
-		local data_format = '%Y-%m-%d %H:%M:%S'
+		local data_format = ' %Y-%m-%d %H:%M:%S '
 		_ext_passport_table.REPORT_DATE = os.date(data_format)
 		
 		local recog_info = GetRecognitionStartInfo()

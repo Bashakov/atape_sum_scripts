@@ -96,7 +96,7 @@ local function FindWorkSheet(workbook, sheet_name)
 		if not sheet_name or #sheet_name == 0 or sheet.name == sheet_name then
 			worksheet = sheet								-- сохраняем для использования
 			worksheet:Activate()							-- и активируем его
-		else
+		elseif sheet.name ~= "STOP" then
 			table.insert(ws2del, sheet)						-- остальные соберем для удаления
 		end
 	end

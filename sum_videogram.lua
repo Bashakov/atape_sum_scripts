@@ -98,6 +98,7 @@ end
 
 
 local function make_videogram_report_mark(mark)
+
 	local report_row = mark_helper.MakeCommonMarkTemplate(mark)
 	local report_rows = {report_row}
 	
@@ -119,8 +120,13 @@ end
 
 
 local function videogram_mark(params)
-	local marks = Driver:GetMarks{}
-	marks = mark_helper.sort_mark_by_coord(marks)
+	local marks
+	if params and params.mark then 
+		marks = {params.mark}
+	else
+		marks = Driver:GetMarks{}
+		marks = mark_helper.sort_mark_by_coord(marks)
+	end
 	
 	if #marks == 0 then
 		iup.Message('Info', "Подходящих отметок не найдено")
@@ -131,6 +137,10 @@ local function videogram_mark(params)
 	if #marks > 1 then
 		local msg = sprintf('Отмечено %d отметок, построение отчета может занять большое время, продолжить?', #marks)
 		cont = iup.Alarm("Warning", msg, "Yes", "Only First", "No")
+	end
+	
+	if cont == 3 then
+		return
 	end
 	
 	for i, mark in ipairs(marks) do

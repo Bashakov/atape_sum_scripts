@@ -16,6 +16,10 @@ if iup then
 	iup.SetGlobal('UTF8MODE', 1)
 end
 
+
+MK_SHIFT     =  0x0004
+MK_CONTROL   =	0x0008
+
 -- =====================================================================  
 
 -- для запуска и из атейпа и из отладчика
@@ -79,7 +83,7 @@ local function get_filter_by_name(name)
 	end
 end
 
--- уснтановка выделения на строку (снимает выделенеи с предыдущей)
+-- усатановка выделения на строку (снимает выделенеи с предыдущей)
 local function set_selected_row(row)
 	local prev_sel = selected_row
 	selected_row = row
@@ -131,11 +135,38 @@ local function delete_mark(row)
 	end
 end
 
+-- сделать видеограмму
+local function videogram_mark(row, col)
+	local mark = work_marks_list[row]
+	if mark and mark.prop and mark.ext then -- проверим что объект является именно специальной пользовательской отметкой
+		my_dofile "sum_videogram.lua"
+		MakeVideogram('mark', {mark=mark})
+	end
+end
+
+
 -- дефолтный обработчик ПКМ
 local function default_mark_contextmenu(row, col)
-	local r = MarkTable:PopupMenu({"Удалить отметку"})
-	if r == 1 then
-		delete_mark(row)
+	local handlers = {
+		{text = "Видеограмма", 		fn = videogram_mark},
+		{text = "", },
+		{text = "Удалить отметку", 	fn = delete_mark},
+	}
+	local texts = {}
+	for _, h in ipairs(handlers) do
+		table.insert(texts, h.text)
+	end
+	local r = MarkTable:PopupMenu(texts)
+	if handlers[r].fn then
+		handlers[r].fn(row, col)
+	end
+end
+
+-- прыгнуть на отметку в указанной строке
+local function jump_mark(row)
+	local mark = work_marks_list[row]	-- если row за пределами массива, то вернется nil
+	if mark and mark.prop and mark.prop.ID then 
+		Driver:JumpMark(mark.prop.ID)	
 	end
 end
 
@@ -320,11 +351,7 @@ function OnKey(key, down, flags)
 			if new_selected_row > 0 and new_selected_row ~= selected_row then
 				set_selected_row(new_selected_row)
 				MarkTable:EnsureVisible(new_selected_row)
-				
-				local mark = work_marks_list[new_selected_row]
-				if mark and mark.prop and mark.prop.ID then 
-					Driver:JumpMark(mark.prop.ID)	
-				end
+				jump_mark(new_selected_row)
 			end
 		end
 	end
@@ -338,12 +365,25 @@ function OnKey(key, down, flags)
 		end
 		
 		-- удалить
-		if key == 'D' and 1 == iup.Alarm("ATape", "Подтвердите удаление отметки", "Да", "Нет") then
-			delete_mark(selected_row)
+		if (key == 'D' or key == 'Delete') then
+			if bit32.btest(flags, MK_SHIFT) or 1 == iup.Alarm("ATape", "Подтвердите удаление отметки", "Да", "Нет") then
+				delete_mark(selected_row)
+				jump_mark(selected_row)
+			end
 		end
 	end
 end
 
+-- Вызывается ATape, при нажатии пользователем на иконку отметки
+function OnUserClickMark(markID)
+	for row, mark in ipairs(work_marks_list) do
+		if mark and mark.prop and mark.prop.ID == markID then
+			set_selected_row(row)
+			MarkTable:EnsureVisible(row)
+			break
+		end
+	end
+end
 
 
 -- функция вызывается из программы, для получения ID отметки в заданной строке
