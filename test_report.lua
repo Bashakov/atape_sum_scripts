@@ -126,6 +126,7 @@ local function psp2table(psp_path)						-- открыть xml паспорт и 
 	return res
 end
 
+
 local function read_EKASUI_cfg()
 	local pathCfg = os.getenv("ProgramFiles") .. '\\ATapeXP\\ekasui.cfg'
 	
@@ -144,6 +145,79 @@ local function read_EKASUI_cfg()
 	end
 end
 
+local function read_XmlC(file_path)
+	local function pop_int(state, size)
+		assert(#state.stream >= state.pos + size - 1)
+		local bytes = table.pack(string.byte(state.stream, state.pos, state.pos+size-1))
+		state.pos = state.pos + size
+		
+		local res = bytes[size]
+		for i = size-1, 1, -1 do
+			res = res * 0x100 + bytes[i]
+		end
+		if bytes[1] >= 0x80 then
+			res = res - bit32.lshift(1, size*8)
+		end
+		return res
+	end
+
+
+	local function pop_string(state, length)
+		assert(#state.stream >= state.pos + length)
+		local res = string.sub(state.stream, state.pos, state.pos+length-1)
+		state.pos = state.pos + length
+		return res
+	end
+
+	local function pop_header(state)
+		local res = {}
+		res.idx = pop_int(state, 1)
+		res.rail = pop_int(state, 1)
+		res.channel = pop_int(state, 1)
+		res.type = pop_int(state, 1)
+		res.coord = pop_int(state, 4)
+		res.value = pop_int(state, 4)
+		return res
+	end
+			
+	local file = assert(io.open(file_path, 'rb'))
+	local state = {stream=file:read('*a'), pos=1}
+	file:close()
+	assert(pop_string(state, 4) == 'XMLc')
+	
+	local values = {}	
+	local idx2names = {}
+	
+	while #state.stream > state.pos do
+		--print(#state.stream, state.pos)
+		local h = pop_header(state)
+		--print(h.idx, h.rail, h.channel, h.type, h.coord, h.value)
+		
+		if h.type == 0 then 			-- HWS_CXML_INDEX_NAME
+			local name = pop_string(state, h.value)
+			assert(not idx2names[h.idx] or idx2names[h.idx] == name)
+			idx2names[h.idx] = name
+		elseif h.type == 2 then 		-- HWS_CXML_INDEXED_VALUE
+			assert(idx2names[h.idx])
+			h.name = idx2names[h.idx]
+			h.type = nil
+			h.idx = nil
+			values[#values + 1] = h
+		else
+			assert()
+		end
+	end
+	return values
+end
+
+
+local Temperature = OOP.class
+{
+	ctor = function(self, filename)
+	end,
+}
+
+
 
 Driver = OOP.class
 {
@@ -154,6 +228,8 @@ Driver = OOP.class
 			sum_path = string.gsub(psp_path, '.xml', '.sum')
 		end
 		self._sum_path = sum_path
+		
+		self._gps = read_XmlC(string.gsub(psp_path, '.xml', '.gps'))
 		--self._marks = read_sum_file(self._sum_path)
 		
 		_G.Driver = self
@@ -181,7 +257,22 @@ Driver = OOP.class
 	end,
 	
 	GetTemperature = function(self, rail, sys)
-		return {head=0, target=0}
+		assert(rail == 0 or rail == 1)
+		local head = nil
+		local target = nil
+		for _, g in ipairs(self._gps) do
+			if g.rail == rail+1 then
+				if g.name == "TEMP_TARGET" then
+					target = g.value / 10
+				elseif	g.name == "TEMP_HEAD" then
+					head = g.value / 10
+				end
+			end
+			if g.coord > sys then
+				break
+			end
+		end
+		return {head=head, target=target}
 	end,
 	
 	GetFrame = function(self, channel, sys, params)
@@ -197,7 +288,20 @@ Driver = OOP.class
 	end,
 
 	GetGPS = function(self, sys)
-		return 60.01, 30.02
+		local k = 60*60*1000
+		local lat = nil
+		local lon = nil
+		for _, g in ipairs(self._gps) do
+			if g.name == "LAT_RAW" then
+				lat = g.value / k
+			elseif	g.name == "LON_RAW" then
+				lon = g.value / k
+			end
+			if g.coord > sys then
+				break
+			end
+		end
+		return lat, lon
 	end,
 }
 
