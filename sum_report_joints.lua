@@ -49,38 +49,31 @@ local function scan_for_neigh_blind_joint(marks, dlg)
 	
 	local width_threshold = 3
 	
-	local RailData = OOP.class
+	-- класс для поиска слепых зазоров по одному рельсу
+	local BlickGapSearcher = OOP.class
 	{
+		-- инициализация
 		ctor = function(self, groups)
-			self.prev_width = nil
-			self.prev_mark = nil
-			self.groups = groups
-			self.cur_group = {}
+			self.groups = groups	-- хранение найденных групп 
+			self.cur_group = {}		-- текущая обрабатываемая группа, найденные слепые зазоры
 		end,
 		
-		_push_group = function(self, prev_mark, cur_mark)
-			if #self.cur_group == 0 then
-				self.cur_group[1] = prev_mark
+		-- проверить очередной стык на рельсе
+		append = function(self, mark)
+			local width = mark_helper.GetGapWidth(mark) or 100000	
+			if width <= width_threshold then
+				table.insert(self.cur_group, mark)
+			else 
+				self:close()
 			end
-			table.insert(self.cur_group, cur_mark)
 		end,
 		
-		close = function(self, prev_mark, cur_mark)
+		-- закрыть поиск, выгрузить последнюю найденную группу
+		close = function(self)
 			if #self.cur_group > 1 then
 				table.insert(self.groups, self.cur_group)
 			end
 			self.cur_group = {}
-		end,
-		
-		append = function(self, mark)
-			local width = mark_helper.GetGapWidth(mark) or 100000	
-			if self.prev_mark and self.prev_width <= width_threshold and width <= width_threshold then
-				self:_push_group(self.prev_mark, mark)
-			else 
-				self:close()
-			end
-			self.prev_mark = mark
-			self.prev_width = width
 		end,
 	}
 	
@@ -92,7 +85,7 @@ local function scan_for_neigh_blind_joint(marks, dlg)
 		local rm = mark.prop.RailMask
 		local r = rails[rm]
 		if not r then
-			r = RailData(groups)
+			r = BlickGapSearcher(groups)
 			rails[rm] = r
 		end
 		r:append(mark)
@@ -110,12 +103,14 @@ local function scan_for_neigh_blind_joint(marks, dlg)
 		return c
 	end)
 	
---	for c,g in pairs(groups) do
---		print(c)
---		for _,m in ipairs(g) do
---			print('\t', m.prop.ID, m.prop.SysCoord, m.prop.RailMask)
---		end
---	end
+	for n, g in ipairs(groups) do
+		print(n)
+		local s = g[1].prop.SysCoord
+		for _, m in ipairs(g) do
+			print('\t', m.prop.ID, m.prop.SysCoord, m.prop.SysCoord - s, m.prop.RailMask)
+			s = m.prop.SysCoord
+		end
+	end
 	
 	return groups
 end
@@ -155,22 +150,26 @@ local function generate_rows_neigh_blind_joint(marks, dlgProgress)
 	
 	local report_rows = {}
 	for i, group in ipairs(groups) do
-		local first_mark = group[1]
-		local last_mark = group[#group]
-
-		local temperature = mark_helper.GetTemperature(first_mark) or 0
+		local row = MakeJointMarkRow(group[1])
 		
-		local row = MakeJointMarkRow(first_mark)
 		row.DEFECT_CODE = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1]
 		row.DEFECT_DESC = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[2]
 		row.BLINK_GAP_COUNT = #group
-		table.insert(report_rows, row)
 		
-		local length = last_mark.prop.SysCoord - first_mark.prop.SysCoord
-		if length > 25000 then
-			row.SPEED_LIMIT = 'ЗАПРЕЩЕНО'
+		local temperature = mark_helper.GetTemperature(group[1]) or 0
+		if temperature > 0 then
+			local rail_length = 0
+			for i = 1, #group-1 do
+				rail_length	= math.max(rail_length, group[i+1].prop.SysCoord - group[i].prop.SysCoord)
+			end
+		
+			print(rail_length)
+			if rail_length > 20000 or #group >= 4 then
+				row.SPEED_LIMIT = 'ЗАПРЕЩЕНО'
+			end
 		end
-
+		
+		table.insert(report_rows, row)		
 		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Отработка %d / %d отметок, найдено %d', i, #groups, #report_rows)) then 
 			return
 		end
@@ -261,7 +260,7 @@ local function generate_rows_missing_bolt(marks, dlgProgress)
 			row.DEFECT_DESC = DEFECT_CODES.JOINT_MISSING_BOLT[2]
 			
 			if valid_on_half == 1 then
-				row.SPEED_LIMIT = '2'
+				row.SPEED_LIMIT = '25'
 			elseif valid_on_half == 0 then	
 				row.SPEED_LIMIT = 'Закрытие движения'
 			else
@@ -394,7 +393,7 @@ if not ATAPE then
 	
 	--report_ALL()
 	--ekasui_ALL()
-	ekasui_joint_width()
+	report_neigh_blind_joint()
 end
 
 

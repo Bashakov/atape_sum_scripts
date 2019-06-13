@@ -212,6 +212,24 @@ local filters =
 			}, 
 		GUIDS = {"{1D5095ED-AF51-43C2-AA13-6F6C86302FB0}"},
 	},
+	
+	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
+		name = 'Слепые зазоры', 
+		columns = {
+			column_num,
+			column_path_coord, 
+			column_rail,
+			column_recogn_width,
+			column_recogn_video_channel,
+			column_mark_id,
+			}, 
+		GUIDS = recognition_guids,
+		filter = function(mark)
+			local width = mark_helper.GetGapWidth(mark)
+			return width and width <= 3
+		end,
+	},
 }
 
 
