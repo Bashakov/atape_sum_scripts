@@ -78,10 +78,6 @@ local fastener_type_names = {
 				row.DEFECT_DESC = DEFECT_CODES.FASTENER_MISSING_BOLT[2]
 			end
 			
-			
-			
-			
-			
 			table.insert(report_rows, row)
 		end
 		
@@ -139,8 +135,8 @@ if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	--report_fastener()
-	ekasui_fastener()
+	report_fastener()
+	--ekasui_fastener()
 end
 
 return {

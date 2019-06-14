@@ -40,9 +40,20 @@ local function insert_video_channel_set(excel, cell, num_channel_set, syscoord, 
 	end
 end
 
-local function insert_video_screen(excel, cell)
+local function insert_video_screen(excel, cell, shown_mark)
 	local ok, res = pcall(function() 
-		return Driver:GetVideoScreen({})
+		if shown_mark then
+			local sys_center = shown_mark.prop.SysCoord + shown_mark.prop.Len / 2
+			local video_screen_param = Driver:GetVideoScreenParam()
+			local frame_prm = {
+				width 		= excel:point2pixel(cell.MergeArea.Width),
+				height 		= excel:point2pixel(cell.MergeArea.Height),
+				rail 		= bit32.band(shown_mark.prop.RailMask, 3),
+				width_mm	= video_screen_param.panoram_width, }
+			return Driver:GetVideoImage(video_screen_param.current_video_set, sys_center, frame_prm)
+		else
+			return Driver:GetVideoScreen({})
+		end
 	end)
 	
 	if ok then
@@ -55,7 +66,7 @@ local function insert_video_screen(excel, cell)
 end
 
 
-local function insert_video_image(excel, mark, report_row)
+local function insert_video_image(excel, mark, report_row, own_frame)
 	local worksheet = excel._worksheet
 	local user_range = worksheet.UsedRange
 	
@@ -76,7 +87,7 @@ local function insert_video_image(excel, mark, report_row)
 		end
 		
 		if val and val == '$VIDEO_SCREEN$' then
-			insert_video_screen(excel, cell)
+			insert_video_screen(excel, cell, own_frame and mark)
 		end
 	end
 end
@@ -97,7 +108,7 @@ end
 
 
 
-local function make_videogram_report_mark(mark)
+local function make_videogram_report_mark(mark, own_frame)
 
 	local report_row = mark_helper.MakeCommonMarkTemplate(mark)
 	local report_rows = {report_row}
@@ -110,7 +121,7 @@ local function make_videogram_report_mark(mark)
 	excel:ApplyPassportValues(ext_psp)
 	excel:ApplyRows(report_rows, nil, nil)
 	
-	insert_video_image(excel, mark, report_row)
+	insert_video_image(excel, mark, report_row, own_frame)
 	
 	excel:CleanUnknownTemplates()
 	
@@ -121,8 +132,10 @@ end
 
 local function videogram_mark(params)
 	local marks
+	local own_frame = false
 	if params and params.mark then 
 		marks = {params.mark}
+		own_frame = true
 	else
 		marks = Driver:GetMarks{}
 		marks = mark_helper.sort_mark_by_coord(marks)
@@ -144,7 +157,7 @@ local function videogram_mark(params)
 	end
 	
 	for i, mark in ipairs(marks) do
-		make_videogram_report_mark(mark)
+		make_videogram_report_mark(mark, own_frame)
 		if cont == 2 then
 			break
 		end

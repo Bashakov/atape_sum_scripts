@@ -55,12 +55,14 @@ local function generate_row_beacon(marks, dlgProgress)
 			local row = MakeBeaconMarkRow(mark)
 			row.BEACON_OFFSET = offset
 			row.OUT_PARAM = offset
-			
+			row.DEFECT_CODE = DEFECT_CODES.BEACON_UBNORMAL_MOVED[1]
+			row.DEFECT_DESC = DEFECT_CODES.BEACON_UBNORMAL_MOVED[2] 
 			table.insert(report_rows, row)
 		end
 		
 		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d отметок, найдено %d', i, #marks, #report_rows)) then 
 			return
+			--error("Aborted")
 		end
 	end
 	
@@ -113,6 +115,7 @@ end
 -- тестирование
 if not ATAPE then
 	test_report  = require('test_report')
+	--test_report('D:\\ATapeXP\\Main\\494\\Москва Курская - Подольск\\Москва Курская - Подольск\\2019_05_16\\Avikon-03M\\4240\\[494]_2019_03_15_01.xml')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
 	report_beacon()
