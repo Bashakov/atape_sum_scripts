@@ -70,6 +70,7 @@ work_marks_list = {}
 work_filter = None
 work_sort_param = {0, 0}
 selected_row = 0
+work_mark_ids = {}
 
 --=========================================================================== --
 --=========================================================================== --
@@ -128,6 +129,7 @@ end
 local function delete_mark(row)
 	local mark = work_marks_list[row]
 	if mark and mark.prop and mark.ext then -- проверим что объект является именно специальной пользовательской отметкой
+		work_mark_ids[mark.prop.ID] = nil
 		mark:Delete()
 		table.remove(work_marks_list, row)
 		MarkTable:SetItemCount(#work_marks_list)
@@ -209,10 +211,12 @@ end
 -- функция вызывается из программы, при выборе пользователем одного из фильтров, 
 -- тут следует сформировать список отметок, и вернуть его длинну
 function InitMark(name)
+	print(name)
 	local filter = get_filter_by_name(name)		-- ищем фильтр по имени
 	if filter then								-- если нашли
 		if work_filter ~= filter then			-- и если фильтр не тот что был до этого
 			work_filter = filter				-- делаем найденный фильтр - рабочим
+			work_mark_ids = {}					-- очищаем список id отметок
 			work_marks_list = {}				-- обнуляем список отметок
 			local marks = Driver:GetMarks{		-- запрашиваем у дравера новый список отметок
 				GUIDS=filter.GUIDS, 			-- с указанными типами
@@ -224,11 +228,17 @@ function InitMark(name)
 					table.insert(work_marks_list, mark)		-- сохраняем отметку в рабочий список
 				end
 			end
+	
 			if filter.post_load then			-- если объявлена функция пост обработки
 				work_marks_list = filter.post_load(work_marks_list)	-- то запускаме ее
 			end
+			for _, mark in ipairs(work_marks_list) do
+				work_mark_ids[mark.prop.ID] = true
+			end
+			work_marks_list = sort_stable(work_marks_list, column_sys_coord.sorter, false)
 		end
 	else										-- если фильтр с именем не найден
+		work_mark_ids = {}
 		work_marks_list = {}					-- очищаем список
 		work_filter = None
 		selected_row = 0
@@ -266,6 +276,7 @@ end
 
 -- функция вызывается из программы, при переключении пользователем режима сортировки
 function SortMarks(col, inc)
+	print("SortMarks", col, inc)
 	if work_marks_list and work_filter and col > 0 and col <= #(work_filter.columns) then
 		local column = work_filter.columns[col]
 		local fn = column.sorter
@@ -359,9 +370,11 @@ function OnKey(key, down, flags)
 	if down and selected_row > 0 then
 		-- спрятать отметку
 		if key == 'H' then	
+			local mark = work_marks_list[selected_row]
+			work_mark_ids[mark.prop.ID] = nil
 			table.remove(work_marks_list, selected_row)
 			MarkTable:SetItemCount(#work_marks_list)
-			selected_row = 0	
+			selected_row = 0
 		end
 		
 		-- удалить
@@ -399,6 +412,10 @@ function GetMarkID(row)
 	return -1
 end
 
+-- функция вызывается из атейп, для определения следует ли показывать эту отметку в центральной полосе
+function IsMarkVisible(mark_id)
+	return work_mark_ids[mark_id]
+end
 
 -- ============================================================= --
 -- 						  отладка
