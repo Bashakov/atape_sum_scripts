@@ -6,6 +6,7 @@ local filters =
 		columns = {
 			column_num, 
 			column_path_coord, 
+			column_sys_coord, 
 			column_rail,
 			column_recogn_width_inactive,
 			column_recogn_width_active,
@@ -219,15 +220,33 @@ local filters =
 		columns = {
 			column_num,
 			column_path_coord, 
+			column_sys_coord, 
 			column_rail,
 			column_recogn_width,
 			column_recogn_video_channel,
 			column_mark_id,
+			column_sleeper_dist_prev,
 			}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
 			local width = mark_helper.GetGapWidth(mark)
 			return width and width <= 3
+		end,	
+		post_load = function(marks)
+			local prev_pos = {} -- координата пред стыка (по рельсам)
+			marks = sort_stable(marks, column_sys_coord.sorter, true)	-- сортируем отметки от драйвера по координате
+			for _, mark in ipairs(marks) do	-- проходим по отметкам
+				local r = bit32.band(mark.prop.RailMask, 3)	-- получаем номер рельса
+				if prev_pos[r] then	-- если есть коордиана предыдущей
+					local delta = mark.prop.SysCoord - prev_pos[r]	        -- в пользовательские данные отметки заносим растойние до нее
+					if ( delta > 27000 or delta < 10500) then 
+						delta=0
+					end
+					mark.user.dist_prev = delta --tostring(delta) 
+				end
+				prev_pos[r] = mark.prop.SysCoord	-- и сохраняем положение этой отметки
+			end
+			return marks	-- возвращаем список для отображения
 		end,
 	},
 }

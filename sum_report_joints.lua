@@ -155,21 +155,56 @@ local function generate_rows_neigh_blind_joint(marks, dlgProgress)
 		row.DEFECT_CODE = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1]
 		row.DEFECT_DESC = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[2]
 		row.BLINK_GAP_COUNT = #group
+	    
+		local to_report = 0 
+		RAIL_12500_LENGTH_MIN = 10500
+		RAIL_12500_LENGTH_MAX = 14500
+		RAIL_25000_LENGTH_MIN = 23000
+		RAIL_25000_LENGTH_MAX = 27000
 		
 		local temperature = mark_helper.GetTemperature(group[1]) or 0
-		if temperature > 0 then
-			local rail_length = 0
-			for i = 1, #group-1 do
-				rail_length	= math.max(rail_length, group[i+1].prop.SysCoord - group[i].prop.SysCoord)
+		if temperature > 0 then                     -- считаем, при 20 градусах лето ???		
+			SysCoord1 = group[1].prop.SysCoord
+			SysCoord2 = group[#group].prop.SysCoord		
+			
+			local rail_max_length = 0 -- максимальная длина из группы 
+			for j = 1, #group-1 do
+				rail_max_length	= math.max(rail_max_length, group[j+1].prop.SysCoord - group[j].prop.SysCoord)
 			end
+			
+			local rail_group_length = 0	
+			rail_group_length = math.max( rail_group_length,  SysCoord2 - SysCoord1 )
+			local rail_average_length = rail_group_length/(#group-1)
 		
-			print(rail_length)
-			if rail_length > 20000 or #group >= 4 then
-				row.SPEED_LIMIT = 'ЗАПРЕЩЕНО'
+			-- ограничиваем по длине отметки включаемые в отчет
+			-- если максимальная длина звена в диапазоне и 12.5 и 25 звеньев - то в отчет 
+			if ( rail_max_length > RAIL_12500_LENGTH_MIN and rail_max_length < RAIL_25000_LENGTH_MAX) then
+				to_report = 1
 			end
+				
+			print( "****", #group, rail_group_length, rail_max_length, rail_average_length, SysCoord1, SysCoord1, to_report )		
+		
+			-- определеям является ли звено 25-метровым - находится в диапазоне. 
+	        if ( rail_max_length > RAIL_25000_LENGTH_MIN and  rail_max_length< RAIL_25000_LENGTH_MAX ) then
+				if  #group >= 2 then -- ограничение для 25 метрового: звена  больше 2-ух подряд 
+					row.SPEED_LIMIT = 'ЗАПРЕЩЕНО'
+					to_report = 1
+				end	
+			end	        
+			-- определеям является ли звено 12.5-метровым - находится в диапазоне. 
+			if ( rail_max_length > RAIL_12500_LENGTH_MIN and  rail_max_length< RAIL_12500_LENGTH_MAX ) then
+				if  #group >= 4 then -- ограничение для 12.5 метрового: звена  больше 4-ух подряд 
+					row.SPEED_LIMIT = 'ЗАПРЕЩЕНО'
+					to_report = 1
+				end	
+			end					
+			
+		end
+		-- добавляем в отчет
+		if ( to_report == 1 ) then
+			table.insert(report_rows, row)		
 		end
 		
-		table.insert(report_rows, row)		
 		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Отработка %d / %d отметок, найдено %d', i, #groups, #report_rows)) then 
 			return
 		end
@@ -389,8 +424,9 @@ end
 if not ATAPE then
 
 	test_report  = require('test_report')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
-	
+	--test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+    test_report('D:/ATapeXP/Main/TEST/ZeroGap/2019_06_13/Avikon-03M/6284/[494]_2017_06_14_03.xml')	
+
 	--report_ALL()
 	--ekasui_ALL()
 	report_neigh_blind_joint()

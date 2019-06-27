@@ -26,7 +26,7 @@ MK_CONTROL   =	0x0008
 local function my_dofile(file_name)
 	local errors = ''
 	
-	for _, path in ipairs{file_name, 'Scripts/' .. file_name} do
+	for _, path in ipairs{file_name, 'Scripts\\' .. file_name} do
 		local ok, data = pcall(function() return dofile(path)	end)
 		if ok then
 			return data
