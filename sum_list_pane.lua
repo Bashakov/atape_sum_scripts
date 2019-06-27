@@ -150,7 +150,7 @@ end
 -- дефолтный обработчик ПКМ
 local function default_mark_contextmenu(row, col)
 	local handlers = {
-		{text = "Видеограмма", 		fn = videogram_mark},
+		{text = "Сформировать Выходную форму видеофиксации (д.б. открыт нужный видеокомпонент )", 		fn = videogram_mark},
 		{text = "", },
 		{text = "Удалить отметку", 	fn = delete_mark},
 	}
@@ -211,7 +211,6 @@ end
 -- функция вызывается из программы, при выборе пользователем одного из фильтров, 
 -- тут следует сформировать список отметок, и вернуть его длинну
 function InitMark(name)
-	print(name)
 	local filter = get_filter_by_name(name)		-- ищем фильтр по имени
 	if filter then								-- если нашли
 		if work_filter ~= filter then			-- и если фильтр не тот что был до этого
@@ -228,14 +227,14 @@ function InitMark(name)
 					table.insert(work_marks_list, mark)		-- сохраняем отметку в рабочий список
 				end
 			end
-	
+
 			if filter.post_load then			-- если объявлена функция пост обработки
 				work_marks_list = filter.post_load(work_marks_list)	-- то запускаме ее
 			end
 			for _, mark in ipairs(work_marks_list) do
 				work_mark_ids[mark.prop.ID] = true
 			end
-			work_marks_list = sort_stable(work_marks_list, column_sys_coord.sorter, false)
+			work_marks_list = sort_stable( work_marks_list, column_sys_coord.sorter, true )
 		end
 	else										-- если фильтр с именем не найден
 		work_mark_ids = {}
@@ -276,7 +275,6 @@ end
 
 -- функция вызывается из программы, при переключении пользователем режима сортировки
 function SortMarks(col, inc)
-	print("SortMarks", col, inc)
 	if work_marks_list and work_filter and col > 0 and col <= #(work_filter.columns) then
 		local column = work_filter.columns[col]
 		local fn = column.sorter

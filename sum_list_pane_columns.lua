@@ -60,7 +60,7 @@ column_num =
 column_mark_id = 
 {
 	name = 'ID', 
-	width = 60, 
+	width = 80, 
 	align = 'r',
 	text = function(row)
 		local mark = work_marks_list[row]
