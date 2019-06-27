@@ -35,7 +35,7 @@ end
 -- ========================================
 
 
-local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg)
+local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg, pathType )
 	local PackageID = uuid() -- Passport.SOURCE + 
 
 	local run_year, run_month, run_day = string.match(Passport.DATE, "(%d+):(%d+):(%d+):")
@@ -61,7 +61,7 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg)
 	node_header:setAttribute("decoder", Passport.SIGNED)
 	node_header:setAttribute("soft", "ATapeXP")
 	node_header:setAttribute("decodePlaceID", "")
-	node_header:setAttribute("pathType", "1")
+	node_header:setAttribute("pathType", pathType )
 	node_header:setAttribute("SiteID", EKASUI_PARAMS.SITEID)
 	node_header:setAttribute("pathID", Passport.TRACK_CODE)
 	node_header:setAttribute("pathText", Passport.TRACK_NUM)
@@ -152,9 +152,29 @@ local function make_ekasui_generator(getMarks, ...)
 		local export_id = os.date('%Y%m%d%H%M%S')
 		local str_msg = 'Сохренено'
 		local pghlp = make_export_prgs_dlg(dlgProgress, #report_rows)
-		for n, group in mark_helper.split_chunks_iter(100, report_rows) do
+		       
+        -- РЕДАКТИРОВАНИЕ  атрибутов проезда
+            -- Получаем атрибуты проезда
+        local SiteID   = EKASUI_PARAMS.SITEID
+        local carID    = EKASUI_PARAMS.carID
+        local pathType = 0
+        local pathID   = Passport.TRACK_CODE
+        local pathText = Passport.TRACK_NUM
+            -- Диалог редактирования  атрибутов проезда
+        local res, _SiteID, _carID, _pathType, _pathID, _pathText = iup.GetParam("ЕКАСУИ: Проверка заполнения атрибутов", nil, 
+        "SiteID = %i\n\z carID = %s\n\z pathType = %i\n\z  pathID = %s\n\z pathText = %s\n\z",
+        SiteID, carID, pathType, pathID, pathText )         
+        if res then         
+            EKASUI_PARAMS.SITEID = _SiteID
+            EKASUI_PARAMS.carID  = _carID 
+            pathType             = _pathType
+            Passport.TRACK_CODE  = _pathID   
+            Passport.TRACK_NUM   = _pathText
+        end
+    
+        for n, group in mark_helper.split_chunks_iter(100, report_rows) do
 			--print(#group)
-			local path = export_ekasui_xml(n, group, export_id, pghlp)
+			local path = export_ekasui_xml(n, group, export_id, pghlp, pathType )
 			str_msg = str_msg .. sprintf('\n%d отметок в файл: %s', #group, path)
 		end
 		iup.Message(title, str_msg)
