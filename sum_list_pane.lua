@@ -242,6 +242,7 @@ function InitMark(name)
 		work_filter = None
 		selected_row = 0
 	end
+	work_sort_param = {0, 0}
 	return #work_marks_list						-- возврвщаем длинну списка, чтобы атейп зарезервировал таблицу
 end
 
@@ -413,6 +414,19 @@ end
 -- функция вызывается из атейп, для определения следует ли показывать эту отметку в центральной полосе
 function IsMarkVisible(mark_id)
 	return work_mark_ids[mark_id]
+end
+
+
+-- функция вызывается из атейп, для определения списка GUID отображаемых в этом фильтре
+function GetFilterGuids(filter_name)
+	local filter = work_filter
+	if name then
+		filter = get_filter_by_name(name)	-- ищем фильтр по имени
+	end
+	
+	if filter then
+		return filter.GUIDS or {}
+	end
 end
 
 -- ============================================================= --

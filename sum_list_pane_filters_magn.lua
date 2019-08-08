@@ -7,6 +7,8 @@ local filters =
 			column_num,
 			column_path_coord, 
 			column_rail,
+			column_length,
+			column_mark_type_name,
 			column_mag_use_recog,
 			}, 
 		GUIDS = {

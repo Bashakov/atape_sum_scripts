@@ -6,7 +6,7 @@ local filters =
 		columns = {
 			column_num, 
 			column_path_coord, 
-			column_sys_coord, 
+			-- column_sys_coord, 
 			column_rail,
 			column_recogn_width_inactive,
 			column_recogn_width_active,

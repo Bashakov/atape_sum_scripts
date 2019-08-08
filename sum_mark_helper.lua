@@ -686,6 +686,32 @@ local function sort_stable(marks, fn, inc, progress_callback)
 	local keys = {}	-- массив ключей, который будем сортировать
 	local key_nums = {} -- таблица ключ - массив позиций исходных отметок
 	
+	if true and #marks > 0 and marks[1].prop and marks[1].prop.ID then
+		-- оптимизация для специальных пользовательских отметок, 
+		-- их свойства лучше читать последовательно по ID, тк доп свойства кешируются
+		
+		local id2mark = {}	-- таблица id-отметка
+		local ids = {}		-- id отметок
+		for i = 1, #marks do
+			local mark = marks[i]
+			local mark_id = mark.prop.ID
+			id2mark[mark_id] = mark
+			ids[#ids + 1] = mark_id
+		end
+		table.sort(ids)		-- сортируем ID отметок
+		local id2val = {}	
+		for _, mark_id in ipairs(ids) do
+			-- проходим по отмекам упрорядоченным по ID и получаем нужные свойства
+			local mark = id2mark[mark_id]
+			id2val[mark_id] = fn(mark)	
+		end
+		-- переопределяем функцию получения значения, чтобы читать закешированные значения
+		fn = function(mark)
+			local id = mark.prop.ID
+			return id2val[id] or 0
+		end
+	end
+
 	for i = 1, #marks do
 		local mark = marks[i]
 		local key = fn(mark) or 0	-- создадим ключ, с сортируемой характеристикой

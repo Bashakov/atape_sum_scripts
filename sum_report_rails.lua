@@ -141,8 +141,7 @@ end
 if not ATAPE then
 
 	test_report  = require('test_report')
-	-- test_report('D:\\ATapeXP\\Main\\494\\hi\\2019_03_05\\Avikon-03M\\10352\\[494]_2018_09_27_01.xml')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	test_report('D:\\ATapeXP\\Main\\494\\hi\\2019_03_05\\Avikon-03M\\10352\\[494]_2018_09_27_01.xml')
 	
 	report_rails()
 	--ekasui_rails()

@@ -40,7 +40,7 @@ end
 	Функция должна вернуть строку
 ]]
 function GetText(value)
-	print('GetText', value)
+	-- print('GetText', value)
 	value = math.max(value, 1)
 	value = value_range[2] / value
 	value = math.max(value, 1)
