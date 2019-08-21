@@ -75,7 +75,7 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg, path
 		local img = GetBase64EncodedFrame(mark)
 		
 		local node_incident = dom:createElement('incident')
-		node_header:appendChild(node_incident)
+		node_OutFile:appendChild(node_incident)
 		
 		node_incident:setAttribute("recID", sprintf('%s%03d', os.date('%Y%m%d%H%M%S'), i))
 		node_incident:setAttribute("time", os.date('%d.%m.%Y %H:%M:%S', runtime))
