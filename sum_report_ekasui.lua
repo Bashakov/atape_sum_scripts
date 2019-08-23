@@ -133,6 +133,9 @@ local function make_ekasui_generator(getMarks, ...)
 		local report_rows = {}
 		for _, fn_gen in ipairs(row_generators) do
 			local cur_rows = fn_gen(marks, dlgProgress)
+			if not cur_rows then 
+				return
+			end
 			for _, row in ipairs(cur_rows) do
 				table.insert(report_rows, row)
 			end
