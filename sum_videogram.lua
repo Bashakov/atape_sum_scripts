@@ -106,11 +106,68 @@ local function format_path_coord(path)
 end
 -- ============================================================================= 
 
+local function merge_row_mark_param(name, values)
+	local res = {}
+	if values then
+		local known = {}
+		for _, value in ipairs(values) do
+			if value ~= '' and not known[value] then
+				table.insert(res, value)
+				known[value] = 1
+			end
+		end
+	end
+	return table.concat(res, ', ')
+end
+	
+
+local function make_mark_row_defects(mark)
+	local report_scripts = {
+		'sum_report_joints',
+	}
+	
+	local row_info = nil
+	
+	for _, name in ipairs(report_scripts) do
+		local report = require(name)
+		if report and report.videogram then
+			local cur_rep_rows = report.videogram(mark)
+			if cur_rep_rows then
+				for _, r in ipairs(cur_rep_rows) do
+					for n, v in pairs(r) do
+						if not row_info then
+							row_info = {}
+						end
+						if not row_info[n] then
+							row_info[n] = {}
+						end
+						table.insert(row_info[n], v)
+					end
+				end
+			end
+		end
+	end
+	
+	if row_info then
+		for name, value in pairs(row_info) do
+--			print(name)
+--			for _, vv in ipairs(value) do
+--				print('\t', vv)
+--			end
+			row_info[name] = merge_row_mark_param(name, value)
+			-- print(' = ', row_info[name])
+		end
+	end
+	return row_info
+end
 
 
 local function make_videogram_report_mark(mark, own_frame)
-
-	local report_row = mark_helper.MakeCommonMarkTemplate(mark)
+	local report_row = make_mark_row_defects(mark)
+	if not report_row then
+		report_row = mark_helper.MakeCommonMarkTemplate(mark)
+	end
+	
 	local report_rows = {report_row}
 	
 	local ext_psp = mark_helper.GetExtPassport(Passport)
@@ -347,7 +404,7 @@ if not ATAPE then
 	local savedGetMarks = Driver.GetMarks 
 	-- тестовая функция обертка: возвращает только одну отметку, для videogram_mark
 	Driver.GetMarks = function(self, filter)
-		return savedGetMarks(self, {mark_id=786})
+		return savedGetMarks(self, {mark_id=3382})
 	end
 	
 	videogram_mark()

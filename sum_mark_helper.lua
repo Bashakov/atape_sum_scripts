@@ -125,6 +125,34 @@ local function deepcopy(orig)
     return copy
 end
 
+-- поиск элемента в таблице
+local function table_find(tbl, val)
+	for i = 1, #tbl do
+		if tbl[i] == val then
+			return i
+		end
+	end
+end
+
+-- создать таблицу из переданных аргументов, если аргумент таблица, то она распаковывается рекурсивно
+local function table_merge(...)
+	local res = {}
+	
+	for _, item in ipairs{...} do
+		if type(item) == 'table' then
+			local v = table_merge(table.unpack(item))
+			for _, i in ipairs(v) do
+				res[#res+1] = i
+			end
+		else
+			res[#res+1] = item
+		end
+	end
+
+	return res
+end
+
+
 
 -- =================== ШИРИНА ЗАЗОРА ===================
 
@@ -907,6 +935,8 @@ return{
 	split_chunks_iter = split_chunks_iter,
 	shallowcopy = shallowcopy,
 	deepcopy = deepcopy,
+	table_find = table_find,
+	table_merge = table_merge,
 	
 	sort_mark_by_coord = sort_mark_by_coord,
 	format_path_coord = format_path_coord,

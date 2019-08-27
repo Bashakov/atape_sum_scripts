@@ -350,7 +350,35 @@ local function make_report_ekasui(...)
 	return EKASUI_REPORT.make_ekasui_generator(GetMarks, ...)
 end	
 
+local function make_report_videogram(...)
+	local row_generators = {...}
+		
+	function gen(mark)
+		local report_rows = {}
+		if mark and mark_helper.table_find(video_joints_juids, mark.prop.Guid) then
+			for _, fn_gen in ipairs(row_generators) do
+				local cur_rows = fn_gen({mark}, nil)
+				for _, row in ipairs(cur_rows) do
+					table.insert(report_rows, row)
+				end
+			end
+		end
+		return report_rows
+	end
+	
+	return gen
+end	
+
 -- ============================================================================= 
+
+local all_generators = {
+	generate_rows_joint_width, 
+	generate_rows_neigh_blind_joint, 
+	generate_rows_joint_step, 
+	generate_rows_fishplate, 
+	generate_rows_missing_bolt, 
+	generate_rows_WeldedBond
+}
 
 local report_joint_width = make_report_generator(generate_rows_joint_width)
 local report_neigh_blind_joint = make_report_generator(generate_rows_neigh_blind_joint)
@@ -358,16 +386,9 @@ local report_joint_step = make_report_generator(generate_rows_joint_step)
 local report_fishplate = make_report_generator(generate_rows_fishplate)
 local report_missing_bolt = make_report_generator(generate_rows_missing_bolt)
 local report_WeldedBond = make_report_generator(generate_rows_WeldedBond)
-
 local report_ALL = make_report_generator(
-	generate_rows_joint_width, 
-	generate_rows_neigh_blind_joint, 
-	generate_rows_joint_step, 
-	generate_rows_fishplate, 
-	generate_rows_missing_bolt, 
-	generate_rows_WeldedBond
+	table.unpack(all_generators)
 )
-
 
 local ekasui_joint_width = make_report_ekasui(generate_rows_joint_width)
 local ekasui_neigh_blind_joint = make_report_ekasui(generate_rows_neigh_blind_joint)
@@ -375,16 +396,15 @@ local ekasui_joint_step = make_report_ekasui(generate_rows_joint_step)
 local ekasui_fishplate = make_report_ekasui(generate_rows_fishplate)
 local ekasui_missing_bolt = make_report_ekasui(generate_rows_missing_bolt)
 local ekasui_WeldedBond = make_report_ekasui(generate_rows_WeldedBond)
-
 local ekasui_ALL = make_report_ekasui( 
-	generate_rows_joint_width, 
-	generate_rows_neigh_blind_joint, 
-	generate_rows_joint_step, 
-	generate_rows_fishplate, 
-	generate_rows_missing_bolt, 
-	generate_rows_WeldedBond
+	table.unpack(all_generators)
 )
 
+
+local videogram = make_report_videogram(
+	table.unpack(all_generators)
+)
+	
 
 -- ============================================================================= 
 
@@ -422,18 +442,18 @@ end
 
 -- тестирование
 if not ATAPE then
-
-	test_report  = require('test_report')
+	--test_report  = require('test_report')
 	--test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
-    test_report('D:/ATapeXP/Main/TEST/ZeroGap/2019_06_13/Avikon-03M/6284/[494]_2017_06_14_03.xml')	
+    --test_report('D:/ATapeXP/Main/TEST/ZeroGap/2019_06_13/Avikon-03M/6284/[494]_2017_06_14_03.xml')	
 
 	--report_ALL()
 	--ekasui_ALL()
-	report_neigh_blind_joint()
+	--report_neigh_blind_joint()
 end
 
 
 
 return {
 	AppendReports = AppendReports,
+	videogram = videogram,
 }

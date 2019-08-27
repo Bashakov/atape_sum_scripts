@@ -159,7 +159,7 @@ local function default_mark_contextmenu(row, col)
 		table.insert(texts, h.text)
 	end
 	local r = MarkTable:PopupMenu(texts)
-	if handlers[r].fn then
+	if r and handlers[r].fn then
 		handlers[r].fn(row, col)
 	end
 end
