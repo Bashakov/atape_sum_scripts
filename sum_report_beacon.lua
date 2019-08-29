@@ -88,10 +88,30 @@ local function make_report_ekasui(...)
 	return EKASUI_REPORT.make_ekasui_generator(GetMarks, ...)
 end	
 
+local function make_report_videogram(...)
+	local row_generators = {...}
+		
+	function gen(mark)
+		local report_rows = {}
+		if mark and mark_helper.table_find(juids_beacon, mark.prop.Guid) then
+			for _, fn_gen in ipairs(row_generators) do
+				local cur_rows = fn_gen({mark}, nil)
+				for _, row in ipairs(cur_rows) do
+					table.insert(report_rows, row)
+				end
+			end
+		end
+		return report_rows
+	end
+	
+	return gen
+end	
+
 -- ============================================================================= 
 
 local report_beacon = make_report_generator(generate_row_beacon)
 local ekasui_beacon = make_report_ekasui(generate_row_beacon)
+local videogram = make_report_videogram(generate_row_beacon)
 
 -- ========================================================================= 
 
@@ -124,4 +144,5 @@ end
 
 return {
 	AppendReports = AppendReports,
+	videogram = videogram,
 }

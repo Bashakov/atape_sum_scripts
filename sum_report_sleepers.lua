@@ -269,10 +269,36 @@ local function make_report_generator(...)
 	return gen
 end	
 
+local function make_report_videogram(...)
+	local row_generators = {...}
+		
+	function gen(mark)
+		local report_rows = {}
+		if mark and mark_helper.table_find(guigs_sleepers, mark.prop.Guid) then
+			for _, fn_gen in ipairs(row_generators) do
+				local cur_rows = fn_gen({mark}, nil)
+				for _, row in ipairs(cur_rows) do
+					table.insert(report_rows, row)
+				end
+			end
+		end
+		return report_rows
+	end
+	
+	return gen
+end	
+
+-- ============================================================================= 
+
 local report_sleeper_dist = make_report_generator(generate_rows_sleeper_dist)
 local report_sleeper_angle = make_report_generator(generate_rows_sleeper_angle)
 
 local report_ALL = make_report_generator(
+	generate_rows_sleeper_dist,
+	generate_rows_sleeper_angle
+)
+
+local videogram = make_report_videogram(
 	generate_rows_sleeper_dist,
 	generate_rows_sleeper_angle
 )
@@ -310,4 +336,5 @@ end
 
 return {
 	AppendReports = AppendReports,
+	videogram = videogram,
 }
