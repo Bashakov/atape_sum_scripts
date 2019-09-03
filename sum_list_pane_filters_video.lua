@@ -3,6 +3,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
 		name = 'Стыковые зазоры', 
+		videogram_defect_codes = {'090004012062'},
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -21,6 +22,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
 		name = 'Отсутствующие болты (вне норматива)', 
+		videogram_defect_codes = {'090004000465'},
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -55,6 +57,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Маячные отметки',
+		videogram_defect_codes = {'000000000000'},
 		columns = {
 			column_num,
 			column_path_coord, 
@@ -81,6 +84,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Скрепления',
+		videogram_defect_codes = {'090004000457','090004000389','090004000402','090004015853','090004000400','090004000384','090004000395','090004000409','090004003539','090004000394','090004000385','090004000397','090004000405','090004000401','090004000478',},
 		columns = {
 			column_num,
 			column_path_coord, 
@@ -96,6 +100,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Горизонтальные уступы', 
+		videogram_defect_codes = {'090004012059'},
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -131,6 +136,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Приварные соединители', 
+		videogram_defect_codes = {'000000000001'},
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -148,6 +154,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Поверхностные дефекты', 
+		videogram_defect_codes = {'090004012001'},
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -163,6 +170,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ',},
 		name = 'Дефекты накладок', 
+		videogram_defect_codes = {'090004000474'},
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -179,6 +187,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Шпалы(эпюра,перпедикулярность)',
+		videogram_defect_codes = {'090004000370', '090004000375'},
 		columns = {
 			column_num,
 			column_path_coord, 
@@ -217,6 +226,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
 		name = 'Слепые зазоры', 
+		videogram_defect_codes = {'090004015840'},
 		columns = {
 			column_num,
 			column_path_coord, 

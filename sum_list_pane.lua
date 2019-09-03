@@ -142,7 +142,8 @@ local function videogram_mark(row, col)
 	local mark = work_marks_list[row]
 	if mark and mark.prop and mark.ext then -- проверим что объект является именно специальной пользовательской отметкой
 		my_dofile "sum_videogram.lua"
-		MakeVideogram('mark', {mark=mark})
+		local defect_codes = work_filter and work_filter.videogram_defect_codes
+		MakeVideogram('mark', {mark=mark, defect_codes=defect_codes})
 	end
 end
 

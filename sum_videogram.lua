@@ -133,7 +133,23 @@ local function merge_row_mark_param(name, values)
 end
 
 
-local function make_mark_row_defects(mark)
+local function make_mark_row_defects(mark, awailable_defect_codes)
+	local check_defect_code = function(row)
+		if not awailable_defect_codes then
+			return true
+		end
+		if not row.DEFECT_CODE then
+			return false
+		end
+		
+		for _, dc in ipairs(awailable_defect_codes) do 
+			if  tostring(dc) == tostring(row.DEFECT_CODE) or 
+				tonumber(dc) == tonumber(row.DEFECT_CODE) then
+				return true
+			end
+		end
+	end
+	
 	local report_scripts = {
 		'sum_report_beacon',
 		'sum_report_fastener',
@@ -141,45 +157,31 @@ local function make_mark_row_defects(mark)
 		'sum_report_rails',
 		'sum_report_sleepers',
 	}
-
+	
 	local row_info = nil
-
 	for _, name in ipairs(report_scripts) do
 		local report = require(name)
-		if report and report.videogram then
-			local cur_rep_rows = report.videogram(mark)
-			if cur_rep_rows then
-				for _, r in ipairs(cur_rep_rows) do
-					for n, v in pairs(r) do
-						if not row_info then
-							row_info = {}
-						end
-						if not row_info[n] then
-							row_info[n] = {}
-						end
-						table.insert(row_info[n], v)
-					end
+		local cur_rep_rows = report and report.videogram and report.videogram(mark)
+		for _, r in ipairs(cur_rep_rows or {}) do
+			if check_defect_code(r) then
+				for n, v in pairs(r) do
+					if not row_info    then row_info    = {} end
+					if not row_info[n] then row_info[n] = {} end
+					table.insert(row_info[n], v)
 				end
 			end
 		end
 	end
-
-	if row_info then
-		for name, value in pairs(row_info) do
---			print(name)
---			for _, vv in ipairs(value) do
---				print('\t', vv)
---			end
-			row_info[name] = merge_row_mark_param(name, value)
-			-- print(' = ', row_info[name])
-		end
+	
+	for name, value in pairs(row_info or {}) do
+		row_info[name] = merge_row_mark_param(name, value)
 	end
 	return row_info
 end
 
 
-local function make_videogram_report_mark(mark, own_frame)
-	local report_row = reset_atape_flag(make_mark_row_defects, mark)
+local function make_videogram_report_mark(mark, own_frame, awailable_defect_codes)
+	local report_row = reset_atape_flag(make_mark_row_defects, mark, awailable_defect_codes)
 	if not report_row then
 		report_row = mark_helper.MakeCommonMarkTemplate(mark)
 	end
@@ -230,7 +232,7 @@ local function videogram_mark(params)
 	end
 
 	for i, mark in ipairs(marks) do
-		make_videogram_report_mark(mark, own_frame)
+		make_videogram_report_mark(mark, own_frame, params and params.defect_codes)
 		if cont == 2 then
 			break
 		end
