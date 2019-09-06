@@ -1,3 +1,5 @@
+local defect_codes = require 'report_defect_codes'
+
 local filters = 
 {
 	{
@@ -226,7 +228,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
 		name = 'Слепые зазоры', 
-		videogram_defect_codes = {'090004015840'},
+		videogram_direct_set_defect = defect_codes.JOINT_NEIGHBO_BLIND_GAP,
 		columns = {
 			column_num,
 			column_path_coord, 

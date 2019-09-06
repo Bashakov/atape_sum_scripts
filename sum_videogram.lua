@@ -180,10 +180,18 @@ local function make_mark_row_defects(mark, awailable_defect_codes)
 end
 
 
-local function make_videogram_report_mark(mark, own_frame, awailable_defect_codes)
-	local report_row = reset_atape_flag(make_mark_row_defects, mark, awailable_defect_codes)
+local function make_videogram_report_mark(mark, own_frame, awailable_defect_codes, direct_set_defect)
+	
+	local report_row
+	if not direct_set_defect then 
+		report_row = reset_atape_flag(make_mark_row_defects, mark, awailable_defect_codes)
+	end
 	if not report_row then
 		report_row = mark_helper.MakeCommonMarkTemplate(mark)
+		if direct_set_defect then
+			report_row.DEFECT_CODE = direct_set_defect[1]
+			report_row.DEFECT_DESC = direct_set_defect[2]
+		end
 	end
 
 	local report_rows = {report_row}
@@ -232,7 +240,11 @@ local function videogram_mark(params)
 	end
 
 	for i, mark in ipairs(marks) do
-		make_videogram_report_mark(mark, own_frame, params and params.defect_codes)
+		make_videogram_report_mark(
+			mark, 
+			own_frame,
+			params and params.defect_codes, 
+			params and params.direct_set_defect)
 		if cont == 2 then
 			break
 		end

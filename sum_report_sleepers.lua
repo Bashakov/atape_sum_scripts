@@ -85,6 +85,14 @@ end
 -- ==========================================================================
 
 local function generate_rows_sleeper_dist(marks, dlgProgress)
+	if #marks == 1 and marks[1].user and marks[1].user.dist_prev and marks[1].user.dist_next then
+		-- вызов видеограммы из панели отметок, добавим файковые отметки по карям, чтобы алгоритм отработал поис
+		local cm = marks[1]
+		local pm = {prop={SysCoord=cm.prop.SysCoord - cm.user.dist_prev}}
+		local nm = {prop={SysCoord=cm.prop.SysCoord + cm.user.dist_next}}
+		marks = {pm, marks[1], nm}
+	end
+		
 	if #marks  < 3 then
 		return
 	end
