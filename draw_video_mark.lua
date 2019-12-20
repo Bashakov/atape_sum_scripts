@@ -104,7 +104,7 @@ end
 
 local function showError(text)
 	print(text)
-	OutlineTextOut(100, 10, text, {line_color={r=255, g=0, b=0}})
+	OutlineTextOut(100, Frame.size.current.y - 10, text, {line_color={r=255, g=0, b=0}})
 end
 
 -- ============================ XML =========================
@@ -122,7 +122,11 @@ local function getMarkRawXml(mark)
 	end
 	
 	if not xmlDom:loadXML(raw_xml) then
-		local msg = string.format('Error parse XML: %d %s', xmlDom.parseError.errorCode, xmlDom.parseError.reason)
+		local msg = string.format('Error parse XML: %d %s\nmark id = %d\n%s', 
+			xmlDom.parseError.errorCode, 
+			xmlDom.parseError.reason,
+			mark.prop.ID,
+			raw_xml)
 		showError(msg)
 		error(msg)
 		return
@@ -336,51 +340,26 @@ local function drawSimpleResult(resultType, points, params)
 		end
 	end
 
-	if string.match(resultType, "Surface_SQUAT_UIC_227") then
+	if resultType == "Surface_SQUAT_UIC_227" then
 		local color = {r=255, g=0, b=255}
 		if #points > 0 then
 			drawPolygon(points, 1, color, color)
-			local SurfaceArea = params.SurfaceArea and tonumber(params.SurfaceArea) ~= 0 and params.SurfaceArea
-			if not SurfaceArea then
-				SurfaceArea = params.SurfaceWidth * params.SurfaceLength
-			end
-			-- Вывод параметров дефекта 	
-			--local strText = sprintf('h=%d, l=%d', params.SurfaceWidth or 0 , params.SurfaceLength or 0) 
-			--textOut(points, strText, {offset={0, 20}})
-			
 		end
 	end
 	
-	if string.match(resultType, "Surface_SLEEPAGE_SKID_UIC_2251") then
+	if resultType == "Surface_SLEEPAGE_SKID_UIC_2251" then
 		local color = {r=255, g=128, b=64}
 		if #points > 0 then
 			drawPolygon(points, 1, color, color)
-			local SurfaceArea = params.SurfaceArea and tonumber(params.SurfaceArea) ~= 0 and params.SurfaceArea
-			if not SurfaceArea then
-				SurfaceArea = params.SurfaceWidth * params.SurfaceLength
-			end
-			-- Вывод параметров дефекта 
-			--local strText = sprintf('h=%d, l=%d', params.SurfaceWidth or 0 , params.SurfaceLength or 0) 
-			--textOut(points, strText, {offset={0, 20}})
-			
 		end
 	end
 
-	if string.match(resultType, "Surface_SLEEPAGE_SKID_UIC_2252") then
+	if resultType == "Surface_SLEEPAGE_SKID_UIC_2252" then
 		local color = {r=255, g=255, b=128}
 		if #points > 0 then
 			drawPolygon(points, 1, color, color)
-			local SurfaceArea = params.SurfaceArea and tonumber(params.SurfaceArea) ~= 0 and params.SurfaceArea
-			if not SurfaceArea then
-				SurfaceArea = params.SurfaceWidth * params.SurfaceLength
-			end
-			-- Вывод параметров дефекта 
-			--local strText = sprintf('h=%d, l=%d', params.SurfaceWidth or 0 , params.SurfaceLength or 0) 
-			--textOut(points, strText, {offset={0, 20}})
-			
 		end
-	end	
-	
+	end
 	
 end
 
@@ -564,10 +543,6 @@ local recorn_guids =
 	["{28C82406-2773-48CB-8E7D-61089EEB86ED}"] = {ProcessMarkRawXml}, -- Болты(Пользователь)
 	["{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}"] = {ProcessMarkRawXml}, -- Поверх.(Видео)
 	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"] = {ProcessMarkRawXml}, -- Шпалы
-	["{DE548D8F-4E0C-4644-8DB3-B28AE8B17431}"] = {ProcessMarkRawXml}, -- UIC_227
-	["{54188BA4-E88A-4B6E-956F-29E8035684E9}"] = {ProcessMarkRawXml}, -- UIC_2252
-	["{54188BA4-E88A-4B6E-956F-29E8035684E9}"] = {ProcessMarkRawXml}, -- UIC_2252
-	["{54188BA4-E88A-4B6E-956F-29E8035684E9}"] = {ProcessMarkRawXml}, -- UIC_2252
 	["{DE548D8F-4E0C-4644-8DB3-B28AE8B17431}"] = {ProcessMarkRawXml}, -- UIC_227
 	["{BB144C42-8D1A-4FE1-9E84-E37E0A47B074}"] = {ProcessMarkRawXml}, -- BELGROSPI
 	["{EBAB47A8-0CDC-4102-B21F-B4A90F9D873A}"] = {ProcessMarkRawXml}, -- UIC_2251
