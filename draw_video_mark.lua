@@ -548,6 +548,9 @@ local recorn_guids =
 	["{EBAB47A8-0CDC-4102-B21F-B4A90F9D873A}"] = {ProcessMarkRawXml}, -- UIC_2251
 	["{54188BA4-E88A-4B6E-956F-29E8035684E9}"] = {ProcessMarkRawXml}, -- UIC_2252
 	["{7EF92845-226D-4D07-AC50-F23DD8D53A19}"] = {ProcessMarkRawXml}, -- HC
+	["{41486CAC-EBE9-46FF-ACCA-041AFAFFC531}"] = {ProcessMarkRawXml}, -- UIC_2251 (user)
+	["{3401C5E7-7E98-4B4F-A364-701C959AFE99}"] = {ProcessMarkRawXml}, -- UIC_2252 (user)
+	["{13A7906C-BBFB-4EB3-86FA-FA74B77F5F35}"] = {ProcessMarkRawXml}, -- UIC_227 (user)
 }
 
 -- ================= EXPORT FUNCTION ================ 

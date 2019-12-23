@@ -1550,7 +1550,7 @@ local Report_Functions = {
 --	{name="Ненормативные объекты" , fn=report_unspec_obj      , params={ filename=ProcessSumFile, sheetname="Ненормативные объекты"   }, guids=unspec_obj_filter_guids},	
 	
 	{name="НПУ", fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls" }, guids=NPU_guids},
-
+	
 	--{name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 	--{name="TEST",			fn=report_test,		params={} },
 }
@@ -1569,6 +1569,10 @@ report_fastener.AppendReports(Report_Functions)
 
 local report_beacon = require 'sum_report_beacon'
 report_beacon.AppendReports(Report_Functions)
+
+
+local report_hun_video = require 'sum_report_hun'
+report_hun_video.AppendReports(Report_Functions)
 
 -- ================================ EXPORT FUNCTIONS ================================= --
 

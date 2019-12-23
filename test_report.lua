@@ -126,6 +126,22 @@ local function psp2table(psp_path)						-- открыть xml паспорт и 
 	return res
 end
 
+local function read_guids()
+	local res = {}
+			
+	local pathCfg = os.getenv("ProgramFiles") .. '\\ATapeXP\\SpecUserMark.xml'
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom and xmlDom:load(pathCfg), 'can not create MSXML object')
+	local nodes = xmlDom:SelectNodes('/SPEC_USER_MARK/SPEC_USER_MARK_DESCRIPTIONS/ITEM[@GUID and @VALUE]')
+	while true do
+		local node = nodes:nextNode()
+		if not node then break end
+		local guid = node.attributes:getNamedItem("GUID").nodeValue 
+		local name = node.attributes:getNamedItem('VALUE').nodeValue
+		res[string.upper(guid)] = name
+	end
+	return res
+end
 
 local function read_EKASUI_cfg()
 	local pathCfg = os.getenv("ProgramFiles") .. '\\ATapeXP\\ekasui.cfg'
@@ -235,6 +251,7 @@ Driver = OOP.class
 		_G.Driver = self
 		_G.Passport = self._passport
 		_G.EKASUI_PARAMS = read_EKASUI_cfg()
+		self._guids = read_guids()
 	end,
 	
 	GetMarks = function(self, filter)
@@ -254,6 +271,10 @@ Driver = OOP.class
 		local m = math.floor(sys / 1000) % 1000
 		local mm = math.floor(sys) % 1000
 		return km, m, mm
+	end,
+	
+	GetSumTypeName = function(self, guid)
+		return self._guids[string.upper(guid)] or tostring(guid)
 	end,
 	
 	GetTemperature = function(self, rail, sys)
