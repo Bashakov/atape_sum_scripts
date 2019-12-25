@@ -81,9 +81,9 @@ end
 
 local function get_action_result(name)
 	local guids = {
-		['UIC_2251'] = 'Surface_SLEEPAGE_SKID_UIC_2251',
-	    ['UIC_2252'] = 'Surface_SLEEPAGE_SKID_UIC_2252',
-        ['UIC_227']  = 'Surface_SQUAT_UIC_227',
+		['UIC_2251'] = 'Surface_SLEEPAGE_SKID_UIC_2251_USER',
+	    ['UIC_2252'] = 'Surface_SLEEPAGE_SKID_UIC_2252_USER',
+        ['UIC_227']  = 'Surface_SQUAT_UIC_227_USER',
 	}
 	local res = guids[name]
 	if not res then
