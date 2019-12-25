@@ -198,7 +198,7 @@ end
 
 local beacon_shifts = {}
 
-local function drawSimpleResult(resultType, points, params)
+local function drawSimpleResult(resultType, points, params, mark, reliability)
 	
 	if string.match(resultType, 'CalcRailGap_') then
 		local colorsGap = {
@@ -342,8 +342,10 @@ local function drawSimpleResult(resultType, points, params)
 
 	if resultType == "Surface_SQUAT_UIC_227" then
 		local color = {r=255, g=0, b=255}
+		local line_color = reliability > 100 and {r=155, g=255, b=155} or color
+		
 		if #points > 0 then
-			drawPolygon(points, 1, color, color)
+			drawPolygon(points, 1, line_color, color)
 		end
 	end
 	
@@ -387,7 +389,7 @@ end
 
 -- ======================================================
 
-local function processSimpleResult(nodeActRes, resultType)
+local function processSimpleResult(nodeActRes, resultType, mark, reliability)
 	-- and @value="0"
 	local req = '\z
 		PARAM[@name="FrameNumber" and @coord]/\z
@@ -397,7 +399,7 @@ local function processSimpleResult(nodeActRes, resultType)
 		local params = getParameters(nodeResult)
 		local points = getDrawFig(nodeResult)
 		if #points > 0 then
-			drawSimpleResult(resultType, points, params)
+			drawSimpleResult(resultType, points, params, mark, reliability)
 		end
 	end
 end
@@ -488,6 +490,9 @@ local function ProcessMarkRawXml(mark)
 	local rawXmlRoot = getMarkRawXml(mark)
 	if not rawXmlRoot then return end
 	
+	local nodeReliability = xmlDom:selectSingleNode('/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Common"]/PARAM[@name="Reliability"]/@value')
+	local reliability  = nodeReliability and tonumber(nodeReliability.nodeValue)
+
 	local req = sprintf('/ACTION_RESULTS\z
 		/PARAM[@name="ACTION_RESULTS" and @value and @channel="%d"]', 
 		Frame.channel)
@@ -498,7 +503,7 @@ local function ProcessMarkRawXml(mark)
 		local fns = ActionResTypes[resultType]
 		if fns then
 			for _, fn in ipairs(fns) do
-				fn(nodeActionResult, resultType)
+				fn(nodeActionResult, resultType, mark, reliability)
 			end
 		else
 			local msg = sprintf('Unknown: %s', resultType)

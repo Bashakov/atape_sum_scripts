@@ -8,12 +8,24 @@ local excel_helper = require 'excel_helper'
 
 local video_hun_juids = 
 {
-	"{DE548D8F-4E0C-4644-8DB3-B28AE8B17431}",
-	"{BB144C42-8D1A-4FE1-9E84-E37E0A47B074}",
-	"{EBAB47A8-0CDC-4102-B21F-B4A90F9D873A}",
-	"{54188BA4-E88A-4B6E-956F-29E8035684E9}",
-	"{7EF92845-226D-4D07-AC50-F23DD8D53A19}",
+	["{DE548D8F-4E0C-4644-8DB3-B28AE8B17431}"] = false,	-- UIC_227
+	["{BB144C42-8D1A-4FE1-9E84-E37E0A47B074}"] = false,	-- BELGROSPI
+	["{EBAB47A8-0CDC-4102-B21F-B4A90F9D873A}"] = false,	-- UIC_2251
+	["{54188BA4-E88A-4B6E-956F-29E8035684E9}"] = false,	-- UIC_2252
+	["{7EF92845-226D-4D07-AC50-F23DD8D53A19}"] = false,	-- HC
+
+	["{13A7906C-BBFB-4EB3-86FA-FA74B77F5F35}"] = true,	-- UIC_227(User)
+	["{981F7780-500C-47CD-978A-B9F3A91C37FE}"] = true,	-- BELGROSPI(User)
+	["{41486CAC-EBE9-46FF-ACCA-041AFAFFC531}"] = true,	-- UIC_2251(User)
+	["{3401C5E7-7E98-4B4F-A364-701C959AFE99}"] = true,	-- UIC_2252(User)
+	["{515FA798-3893-41CA-B4C3-6E1FEAC8E12F}"] = true,	-- HC(User)
 }
+
+local function keys(tbl)
+	local res = {}
+	for k, _ in pairs(tbl) do table.insert(res, k) end
+	return res
+end
 
 local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 if not xmlDom then
@@ -30,28 +42,23 @@ local function make_mark_uri(markid)
 	return "atape:" .. link
 end
 
-local function getReability(mark)
-	local xmlStr = mark and mark.ext.RAWXMLDATA
-	if xmlStr and xmlDom:loadXML(xmlStr) then
-		local nodeReliability = xmlDom:selectSingleNode('/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Common"]/PARAM[@name="Reliability"]/@value')
-		if nodeReliability then
-			return tonumber(nodeReliability.nodeValue)
-		end
-	end
-end
+--local function getReability(mark)
+--	local xmlStr = mark and mark.ext.RAWXMLDATA
+--	if xmlStr and xmlDom:loadXML(xmlStr) then
+--		local nodeReliability = xmlDom:selectSingleNode('/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Common"]/PARAM[@name="Reliability"]/@value')
+--		if nodeReliability then
+--			return tonumber(nodeReliability.nodeValue)
+--		end
+--	end
+--end
 
-local function separate_mark_by_reability(all_marks)
+local function separate_mark_by_user_set(all_marks)
 	local manual_marks, auto_marks = {}, {}
 	
 	for _, mark in ipairs(all_marks) do
-		local reliability = getReability(mark)
-		if reliability then
-			if reliability > 100 then
-				table.insert(manual_marks, mark)
-			else
-				table.insert(auto_marks, mark)
-			end
-		end
+		local user_mark = video_hun_juids[string.upper(mark.prop.Guid)]
+		local dst = user_mark and manual_marks or auto_marks
+		table.insert(dst, mark)
 	end
 	return manual_marks, auto_marks
 end
@@ -163,8 +170,8 @@ end
 -- =========================================================== --
 
 local function report_Simple()
-	local all_marks = Driver:GetMarks{GUIDS=video_hun_juids}
-	local manual_marks, auto_marks = separate_mark_by_reability(all_marks)
+	local all_marks = Driver:GetMarks{GUIDS=keys(video_hun_juids)}
+	local manual_marks, auto_marks = separate_mark_by_user_set(all_marks)
 	
 	manual_marks = ManualMarks(manual_marks)
 	auto_marks = mark_helper.sort_mark_by_coord(auto_marks)
@@ -174,6 +181,7 @@ local function report_Simple()
 	local worksheet = excel._worksheet
 	
 	local row_height = worksheet.Rows(1).RowHeight
+	local found_manuals = 0
 	for line, mark in ipairs(auto_marks) do
 		worksheet.Rows(line).RowHeight = row_height
 		local prop =  mark.prop
@@ -184,10 +192,17 @@ local function report_Simple()
 		worksheet.Cells(line, 2).Value2 = mark_helper.format_path_coord(mark)
 		worksheet.Cells(line, 3).Value2 = prop.SysCoord
 		worksheet.Cells(line, 4).Value2 = Driver:GetSumTypeName(prop.Guid)
-		if dist_user_mark and dist_user_mark < 1000 then
-			worksheet.Cells(line, 5).Value2 = string.format('найдена ручная на расстоянии %d mm', dist_user_mark) 
+		
+		local cell = worksheet.Cells(line, 5)
+		if user_mark and dist_user_mark and dist_user_mark < 1000 then
+			local text = string.format('найдена ручная на расстоянии %d мм', dist_user_mark) 
+			local uri = make_mark_uri(user_mark.prop.ID)
+			excel:InsertLink(cell, uri, text)
+			found_manuals =  found_manuals + 1
+			cell.interior.color = 0xf0fff0
 		else
-			worksheet.Cells(line, 5).Value2 = "ручная отметка не найдена"
+			cell.Value2 = "ручная отметка не найдена"
+			cell.interior.color = 0xf0f0ff
 		end
 		
 		local channels = getVideoChannel(mark)
@@ -200,7 +215,7 @@ local function report_Simple()
 --			break
 --		end
 		
-		if not dlg:step(1.0 * line / #auto_marks, stuff.sprintf('Process %d / %d mark', line, #auto_marks)) then 
+		if line % 3 == 0 and not dlg:step(1.0 * line / #auto_marks, stuff.sprintf('Process %d / %d mark, found %d', line, #auto_marks, found_manuals)) then 
 			break 
 		end
 	end
@@ -221,7 +236,7 @@ local function AppendReports(reports)
 
 	for _, report in ipairs(local_reports) do
 		if report.fn then
-			report.guids = video_hun_juids,
+			report.guids = keys(video_hun_juids),
 			table.insert(reports, report)
 		end
 	end
