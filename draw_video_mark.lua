@@ -341,12 +341,13 @@ local function drawSimpleResult(resultType, points, params)
 	end
 	
 	local hun_act_types_color = {
-		["Surface_SQUAT_UIC_227"] 				= {r=255, g=0,   b=255},
-		["Surface_SQUAT_UIC_227_USER"] 			= {r=0,   g=0,   b=255},
-		["Surface_SLEEPAGE_SKID_UIC_2251"] 		= {r=255, g=128, b=64 },
-		["Surface_SLEEPAGE_SKID_UIC_2251_USER"] = {r=0,   g=255, b=0  },
-		["Surface_SLEEPAGE_SKID_UIC_2252"] 		= {r=0,   g=255, b=128},
-		["Surface_SLEEPAGE_SKID_UIC_2252_USER"] = {r=0,   g=128, b=0  },
+		["Surface_SQUAT_UIC_227"] 				= {r=0,   g=255, b=0    }, -- зеленый
+		["Surface_SLEEPAGE_SKID_UIC_2251"] 		= {r=0,   g=255, b=255  }, -- циан	
+		["Surface_SLEEPAGE_SKID_UIC_2252"] 		= {r=128, g=128, b=255  },  -- 
+
+		["Surface_SQUAT_UIC_227_USER"] 			= {r=255, g=0,   b=255  }, -- малиновый
+		["Surface_SLEEPAGE_SKID_UIC_2251_USER"] = {r=255, g=128, b=0    }, -- оранжевый
+		["Surface_SLEEPAGE_SKID_UIC_2252_USER"] = {r=255, g=0,   b=0   },  -- красный
 	}
 	local hun_color = hun_act_types_color[resultType]
 	if #points > 0 and hun_color then
