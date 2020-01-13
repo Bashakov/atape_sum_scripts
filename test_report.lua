@@ -179,7 +179,7 @@ local function read_XmlC(file_path)
 
 
 	local function pop_string(state, length)
-		assert(#state.stream >= state.pos + length)
+		assert(#state.stream + 1 >= state.pos + length)
 		local res = string.sub(state.stream, state.pos, state.pos+length-1)
 		state.pos = state.pos + length
 		return res
@@ -204,7 +204,7 @@ local function read_XmlC(file_path)
 	local values = {}	
 	local idx2names = {}
 	
-	while #state.stream > state.pos do
+	while #state.stream+1 > state.pos do
 		--print(#state.stream, state.pos)
 		local h = pop_header(state)
 		--print(h.idx, h.rail, h.channel, h.type, h.coord, h.value)
@@ -327,8 +327,3 @@ Driver = OOP.class
 }
 
 return Driver
-
-
-
-
-
