@@ -47,7 +47,12 @@ local switch_guids = {
 }
 
 local NPU_guids = {
-	"{19FF08BB-C344-495B-82ED-10B6CBAD5090}",
+	"{19FF08BB-C344-495B-82ED-10B6CBAD5090}", -- НПУ
+	"{19FF08BB-C344-495B-82ED-10B6CBAD508F}", -- Возможно НПУ
+}
+
+local NPU_guids_uzk = {
+	"{29FF08BB-C344-495B-82ED-000000000011}",
 }
 
 local beacon_rep_filter_guids = 
@@ -1363,7 +1368,7 @@ end
 local function report_NPU(params)
 
 	local function filter_type_fn(mark)
-		return table_find(NPU_guids, mark.prop.Guid)
+		return table_find(params.guids, mark.prop.Guid)
 	end
 	
 	local dlg = luaiup_helper.ProgressDlg()
@@ -1432,6 +1437,7 @@ local function report_NPU(params)
 --		data_range.Cells(5).ColumnWidth = 0
 --	end
 	
+	dlg = nil
 	excel:SaveAndShow()
 end
 
@@ -1549,7 +1555,8 @@ local Report_Functions = {
 	{name="Маячные метки"          , fn=report_welding         , params={ filename=ProcessSumFile, sheetname="Ведомость сварной плети" }, guids=beacon_rep_filter_guids},
 --	{name="Ненормативные объекты" , fn=report_unspec_obj      , params={ filename=ProcessSumFile, sheetname="Ненормативные объекты"   }, guids=unspec_obj_filter_guids},	
 	
-	{name="НПУ", fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls" }, guids=NPU_guids},
+	{name="НПУ",    fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls", guids=NPU_guids },     guids=NPU_guids},
+	{name="УЗ_НПУ", fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls", guids=NPU_guids_uzk }, guids=NPU_guids_uzk},
 	
 	--{name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 	--{name="TEST",			fn=report_test,		params={} },
