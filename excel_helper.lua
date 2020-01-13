@@ -147,10 +147,9 @@ local excel_helper = OOP.class
 		
 		self._excel.Visible = visible 								-- сделать его видимым если нужно
 		
-		local file_path = CopyTemplate(template_path, sheet_name, dest_name)	-- скопируем шаблон в папку отчетов
-		
-		self._workbook = OpenWorkbook(self._excel, file_path)	
-		assert(self._workbook, stuff.sprintf("can not open %s", file_path))
+		self._file_path = CopyTemplate(template_path, sheet_name, dest_name)	-- скопируем шаблон в папку отчетов
+		self._workbook = OpenWorkbook(self._excel, self._file_path)	
+		assert(self._workbook, stuff.sprintf("can not open %s", self._file_path))
 		
 		self._worksheet = FindWorkSheet(self._workbook, sheet_name)
 		assert(self._worksheet, stuff.sprintf('can not find "%s" worksheet', sheet_name))
@@ -245,11 +244,14 @@ local excel_helper = OOP.class
 	
 	SaveAndShow = function(self)
 		self._excel.Calculation = self._calc_state
-		self._excel.visible = true
+		--self._excel.visible = true
 		self._workbook:Save()
 		self._worksheet = nil
 		self._workbook = nil
+		self._excel:Quit()
 		self._excel = nil
+		print(self._file_path)
+		os.execute("start " .. self._file_path)
 	end,
 	
 	-- поиск диапазона с шаблоном таблицы, возвращает пару ячеек левую верхнюю и правую нижнюю
