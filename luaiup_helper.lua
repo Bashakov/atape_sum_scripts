@@ -60,7 +60,13 @@ ProgressDlg = OOP.class
 			print('cancaled...')
 		end
 		return not self.cancelflag
-	end
+	end,
+	
+	Destroy = function(self)
+		if (iup and self and self.dlgProgress) then
+			iup.Destroy(self.dlgProgress)
+		end
+	end,
 }
 
 

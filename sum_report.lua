@@ -677,7 +677,7 @@ local function report_gaps(params)
 	local ua_filter = {[-1] = true, [0] = show_rejected==1, [1] = show_accepted==1}
 	
 	local dlg = luaiup_helper.ProgressDlg()
-	local marks = Driver:GetMarks()
+	local marks = Driver:GetMarks({guids=params.guids})
 	
 	local function filter_type_fn(mark)
 		return table_find(gap_rep_filter_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
@@ -869,6 +869,7 @@ local function report_gaps(params)
 		os.execute("start " .. file_name)
 	end
 	
+	--dlg:Destroy()
 end
 
 -- отчет по маячнам отметкам
@@ -1538,10 +1539,10 @@ local ProcessSumFile = "Scripts\\ProcessSum.xlsm"
 local Report_Functions = {
 	---------------------------------------
 	-- c ЕКАСУИ 
-	{name="Стыковые зазоры|Excel" , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
-	{name="Стыковые зазоры|ЕКАСУИ " , fn=report_gaps            , params={ eksui=true }, guids=gap_rep_filter_guids},	
-	{name="Болтовые стыки|Excel"  , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },
-	{name="Болтовые стыки|ЕКАСУИ "  , fn=report_crew_join       , params={ eksui=true }, guids=gap_rep_filter_guids},	
+	{name="Стыковые зазоры|Excel" ,  fn=report_gaps      , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров", guids=gap_rep_filter_guids }, guids=gap_rep_filter_guids},
+	{name="Стыковые зазоры|ЕКАСУИ ", fn=report_gaps      , params={ eksui=true,                                             guids=gap_rep_filter_guids }, guids=gap_rep_filter_guids},	
+	{name="Болтовые стыки|Excel",    fn=report_crew_join , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов",  guids=gap_rep_filter_guids }, guids=gap_rep_filter_guids},
+	{name="Болтовые стыки|ЕКАСУИ ",  fn=report_crew_join , params={ eksui=true,                                             guids=gap_rep_filter_guids }, guids=gap_rep_filter_guids},	
 
 	-- без ЕКАСУИ
 	--{name="Ведомость Стыковых зазоров"       , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
@@ -1562,6 +1563,9 @@ local Report_Functions = {
 	--{name="TEST",			fn=report_test,		params={} },
 }
 
+prev_ATAPE = ATAPE -- disable test code execute
+ATAPE = true
+
 local report_rails = require 'sum_report_rails'
 report_rails.AppendReports(Report_Functions)
 
@@ -1577,9 +1581,10 @@ report_fastener.AppendReports(Report_Functions)
 local report_beacon = require 'sum_report_beacon'
 report_beacon.AppendReports(Report_Functions)
 
-
 local report_hun_video = require 'sum_report_hun'
 report_hun_video.AppendReports(Report_Functions)
+
+ATAPE = prev_ATAPE
 
 -- ================================ EXPORT FUNCTIONS ================================= --
 
@@ -1629,5 +1634,12 @@ function GetFilterGuids(reportName)
 	return res;
 end
 
+-- тестирование
+if not ATAPE then
+	test_report  = require('test_report')
+	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	
+	MakeReport('Стыковые зазоры|Excel')
+end
 
 
