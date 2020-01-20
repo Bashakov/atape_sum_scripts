@@ -3,6 +3,7 @@ require "luacom"
 local OOP = require 'OOP'
 local mark_helper = require 'sum_mark_helper'
 local excel_helper = require 'excel_helper'
+local luaiup_helper = require 'luaiup_helper'
 
 -- ======================================
 
@@ -137,6 +138,7 @@ local function make_mark_image(mark, video_channel, show_range, base64)
 	return img_path
 end
 
+-- получить список номеров видео каналов по данных XML
 local function getVideoChannel(mark)
 	local xmlStr = mark and mark.ext.RAWXMLDATA
 	local channels = {}
@@ -148,12 +150,13 @@ local function getVideoChannel(mark)
 			channels[tonumber(nodeChannal.nodeValue)] = 1
 		end
 	end
-	
 	local res = {}
 	for c, _ in pairs(channels) do res[#res+1] = c end
+	table.sort(res)
 	return res
 end
 
+-- вставить изображение указанного видеоканала в указаную ячейку
 local function insert_frame(excel, cell, mark, video_channel)
 	local img_path
 	local ok, msg = pcall(function ()
@@ -177,23 +180,26 @@ local function report_Simple()
 	auto_marks = mark_helper.sort_mark_by_coord(auto_marks)
 	
 	local dlg = luaiup_helper.ProgressDlg()
-	local excel = excel_helper(Driver:GetAppPath() .. "Scripts/hun_template.xlsx", nil, false)
-	local worksheet = excel._worksheet
 	
-	local row_height = worksheet.Rows(1).RowHeight
+	local dest_name = Passport.NAME .. '=' .. os.date('%y%m%d-%H%M%S')
+	local excel = excel_helper(Driver:GetAppPath() .. "Scripts/hun_template.xlsx", nil, false, dest_name)
+	
+	local ext_psp = mark_helper.GetExtPassport(Passport)
+	excel:ApplyPassportValues(ext_psp)
+	
+	local data_range = excel:CloneTemplateRow(#auto_marks)
 	local found_manuals = 0
 	for line, mark in ipairs(auto_marks) do
-		worksheet.Rows(line).RowHeight = row_height
 		local prop =  mark.prop
 		local uri = make_mark_uri(prop.ID)
 		local user_mark, dist_user_mark = manual_marks:find_near(mark)
 
-		excel:InsertLink(worksheet.Cells(line, 1), uri, prop.ID)
-		worksheet.Cells(line, 2).Value2 = mark_helper.format_path_coord(mark)
-		worksheet.Cells(line, 3).Value2 = prop.SysCoord
-		worksheet.Cells(line, 4).Value2 = Driver:GetSumTypeName(prop.Guid)
+		excel:InsertLink(data_range.Cells(line, 1), uri, prop.ID)
+		data_range.Cells(line, 2).Value2 = mark_helper.format_path_coord(mark)
+		data_range.Cells(line, 3).Value2 = prop.SysCoord
+		data_range.Cells(line, 4).Value2 = Driver:GetSumTypeName(prop.Guid)
 		
-		local cell = worksheet.Cells(line, 5)
+		local cell = data_range.Cells(line, 5)
 		if user_mark and dist_user_mark and dist_user_mark < 1000 then
 			local text = string.format('найдена ручная на расстоянии %d мм', dist_user_mark) 
 			local uri = make_mark_uri(user_mark.prop.ID)
@@ -206,19 +212,16 @@ local function report_Simple()
 		end
 		
 		local channels = getVideoChannel(mark)
-		-- worksheet.Cells(line, 6).Value2 = table.concat(channels, ',')
+		-- data_range.Cells(line, 6).Value2 = table.concat(channels, ',')
 		for cn, channel in ipairs(channels) do
-			insert_frame(excel, worksheet.Cells(line, 6+cn), mark, channel)
+			insert_frame(excel, data_range.Cells(line, 6+cn), mark, channel)
 		end
-		
---		if line > 100 then
---			break
---		end
 		
 		if line % 3 == 0 and not dlg:step(1.0 * line / #auto_marks, stuff.sprintf('Process %d / %d mark, found %d', line, #auto_marks, found_manuals)) then 
 			break 
 		end
 	end
+	
 	excel:SaveAndShow()
 end
 
