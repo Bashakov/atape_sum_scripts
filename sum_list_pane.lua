@@ -56,13 +56,17 @@ local filters_uzk = my_dofile "sum_list_pane_filters_uzk.lua"
 local filters_magn = my_dofile "sum_list_pane_filters_magn.lua"
 local filters_npu = my_dofile "sum_list_pane_filters_npu.lua"
 local filters_visible = my_dofile "sum_list_pane_filters_visible.lua" 
+local filters_visible_uic = my_dofile "sum_list_pane_filters_visible_uic.lua" 
+local filters_video_uic_surface = my_dofile "sum_list_pane_filters_video_uic_surface.lua" 
+
 
 local Filters = {}
-table.append(Filters, filters_video)
-table.append(Filters, filters_uzk)
-table.append(Filters, filters_magn)
-table.append(Filters, filters_npu)
-table.append(Filters, filters_visible)
+--HUN table.append(Filters, filters_video)
+--HUN table.append(Filters, filters_uzk)
+--HUN table.append(Filters, filters_magn)
+--HUN table.append(Filters, filters_npu)
+table.append(Filters, filters_visible_uic)
+table.append(Filters, filters_video_uic_surface)
 
 -- =====================================================================  
 
@@ -444,7 +448,7 @@ if not ATAPE then
 	--local psp_path = 'D:/ATapeXP/Main/494/multimagnetic/2018_01_25/Avikon-03M/12216/[494]_2018_01_03_01.xml'
 	test_report(psp_path)
 	
-	local name  = 'Стыковые зазоры'
+	local name  = 'Surface Defects'
 	
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}

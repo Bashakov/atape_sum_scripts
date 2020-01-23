@@ -22,6 +22,16 @@ local video_hun_juids =
 	["{515FA798-3893-41CA-B4C3-6E1FEAC8E12F}"] = true,	-- HC(User)
 }
 
+	local NAME_UIC_227   =	"UIC_227"
+	local NAME_UIC_2251  =	"UIC_2251"
+	local NAME_UIC_2252  =	"UIC_2252" 
+	local NAME_BELGROSPI =	"BELGROSPI"	
+	local NAME_UIC_227_USER   =	"UIC_227(User)"
+	local NAME_UIC_2251_USER  =	"UIC_2251(User)"
+	local NAME_UIC_2252_USER  =	"UIC_2252(User)" 
+	local NAME_BELGROSPI_USER =	"BELGROSPI(User)"
+
+
 local function keys(tbl)
 	local res = {}
 	for k, _ in pairs(tbl) do table.insert(res, k) end
@@ -171,6 +181,41 @@ end
 
 
 -- =========================================================== --
+local function get_ManualCount(SumTypeName)
+	local all_marks = Driver:GetMarks{GUIDS=keys(video_hun_juids)}
+	local manual_marks, auto_marks  = separate_mark_by_user_set(all_marks)
+	manual_marks = mark_helper.sort_mark_by_coord(manual_marks)
+	local manuals = 0
+	for line, mark in ipairs(manual_marks) do
+		local prop =  mark.prop
+		if Driver:GetSumTypeName(prop.Guid) == SumTypeName then
+			manuals = manuals + 1
+		end 
+	end 
+	return manuals
+end
+
+local function get_AutoCount(SumTypeName)
+	local all_marks = Driver:GetMarks{GUIDS=keys(video_hun_juids)}
+	local manual_marks, auto_marks  = separate_mark_by_user_set(all_marks)
+	auto_marks = mark_helper.sort_mark_by_coord(auto_marks)
+	local auto = 0
+	for line, mark in ipairs(auto_marks) do
+		local prop =  mark.prop
+		if Driver:GetSumTypeName(prop.Guid) == SumTypeName then
+			auto = auto + 1
+		end 
+	end 
+	return auto
+end
+
+local function isTheSameTypeExceptUserPosfix( UserMarkName,  MarkName)	
+	if string.sub( UserMarkName, 1, string.len(UserMarkName) -  string.len("(User)") ) == MarkName then 
+		return true
+	end
+	return false
+end
+-- ============================================================
 
 local function report_Simple()
 	local all_marks = Driver:GetMarks{GUIDS=keys(video_hun_juids)}
@@ -189,30 +234,86 @@ local function report_Simple()
 	
 	local data_range = excel:CloneTemplateRow(#auto_marks)
 	local found_manuals = 0
+	local found_227  = 0   
+	local found_2251 = 0   
+	local found_2252 = 0   
+	local found_bel  = 0
+	
+	-- найденные с точным совпадением типа
+	local found_227_  = 0   
+	local found_2251_ = 0   
+	local found_2252_ = 0   
+	local found_bel_  = 0
+	
+	
+	local recog_227  = 0   
+	local recog_2251 = 0   
+	local recog_2252 = 0   
+	local recog_bel  = 0	
+	
+	local last_mark_sys_coord = 0
+	
 	for line, mark in ipairs(auto_marks) do
 		local prop =  mark.prop
-		local uri = make_mark_uri(prop.ID)
 		local user_mark, dist_user_mark = manual_marks:find_near(mark)
-
-		excel:InsertLink(data_range.Cells(line, 1), uri, prop.ID)
+		
+		last_mark_sys_coord = prop.SysCoord
+		
+		-- вставить ссылку нумерацию
+		--excel:InsertLink(data_range.Cells(line, 1), make_mark_uri(prop.ID), prop.ID)
+		data_range.Cells(line, 1).Value2 = line
+		
 		data_range.Cells(line, 2).Value2 = mark_helper.format_path_coord(mark)
 		data_range.Cells(line, 3).Value2 = prop.SysCoord
 		data_range.Cells(line, 4).Value2 = Driver:GetSumTypeName(prop.Guid)
 		
-		local cell = data_range.Cells(line, 5)
+		local cell_OK = data_range.Cells(line, 5)
+		local cell = data_range.Cells(line, 6)
 		if user_mark and dist_user_mark and dist_user_mark < 1000 then
-			local text = string.format('найдена ручная на расстоянии %d мм', dist_user_mark) 
-			local uri = make_mark_uri(user_mark.prop.ID)
-			excel:InsertLink(cell, uri, text)
-			found_manuals =  found_manuals + 1
-			cell.interior.color = 0xf0fff0
-		else
-			cell.Value2 = "ручная отметка не найдена"
-			cell.interior.color = 0xf0f0ff
+			cell_OK.Value2 = "OK"		
+			-- вставить ссылку на расстояние -- excel:InsertLink(cell, make_mark_uri(user_mark.prop.ID), text)
+			cell.Value2 = string.format('%d mm', dist_user_mark) 
+			
+			local MarkName = Driver:GetSumTypeName(mark.prop.Guid)
+			local UserMarkName = Driver:GetSumTypeName(user_mark.prop.Guid)			
+			local isTheSame =   isTheSameTypeExceptUserPosfix( UserMarkName,  MarkName)	
+			if isTheSame then
+				cell_OK.interior.color = 0x80ff80	
+			else
+				cell_OK.interior.color = 0x80ff00
+			end
+			--0xf0fff0
+			found_manuals =  found_manuals + 1			
+
+			-- Распределяем по типам Ищем совпадения по типам
+			if Driver:GetSumTypeName(mark.prop.Guid) == NAME_UIC_227 then
+				found_227 = found_227 + 1
+				if ( isTheSame ) then
+					found_227_ = found_227_ + 1
+				end
+			end
+			if Driver:GetSumTypeName(mark.prop.Guid) == NAME_UIC_2251 then
+				found_2251 = found_2251 + 1
+				if ( isTheSame ) then
+					found_2251_ = found_2251_ + 1
+				end
+			end
+			if Driver:GetSumTypeName(mark.prop.Guid) == NAME_UIC_2252 then
+				found_2252 = found_2252 + 1
+				if ( isTheSame ) then
+					found_2252_ = found_2252_ + 1
+				end				
+			end			
+			if Driver:GetSumTypeName(mark.prop.Guid) == NAME_BELGROSPI then
+				found_bel = found_bel + 1
+				if ( isTheSame ) then
+					found_bel_ = found_bel_ + 1
+				end				
+			end				
+			--
 		end
 		
 		local channels = getVideoChannel(mark)
-		-- data_range.Cells(line, 6).Value2 = table.concat(channels, ',')
 		for cn, channel in ipairs(channels) do
 			insert_frame(excel, data_range.Cells(line, 6+cn), mark, channel)
 		end
@@ -222,6 +323,87 @@ local function report_Simple()
 		end
 	end
 	
+	
+	local worksheet = excel._worksheet
+	-- рисование таблицы вручную поставленных дефектов
+	worksheet.Cells( 4, 2).Value2  = NAME_UIC_227_USER
+	worksheet.Cells( 5, 2).Value2  = NAME_UIC_2251_USER
+	worksheet.Cells( 6, 2).Value2  = NAME_UIC_2252_USER
+	worksheet.Cells( 7, 2).Value2  = NAME_BELGROSPI_USER
+	worksheet.Cells( 8, 2).Value2  = "TOTAL"
+	
+	local manual_227  = get_ManualCount(NAME_UIC_227_USER) 
+	local manual_2251 = get_ManualCount(NAME_UIC_2251_USER)  
+	local manual_2252 = get_ManualCount(NAME_UIC_2252_USER)
+	local manual_bel  = get_ManualCount(NAME_BELGROSPI_USER)
+	
+	worksheet.Cells( 4, 3).Value2  = string.format('%d', manual_227  )  
+	worksheet.Cells( 5, 3).Value2  = string.format('%d', manual_2251 )  
+	worksheet.Cells( 6, 3).Value2  = string.format('%d', manual_2252 )  
+	worksheet.Cells( 7, 3).Value2  = string.format('%d', manual_bel  )  
+	worksheet.Cells( 8, 3).Value2  = string.format('%d', manual_227+manual_2251+manual_2252+manual_bel  ) 
+    
+	-- рисование таблицы и изображениями вручную поставленных дефектов
+	local manual_marks_1, auto_marks = separate_mark_by_user_set(all_marks)
+	for line, mark in ipairs(manual_marks_1) do
+		local prop =  mark.prop
+		data_range.Cells(line, 10).Value2 = mark_helper.format_path_coord(mark)
+		data_range.Cells(line, 11).Value2 = prop.SysCoord
+		data_range.Cells(line, 12).Value2 = Driver:GetSumTypeName(prop.Guid)
+		
+		local channels = getVideoChannel(mark)
+		for cn, channel in ipairs(channels) do
+			insert_frame(excel, data_range.Cells(line, 12+cn), mark, channel)
+		end
+	end
+	
+	worksheet.Cells( 4, 4).Value2  = NAME_UIC_227
+	worksheet.Cells( 5, 4).Value2  = NAME_UIC_2251
+	worksheet.Cells( 6, 4).Value2  = NAME_UIC_2252
+	worksheet.Cells( 7, 4).Value2  = NAME_BELGROSPI
+	worksheet.Cells( 8, 4).Value2  = "TOTAL"
+	
+	worksheet.Cells( 4, 5).Value2  = found_227
+	worksheet.Cells( 5, 5).Value2  = found_2251
+	worksheet.Cells( 6, 5).Value2  = found_2252
+	worksheet.Cells( 7, 5).Value2  = found_bel
+	local found_total = found_227+found_2251+found_2252+found_bel
+	worksheet.Cells( 8, 5).Value2  = found_total
+	
+	
+	worksheet.Cells( 4, 6).Value2  = found_227_
+	worksheet.Cells( 5, 6).Value2  = found_2251_
+	worksheet.Cells( 6, 6).Value2  = found_2252_
+	worksheet.Cells( 7, 6).Value2  = found_bel_
+	local found_total_ = found_227_+found_2251_+found_2252_+found_bel_
+	worksheet.Cells( 8, 6).Value2  = found_total_	
+	
+	
+	local auto_227  = get_AutoCount(NAME_UIC_227) 
+	local auto_2251 = get_AutoCount(NAME_UIC_2251)  
+	local auto_2252 = get_AutoCount(NAME_UIC_2252)
+	local auto_bel  = get_AutoCount(NAME_BELGROSPI)
+	
+	worksheet.Cells( 4, 7).Value2  = string.format('%d', auto_227    )  
+	worksheet.Cells( 5, 7).Value2  = string.format('%d', auto_2251  )  
+	worksheet.Cells( 6, 7).Value2  = string.format('%d', auto_2252  )  
+	worksheet.Cells( 7, 7).Value2  = string.format('%d', auto_bel    ) 
+	local auto_total = auto_227+auto_2251+auto_2252+auto_bel 
+	worksheet.Cells( 8, 7).Value2  = string.format('%d',  auto_total )  	
+
+	worksheet.Cells( 4, 8).Value2  = string.format('%d', auto_227  - found_227  )  
+	worksheet.Cells( 5, 8).Value2  = string.format('%d', auto_2251 - found_2251 )  
+	worksheet.Cells( 6, 8).Value2  = string.format('%d', auto_2252 - found_2252 )  
+	worksheet.Cells( 7, 8).Value2  = string.format('%d', auto_bel  - found_bel  )  
+	worksheet.Cells( 8, 8).Value2  = string.format('%d', auto_total - found_total )  	
+	
+	worksheet.Cells( 4, 9).Value2  = string.format('%7.3f', (auto_227  - found_227 )*1000000/last_mark_sys_coord  )  
+	worksheet.Cells( 5, 9).Value2  = string.format('%7.3f', (auto_2251 - found_2251)*1000000/last_mark_sys_coord  )  
+	worksheet.Cells( 6, 9).Value2  = string.format('%7.3f', (auto_2252 - found_2252)*1000000/last_mark_sys_coord  )  
+	worksheet.Cells( 7, 9).Value2  = string.format('%7.3f', (auto_bel  -  found_bel)*1000000/last_mark_sys_coord  )  
+	worksheet.Cells( 8, 9).Value2  = string.format('%7.3f', (auto_total - found_total)*1000000/last_mark_sys_coord )  	
+	
+	
 	excel:SaveAndShow()
 end
 
@@ -230,11 +412,11 @@ end
 -- =========================================================== --
 
 local function AppendReports(reports)
-	local name_pref = 'Венгерские дефекты|'
+	local name_pref = 'HUN Surface defects|'
 	
 	local local_reports = 
 	{
-		{name = name_pref..'ВСЕ',    			fn = report_Simple, 	},
+		{name = name_pref..'All',    			fn = report_Simple, 	},
 	}
 
 	for _, report in ipairs(local_reports) do
@@ -248,7 +430,9 @@ end
 -- тестирование
 if not ATAPE then
 	test_report  = require('test_report')
+	
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	--test_report('D:/ATapeXP/Main/HUN_RECOG/HUN_RECOG_n/2019_11_15/Avikon-03H/16695/UH_MAV_70_J_2_28_1_19_1.xml') 
 	
 	report_Simple()
 end

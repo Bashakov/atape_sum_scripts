@@ -196,9 +196,11 @@ local function read_XmlC(file_path)
 		return res
 	end
 			
-	local file = assert(io.open(file_path, 'rb'))
+	local file = io.open(file_path, 'rb')
+	if not file then return {} end
 	local state = {stream=file:read('*a'), pos=1}
 	file:close()
+	if #(state.stream) == 0 then return {} end
 	assert(pop_string(state, 4) == 'XMLc')
 	
 	local values = {}	

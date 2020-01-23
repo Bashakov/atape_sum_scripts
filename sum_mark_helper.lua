@@ -461,7 +461,7 @@ local function GetSurfDefectPrm(mark)
 	if ext and ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
 		local req = '\z
 		/ACTION_RESULTS\z
-		/PARAM[@value="Surface"]\z
+		/PARAM[starts-with(@value, "Surface")]\z
 		/PARAM[@name="FrameNumber" and @value and @coord]\z
 		/PARAM[@name="Result" and @value="main"]\z
 		/PARAM[@name and @value]'
