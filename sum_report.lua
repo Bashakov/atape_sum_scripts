@@ -2,6 +2,10 @@ if not ATAPE then
 	require "iuplua" 
 end
 
+if not ATAPE then
+	HUN = false
+end
+
 local resty = require "resty.template"
 
 if iup then
@@ -869,7 +873,6 @@ local function report_gaps(params)
 		os.execute("start " .. file_name)
 	end
 	
-	--dlg:Destroy()
 end
 
 -- отчет по маячнам отметкам
@@ -1438,7 +1441,10 @@ local function report_NPU(params)
 --		data_range.Cells(5).ColumnWidth = 0
 --	end
 	
-	dlg = nil
+	if dlg and iup and dlg.dlgProgress then
+		iup.Destroy(dlg.dlgProgress)
+	end
+	
 	excel:SaveAndShow()
 end
 
@@ -1536,7 +1542,9 @@ end
 -- ====================================================================================
 local ProcessSumFile = "Scripts\\ProcessSum.xlsm"
 
-local Report_Functions = {
+local Report_Functions = {}
+
+local cur_file_reports = {
 	---------------------------------------
 	-- c ЕКАСУИ 
 	{name="Стыковые зазоры|Excel" ,  fn=report_gaps      , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров", guids=gap_rep_filter_guids }, guids=gap_rep_filter_guids},
@@ -1566,23 +1574,29 @@ local Report_Functions = {
 prev_ATAPE = ATAPE -- disable test code execute
 ATAPE = true
 
-local report_rails = require 'sum_report_rails'
-report_rails.AppendReports(Report_Functions)
+if not HUN then
+	for _, report in ipairs(cur_file_reports) do
+		table.insert(Report_Functions, report)
+	end
+	
+	local report_rails = require 'sum_report_rails'
+	report_rails.AppendReports(Report_Functions)
 
-local report_sleepers = require 'sum_report_sleepers'
-report_sleepers.AppendReports(Report_Functions)
+	local report_sleepers = require 'sum_report_sleepers'
+	report_sleepers.AppendReports(Report_Functions)
 
-local report_joints = require 'sum_report_joints'
-report_joints.AppendReports(Report_Functions)
+	local report_joints = require 'sum_report_joints'
+	report_joints.AppendReports(Report_Functions)
 
-local report_fastener = require 'sum_report_fastener'
-report_fastener.AppendReports(Report_Functions)
+	local report_fastener = require 'sum_report_fastener'
+	report_fastener.AppendReports(Report_Functions)
 
-local report_beacon = require 'sum_report_beacon'
-report_beacon.AppendReports(Report_Functions)
-
-local report_hun_video = require 'sum_report_hun'
-report_hun_video.AppendReports(Report_Functions)
+	local report_beacon = require 'sum_report_beacon'
+	report_beacon.AppendReports(Report_Functions)
+else
+	local report_hun_video = require 'sum_report_hun'
+	report_hun_video.AppendReports(Report_Functions)
+end
 
 ATAPE = prev_ATAPE
 
@@ -1634,12 +1648,13 @@ function GetFilterGuids(reportName)
 	return res;
 end
 
+-- =======================================================================
+
 -- тестирование
 if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	MakeReport('Стыковые зазоры|Excel')
+	MakeReport('УЗ_НПУ')
 end
-
 

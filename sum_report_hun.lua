@@ -430,9 +430,9 @@ end
 -- тестирование
 if not ATAPE then
 	test_report  = require('test_report')
+	--test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
-	--test_report('D:/ATapeXP/Main/HUN_RECOG/HUN_RECOG_n/2019_11_15/Avikon-03H/16695/UH_MAV_70_J_2_28_1_19_1.xml') 
+	test_report('D:/ATapeXP/Main/HUN_RECOG/HUN_RECOG_n/2019_11_15/Avikon-03H/16695/UH_MAV_70_J_2_28_1_19_1.xml') 
 	
 	report_Simple()
 end

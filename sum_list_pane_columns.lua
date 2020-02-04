@@ -434,7 +434,7 @@ local function make_column_surf_defect(col_name, attrib)
 		text = function(row)
 			local mark = work_marks_list[row]
 			local val = get_val(mark)
-			return val and sprintf('%d', val)
+			return val and sprintf('%d', val) or ''
 		end,
 		sorter = function(mark)
 			local val = get_val(mark)

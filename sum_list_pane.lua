@@ -1,3 +1,7 @@
+if not ATAPE then
+	HUN = true
+end
+
 mark_helper = require 'sum_mark_helper'
 stuff = require 'stuff'
 
@@ -44,29 +48,37 @@ table.append = function (dst, src)
 	end
 end
 
--- =====================================================================  
+-- загрузить фильтры из файлов в списке
+local function load_filters(filters, ...)
+	for _, file_name in ipairs{...} do
+		local file_filters = my_dofile(file_name)
+		table.append(filters, file_filters)	
+	end
+	return filters
+end
 
+-- =====================================================================  
 
 
 my_dofile "sum_list_pane_guids.lua"
 my_dofile "sum_list_pane_columns.lua"
 
-local filters_video = my_dofile "sum_list_pane_filters_video.lua"
-local filters_uzk = my_dofile "sum_list_pane_filters_uzk.lua"
-local filters_magn = my_dofile "sum_list_pane_filters_magn.lua"
-local filters_npu = my_dofile "sum_list_pane_filters_npu.lua"
-local filters_visible = my_dofile "sum_list_pane_filters_visible.lua" 
-local filters_visible_uic = my_dofile "sum_list_pane_filters_visible_uic.lua" 
-local filters_video_uic_surface = my_dofile "sum_list_pane_filters_video_uic_surface.lua" 
-
-
 local Filters = {}
---HUN table.append(Filters, filters_video)
---HUN table.append(Filters, filters_uzk)
---HUN table.append(Filters, filters_magn)
---HUN table.append(Filters, filters_npu)
-table.append(Filters, filters_visible_uic)
-table.append(Filters, filters_video_uic_surface)
+
+if not HUN then 
+	Filters = load_filters(Filters, 
+		"sum_list_pane_filters_video.lua", 
+		"sum_list_pane_filters_uzk.lua",
+		"sum_list_pane_filters_magn.lua", 
+		"sum_list_pane_filters_npu.lua",
+		"sum_list_pane_filters_visible.lua"
+		)
+else
+	Filters = load_filters(Filters, 
+		"sum_list_pane_filters_video_uic.lua"
+		)
+end
+
 
 -- =====================================================================  
 
@@ -440,12 +452,18 @@ end
 -- ============================================================= --
 
 if not ATAPE then
-	--local g = GetGroupNames()
-	--local n = GetFilterNames("Зазоры")
-
+	for _, g in ipairs(GetGroupNames()) do 
+		print(g .. ':')
+		for _, n in ipairs(GetFilterNames(g)) do
+			print('\t' .. n)
+		end
+	end
+	
 	test_report  = require('test_report')
 	local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-	--local psp_path = 'D:/ATapeXP/Main/494/multimagnetic/2018_01_25/Avikon-03M/12216/[494]_2018_01_03_01.xml'
+	--psp_path = 'D:/ATapeXP/Main/HUN_RECOG/HUN_RECOG_n/2019_11_15/Avikon-03H/16695/UH_MAV_70_J_2_28_1_19_1.xml'
+	--psp_path = 'D:/ATapeXP/Main/500/сверка/2019_12_03/Avikon-03M/1561/[500]_2019_11_28_03.xml'
+	--psp_path = 'D:/ATapeXP/Main/494/Москва Курская - Подольск/Москва Курская - Подольск/2019_05_16/Avikon-03M/4240/[494]_2019_03_15_01.xml'
 	test_report(psp_path)
 	
 	local name  = 'Surface Defects'
