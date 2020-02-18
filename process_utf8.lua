@@ -1,0 +1,119 @@
+-- перекодировка из utf8 (использующейся тут в скрипте) в cp1251 (для передачи в os.execute)
+-- https://stackoverflow.com/questions/41855842/converting-utf-8-string-to-ascii-in-pure-lua
+
+local char, byte, pairs, floor = string.char, string.byte, pairs, math.floor
+local table_insert, table_concat = table.insert, table.concat
+local unpack = table.unpack or unpack
+
+
+local map_utf8_cp1251 = {
+	[0x0402] = 0x80, [0x0403] = 0x81, [0x0453] = 0x83, [0x0409] = 0x8a, [0x040a] = 0x8c, [0x040c] = 0x8d, [0x040b] = 0x8e, [0x040f] = 0x8f, 
+	[0x0452] = 0x90, [0x0459] = 0x9a, [0x045a] = 0x9c, [0x045c] = 0x9d, [0x045b] = 0x9e, [0x045f] = 0x9f, [0x00a0] = 0xa0, [0x040e] = 0xa1, 
+	[0x045e] = 0xa2, [0x0408] = 0xa3, [0x00a4] = 0xa4, [0x0490] = 0xa5, [0x00a6] = 0xa6, [0x00a7] = 0xa7, [0x0401] = 0xa8, [0x00a9] = 0xa9, 
+	[0x0404] = 0xaa, [0x00ab] = 0xab, [0x00ac] = 0xac, [0x00ad] = 0xad, [0x00ae] = 0xae, [0x0407] = 0xaf, [0x00b0] = 0xb0, [0x00b1] = 0xb1, 
+	[0x0406] = 0xb2, [0x0456] = 0xb3, [0x0491] = 0xb4, [0x00b5] = 0xb5, [0x00b6] = 0xb6, [0x00b7] = 0xb7, [0x0451] = 0xb8, [0x0454] = 0xba, 
+	[0x00bb] = 0xbb, [0x0458] = 0xbc, [0x0405] = 0xbd, [0x0455] = 0xbe, [0x0457] = 0xbf, [0x0410] = 0xc0, [0x0411] = 0xc1, [0x0412] = 0xc2, 
+	[0x0413] = 0xc3, [0x0414] = 0xc4, [0x0415] = 0xc5, [0x0416] = 0xc6, [0x0417] = 0xc7, [0x0418] = 0xc8, [0x0419] = 0xc9, [0x041a] = 0xca, 
+	[0x041b] = 0xcb, [0x041c] = 0xcc, [0x041d] = 0xcd, [0x041e] = 0xce, [0x041f] = 0xcf, [0x0420] = 0xd0, [0x0421] = 0xd1, [0x0422] = 0xd2, 
+	[0x0423] = 0xd3, [0x0424] = 0xd4, [0x0425] = 0xd5, [0x0426] = 0xd6, [0x0427] = 0xd7, [0x0428] = 0xd8, [0x0429] = 0xd9, [0x042a] = 0xda, 
+	[0x042b] = 0xdb, [0x042c] = 0xdc, [0x042d] = 0xdd, [0x042e] = 0xde, [0x042f] = 0xdf, [0x0430] = 0xe0, [0x0431] = 0xe1, [0x0432] = 0xe2, 
+	[0x0433] = 0xe3, [0x0434] = 0xe4, [0x0435] = 0xe5, [0x0436] = 0xe6, [0x0437] = 0xe7, [0x0438] = 0xe8, [0x0439] = 0xe9, [0x043a] = 0xea, 
+	[0x043b] = 0xeb, [0x043c] = 0xec, [0x043d] = 0xed, [0x043e] = 0xee, [0x043f] = 0xef, [0x0440] = 0xf0, [0x0441] = 0xf1, [0x0442] = 0xf2, 
+	[0x0443] = 0xf3, [0x0444] = 0xf4, [0x0445] = 0xf5, [0x0446] = 0xf6, [0x0447] = 0xf7, [0x0448] = 0xf8, [0x0449] = 0xf9, [0x044a]	= 0xfa, 
+	[0x044b] = 0xfb, [0x044c] = 0xfc, [0x044d] = 0xfd, [0x044e] = 0xfe, [0x044f] = 0xff
+}
+
+local map_cp1251_utf8 = {}
+
+for u, c in pairs(map_utf8_cp1251) do
+	map_cp1251_utf8[c] = u
+end
+
+-- =============================================================
+
+local function utf8_to_unicode(utf8str, pos)
+   local code, size = utf8str:byte(pos), 1
+   if code >= 0xC0 and code < 0xFE then
+	  local mask = 64
+	  code = code - 128
+	  repeat
+		 local next_byte = utf8str:byte(pos + size) or 0
+		 if next_byte >= 0x80 and next_byte < 0xC0 then
+			code, size = (code - mask - 2) * 64 + next_byte, size + 1
+		 else
+			code, size = utf8str:byte(pos), 1
+		 end
+		 mask = mask * 32
+	  until code < mask
+   end
+   -- returns code, number of bytes in this utf8 char
+   return code, size
+end
+
+local function unicode_to_utf8(code)
+   -- converts numeric UTF code (U+code) to UTF-8 string
+   local t, h = {}, 128
+   while code >= h do
+      t[#t+1] = 128 + code%64
+      code = floor(code/64)
+      h = h > 32 and 32 or h/2
+   end
+   t[#t+1] = 256 - 2*h + code
+   return char(unpack(t)):reverse()
+end
+
+-- ================================== EXPORT ==================================
+
+local function utf8_cp1251(utf8str)
+	local pos, result = 1, {}
+	while pos <= #utf8str do
+		local code, size = utf8_to_unicode(utf8str, pos)
+		--print(code, size)
+		pos = pos + size
+		code = code < 128 and code or map_utf8_cp1251[code] or ('?'):byte()
+		table.insert(result, string.char(code))
+	end
+	return table.concat(result)
+end
+
+local function cp1251_utf8(cp1251str)
+   local result_utf8 = {}
+   for pos = 1, #cp1251str do
+      local code = cp1251str:byte(pos)
+      table_insert(result_utf8, unicode_to_utf8(map_cp1251_utf8[code] or code))
+   end
+   return table_concat(result_utf8)
+end
+
+
+if true then
+	local a1 = 'тест'
+	local a2 = utf8_cp1251(a1)
+	local a3 = cp1251_utf8(a2)
+	--print(a1, a2, a3)
+	assert(a1 == a3)
+end
+
+
+return {
+	utf8_cp1251 = utf8_cp1251,
+	cp1251_utf8 = cp1251_utf8
+}
+
+--[[
+	rr = []
+	for ch in range(128, 256):
+		try:
+			b = bytes([ch])
+			s = b.decode('cp1251')
+			u = s.encode('utf8')
+			if len(u) > 2: continue
+			# print(ch, s, b, u, ord(s))
+			r = "[0x%04x] = 0x%x" % (ord(s), ch)
+			# print(r)
+			rr.append(r)
+		except UnicodeDecodeError:
+			# print(ch)
+			pass
+	print(', '.join(rr))
+	]]
