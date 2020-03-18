@@ -124,10 +124,11 @@ local function vedomost_with_US_images_excel(records)
 
 	if #records == 0 then
 		iup.Message('Info', "Подходящих отметок не найдено")
+		dlg:Destroy()
 		return
 	end
 
-	local excel = excel_helper(Driver:GetAppPath() .. 'Telegrams\\VedomostTemplate.xls', nil, true)
+	local excel = excel_helper(Driver:GetAppPath() .. 'Telegrams\\VedomostTemplate.xls', nil, false)
 	excel:ApplyPassportValues(Passport)
 	local data_range = excel:CloneTemplateRow(#records, 1)
 	
@@ -166,6 +167,7 @@ local function vedomost_with_US_images_excel(records)
 		end
 	end 
 
+	dlg:Destroy()
 	excel:SaveAndShow()
 end
 
@@ -392,10 +394,11 @@ local function excel_defectogram(records)
 
 	if #records == 0 then
 		iup.Message('Info', "Выделенных отметок не найдено")
+		dlg:Destroy()
 		return
 	end
 	
-	local excel = excel_helper(Driver:GetAppPath() .. 'Telegrams\\Defectogram.xlsx', nil, true)
+	local excel = excel_helper(Driver:GetAppPath() .. 'Telegrams\\Defectogram.xlsx', nil, false)
 	
 	excel:ApplyPassportValues(Passport)
 	for line, dst_tbl in excel:EnumDstTable(#records) do
@@ -424,6 +427,7 @@ local function excel_defectogram(records)
 		end
 	end 
 
+	dlg:Destroy()
 	excel:SaveAndShow()
 end
 
@@ -530,13 +534,14 @@ local function report_videogram(records)
 	records = filter_selected_mark(records, dlg)
 
 	if #records == 0 then
+		dlg:Destroy()
 		iup.Message('Info', "Выделенных отметок не найдено")
 		return
 	end
 	local common_name = Passport.NAME .. os.date('%y%m%d-%H%M%S') .. '_'
 	
 	for line, record in ipairs(records) do
-		local excel = excel_helper(Driver:GetAppPath() .. 'Telegrams\\Videogram.xlsm', nil, true, common_name .. record.INNER)
+		local excel = excel_helper(Driver:GetAppPath() .. 'Telegrams\\Videogram.xlsm', nil, false, common_name .. record.INNER)
 		local user_range = excel._worksheet.UsedRange
 		
 		excel:ApplyPassportValues(Passport)
@@ -574,6 +579,7 @@ local function report_videogram(records)
 			break
 		end
 		
+		dlg:Destroy()
 		excel:SaveAndShow()
 	end 
 end

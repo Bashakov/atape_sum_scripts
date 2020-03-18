@@ -50,14 +50,6 @@ local switch_guids = {
 	"{19253263-2C0B-41EE-8EAA-000000800000}",
 }
 
-local NPU_guids = {
-	"{19FF08BB-C344-495B-82ED-10B6CBAD5090}", -- НПУ
-	"{19FF08BB-C344-495B-82ED-10B6CBAD508F}", -- Возможно НПУ
-}
-
-local NPU_guids_uzk = {
-	"{29FF08BB-C344-495B-82ED-000000000011}",
-}
 
 local beacon_rep_filter_guids = 
 {
@@ -1368,85 +1360,6 @@ local function report_short_rails(params)
 	excel:SaveAndShow()
 end
 
--- отчет по НПУ
-local function report_NPU(params)
-
-	local function filter_type_fn(mark)
-		return table_find(params.guids, mark.prop.Guid)
-	end
-	
-	local dlg = luaiup_helper.ProgressDlg()
-	local marks = Driver:GetMarks()
-	
-	marks = mark_helper.filter_marks(marks, filter_type_fn, make_filter_progress_fn(dlg))
-	marks = sort_mark_by_coord(marks)
-
-	if #marks == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-	
-	local excel = excel_helper(Driver:GetAppPath() .. params.filename, nil, false)
-	
-	excel:ApplyPassportValues(Passport)
-	local data_range = excel:CloneTemplateRow(#marks, 1)
-
-	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
-
-	local full_len = 0
-	for line, mark in ipairs(marks) do
-		local prop = mark.prop
-		local km1, m1, mm1 = Driver:GetPathCoord(prop.SysCoord)
-		local km2, m2, mm2 = Driver:GetPathCoord(prop.SysCoord + prop.Len)
-		
-		if Passport.INCREASE == '0' then
-			km1, m1, mm1, km2, m2, mm2 = km2, m2, mm2, km1, m1, mm1
-		end
-		
-		local uri = make_mark_uri(prop.ID)
---		excel:InsertLink(data_range.Cells(line, 2), uri, tonumber(line))
-	
-	
-		excel:InsertLink(data_range.Cells(line, 13), uri, tonumber(line))
-		data_range.Cells(line, 14).Value2 = sprintf("%d км %.1f м", km1, m1 + mm1/1000)
-		data_range.Cells(line, 15).Value2 = sprintf("%d км %.1f м", km2, m2 + mm2/1000)
-		data_range.Cells(line, 16).Value2 = get_rail_name(mark)
-		data_range.Cells(line, 17).Value2 = sprintf('%.2f', prop.Len / 1000):gsub('%.', ',')
-		data_range.Cells(line, 18).Value2 = prop.Description
---		data_range.Cells(line, 4).Value2 = sprintf("%d км %.1f м", km1, m1 + mm1/1000)
---		data_range.Cells(line, 5).Value2 = sprintf("%d км %.1f м", km2, m2 + mm2/1000)
-
-
---		data_range.Cells(line, 7).Value2 = sprintf("%d км", km1)
---		data_range.Cells(line, 9).Value2 = sprintf("%d м",  m1 )
---		data_range.Cells(line,10).Value2 = sprintf("%d км", km2)
---		data_range.Cells(line,12).Value2 = sprintf("%d м",  m2 )
---
---		data_range.Cells(line, 6).Value2 = get_rail_name(mark)
---		data_range.Cells(line,13).Value2 = sprintf('%.2f', prop.Len / 1000):gsub('%.', ',')
---		data_range.Cells(line,14).Value2 = prop.Description
-		
-		if not dlg:step(line / #marks, stuff.sprintf(' Out %d / %d line', line, #marks)) then 
-			break
-		end
-		
-		full_len = full_len + prop.Len
-		printf("%d: %f %f %s %f = %.2f\n", line, prop.Len, full_len, full_len/1000, full_len/1000, full_len/1000)
-	end 
-	
-	data_range.Cells(#marks+2, 13).Value2 = sprintf('%.2f', full_len / 1000.0):gsub('%.', ',')
-
---	if ShowVideo == 0 then 
---		excel:AutoFitDataRows()
---		data_range.Cells(5).ColumnWidth = 0
---	end
-	
-	if dlg and iup and dlg.dlgProgress then
-		iup.Destroy(dlg.dlgProgress)
-	end
-	
-	excel:SaveAndShow()
-end
 
 -- отчет по неспецифицированным объектам
 local function report_surface_defects(params)
@@ -1564,12 +1477,11 @@ local cur_file_reports = {
 	{name="Маячные метки"          , fn=report_welding         , params={ filename=ProcessSumFile, sheetname="Ведомость сварной плети" }, guids=beacon_rep_filter_guids},
 --	{name="Ненормативные объекты" , fn=report_unspec_obj      , params={ filename=ProcessSumFile, sheetname="Ненормативные объекты"   }, guids=unspec_obj_filter_guids},	
 	
-	{name="НПУ",    fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls", guids=NPU_guids },     guids=NPU_guids},
-	{name="УЗ_НПУ", fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls", guids=NPU_guids_uzk }, guids=NPU_guids_uzk},
-	
+
 	--{name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
 	--{name="TEST",			fn=report_test,		params={} },
 }
+
 
 prev_ATAPE = ATAPE -- disable test code execute
 ATAPE = true
@@ -1578,6 +1490,9 @@ if not HUN then
 	for _, report in ipairs(cur_file_reports) do
 		table.insert(Report_Functions, report)
 	end
+
+	local report_npu = require 'sum_report_npu'
+	report_npu.AppendReports(Report_Functions)
 	
 	local report_rails = require 'sum_report_rails'
 	report_rails.AppendReports(Report_Functions)
@@ -1634,6 +1549,16 @@ end
 
 function GetFilterGuids(reportName)
 	local guids = {}
+	
+	for _, n in ipairs(Report_Functions) do 
+		if n.name == reportName then
+			return n.guids
+		end
+	end
+	
+	-- код для обслуживания отчетов с подотчетами, 
+	-- когда открывается диалог генерации отчетов, там нужно показать количество отметок каждого типа
+	-- но конкретный отчет еще не задан, известен только префикс, по нему и ищем
 	for _, n in ipairs(Report_Functions) do 
 		local item_name = n.name:sub(1, reportName:len())
 		if item_name == reportName and n.guids then

@@ -232,6 +232,7 @@ local Img_guid2idx = {
 	["{19253263-2C0B-41EE-8EAA-000000000800}"] = 9, -- SVARKA_REG_NST
     ["{19FF08BB-C344-495B-82ED-10B6CBAD508F}"] = 8, -- pre NPU
 	["{19FF08BB-C344-495B-82ED-10B6CBAD5090}"] = 12, -- NPU
+	["{19FF08BB-C344-495B-82ED-10B6CBAD5091}"] = 14, -- NPU2 
 
     ["{CBD41D28-9308-4FEC-A330-35EAED9FC800}"] = 2, -- video_ident 0-50
     ["{CBD41D28-9308-4FEC-A330-35EAED9FC810}"] = 2, -- video_ident 0-50
@@ -307,8 +308,9 @@ local desc_vguids = {
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = _get_video_recog_desc, 	-- video_ident (user)
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = _get_video_recog_desc, 	-- video_ident (ats)
 	
-	["{19FF08BB-C344-495B-82ED-10B6CBAD508F}"] = _get_npu_desc,				-- NPU
+	["{19FF08BB-C344-495B-82ED-10B6CBAD508F}"] = _get_npu_desc,				-- NPU auto
 	["{19FF08BB-C344-495B-82ED-10B6CBAD5090}"] = _get_npu_desc,				-- NPU
+	["{19FF08BB-C344-495B-82ED-10B6CBAD5091}"] = _get_npu_desc,				-- NPU BC
 	
 	["{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}"] = _get_beacon_mark,			-- beacon  (user)
 	["{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"] = _get_beacon_mark,			-- beacon

@@ -404,7 +404,7 @@ local ekasui_ALL = make_report_ekasui(
 local videogram = make_report_videogram(
 	table.unpack(all_generators)
 )
-	
+
 
 -- ============================================================================= 
 
