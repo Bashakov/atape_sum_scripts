@@ -242,6 +242,7 @@ local Img_guid2idx = {
     ["{CBD41D28-9308-4FEC-A330-35EAED9FC812}"] = 2, -- video_ident 70-100
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = 7, -- video_ident user
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = 6, -- ats
+	["{CBD41D28-9308-4FEC-A330-35EAED9FC805}"] = 1, -- ats_user
 
 	["{D4607B05-17C2-4C30-A303-69005A08C000}"] = 10, -- move backward
 	["{D4607B05-17C2-4C30-A303-69005A08C001}"] = 11, -- move backward

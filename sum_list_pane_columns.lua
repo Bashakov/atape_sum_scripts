@@ -153,26 +153,6 @@ column_rail =
 	end
 }
 
-column_rail_hun = 
-{
-	name = 'R', 
-	width = 40, 
-	align = 'c', 
-	text = function(row)
-		local mark = work_marks_list[row]
-		local rail_mask = bit32.band(mark.prop.RailMask, 0x3)
-		if rail_mask == 3 then
-			return 'BOTH'
-		end
-		
-		return rail_mask == 1 and 'KOR' or 'KUP'
-	end,
-	sorter = function(mark)
-		return bit32.band(mark.prop.RailMask, 0x3)
-	end
-}
-
-
 column_rail_lr = 
 {
 	name = 'Р', 

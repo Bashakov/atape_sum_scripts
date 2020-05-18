@@ -36,7 +36,7 @@ end
 
 local function drawEllipse(ellipse, color)
 	Drawer.prop:lineWidth(1)
-	Drawer.prop:fillColor( color.r, color.g, color.b,  50 )
+	Drawer.prop:fillColor( color.r, color.g, color.b,   0 )
 	Drawer.prop:lineColor( color.r, color.g, color.b, 255 )
 	cx, cy, rx, ry = table.unpack(ellipse)
 	Drawer.fig:ellipse(cx, cy, rx, ry)
@@ -47,7 +47,7 @@ local function drawRectangle(points, color, inflateSize)
 	local iy = inflateSize and (inflateSize.y or inflateSize[2]) or 0
 	
 	Drawer.prop:lineWidth(1)
-	Drawer.prop:fillColor( color.r, color.g, color.b,  50 )
+	Drawer.prop:fillColor( color.r, color.g, color.b,   0 )
 	Drawer.prop:lineColor( color.r, color.g, color.b, 255 )
 	x1,y1, x2,y2 = table.unpack(points)
 	Drawer.fig:rectangle(x1-ix,y1-iy, x2+ix,y2+iy)
@@ -62,7 +62,7 @@ function drawPolygon(points, lineWidth, line_color, fill_color)
 	if not fill_color then fill_color = line_color end
 	
 	Drawer.prop:lineWidth(lineWidth)
-	Drawer.prop:fillColor(fill_color.r, fill_color.g, fill_color.b, fill_color.a or 20)
+	Drawer.prop:fillColor(fill_color.r, fill_color.g, fill_color.b, fill_color.a or   0)
 	Drawer.prop:lineColor(line_color.r, line_color.g, line_color.b, line_color.a or 200)
 	Drawer.fig:polygon(points)
 end
@@ -343,7 +343,7 @@ local function drawSimpleResult(resultType, points, params)
 	local hun_act_types_color = {
 		["Surface_SQUAT_UIC_227"] 				= {r=0,   g=255, b=0    }, -- зеленый
 		["Surface_SLEEPAGE_SKID_UIC_2251"] 		= {r=0,   g=255, b=255  }, -- циан	
-		["Surface_SLEEPAGE_SKID_UIC_2252"] 		= {r=128, g=128, b=255  },  -- 
+		["Surface_SLEEPAGE_SKID_UIC_2252"] 		= {r=255, g=255, b=0  },  -- желтый
 
 		["Surface_SQUAT_UIC_227_USER"] 			= {r=255, g=0,   b=255  }, -- малиновый
 		["Surface_SLEEPAGE_SKID_UIC_2251_USER"] = {r=255, g=128, b=0    }, -- оранжевый
@@ -532,6 +532,7 @@ local recorn_guids =
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = {ProcessMarkRawXml}, -- Стык(Видео)
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = {ProcessMarkRawXml}, -- СтыкЗазор(Пользователь)
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = {ProcessMarkRawXml}, -- АТСтык(Видео)
+	["{CBD41D28-9308-4FEC-A330-35EAED9FC805}"] = {ProcessMarkRawXml}, -- АТСтык(Пользователь)
 	["{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"] = {ProcessMarkRawXml}, -- Маячная
 	["{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}"] = {ProcessMarkRawXml}, -- Маячная(Пользователь)
 	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"] = {ProcessMarkRawXml}, -- Скрепление	
