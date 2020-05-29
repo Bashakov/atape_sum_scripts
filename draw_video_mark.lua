@@ -366,7 +366,10 @@ local function drawFishplate(points, faults)
 		[4] = 'изл.',
 	}
 	
-	drawPolygon(points, 1, color_fishplate, color_fishplate)
+	if #points ~= 0 then
+		assert(#points == 8)
+		drawPolygon(points, 1, color_fishplate, color_fishplate)
+	end
 	
 	for _, fault in ipairs(faults) do
 		drawPolygon(fault.points, 1, color_fault, color_fault)
@@ -436,7 +439,7 @@ local function processFishplate(nodeActionResFishplate)
 	
 	local faults = {}
 	local reqFault = '\z
-		PARAM[@name="FrameNumber" and @value and @coord]/\z
+		PARAM[@name="FrameNumber" and @coord]/\z
 		PARAM[@name="Result" and @value="main"]/\z
 		PARAM[@name="FishplateState"]'
 	for nodeParamFpltState in SelectNodes(nodeActionResFishplate, reqFault) do
@@ -447,7 +450,6 @@ local function processFishplate(nodeActionResFishplate)
 		end
 	end
 	
-	assert(#pointsFishplate == 8)
 	drawFishplate(pointsFishplate, faults)
 end
 
@@ -486,10 +488,9 @@ local function ProcessMarkRawXml(mark)
 	local req = sprintf('/ACTION_RESULTS\z
 		/PARAM[@name="ACTION_RESULTS" and @value and @channel="%d"]', 
 		Frame.channel)
-			
+
 	for nodeActionResult in SelectNodes(rawXmlRoot, req) do
 		local resultType = nodeActionResult.attributes:getNamedItem('value').nodeValue
-		-- print(resultType)
 		local fns = ActionResTypes[resultType]
 		if fns then
 			for _, fn in ipairs(fns) do
@@ -508,8 +509,8 @@ local function ProcessUnspecifiedObject(mark)
 	local cur_frame_coord = Frame.coord.raw
 	local prop, ext = mark.prop, mark.ext
 	
-	if ext.VIDEOFRAMECOORD and ext.VIDEOIDENTCHANNEL and ext.UNSPCOBJPOINTS and ext.VIDEOFRAMECOORD == cur_frame_coord then
-		local points = parse_polygon(ext.UNSPCOBJPOINTS)
+	if ext.VIDEOFRAMECOORD and ext.VIDEOIDENTCHANNEL and ext.UNSPCOBJPOINTS and math.abs(ext.VIDEOFRAMECOORD - cur_frame_coord) < 1500 then
+		local points = parse_polygon(ext.UNSPCOBJPOINTS, cur_frame_coord, ext.VIDEOFRAMECOORD)
 		
 		if #points == 8 then
 			drawPolygon(points, 1, color, color)
@@ -517,7 +518,7 @@ local function ProcessUnspecifiedObject(mark)
 			--drawer.fig:rectangle(points[1], points[2], points[5], points[6])
 			local text = prop.Description
 			local tcx, tcy = get_center_point(points)
-			OutlineTextOut(tcx, tcy, strText, {height=10})	
+			OutlineTextOut(tcx, tcy, text, {height=10})	
 		end
 	end
 end
@@ -527,6 +528,14 @@ end
 local recorn_guids = 
 {
 	["{0860481C-8363-42DD-BBDE-8A2366EFAC90}"] = {ProcessUnspecifiedObject}, -- Ненормативный объект
+	
+	["{3601038C-A561-46BB-8B0F-F896C2130001}"] = {ProcessUnspecifiedObject}, -- Скрепления(Пользователь)
+	["{3601038C-A561-46BB-8B0F-F896C2130002}"] = {ProcessUnspecifiedObject}, -- Шпалы(Пользователь)
+	["{3601038C-A561-46BB-8B0F-F896C2130003}"] = {ProcessUnspecifiedObject}, -- Рельсовые стыки(Пользователь)
+	["{3601038C-A561-46BB-8B0F-F896C2130004}"] = {ProcessUnspecifiedObject}, -- Дефекты рельсов(Пользователь)
+	["{3601038C-A561-46BB-8B0F-F896C2130005}"] = {ProcessUnspecifiedObject}, -- Балласт(Пользователь)
+	["{3601038C-A561-46BB-8B0F-F896C2130006}"] = {ProcessUnspecifiedObject}, -- Бесстыковой путь(Пользователь)
+	
 	
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = {ProcessMarkRawXml}, -- Стык(Видео)
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = {ProcessMarkRawXml}, -- Стык(Видео)

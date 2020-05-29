@@ -39,8 +39,8 @@ local filters =
 		name = 'Recog Lanch',
 		columns = {
 			column_num,
-			column_recog_run_date,
-			column_recog_run_type,
+			--column_recog_run_date, -- необязательный ппарметр
+			--column_recog_run_type, -- необязательный ппарметр
 			column_recog_dll_ver
 			}, 
 		GUIDS = {"{1D5095ED-AF51-43C2-AA13-6F6C86302FB0}"},

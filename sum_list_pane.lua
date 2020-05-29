@@ -2,12 +2,8 @@ if not ATAPE then
 	HUN = true
 end
 
-mark_helper = require 'sum_mark_helper'
-stuff = require 'stuff'
 
-local sprintf = stuff.sprintf
-local printf = stuff.printf
-local table_find = stuff.table_find
+mark_helper = require 'sum_mark_helper'
 
 local SelectNodes = mark_helper.SelectNodes
 local sort_marks = mark_helper.sort_marks
@@ -15,6 +11,10 @@ local reverse_array = mark_helper.reverse_array
 local sort_stable = mark_helper.sort_stable
 local shallowcopy = mark_helper.shallowcopy
 local deepcopy = mark_helper.deepcopy
+local table_find = mark_helper.table_find
+local sprintf = mark_helper.sprintf
+local printf = mark_helper.printf
+
 
 if iup then
 	iup.SetGlobal('UTF8MODE', 1)
@@ -28,17 +28,33 @@ MK_CONTROL   =	0x0008
 
 -- для запуска и из атейпа и из отладчика
 local function my_dofile(file_name)
-	local errors = ''
+	local errors = {}
+	local paths = {
+		file_name,
+		'Scripts\\' .. file_name,
+	}
 	
-	for _, path in ipairs{file_name, 'Scripts\\' .. file_name} do
-		local ok, data = pcall(function() return dofile(path)	end)
-		if ok then
-			return data
+	for i = 1,2 do
+		for _, path in ipairs(paths) do
+			local ok, data = pcall(function() return dofile(path)	end)
+			if ok then
+				return data
+			end
+			table.insert(errors, '\n\t' .. data)
 		end
-		errors = errors .. '\n' .. data
-	end
 
-	error(errors)
+		-- https://bt.abisoft.spb.ru/view.php?id=574
+		if i == 1 then
+			local tmplt = '\\?.lua'
+			paths = {}
+			for pp in string.gmatch(package.path, "[^;]+") do
+				if(pp:sub(-#tmplt) == tmplt) then
+					table.insert(paths, pp:sub(1, -#tmplt) .. file_name)
+				end
+			end
+		end
+	end
+	error(table.concat(errors))
 end
 
 -- добавляет содержимое таблицы src в конец dst
@@ -71,7 +87,9 @@ if not HUN then
 		"sum_list_pane_filters_uzk.lua",
 		"sum_list_pane_filters_magn.lua", 
 		"sum_list_pane_filters_npu.lua",
-		"sum_list_pane_filters_visible.lua"
+		"sum_list_pane_filters_visible.lua",
+		"sum_list_pane_filters_video_uic.lua",
+		"sum_list_pane_filters_user.lua"
 		)
 else
 	Filters = load_filters(Filters, 
@@ -466,7 +484,12 @@ if not ATAPE then
 	--psp_path = 'D:/ATapeXP/Main/494/Москва Курская - Подольск/Москва Курская - Подольск/2019_05_16/Avikon-03M/4240/[494]_2019_03_15_01.xml'
 	test_report(psp_path)
 	
-	local name  = 'Surface Defects'
+	local name 
+	if HUN then
+		name  = 'Surface Defects'
+	else
+		name  = 'Стыковые зазоры'
+	end
 	
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}
