@@ -2,7 +2,6 @@ if not ATAPE then
 	HUN = true
 end
 
-
 mark_helper = require 'sum_mark_helper'
 
 local SelectNodes = mark_helper.SelectNodes
@@ -36,12 +35,12 @@ local function my_dofile(file_name)
 	
 	for i = 1,2 do
 		for _, path in ipairs(paths) do
-			local ok, data = pcall(function() return dofile(path)	end)
-			if ok then
-				return data
-			end
-			table.insert(errors, '\n\t' .. data)
+		local ok, data = pcall(function() return dofile(path)	end)
+		if ok then
+			return data
 		end
+			table.insert(errors, '\n\t' .. data)
+	end
 
 		-- https://bt.abisoft.spb.ru/view.php?id=574
 		if i == 1 then
@@ -88,7 +87,6 @@ if not HUN then
 		"sum_list_pane_filters_magn.lua", 
 		"sum_list_pane_filters_npu.lua",
 		"sum_list_pane_filters_visible.lua",
-		"sum_list_pane_filters_video_uic.lua",
 		"sum_list_pane_filters_user.lua"
 		)
 else
@@ -185,18 +183,55 @@ end
 
 -- дефолтный обработчик ПКМ
 local function default_mark_contextmenu(row, col)
-	local handlers = {
-		{text = "Сформировать Выходную форму видеофиксации (д.б. открыт нужный видеокомпонент )", 		fn = videogram_mark},
-		{text = "", },
-		{text = "Удалить отметку", 	fn = delete_mark},
-	}
-	local texts = {}
-	for _, h in ipairs(handlers) do
-		table.insert(texts, h.text)
-	end
-	local r = MarkTable:PopupMenu(texts)
-	if r and handlers[r].fn then
-		handlers[r].fn(row, col)
+	if true then
+		package.loaded.sum_context_menu = nil -- для перезагрузки 
+		local sum_context_menu = require 'sum_context_menu'
+		local RETURN_STATUS = sum_context_menu.RETURN_STATUS
+		local GetMenuItems = sum_context_menu.GetMenuItems
+		local mark = work_marks_list[row]
+		local handlers = GetMenuItems(mark)
+		local names = {}
+		for i, h in ipairs(handlers) do names[i] = h.name end
+		local r = MarkTable:PopupMenu(names)
+		if r and handlers[r].fn then
+			local status = handlers[r].fn(handlers[r])
+			if status == RETURN_STATUS.UPDATE_MARK then
+				Driver:RedrawView()
+				MarkTable:Invalidate(row)
+			end
+			if status == RETURN_STATUS.REMOVE_MARK then 
+				work_mark_ids[mark.prop.ID] = nil
+				table.remove(work_marks_list, row)
+				MarkTable:SetItemCount(#work_marks_list)
+				Driver:RedrawView()
+			end
+			if status == RETURN_STATUS.UPDATE_ALL then -- перезагрузка списка
+				Driver:RedrawView()
+				if work_filter then	
+					local cur_filter_name = work_filter.name
+					InitMark("")
+					MarkTable:SetItemCount(0)
+					InitMark(cur_filter_name)
+					MarkTable:SetItemCount(#work_marks_list)
+				else
+					MarkTable:Invalidate()
+				end
+			end
+		end
+	else
+		local handlers = {
+			{text = "Сформировать Выходную форму видеофиксации (д.б. открыт нужный видеокомпонент )", 		fn = videogram_mark},
+			{text = "", },
+			{text = "Удалить отметку", 	fn = delete_mark},
+		}
+		local texts = {}
+		for _, h in ipairs(handlers) do
+			table.insert(texts, h.text)
+		end
+		local r = MarkTable:PopupMenu(texts)
+		if r and handlers[r].fn then
+			handlers[r].fn(row, col)
+		end
 	end
 end
 
@@ -479,9 +514,7 @@ if not ATAPE then
 	
 	test_report  = require('test_report')
 	local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-	--psp_path = 'D:/ATapeXP/Main/HUN_RECOG/HUN_RECOG_n/2019_11_15/Avikon-03H/16695/UH_MAV_70_J_2_28_1_19_1.xml'
-	--psp_path = 'D:/ATapeXP/Main/500/сверка/2019_12_03/Avikon-03M/1561/[500]_2019_11_28_03.xml'
-	--psp_path = 'D:/ATapeXP/Main/494/Москва Курская - Подольск/Москва Курская - Подольск/2019_05_16/Avikon-03M/4240/[494]_2019_03_15_01.xml'
+	--local psp_path = 'D:/ATapeXP/Main/494/multimagnetic/2018_01_25/Avikon-03M/12216/[494]_2018_01_03_01.xml'
 	test_report(psp_path)
 	
 	local name 
