@@ -7,12 +7,11 @@ local filters =
 		name = 'Surface Defects', 
 		--videogram_defect_codes = {'090004012001'},
 		columns = {
-			--column_mark_id,
 			column_num, 
 			column_path_coord, 
-			column_rail_hun,
-			--column_surf_defect_type,
-			column_surf_defect_area,
+			column_rail,
+			column_surf_defect_type,
+			--column_surf_defect_area, -- РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅС‹Р№ РїРїР°СЂРјРµС‚СЂ
 			column_surf_defect_len,
 			column_surf_defect_wdh,
 			column_recogn_video_channel,
@@ -26,8 +25,8 @@ local filters =
 		columns = {
 			column_num, 
 			column_path_coord, 
-			---- column_length,
-			column_rail_hun,
+			-- column_length, -- РґР»РёРЅР° РЅРµ РЅСѓР¶РЅР°
+			column_rail,
 			column_mark_type_name,
 			column_recogn_video_channel,
 			}, 
@@ -39,8 +38,8 @@ local filters =
 		name = 'Recog Lanch',
 		columns = {
 			column_num,
-			--column_recog_run_date, -- необязательный ппарметр
-			--column_recog_run_type, -- необязательный ппарметр
+			--column_recog_run_date, -- РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅС‹Р№ РїРїР°СЂРјРµС‚СЂ
+			--column_recog_run_type, -- РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅС‹Р№ РїРїР°СЂРјРµС‚СЂ
 			column_recog_dll_ver
 			}, 
 		GUIDS = {"{1D5095ED-AF51-43C2-AA13-6F6C86302FB0}"},

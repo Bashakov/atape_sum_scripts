@@ -483,7 +483,7 @@ local function GetSurfDefectPrm(mark)
 			end
 
 			if not res.SurfaceArea and res.SurfaceWidth and res.SurfaceLength then
-					res.SurfaceArea = res.SurfaceWidth * res.SurfaceLength / 100
+				res.SurfaceArea = res.SurfaceWidth * res.SurfaceLength / 100
 			end
 			if res.SurfaceArea then 
 				res.SurfaceArea = res.SurfaceArea / 100
