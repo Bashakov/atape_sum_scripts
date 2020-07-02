@@ -204,9 +204,9 @@ local RAIL_JOINT_TOOL = {
 		{"fishplate_type",     "тип накладки",  {"", "4", "6"}},
 		{"joint_missing_bolt", 'Отсутствуют',   {"", 1,2,3,4,5,6,7,8,9}}
 	}}),
-	joint_width = copy_update(DRAW_TOOL.rect_defect, {options={
-		{"joint_width",     "Ширина зазора",  {"", "24<x<26", "26<x<30", "30<x<35", "35<x"}},
-	}}),
+--	joint_width = copy_update(DRAW_TOOL.rect_defect, {options={
+--		{"joint_width",     "Ширина зазора",  {"", "24<x<26", "26<x<30", "30<x<35", "35<x"}},
+--	}}),
 }
 local rail_joint_template = 
 {
@@ -225,7 +225,7 @@ table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="09000401584
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000465", name="Отсутствие стыковых болтов", tools={RAIL_JOINT_TOOL.fishplate_bolt}}))
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000477", name="Отсутствует стыковая накладка"}))
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000509", name="Отсутствующие или неисправные элементы изолирующего стыка"}))
-table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004012062", name="Превышение конструктивной величины стыкового зазора", tools={RAIL_JOINT_TOOL.joint_width}}))
+table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004012062", name="Превышение конструктивной величины стыкового зазора", add_width_from_user_rect=true}))
 
 table.insert(DEFECTS,  {guid='{3601038C-A561-46BB-8B0F-F896C2130004}', group="Дефекты рельсов", ekasui_code="090004012002", name="Дефекты и повреждения подошвы рельса", fn = make_simple_defect, tools = {DRAW_TOOL.rect_defect}})
 table.insert(DEFECTS,  {guid='{3601038C-A561-46BB-8B0F-F896C2130004}', group="Дефекты рельсов", ekasui_code="090004012004", name="Излом рельса", fn = make_simple_defect, tools = {DRAW_TOOL.rect_defect}})

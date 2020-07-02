@@ -864,7 +864,7 @@ local function report_gaps(params)
 		
 		os.execute("start " .. file_name)
 	end
-	
+	dlg:Destroy()
 end
 
 -- отчет по маячнам отметкам

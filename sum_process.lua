@@ -183,8 +183,51 @@ local function _get_sleeper_mark(mark, desc)
 	return desc
 end
 
+-- получение иконки для дефектов поставленных пользователем
+local function getMarkImageUserRecog(mark)
+	local user_recog_guids = {
+		['{3601038C-A561-46BB-8B0F-F896C2130001}'] = 0,	-- "Скрепления"
+		['{3601038C-A561-46BB-8B0F-F896C2130002}'] = 1, -- "Шпалы"
+		['{3601038C-A561-46BB-8B0F-F896C2130003}'] = 2, -- "Рельсовые стыки", 
+		['{3601038C-A561-46BB-8B0F-F896C2130004}'] = 3,	-- "Дефекты рельсов"
+		['{3601038C-A561-46BB-8B0F-F896C2130005}'] = 4,	-- "Балласт"
+		['{3601038C-A561-46BB-8B0F-F896C2130006}'] = 5,	-- "Бесстыковой путь"
+	}
+	
+	local ekasui_codes = {
+		["090004012004"] = 6		-- "Излом рельса"
+	}
 
--- ================================ EXPORT FUNCTIONS ================================= --
+	local indx = user_recog_guids[mark.Guid]
+	if indx then
+		local prop = mark:GetProperties()
+		local ekasui_code = prop.CODE_EKASUI
+		
+		local img_size = { x=16, y=16 }                        -- set img size
+		local filename = 'Images/SUM_User_New_Mark.bmp'
+	
+		local rail = bit32.band(mark.RailMask, 0x03)
+		if rail == 0 then 
+			rail = 3 
+		end
+		
+		if ekasui_codes[ekasui_code] then 
+			indx = ekasui_codes[ekasui_code]
+		end
+
+		return {
+			filename = filename,
+			src_rect = {
+				indx * img_size.x, 		-- left
+				(rail-1) *img_size.y, 	-- top
+				img_size.x, 			-- width
+				img_size.y				-- height
+			}
+		}
+	end
+end
+
+-- ================================ GUIDS ================================= --
 
 local guidSleeper = "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"	
 
@@ -250,6 +293,8 @@ local Img_guid2idx = {
 
 
 
+-- ================================ EXPORT FUNCTIONS ================================= --
+
 
 function GetMarkImage(mark) -- exported (return ico desc from mark)
 	local RailMask = mark.RailMask
@@ -258,6 +303,11 @@ function GetMarkImage(mark) -- exported (return ico desc from mark)
 	local typeGuid = mark.Guid
 
 	local rail, video = getMarkRail(mark)                -- get rail and fideo_glag
+	
+	local userrecog = getMarkImageUserRecog(mark)
+	if userrecog then
+		return userrecog
+	end
 
 	local da_index = Img_DA_guids[typeGuid]                -- first check at Dmitry Alexeev mark
 	if da_index  then                                                        -- if guid found

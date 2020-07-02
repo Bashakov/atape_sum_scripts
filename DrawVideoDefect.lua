@@ -1,3 +1,5 @@
+package.loaded.sumPOV = nil -- для перезагрузки в дебаге
+local sumPOV = require "sumPOV"
 
 -- ================= математика =================
 
@@ -315,6 +317,8 @@ function make_recog_mark(name, objects, driver, defect)
 --	save_and_show(nodeRoot.xml)
 --	error('make_recog_mark error')
 	
+	sumPOV.UpdateMarks(mark, false)
+	
 	return {mark}
 end
 
@@ -325,14 +329,21 @@ function make_simple_defect(name, objects, driver, defect)
 	local marks = {}
 	for i, object in ipairs(objects) do
 		local rmask, chmask = get_rail_channel_mask({object})
+		local points_on_frame, _ = rect2corners(object, "ltrtrblb") -- left, top, rigth, top, rigth, bottom, left, bottom
+		
+		local mark = driver:NewMark()
+		
+		if defect.add_width_from_user_rect then
+			local w = tonumber(points_on_frame[3] - points_on_frame[1])
+			--object.options.joint_width = w
+			mark.ext.VIDEOIDENTGWT = w
+			mark.ext.VIDEOIDENTGWS = w
+		end
 		
 		local str_options = {}
 		for n, v in sorted(object.options) do table.insert(str_options, string.format("%s:%s", n, v)) end
 		str_options = table.concat(str_options, "\n")
 		
-		local points_on_frame, _ = rect2corners(object, "ltrtrblb") -- left, top, rigth, top, rigth, bottom, left, bottom
-		
-		local mark = driver:NewMark()
 		mark.prop.SysCoord = get_common_system_coord({object})
 		mark.prop.Len = 1
 		mark.prop.RailMask = rmask + 8   -- video_mask_bit
@@ -345,21 +356,26 @@ function make_simple_defect(name, objects, driver, defect)
 		mark.ext.VIDEOIDENTCHANNEL = object.area.channel
 		mark.ext.VIDEOFRAMECOORD = object.center_frame
 		mark.ext.CODE_EKASUI = defect.ekasui_code
-		mark.ext.DEFECT_OPTIONS = str_options
+		if str_options and # str_options ~= 0 then
+			mark.ext.DEFECT_OPTIONS = str_options
+		end
 		mark.ext.UNSPCOBJPOINTS = string.format("%d,%d %d,%d %d,%d %d,%d", table.unpack(points_on_frame)) 
 		
 		marks[i] = mark
 	end
 	
-	--error('make_simple_defect error')
-		
+	sumPOV.UpdateMarks(marks, false)
+	
+	--error('make_simple_defect error') -- testing
 	return marks
 end
 
--- ================= DEFECTS =================
-
-package.loaded.DrawVideoDefect_defects = nil -- для перезагрузки в дебаге
+-- загружаем после определения функция генерации отметок
+package.loaded.DrawVideoDefect_defects = nil 	-- для перезагрузки в дебаге
 local DEFECTS = require "DrawVideoDefect_defects"
+
+
+-- ================= DEFECTS =================
 
 local function find_defect(name)
 	for _, d in ipairs(DEFECTS) do

@@ -1,7 +1,8 @@
 
 NPU_guids = {
-	"{19FF08BB-C344-495B-82ED-10B6CBAD508F}",
-	"{19FF08BB-C344-495B-82ED-10B6CBAD5090}"
+	"{19FF08BB-C344-495B-82ED-10B6CBAD508F}", -- НПУ auto
+	"{19FF08BB-C344-495B-82ED-10B6CBAD5090}", -- НПУ
+	"{19FF08BB-C344-495B-82ED-10B6CBAD5091}", -- НПУ БС
 }
 
 recognition_guids = {
@@ -35,3 +36,12 @@ recognition_uic_surface_defects = {
 	"{515FA798-3893-41CA-B4C3-6E1FEAC8E12F}",
 }
 
+
+return
+{
+	NPU_guids = NPU_guids,
+	recognition_guids = recognition_guids,
+	recognition_surface_defects = recognition_surface_defects,
+	recognition_NonNormal_defects = recognition_NonNormal_defects,
+	recognition_uic_surface_defects = recognition_uic_surface_defects,
+}

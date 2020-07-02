@@ -452,7 +452,7 @@ column_fishplate_state =
 	end,
 }
 
-local NPU_type_str = {"Возм.", "Подтв."}
+local NPU_type_str = {"Возм.", "Подтв.", "БС"}
 
 column_npu_type = 
 {

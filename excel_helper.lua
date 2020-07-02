@@ -67,8 +67,9 @@ local function CopyTemplate(template_path, sheet_name, dest_name)		-- скопи
 		end
 	end
 	
-	local new_name = os.getenv('USERPROFILE') .. '\\ATapeReport\\' .. file_name .. '.xls'
-	new_name = codecs.cp1251_utf8(new_name)
+	local user_dir = os.getenv('USERPROFILE') -- возвращает путь кодированный в cp1251, что вызывает ошибку при копировании, тк ожидается utf-8
+	user_dir = codecs.cp1251_utf8(user_dir)
+	local new_name = user_dir .. '\\ATapeReport\\' .. file_name .. '.xls'
 	if not CopyFile(template_path, new_name) then
 		stuff.errorf('copy file %s -> %s failed', template_path, new_name)
 	end

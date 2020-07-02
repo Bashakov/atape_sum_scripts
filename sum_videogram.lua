@@ -434,7 +434,7 @@ if not ATAPE then
 	local savedGetMarks = Driver.GetMarks
 	-- тестовая функция обертка: возвращает только одну отметку, для videogram_mark
 	Driver.GetMarks = function(self, filter)
-		return savedGetMarks(self, {mark_id=3382})
+		return savedGetMarks(self, {mark_id=100})
 	end
 
 	videogram_mark()
@@ -442,3 +442,11 @@ if not ATAPE then
 	--videogram_view_packet({width_show_mm=9000, left_coord=100000})
 	--videogram_view_single()
 end
+
+
+-- экспорт как модуля
+return 
+{
+	MakeVideogram = MakeVideogram,
+	IsVideogramAvailable = IsVideogramAvailable
+}

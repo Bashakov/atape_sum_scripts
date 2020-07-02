@@ -83,11 +83,10 @@ local Filters = {}
 if not HUN then 
 	Filters = load_filters(Filters, 
 		"sum_list_pane_filters_video.lua", 
-		"sum_list_pane_filters_uzk.lua",
 		"sum_list_pane_filters_magn.lua", 
 		"sum_list_pane_filters_npu.lua",
 		"sum_list_pane_filters_visible.lua",
-		"sum_list_pane_filters_user.lua"
+		"sum_list_pane_filters_recog_user.lua"
 		)
 else
 	Filters = load_filters(Filters, 
@@ -183,54 +182,38 @@ end
 
 -- дефолтный обработчик ПКМ
 local function default_mark_contextmenu(row, col)
-	if true then
-		package.loaded.sum_context_menu = nil -- для перезагрузки 
-		local sum_context_menu = require 'sum_context_menu'
-		local RETURN_STATUS = sum_context_menu.RETURN_STATUS
-		local GetMenuItems = sum_context_menu.GetMenuItems
-		local mark = work_marks_list[row]
-		local handlers = GetMenuItems(mark)
-		local names = {}
-		for i, h in ipairs(handlers) do names[i] = h.name end
-		local r = MarkTable:PopupMenu(names)
-		if r and handlers[r].fn then
-			local status = handlers[r].fn(handlers[r])
-			if status == RETURN_STATUS.UPDATE_MARK then
-				Driver:RedrawView()
-				MarkTable:Invalidate(row)
-			end
-			if status == RETURN_STATUS.REMOVE_MARK then 
-				work_mark_ids[mark.prop.ID] = nil
-				table.remove(work_marks_list, row)
+	package.loaded.sum_context_menu = nil -- для перезагрузки 
+	local sum_context_menu = require 'sum_context_menu'
+	local RETURN_STATUS = sum_context_menu.RETURN_STATUS
+	local GetMenuItems = sum_context_menu.GetMenuItems
+	local mark = work_marks_list[row]
+	local handlers = GetMenuItems(mark)
+	local names = {}
+	for i, h in ipairs(handlers) do names[i] = h.name or '' end
+	local r = MarkTable:PopupMenu(names)
+	if r and handlers[r].fn then
+		local status = handlers[r].fn(handlers[r])
+		if status == RETURN_STATUS.UPDATE_MARK then
+			Driver:RedrawView()
+			MarkTable:Invalidate(row)
+		end
+		if status == RETURN_STATUS.REMOVE_MARK then 
+			work_mark_ids[mark.prop.ID] = nil
+			table.remove(work_marks_list, row)
+			MarkTable:SetItemCount(#work_marks_list)
+			Driver:RedrawView()
+		end
+		if status == RETURN_STATUS.UPDATE_ALL then -- перезагрузка списка
+			Driver:RedrawView()
+			if work_filter then	
+				local cur_filter_name = work_filter.name
+				InitMark("")
+				MarkTable:SetItemCount(0)
+				InitMark(cur_filter_name)
 				MarkTable:SetItemCount(#work_marks_list)
-				Driver:RedrawView()
+			else
+				MarkTable:Invalidate()
 			end
-			if status == RETURN_STATUS.UPDATE_ALL then -- перезагрузка списка
-				Driver:RedrawView()
-				if work_filter then	
-					local cur_filter_name = work_filter.name
-					InitMark("")
-					MarkTable:SetItemCount(0)
-					InitMark(cur_filter_name)
-					MarkTable:SetItemCount(#work_marks_list)
-				else
-					MarkTable:Invalidate()
-				end
-			end
-		end
-	else
-		local handlers = {
-			{text = "Сформировать Выходную форму видеофиксации (д.б. открыт нужный видеокомпонент )", 		fn = videogram_mark},
-			{text = "", },
-			{text = "Удалить отметку", 	fn = delete_mark},
-		}
-		local texts = {}
-		for _, h in ipairs(handlers) do
-			table.insert(texts, h.text)
-		end
-		local r = MarkTable:PopupMenu(texts)
-		if r and handlers[r].fn then
-			handlers[r].fn(row, col)
 		end
 	end
 end
