@@ -6,6 +6,7 @@ if not ATAPE then
 	HUN = false
 end
 
+local sumPOV = require "sumPOV"
 local resty = require "resty.template"
 
 if iup then
@@ -78,6 +79,12 @@ local REPORT_BOLTS_IDs =
 }
 
 -- ========================================================= 
+
+local function MakePovFilter(ekasui)
+	local mode = ekasui and 'ekasui' or 'vedomost'
+	local tip =  ekasui and 'ЕКАСУИ' or 'Dедомость'
+	return sumPOV.MakeReportFilter(mode, tip)
+end
 
 -- сделать строку ссылку для открытия атейпа на данной отметке
 local function make_mark_uri(markid)
@@ -654,9 +661,11 @@ local function report_crew_join(params)
 	end
 end
 
-
 -- отчет Ведомость Зазоров
 local function report_gaps(params)
+	local pov_fltr = MakePovFilter(params.eksui)
+	if not pov_fltr then return end
+	
 	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
 	
 	local res, filter_mode, show_accepted, show_rejected = iup.GetParam("Параметры отчета", nil, 
@@ -676,7 +685,7 @@ local function report_gaps(params)
 	local marks = Driver:GetMarks({guids=params.guids})
 	
 	local function filter_type_fn(mark)
-		return table_find(gap_rep_filter_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
+		return table_find(gap_rep_filter_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA and pov_fltr(mark)
 	end
 	
 	marks = mark_helper.filter_marks(marks, filter_type_fn, make_filter_progress_fn(dlg))
@@ -1580,6 +1589,6 @@ if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	MakeReport('УЗ_НПУ')
+	MakeReport('Стыковые зазоры|ЕКАСУИ ')
 end
 

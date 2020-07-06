@@ -46,6 +46,7 @@ ProgressDlg = OOP.class
 			close_cb = _close_cb,
 			resize = "NO",
 			layout,
+			TOPMOST="YES",
 		}
 		
 		self.dlgProgress:showxy(iup.CENTER, iup.CENTER)

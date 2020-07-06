@@ -1,4 +1,5 @@
 local GUIDS = require "sum_list_pane_guids"
+local sumPOV = require "sumPOV"
 
 -- =========== stuff ============== -- 
 
@@ -85,6 +86,7 @@ local function edit_width(obj)
 	if res then
 		mark.ext['VIDEOIDENTGWT'] = wt
 		mark.ext['VIDEOIDENTGWS'] = ws
+		sumPOV.UpdateMarks(mark, false)
 		mark:Save()
 		return RETURN_STATUS.UPDATE_MARK
 	end
@@ -124,6 +126,7 @@ local function edit_bolts(obj)
 		end
 		clear_desc_attrib(recog_xml)
 		mark.ext.RAWXMLDATA = recog_xml.xml
+		sumPOV.UpdateMarks(mark, false)
 		mark:Save()
 		return RETURN_STATUS.UPDATE_MARK
 	end
@@ -155,7 +158,41 @@ local function npu_convert(obj)
 	mark:Save()
 	return RETURN_STATUS.UPDATE_MARK
 end
-				
+
+--[[ 4.2.1.4 Редактирование свойств отметки распознавания
+
+В контекстное меню входят минимально три пункта: Подтвердить, Подтвердить*, 
+Ввести пользовательский.
+
+- По пункту Подтвердить флаги ПОВ заполняются в соответствии с 
+	выбранным типом сценария.
+- По пункту Подтвердить* пользователю предлагается окно выбора типа ПОВ.
+- По пункту Ввести пользовательский пользователю предлагается окно редактирования 
+	значения (с отображением предыдущего) и выбор флагов ПОВ 
+	(флаги по умолчанию соответствуют с выбранному сценарию).
+]]	
+local function accept_pov(obj)
+	if obj.method == 0 then -- Подтверждать в ЕКАСУИ
+		sumPOV.AcceptEKASUI(obj.mark, true, not obj.CHECKED)
+	end
+	if obj.method == 1 then -- Подтвердить
+		sumPOV.UpdateMarks(obj.mark, true)
+	end
+	if obj.method == 2 then -- Подтвердить*
+		if sumPOV.ShowSettings() then
+			sumPOV.UpdateMarks(obj.mark, true)
+		end
+	end
+	if obj.method == 3 then -- Ввести пользовательский
+		sumPOV.EditMarks(obj.mark, true)
+	end
+	if obj.method == 4 then -- Отвергнуть дефектность
+		sumPOV.RejectDefects(obj.mark, true)
+	end
+	return RETURN_STATUS.UPDATE_MARK
+end
+
+			
 -- =============== EXPORT ===============
 
 -- статусы обработки для подсказки таблице отметок как обновлятся
@@ -189,7 +226,7 @@ RETURN_STATUS = {
 ]]
 function GetMenuItems(mark)
 	local menu_items = {}
-	if not work_filter then
+	if not work_filter then -- work_filter определена если функция вызвана из панели отметок, иначе это атейп со своим меню, поэтому добавим 2 разделителя
 		table.insert(menu_items, '')
 		table.insert(menu_items, '')
 	end
@@ -214,9 +251,17 @@ function GetMenuItems(mark)
 	end
 	
 	table.insert(menu_items, '')
+	table.insert(menu_items, {name='Устанавливка состояние флагов ПОВ', fn=sumPOV.ShowSettings}) --  (д.б. открыт нужный видеокомпонент)
 	table.insert(menu_items, {name='Сформировать выходную форму видеофиксации', fn=videogram_mark, mark=mark}) --  (д.б. открыт нужный видеокомпонент)
 	table.insert(menu_items, {name='Удалить отметку', fn=remove_mark, mark=mark})
-
+	table.insert(menu_items, '')
+	-- 4.2.1.4 Редактирование свойств отметки распознавания
+	table.insert(menu_items, {name='Подтверждать в ЕКАСУИ', fn=accept_pov, mark=mark, method=0, CHECKED=sumPOV.IsAcceptEKASUI(mark)})
+	table.insert(menu_items, {name='Подтвердить', fn=accept_pov, mark=mark, method=1})
+	table.insert(menu_items, {name='Подтвердить*', fn=accept_pov, mark=mark, method=2})
+	table.insert(menu_items, {name='Ввести пользовательский', fn=accept_pov, mark=mark, method=3})
+	table.insert(menu_items, {name='Отвергнуть дефектность', fn=accept_pov, mark=mark, method=4})
+	
 	return menu_items
 end
 

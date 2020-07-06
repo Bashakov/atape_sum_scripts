@@ -188,9 +188,7 @@ local function default_mark_contextmenu(row, col)
 	local GetMenuItems = sum_context_menu.GetMenuItems
 	local mark = work_marks_list[row]
 	local handlers = GetMenuItems(mark)
-	local names = {}
-	for i, h in ipairs(handlers) do names[i] = h.name or '' end
-	local r = MarkTable:PopupMenu(names)
+	local r = MarkTable:PopupMenu(handlers)
 	if r and handlers[r].fn then
 		local status = handlers[r].fn(handlers[r])
 		if status == RETURN_STATUS.UPDATE_MARK then
