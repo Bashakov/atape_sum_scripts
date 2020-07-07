@@ -37,7 +37,6 @@ local gap_rep_filter_guids =
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC801}",
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
 }
 
 local fastener_guids = {
@@ -82,7 +81,7 @@ local REPORT_BOLTS_IDs =
 
 local function MakePovFilter(ekasui)
 	local mode = ekasui and 'ekasui' or 'vedomost'
-	local tip =  ekasui and 'ЕКАСУИ' or 'Dедомость'
+	local tip =  ekasui and 'ЕКАСУИ' or 'Ведомость'
 	return sumPOV.MakeReportFilter(mode, tip)
 end
 
