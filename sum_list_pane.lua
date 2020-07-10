@@ -14,6 +14,7 @@ local table_find = mark_helper.table_find
 local sprintf = mark_helper.sprintf
 local printf = mark_helper.printf
 
+local sumPOV = require "sumPOV"
 
 if iup then
 	iup.SetGlobal('UTF8MODE', 1)
@@ -435,6 +436,25 @@ function OnKey(key, down, flags)
 				jump_mark(selected_row)
 			end
 		end
+		
+		-- ПОВ
+		if (key == 'A') then -- accept
+			local mark = work_marks_list[selected_row]
+			if mark and mark.prop and mark.ext then -- проверим что объект является именно специальной пользовательской отметкой
+				--sumPOV.AcceptEKASUI(mark, true, not sumPOV.IsAcceptEKASUI(mark))
+				sumPOV.UpdateMarks(mark, true)
+				MarkTable:Invalidate(selected_row)
+			end
+		end
+		
+		if (key == 'R') then -- reject
+			local mark = work_marks_list[selected_row]
+			if mark and mark.prop and mark.ext then -- проверим что объект является именно специальной пользовательской отметкой
+				sumPOV.RejectDefects(mark, true, not sumPOV.IsRejectDefect(mark))
+				MarkTable:Invalidate(selected_row)
+			end
+		end
+		
 	end
 end
 

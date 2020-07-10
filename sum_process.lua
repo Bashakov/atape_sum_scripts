@@ -297,6 +297,17 @@ local Img_guid2idx = {
 
 
 function GetMarkImage(mark) -- exported (return ico desc from mark)
+	
+	local POV_REJECTED = mark and mark.GetProperties().POV_REJECTED
+	-- print('POV_REJECTED', mark.SysCoord, POV_REJECTED)
+	if POV_REJECTED == 1 then
+		local res = {
+			filename = 'Images/sum.bmp',                -- filename
+			src_rect = {0, 32, 16, 16}, -- {left, top, width, height}
+		}
+		return res
+	end
+	
 	local RailMask = mark.RailMask
 	local chMask = mark.ChannelMask
 	local coord = mark.SysCoord

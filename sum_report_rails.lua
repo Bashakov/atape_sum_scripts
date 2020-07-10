@@ -15,6 +15,7 @@ local luaiup_helper = require 'luaiup_helper'
 local DEFECT_CODES = require 'report_defect_codes'
 local EKASUI_REPORT = require 'sum_report_ekasui'
 local AVIS_REPORT = require 'sum_report_avis'
+local sumPOV = require "sumPOV"
 
 local table_find = stuff.table_find
 local sprintf = stuff.sprintf
@@ -53,11 +54,22 @@ local function GetMarks()
 	return marks
 end
 
+local ekasui = false
+
+local function MakePovFilter()
+	local mode = ekasui and 'ekasui' or 'vedomost'
+	local tip =  ekasui and 'ЕКАСУИ' or 'Ведомость'
+	return sumPOV.MakeReportFilter(mode, tip)
+end
+
 
 -- ============================================================================= 
 
 
 local function generate_rows_rails(marks, dlgProgress)
+	local sum_filter = MakePovFilter()
+	if not sum_filter then return end
+	
 	local user_area, user_width, user_lenght = get_user_filter_surface()
 	if not user_area then
 		return
@@ -65,7 +77,7 @@ local function generate_rows_rails(marks, dlgProgress)
 	
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
-		if table_find(guid_surface_defects, mark.prop.Guid) and mark.ext.RAWXMLDATA then
+		if table_find(guid_surface_defects, mark.prop.Guid) and mark.ext.RAWXMLDATA and sum_filter(mark) then
 			local surf_prm = mark_helper.GetSurfDefectPrm(mark)
 			if surf_prm then
 			
@@ -105,12 +117,13 @@ end
 local function make_report_generator(...)
 	local report_template_name = 'ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ РЕЛЬСОВ.xlsm'
 	local sheet_name = 'В4 РЛС'
-	
+	ekasui = false
 	return AVIS_REPORT.make_report_generator(GetMarks, 
 		report_template_name, sheet_name, ...)
 end
 
 local function make_report_ekasui(...)
+	ekasui = true
 	return EKASUI_REPORT.make_ekasui_generator(GetMarks, ...)
 end	
 

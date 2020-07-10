@@ -711,3 +711,46 @@ column_recog_dll_ver =
 		return info.RECOGNITION_DLL_VERSION
 	end
 }
+
+
+local function make_POV_column(name, sign)
+	local res = {
+		name = name, 
+		width = 40, 
+		align = 'c',
+		text = function(row)
+			local mark = work_marks_list[row]
+			local s = {[0] = "нет", [1] = "Да", [2] = "Отп."}
+			return mark.ext[sign] and s[mark.ext[sign]] or ''
+		end,
+		sorter = function(mark)
+			return mark.ext.sign
+		end
+	}
+	return res
+end
+
+column_pov_operator = make_POV_column('Oпр.', 'POV_OPERATOR')
+column_pov_ekasui = make_POV_column('ЕКАСУИ', 'POV_EAKSUI')
+column_pov_report = make_POV_column('Отч.', 'POV_REPORT')
+column_pov_rejected = make_POV_column('Отвр.', 'POV_REJECTED')
+
+local pov_names = {"POV_OPERATOR", "POV_EAKSUI", "POV_REPORT", "POV_REJECTED"}
+
+column_pov_common = 
+{
+	name = 'ПОВ', 
+	width = 40, 
+	align = 'c',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local res = ''
+		for i, sign in ipairs(pov_names) do
+			res = res .. (mark.ext[sign] or '.')
+		end
+		return res
+	end,
+	sorter = function(mark)
+		return 0
+	end
+}

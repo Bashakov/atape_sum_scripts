@@ -45,6 +45,11 @@ local filters =
 			column_rail,
 			column_user_code_ekasui,
 			column_user_name, 
+			column_pov_common,
+			column_pov_operator,
+			column_pov_ekasui,
+			column_pov_report,
+			column_pov_rejected,
 		}, 
 		GUIDS = {
 			"{3601038C-A561-46BB-8B0F-F896C2130001}",

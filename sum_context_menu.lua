@@ -187,7 +187,8 @@ local function accept_pov(obj)
 		sumPOV.EditMarks(obj.mark, true)
 	end
 	if obj.method == 4 then -- Отвергнуть дефектность
-		sumPOV.RejectDefects(obj.mark, true)
+		local state = sumPOV.IsRejectDefect(obj.mark)
+		sumPOV.RejectDefects(obj.mark, true, not state)
 	end
 	return RETURN_STATUS.UPDATE_MARK
 end
@@ -249,18 +250,25 @@ function GetMenuItems(mark)
 		table.insert(menu_items, {name='Конвертировать в|Подтвр. НПУ',  fn=npu_convert, mark=mark, guid="{19FF08BB-C344-495B-82ED-10B6CBAD5090}"})
 		table.insert(menu_items, {name='Конвертировать в|БС. НПУ',      fn=npu_convert, mark=mark, guid="{19FF08BB-C344-495B-82ED-10B6CBAD5091}"})
 	end
-	
-	table.insert(menu_items, '')
-	table.insert(menu_items, {name='Устанавливка состояние флагов ПОВ', fn=sumPOV.ShowSettings}) --  (д.б. открыт нужный видеокомпонент)
 	table.insert(menu_items, {name='Сформировать выходную форму видеофиксации', fn=videogram_mark, mark=mark}) --  (д.б. открыт нужный видеокомпонент)
 	table.insert(menu_items, {name='Удалить отметку', fn=remove_mark, mark=mark})
+	
+	table.insert(menu_items, '')
+	table.insert(menu_items, {name='Сценарий: ' .. sumPOV.GetCurrentSettingsDescription(', '), GRAYED=true}) 
+	table.insert(menu_items, {name='Настройка сценария установки ПОВ', fn=sumPOV.ShowSettings}) 
+	
 	table.insert(menu_items, '')
 	-- 4.2.1.4 Редактирование свойств отметки распознавания
-	table.insert(menu_items, {name='Подтверждать в ЕКАСУИ', fn=accept_pov, mark=mark, method=0, CHECKED=sumPOV.IsAcceptEKASUI(mark)})
-	table.insert(menu_items, {name='Подтвердить', fn=accept_pov, mark=mark, method=1})
-	table.insert(menu_items, {name='Подтвердить*', fn=accept_pov, mark=mark, method=2})
-	table.insert(menu_items, {name='Ввести пользовательский', fn=accept_pov, mark=mark, method=3})
-	table.insert(menu_items, {name='Отвергнуть дефектность', fn=accept_pov, mark=mark, method=4})
+	table.insert(menu_items, {name='Отметка: ' .. sumPOV.GetMarkDescription(mark, ', '), GRAYED=true}) 
+	--table.insert(menu_items, {name='Подтверждать в ЕКАСУИ', fn=accept_pov, mark=mark, method=0, CHECKED=sumPOV.IsAcceptEKASUI(mark)})
+	table.insert(menu_items, {name='Подтвердить отметку', fn=accept_pov, mark=mark, method=1})
+	--table.insert(menu_items, {name='Подтвердить*', fn=accept_pov, mark=mark, method=2})
+	table.insert(menu_items, {name='Подтвердить отметку не по сценарию установки', fn=accept_pov, mark=mark, method=3})
+	if sumPOV.IsRejectDefect(mark) then
+		table.insert(menu_items, {name='Вернуть дефектность', fn=accept_pov, mark=mark, method=4})
+	else
+		table.insert(menu_items, {name='Отвергнуть дефектность (без удаления отметки)', fn=accept_pov, mark=mark, method=4})
+	end
 	
 	return menu_items
 end
