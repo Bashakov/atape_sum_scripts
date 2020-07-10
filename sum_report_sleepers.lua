@@ -260,7 +260,7 @@ local function make_report_generator(...)
 		for _, fn_gen in ipairs(row_generators) do
 			local cur_rows = fn_gen(marks, dlgProgress)
 			if not cur_rows then
-				return
+				break
 			end
 			for _, row in ipairs(cur_rows) do
 				table.insert(report_rows, row)
@@ -272,6 +272,7 @@ local function make_report_generator(...)
 			return c
 		end)
 		SaveAndShow(report_rows, dlgProgress)
+		dlgProgress:Destroy()
 	end
 	
 	return gen

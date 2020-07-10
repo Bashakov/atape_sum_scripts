@@ -192,7 +192,7 @@ local function make_ekasui_generator(getMarks, ...)
 		for _, fn_gen in ipairs(row_generators) do
 			local cur_rows = fn_gen(marks, dlgProgress)
 			if not cur_rows then 
-				return
+				break
 			end
 			for _, row in ipairs(cur_rows) do
 				table.insert(report_rows, row)
@@ -238,6 +238,7 @@ local function make_ekasui_generator(getMarks, ...)
 			local path = export_ekasui_xml(n, group, export_id, pghlp, pathType )
 			str_msg = str_msg .. sprintf('\n%d отметок в файл: %s', #group, path)
 		end
+		dlgProgress:Destroy()
 		iup.Message(title, str_msg)
 	end
 	

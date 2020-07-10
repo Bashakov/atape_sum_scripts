@@ -50,7 +50,7 @@ local function make_report_generator(getMarks, report_template_name, sheet_name,
 		for _, fn_gen in ipairs(row_generators) do
 			local cur_rows = fn_gen(marks, dlgProgress)
 			if not cur_rows then 
-				return
+				break
 			end
 			for _, row in ipairs(cur_rows) do
 				table.insert(report_rows, row)
@@ -63,6 +63,7 @@ local function make_report_generator(getMarks, report_template_name, sheet_name,
 		end)
 	
 		SaveAndShow(report_rows, dlgProgress, report_template_name, sheet_name)
+		dlgProgress:Destroy()
 	end
 	
 	return gen
