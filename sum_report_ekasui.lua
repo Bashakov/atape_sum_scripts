@@ -7,6 +7,7 @@ local OOP = require 'OOP'
 local stuff = require 'stuff'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
+require "ExitScope"
 
 -- ========================================
 
@@ -180,13 +181,15 @@ local function make_ekasui_generator(getMarks, ...)
 	local title = 'Выгрузка ЕКАСУИ'
 	
 	function gen()
+		EnterScope(function(defer)
 		if not EKASUI_PARAMS then 
 			iup.Message(title, "Конфигурация ЕКАСУИ не обнаружена")
 			return
 		end
 
-		local dlgProgress = luaiup_helper.ProgressDlg()
 		local marks = getMarks()
+		local dlgProgress = luaiup_helper.ProgressDlg()
+		defer(dlgProgress.Destroy, dlgProgress)
 		
 		local report_rows = {}
 		for _, fn_gen in ipairs(row_generators) do
@@ -238,8 +241,8 @@ local function make_ekasui_generator(getMarks, ...)
 			local path = export_ekasui_xml(n, group, export_id, pghlp, pathType )
 			str_msg = str_msg .. sprintf('\n%d отметок в файл: %s', #group, path)
 		end
-		dlgProgress:Destroy()
 		iup.Message(title, str_msg)
+		end)
 	end
 	
 	return gen

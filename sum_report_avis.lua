@@ -43,8 +43,8 @@ local function make_report_generator(getMarks, report_template_name, sheet_name,
 	local row_generators = {...}
 		
 	function gen()
-		local dlgProgress = luaiup_helper.ProgressDlg()
 		local marks = getMarks()
+		local dlgProgress = luaiup_helper.ProgressDlg()
 		
 		local report_rows = {}
 		for _, fn_gen in ipairs(row_generators) do
