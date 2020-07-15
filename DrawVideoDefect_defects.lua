@@ -84,7 +84,7 @@ local DEFECTS =
 		name = "UIC_2251", 
 		tools = {DRAW_TOOL.uic}, 
 		fn = make_recog_mark, 
-		action_result = 'Surface_SLEEPAGE_SKID_UIC_2251', 
+		action_result = 'Surface_SLEEPAGE_SKID_UIC_2251_USER', 
 		guid = '{41486CAC-EBE9-46FF-ACCA-041AFAFFC531}'
 	},
 	{
@@ -92,7 +92,7 @@ local DEFECTS =
 		name = "UIC_2252", 
 		tools = {DRAW_TOOL.uic},
 		fn = make_recog_mark, 
-		action_result = 'Surface_SLEEPAGE_SKID_UIC_2252', 
+		action_result = 'Surface_SLEEPAGE_SKID_UIC_2252_USER', 
 		guid = '{3401C5E7-7E98-4B4F-A364-701C959AFE99}'
 	},
 	{
@@ -100,7 +100,7 @@ local DEFECTS =
 		name = "UIC_227",  
 		tools = {DRAW_TOOL.uic}, 
 		fn = make_recog_mark, 
-		action_result = 'Surface_SQUAT_UIC_227',          
+		action_result = 'Surface_SQUAT_UIC_227_USER',          
 		guid = '{13A7906C-BBFB-4EB3-86FA-FA74B77F5F35}'
 	},
 	
