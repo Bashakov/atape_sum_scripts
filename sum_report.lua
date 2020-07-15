@@ -25,6 +25,9 @@ local sprintf = stuff.sprintf
 local printf = stuff.printf
 local errorf = stuff.errorf
 
+local get_rail_name = mark_helper.GetRailName
+make_mark_uri = mark_helper.MakeMarkUri
+
 if not ShowVideo then
 	ShowVideo = 1
 end
@@ -43,14 +46,6 @@ local gap_rep_filter_guids =
 local fastener_guids = {
 	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"
 }
-
-local switch_guids = {
-	"{19253263-2C0B-41EE-8EAA-000000100000}",
-	"{19253263-2C0B-41EE-8EAA-000000200000}",
-	"{19253263-2C0B-41EE-8EAA-000000400000}",
-	"{19253263-2C0B-41EE-8EAA-000000800000}",
-}
-
 
 local beacon_rep_filter_guids = 
 {
@@ -79,15 +74,6 @@ local REPORT_BOLTS_IDs =
 }
 
 -- ========================================================= 
-
--- сделать строку ссылку для открытия атейпа на данной отметке
-local function make_mark_uri(markid)
-	local link = stuff.sprintf(" -g %s -mark %d", Passport.GUID, markid)
-	link = string.gsub(link, "[%s{}]", function (c)
-			return string.format("%%%02X", string.byte(c))
-		end)
-	return "atape:" .. link
-end
 
 -- фильтрация и сортировка отметок
 local function FilterSort(marks, fnFilter, fnCmpKey, cbProgress)
@@ -227,54 +213,13 @@ local function get_nominal_gape_width(rail_len, temperature)
 	end
 end
 
--- построить изображение для данной отметки
-local function make_mark_image(mark, video_channel, show_range, base64)
-	local img_path
-	
-	if ShowVideo ~= 0 then
-		local prop = mark.prop
-		
-		if not video_channel then
-			local recog_video_channels = mark_helper.GetSelectedBits(prop.ChannelMask)
-			video_channel = recog_video_channels and recog_video_channels[1]
-		end
 
-		local panoram_width = 1500
-		local width = 400
-		local mark_id = (ShowVideo == 1) and prop.ID or 0
-		
-		if show_range then
-			panoram_width = show_range[2] - show_range[1]
-			width = panoram_width / 10
-			if ShowVideo == 1 then
-				mark_id = -1
-			end
-		end
-		
-		if video_channel then
-			local img_prop = {
-				mark_id = mark_id,
-				mode = 3,  -- panoram
-				panoram_width = panoram_width, 
-				-- frame_count = 3, 
-				width = width, 
-				height = 300,
-				base64=base64
-			}
-			
-			--print(prop.ID, prop.SysCoord, prop.Guid, video_channel)
-			local coord = show_range and (show_range[1] + show_range[2])/2 or prop.SysCoord
-			img_path = Driver:GetFrame(video_channel, coord, img_prop)
-		end
-	end
-	return img_path
-end
 
 -- сгенерировать и вставить картинку в отчет
 local function insert_frame(excel, data_range, mark, row, col, video_channel, show_range)
 	local img_path
 	local ok, msg = pcall(function ()
-			img_path = make_mark_image(mark, video_channel, show_range, false)
+			img_path = mark_helper.MakeMarkImage(mark, video_channel, show_range, false)
 		end)
 	if not ok then
 		data_range.Cells(row, col).Value2 = msg and #msg and msg or 'Error'
@@ -287,26 +232,12 @@ end
 local function make_video_frame_base64(mark)
 	local image_data
 	local ok, msg = pcall(function ()
-			image_data = make_mark_image(mark, nil, nil, true)
+			image_data = mark_helper.MakeMarkImage(mark, nil, nil, true)
 		end)
 	if not ok then
 		image_data = msg and #msg and msg or 'Error'
 	end
 	return image_data
-end
-
-function get_rail_name(mark)
-	local mark_rail = mark
-	if type(mark_rail) == 'table' or type(mark_rail) == 'userdata' then
-		mark_rail = mark.prop.RailMask
-	elseif type(mark_rail) == 'number' then
-		-- ok
-	else
-		errorf('type of mark must be number or Mark(table), got %s', type(mark))
-	end
-	
-	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
-	return bit32.btest(mark_rail, right_rail_mask) and "Правый" or "Левый"
 end
 
 -- шаблон xml с выводом в одну колонку
@@ -619,7 +550,6 @@ local function report_crew_join(params)
 				local count, defect = mark_helper.GetCrewJointCount(mark)
 				
 				local res = {
-					--{name='uri', value=make_mark_uri(prop.ID), desc='показать отметку в ATape'},
 					{name='ID', value=prop.ID, desc='Mark ID'},
 					{name='KM', value=km},
 					{name='M', value=sprintf("%.02f", m + mm/1000)},
@@ -830,7 +760,6 @@ local function report_gaps(params)
 				
 		
 				local res = {
-					--{name='uri', value=make_mark_uri(prop.ID), desc='показать отметку в ATape'},
 					{name='ID', value=prop.ID, desc='Mark ID'},
 					{name='KM', value=km},
 					{name='M', value=sprintf("%.02f", m + mm/1000)},
@@ -1236,134 +1165,6 @@ local function report_recog_joint_step(params)
 	excel:SaveAndShow()
 end
 
--- ищет короткие рельсы, возвращает массив пар отметок, ограничивающих врезку
-local function scan_for_short_rail(marks, min_length)
-	local res = {}
-	local prev_mark = {}
-	
-	for _, mark in ipairs(marks) do
-		local rail = bit32.band(mark.prop.RailMask)
-		local coord = mark.prop.SysCoord
-		if prev_mark[rail] and coord - prev_mark[rail].coord < min_length then
-			table.insert(res, {prev_mark[rail].mark, mark})
-		end
-		prev_mark[rail] = {coord=coord, mark=mark}
-	end
-	return res
-end
-
--- найти все стрелки
-local function scan_for_rr_switch()
-	local marks = Driver:GetMarks{ListType='all', GUIDS=switch_guids}
-	local res = {}
-	for i = 1, #marks do
-		local mark = marks[i]
-		local prop = mark.prop
-		res[#res+1] = {from=prop.SysCoord, to=prop.SysCoord + prop.Len, id=prop.ID}
-	end
-	printf('found %d switches', #res)
-	return res
-end
-
--- проверить что координата находится в стрелке
-local function is_inside_switch(switches, coords)
-	for _, switch in ipairs(switches) do
-		local inside = true
-		for _, c in ipairs(coords) do
-			if c < switch.from or switch.to < c then
-				inside = false
-				break
-			end
-		end
-		if inside then
-			return switch.id
-		end
-	end
-	return nil
-end
-	
-
--- отчет по коротким стыкам
-local function report_short_rails(params)
-	local ok, min_length = iup.GetParam(params.sheetname, nil, "Верхний порог длины рельса (м): %i\n", 30 )
-	if not ok then	
-		return
-	end
-
-	-- вычислить длинну рельса между двума сытками с учетом ширины зазора
-	local function get_rail_len(mark1, mark2)
-		local l = math.abs(mark2.prop.SysCoord - mark1.prop.SysCoord)
-		local w1 = mark_helper.GetGapWidth(mark1) or 0
-		local w2 = mark_helper.GetGapWidth(mark2) or 0
-		return l - (w1 + w2) / 2
-	end
-		
-
-	local function filter_type_fn(mark)
-		return table_find(gap_rep_filter_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
-	end
-	
-	local dlg = luaiup_helper.ProgressDlg()
-	local marks = Driver:GetMarks()
-	
-	marks = mark_helper.filter_marks(marks, filter_type_fn, make_filter_progress_fn(dlg))
-	marks = sort_mark_by_coord(marks)
-
-	local short_rails = scan_for_short_rail(marks, min_length*1000)
-
-	if #short_rails == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-	local rr_switchs = scan_for_rr_switch()
-	
-	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
-	excel:ApplyPassportValues(Passport)
-	local data_range = excel:CloneTemplateRow(#short_rails)
-
-	assert(#short_rails == data_range.Rows.count, 'misamtch count of mark and table rows')
-
-	for line, mark_pair in ipairs(short_rails) do
-		local mark1, mark2 = table.unpack(mark_pair)
-		local prop1, prop2 = mark1.prop, mark2.prop
-		local km1, m1, mm1 = Driver:GetPathCoord(prop1.SysCoord)
-		local km2, m2, mm2 = Driver:GetPathCoord(prop2.SysCoord)
-		local switch_id = is_inside_switch(rr_switchs, {prop1.SysCoord, prop2.SysCoord})
-		
-		local uri = make_mark_uri(prop1.ID)
-		local text_pos = sprintf("%d km %.1f = %d km %.1f", km1, m1 + mm1/1000, km2, m2 + mm2/1000)
-		excel:InsertLink(data_range.Cells(line, 1), uri, text_pos)
-		--data_range.Cells(line, 2).Value2 = sprintf("%.1f", (prop2.SysCoord - prop1.SysCoord) / 1000)
-		data_range.Cells(line, 2).Value2 = sprintf("%.3f", get_rail_len(mark1, mark2) / 1000)
-		data_range.Cells(line, 3).Value2 = get_rail_name(mark1)
-		if switch_id then
-			local switch_uri = make_mark_uri(switch_id)
-			excel:InsertLink(data_range.Cells(line, 4), switch_uri, "Да")
-		end
-		
-		
-		
-		local temperature = Driver:GetTemperature(bit32.band(prop1.RailMask, 3)-1, (prop1.SysCoord+prop2.SysCoord)/2 )
-        local temperature_msg = temperature and sprintf("%.1f", temperature.target) or '-'
-		data_range.Cells(line, 5).Value2 = temperature_msg:gsub('%.', ',')
-		
-		if math.abs(prop1.SysCoord - prop2.SysCoord) < 30000 then
-			insert_frame(excel, data_range, mark1, line, 6, nil, {prop1.SysCoord-500, prop2.SysCoord+500})
-		end
-		
-		if not dlg:step(line / #short_rails, stuff.sprintf(' Out %d / %d line', line, #short_rails)) then 
-			break
-		end
-	end 
-
-	if ShowVideo == 0 then 
-		excel:AutoFitDataRows()
-		data_range.Cells(5).ColumnWidth = 0
-	end
-	
-	excel:SaveAndShow()
-end
-
 
 -- отчет по неспецифицированным объектам
 local function report_surface_defects(params)
@@ -1473,8 +1274,7 @@ local cur_file_reports = {
 	--{name="Ведомость Стыковых зазоров"       , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
 	--{name="Ведомость Болтовых стыков"        , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },	
 	------------------------------------------
-
-	{name="Короткие рубки"         , fn=report_short_rails     , params={ filename=ProcessSumFile, sheetname="Рубки"                   }, guids=gap_rep_filter_guids   },	
+	--{name="Короткие рубки"         , fn=report_short_rails     , params={ filename=ProcessSumFile, sheetname="Рубки"                   }, guids=gap_rep_filter_guids   },	
 	{name="Скрепления"             , fn=report_fasteners       , params={ filename=ProcessSumFile, sheetname="Ведомость Скреплений"    }, guids=fastener_guids         },
 	{name="Горизонтальные уступы" , fn=report_recog_joint_step, params={ filename=ProcessSumFile, sheetname="Горизонтальные ступеньки"}, guids=gap_rep_filter_guids   },
 	{name="Поверхностные дефекты" , fn=report_surface_defects , params={ filename=ProcessSumFile, sheetname="Поверхн. дефекты"        }, guids=surface_defects_guids  }, 
@@ -1495,6 +1295,9 @@ if not HUN then
 		table.insert(Report_Functions, report)
 	end
 
+	local report_rubki = require 'sum_report_rubki'
+	report_rubki.AppendReports(Report_Functions)
+	
 	local report_npu = require 'sum_report_npu'
 	report_npu.AppendReports(Report_Functions)
 	

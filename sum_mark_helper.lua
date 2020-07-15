@@ -210,7 +210,7 @@ local function SelectWidthFromChannelsWidths(channel_widths, mark)
 		-- а потом хоть какой нибудь
 		for n, width in pairs(channel_widths) do
 			if n == 0 and mark then
-				n = mark_helper.GetSelectedBits(mark.prop.ChannelMask)
+				n = GetSelectedBits(mark.prop.ChannelMask)
 				n = n and n[1]
 				return width, n
 			end
@@ -813,6 +813,25 @@ local function sort_mark_by_coord(marks)
 	end)
 end
 
+-- вычислить назание рельса по отметке
+local function GetRailName(mark)
+	local mark_rail = mark
+	if type(mark_rail) == 'table' or type(mark_rail) == 'userdata' then
+		mark_rail = mark.prop.RailMask
+	elseif type(mark_rail) == 'number' then
+		-- ok
+	else
+		errorf('type of mark must be number or Mark(table), got %s', type(mark))
+	end
+	
+	if bit32.btest(mark_rail, 0x03) then
+		return "Оба" 
+	end
+	
+	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
+	return bit32.btest(mark_rail, right_rail_mask) and "Правый" or "Левый"
+end
+
 -- определяет рельсовое расположение отметки. возвращает: -1 = левый, 0 = оба, 1 = правый
 local function GetMarkRailPos(mark)
 	local rail_mask = bit32.band(mark.prop.RailMask, 0x3)
@@ -927,6 +946,58 @@ local function GetExtPassport(psp)
 	return _ext_passport_table
 end
 
+-- построить изображение для данной отметки
+local function MakeMarkImage(mark, video_channel, show_range, base64)
+	local img_path
+	
+	if ShowVideo ~= 0 then
+		local prop = mark.prop
+		
+		if not video_channel then
+			local recog_video_channels = GetSelectedBits(prop.ChannelMask)
+			video_channel = recog_video_channels and recog_video_channels[1]
+		end
+
+		local panoram_width = 1500
+		local width = 400
+		local mark_id = (ShowVideo == 1) and prop.ID or 0
+		
+		if show_range then
+			panoram_width = show_range[2] - show_range[1]
+			width = panoram_width / 10
+			if ShowVideo == 1 then
+				mark_id = -1
+			end
+		end
+		
+		if video_channel then
+			local img_prop = {
+				mark_id = mark_id,
+				mode = 3,  -- panoram
+				panoram_width = panoram_width, 
+				-- frame_count = 3, 
+				width = width, 
+				height = 300,
+				base64=base64
+			}
+			
+			--print(prop.ID, prop.SysCoord, prop.Guid, video_channel)
+			local coord = show_range and (show_range[1] + show_range[2])/2 or prop.SysCoord
+			img_path = Driver:GetFrame(video_channel, coord, img_prop)
+		end
+	end
+	return img_path
+end
+
+-- сделать строку ссылку для открытия атейпа на данной отметке
+function MakeMarkUri(markid)
+	local link = stuff.sprintf(" -g %s -mark %d", Passport.GUID, markid)
+	link = string.gsub(link, "[%s{}]", function (c)
+			return string.format("%%%02X", string.byte(c))
+		end)
+	return "atape:" .. link
+end
+
 -- =================== ЭКПОРТ ===================
 
 
@@ -952,6 +1023,7 @@ return{
 	sort_mark_by_coord = sort_mark_by_coord,
 	format_path_coord = format_path_coord,
 	GetMarkRailPos = GetMarkRailPos,
+	GetRailName = GetRailName,
 	MakeCommonMarkTemaple = MakeCommonMarkTemplate,
 	MakeCommonMarkTemplate = MakeCommonMarkTemplate,
 	GetTemperature = GetTemperature,
@@ -984,4 +1056,7 @@ return{
 	GetSleeperParam = GetSleeperParam,
 	GetSleeperAngle = GetSleeperAngle,
 	GetSleeperMeterial = GetSleeperMeterial,
+	
+	MakeMarkImage = MakeMarkImage,
+	MakeMarkUri = MakeMarkUri,
 }

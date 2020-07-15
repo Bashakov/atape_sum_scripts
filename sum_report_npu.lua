@@ -23,16 +23,6 @@ local NPU_guids_uzk = {
 }
 
 
--- ============================================================================= 
-
--- сделать строку ссылку для открытия атейпа на данной отметке
-local function make_mark_uri(markid)
-	local link = stuff.sprintf(" -g %s -mark %d", Passport.GUID, markid)
-	link = string.gsub(link, "[%s{}]", function (c)
-			return string.format("%%%02X", string.byte(c))
-		end)
-	return "atape:" .. link
-end
 
 -- ============================================================================= 
 
@@ -81,7 +71,7 @@ local function report_NPU(params)
 			km1, m1, mm1, km2, m2, mm2 = km2, m2, mm2, km1, m1, mm1
 		end
 		
-		local uri = make_mark_uri(prop.ID)
+		local uri = mark_helper.MakeMarkUri(prop.ID)
 --		excel:InsertLink(data_range.Cells(line, 2), uri, tonumber(line))
 	
 	

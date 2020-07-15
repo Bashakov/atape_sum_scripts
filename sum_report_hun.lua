@@ -5,6 +5,8 @@ local mark_helper = require 'sum_mark_helper'
 local excel_helper = require 'excel_helper'
 local luaiup_helper = require 'luaiup_helper'
 
+make_mark_uri = mark_helper.MakeMarkUri
+
 -- ======================================
 
 local video_hun_juids = 
@@ -44,24 +46,6 @@ if not xmlDom then
 end
 
 
--- сделать строку ссылку для открытия атейпа на данной отметке
-local function make_mark_uri(markid)
-	local link = stuff.sprintf(" -g %s -mark %d", Passport.GUID, markid)
-	link = string.gsub(link, "[%s{}]", function (c)
-			return string.format("%%%02X", string.byte(c))
-		end)
-	return "atape:" .. link
-end
-
---local function getReability(mark)
---	local xmlStr = mark and mark.ext.RAWXMLDATA
---	if xmlStr and xmlDom:loadXML(xmlStr) then
---		local nodeReliability = xmlDom:selectSingleNode('/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Common"]/PARAM[@name="Reliability"]/@value')
---		if nodeReliability then
---			return tonumber(nodeReliability.nodeValue)
---		end
---	end
---end
 
 local function separate_mark_by_user_set(all_marks)
 	local manual_marks, auto_marks = {}, {}
@@ -105,48 +89,6 @@ local ManualMarks = OOP.class
 	end,
 }
 
--- построить изображение для данной отметки
-local function make_mark_image(mark, video_channel, show_range, base64)
-	local img_path
-	
-	if ShowVideo ~= 0 then
-		local prop = mark.prop
-		
-		if not video_channel then
-			local recog_video_channels = mark_helper.GetSelectedBits(prop.ChannelMask)
-			video_channel = recog_video_channels and recog_video_channels[1]
-		end
-
-		local panoram_width = 1500
-		local width = 400
-		local mark_id = (ShowVideo == 1) and prop.ID or 0
-		
-		if show_range then
-			panoram_width = show_range[2] - show_range[1]
-			width = panoram_width / 10
-			if ShowVideo == 1 then
-				mark_id = -1
-			end
-		end
-		
-		if video_channel then
-			local img_prop = {
-				mark_id = mark_id,
-				mode = 3,  -- panoram
-				panoram_width = panoram_width, 
-				-- frame_count = 3, 
-				width = width, 
-				height = 300,
-				base64=base64
-			}
-			
-			--print(prop.ID, prop.SysCoord, prop.Guid, video_channel)
-			local coord = show_range and (show_range[1] + show_range[2])/2 or prop.SysCoord
-			img_path = Driver:GetFrame(video_channel, coord, img_prop)
-		end
-	end
-	return img_path
-end
 
 -- получить список номеров видео каналов по данных XML
 local function getVideoChannel(mark)
@@ -170,7 +112,7 @@ end
 local function insert_frame(excel, cell, mark, video_channel)
 	local img_path
 	local ok, msg = pcall(function ()
-			img_path = make_mark_image(mark, video_channel)
+			img_path = mark_helper.MakeMarkImage(mark, video_channel)
 		end)
 	if not ok then
 		cell.Value2 = msg and #msg and msg or 'Error'
