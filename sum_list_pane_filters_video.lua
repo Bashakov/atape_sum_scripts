@@ -18,6 +18,7 @@ local filters =
 			column_recogn_bolt,
 			column_recogn_video_channel,
 			column_user_accept,
+			column_pov_common,
 			}, 
 		GUIDS = recognition_guids,
 	},

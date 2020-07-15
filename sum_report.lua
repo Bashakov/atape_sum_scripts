@@ -80,12 +80,6 @@ local REPORT_BOLTS_IDs =
 
 -- ========================================================= 
 
-local function MakePovFilter(ekasui)
-	local mode = ekasui and 'ekasui' or 'vedomost'
-	local tip =  ekasui and 'ЕКАСУИ' or 'Ведомость'
-	return sumPOV.MakeReportFilter(mode, tip)
-end
-
 -- сделать строку ссылку для открытия атейпа на данной отметке
 local function make_mark_uri(markid)
 	local link = stuff.sprintf(" -g %s -mark %d", Passport.GUID, markid)
@@ -663,7 +657,7 @@ end
 
 -- отчет Ведомость Зазоров
 local function report_gaps(params)
-	local pov_fltr = MakePovFilter(params.eksui)
+	local pov_fltr = sumPOV.MakeReportFilter(params.eksui)
 	if not pov_fltr then return end
 	
 	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
@@ -722,6 +716,7 @@ local function report_gaps(params)
 
 	local mark_pairs = BuildMarkPairs(marks, 500)
 	if #mark_pairs == 0 then
+		dlg:Destroy()
 		iup.Message('Info', "Подходящих отметок не найдено")
 		return
 	end

@@ -48,28 +48,20 @@ local function get_user_filter_surface()
 end
 
 
-local function GetMarks()
+local function GetMarks(ekasui)
+	local pov_filter = sumPOV.MakeReportFilter(ekasui)
+	if not pov_filter then return {} end
 	local marks = Driver:GetMarks{GUIDS=filter_juids}
+	marks = pov_filter(marks)
 	marks = mark_helper.sort_mark_by_coord(marks)
 	return marks
 end
-
-local ekasui = false
-
-local function MakePovFilter()
-	local mode = ekasui and 'ekasui' or 'vedomost'
-	local tip =  ekasui and 'ЕКАСУИ' or 'Ведомость'
-	return sumPOV.MakeReportFilter(mode, tip)
-end
-
 
 -- ============================================================================= 
 
 
 local function generate_rows_rails(marks, dlgProgress)
-	local sum_filter = MakePovFilter()
-	if not sum_filter then return end
-	
+	if #marks == 0 then return end
 	local user_area, user_width, user_lenght = get_user_filter_surface()
 	if not user_area then
 		return
@@ -77,7 +69,7 @@ local function generate_rows_rails(marks, dlgProgress)
 	
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
-		if table_find(guid_surface_defects, mark.prop.Guid) and mark.ext.RAWXMLDATA and sum_filter(mark) then
+		if table_find(guid_surface_defects, mark.prop.Guid) and mark.ext.RAWXMLDATA then
 			local surf_prm = mark_helper.GetSurfDefectPrm(mark)
 			if surf_prm then
 			
@@ -117,19 +109,17 @@ end
 local function make_report_generator(...)
 	local report_template_name = 'ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ РЕЛЬСОВ.xlsm'
 	local sheet_name = 'В4 РЛС'
-	ekasui = false
-	return AVIS_REPORT.make_report_generator(GetMarks, 
+	return AVIS_REPORT.make_report_generator(function() return GetMarks(false) end, 
 		report_template_name, sheet_name, ...)
 end
 
 local function make_report_ekasui(...)
-	ekasui = true
-	return EKASUI_REPORT.make_ekasui_generator(GetMarks, ...)
+	return EKASUI_REPORT.make_ekasui_generator(function() return GetMarks(true) end, ...)
 end	
 
 local function make_report_videogram(...)
 	local row_generators = {...}
-		
+
 	function gen(mark)
 		local report_rows = {}
 		if mark and mark_helper.table_find(guid_surface_defects, mark.prop.Guid) then
@@ -175,7 +165,7 @@ end
 if not ATAPE then
 
 	test_report  = require('test_report')
-	test_report('D:\\ATapeXP\\Main\\494\\hi\\2019_03_05\\Avikon-03M\\10352\\[494]_2018_09_27_01.xml')
+	test_report('D:\\ATapeXP\\Main\\494\\video\\[494]_2017_06_08_12.xml')
 	
 	report_rails()
 	--ekasui_rails()

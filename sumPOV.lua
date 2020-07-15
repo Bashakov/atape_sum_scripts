@@ -7,47 +7,36 @@ end
 
 
 local reg_path = "Software\\Radioavionika\\SumPOV\\"
-local HKEY_POV_edit = hkey.HKEY_CURRENT_USER:create(reg_path .. "edit") -- хранение свойств отметок редактирования
 
-local PARAMETERS = 
+
+local NAMES = 
 {
-	{	
-		sign = "POV_OPERATOR",
-		variants = {"Нет", "Да"},
-		dialog = "Подтверждено оператором",
-		desc = "Оператор",
-	},{	
-		sign = "POV_EAKSUI",
-		variants = {"Нет", "Подготовлено", "Отправлено"},
-		dialog = "Отметки для отправки в ЕКАСУИ",
-		desc = "ЕКАСУИ",
-	},{	
-		sign = "POV_REPORT",
-		variants = {"Нет", "Да"},
-		dialog = "Отметки для формирования отчетов",
-		desc = "Отчеты",
-	},{	
-		sign = "POV_REJECTED",
-		variants = {"Нет", "Да"},
-		dialog = "Отвергнутые",
-		desc = "Отвергнутые",
-	}
+	"POV_OPERATOR",
+	"POV_EAKSUI",
+	"POV_REPORT",
+	"POV_REJECTED",
 }
 
 -- ==============================================================
 
--- прочитаем значения из реестра
-local function read_reg()
+
+--[[ прочитаем значения из реестра 
+возвращает таблицу имя-значение ]]
+local function read_pov_flags()
+	--[[ https://bt.abisoft.spb.ru/view.php?id=592#c2403
+		1.Настройка состояния флагов ПОВ -> Настройка сценария установки ПОВ
+		POV_REJECTED - не нужно использовать в настройки сценарии установки ПОВ. ]]
+	
+	local reg = hkey.HKEY_CURRENT_USER:create(reg_path .. "edit") -- хранение свойств отметок редактирования
+	local names = {"POV_OPERATOR", "POV_EAKSUI", "POV_REPORT"}
+	local def = {1, 1, 1}
+	
 	local values = {}
-	for i, item in ipairs(PARAMETERS) do
-		local value = HKEY_POV_edit:queryvalue(item.sign)
-		if value and type(value) == 'number' and item.sign ~= "POV_REJECTED" then
-			values[i] = tonumber(value)
-		else
-			values[i] = 0
-		end
+	for i, name in ipairs(names) do
+		local value = reg:queryvalue(name)
+		values[name] = (value and type(value) == 'number') and tonumber(value) or def[i] or 0
 	end
-	return values
+	return values, reg
 end
 
 -- сортировка списка отметок по ID
@@ -69,25 +58,7 @@ end
 
 
 
-local function show_settings(values, title, hide_POV_REJECTED)
-	local fmt = ''
-	for _, item in ipairs(PARAMETERS) do
-		if not (hide_POV_REJECTED and item.sign == "POV_REJECTED") then
-			fmt = fmt .. string.format("%s: %%o|%s|\n", item.dialog, table.concat(item.variants, "|"))
-		end
-	end
-	
-	-- запрос у пользователя
-	local res = {iup.GetParam(title, nil, fmt, table.unpack(values))}
-	
-	if table.remove(res, 1) then -- pop first element
-		local sign2res = {}
-		for i, r in ipairs(res) do
-			sign2res[PARAMETERS[i].sign] = r
-		end
-		return sign2res
-	end
-end
+
 
 
 -- ========================= EXPORT =============================
@@ -96,103 +67,116 @@ end
 вызывается из программы или из скрипта 
 ]]
 function ShowSettings()
-	local values = read_reg() 	-- прочитаем значения из реестра
+	--[[ https://bt.abisoft.spb.ru/view.php?id=592#c2403
+		1.Настройка состояния флагов ПОВ -> Настройка сценария установки ПОВ
+		POV_REJECTED - не нужно использовать в настройки сценарии установки ПОВ. ]]
+		
+	local values, reg = read_pov_flags() 	-- прочитаем значения из реестра
 
 	local title = "Настройка подтверждающих отметок видеораспознавания"
-	local sign2res = show_settings(values, title, true) -- запрос у пользователя
-	if sign2res then
-		for sign, val in pairs(sign2res) do
-			HKEY_POV_edit:setvalue(sign, val)
-		end
+	local fmt = "\z
+		Подтверждено оператором: %o|Нет|Да|\n\z
+		Отметки для отправки в ЕКАСУИ: %o|Нет|Подготовлено|Отправлено|\n\z
+		Отметки для формирования отчетов: %o|Нет|Да|\n"
+
+	local ok, operator, ekasui, report = iup.GetParam(title, nil, fmt, values.POV_OPERATOR, values.POV_EAKSUI, values.POV_REPORT)
+	
+	if ok then -- pop first element
+		reg:setvalue('POV_OPERATOR', operator)
+		reg:setvalue('POV_EAKSUI', ekasui)
+		reg:setvalue('POV_REPORT', report)
 		return true
 	end
 end
 
 -- сформировать описание текущих настроек
-function GetCurrentSettingsDescription(sep)
-	
-	local values = read_reg() 	-- прочитаем значения из реестра
+function GetShortCurPOVDesc(sep)
+	local values = read_pov_flags() 	-- прочитаем значения из реестра
 	local res = {}
 	
-	for i, item in ipairs(PARAMETERS) do
-		if item.sign ~= "POV_REJECTED" then
-			local val = values[i]
-			local t = '??'
-			if 0 <= val and val < #(item.variants) then
-				t = item.variants[val+1]
-			end
-			local text = string.format("%s: %s", item.desc, t)
-			table.insert(res, text)
-		end
-	end
+	local variants_operator = {"Нет", "Да"}
+	local variants_ekasi = {"Нет", "Подготовлено", "Отправлено"}
+	local variants_report = {"Нет", "Да"}
+	
+	table.insert(res, "Оператор: " .. (variants_operator[values.POV_OPERATOR+1] or '??'))
+	table.insert(res, "ЕКАСУИ: "   .. (variants_ekasi[   values.POV_EAKSUI  +1] or '??'))
+	table.insert(res, "Отчеты: "   .. (variants_report[  values.POV_REPORT  +1] or '??'))
+	
 	return table.concat(res, sep or ' | ')
 end
 
 function GetMarkDescription(mark, sep)
+	local mark_values = {}
 	local res = {}
 	
-	-- прочитать параметры отметки
-	if mark and mark.ext then
-		for i, item in ipairs(PARAMETERS) do
-			local val = mark.ext[item.sign]
-			if val and 0 <= val and val < #(item.variants) then
-				local text = string.format("%s: %s", item.desc, item.variants[val+1])
-				table.insert(res, text)
-			end
-		end
-	end
+	local variants_operator = {"Нет", "Да"}
+	local variants_ekasi    = {"Нет", "Подготовлено", "Отправлено"}
+	local variants_report   = {"Нет", "Да"}
+	local variants_rejected = {"Нет", "Да"}
+	
+	if mark.ext.POV_OPERATOR then table.insert(res, "Оператор: "    .. (variants_operator[mark.ext.POV_OPERATOR+1] or '??')) end
+	if mark.ext.POV_EAKSUI   then table.insert(res, "ЕКАСУИ: "      .. (variants_ekasi[   mark.ext.POV_EAKSUI  +1] or '??')) end
+	if mark.ext.POV_REPORT   then table.insert(res, "Отчеты: "      .. (variants_report[  mark.ext.POV_REPORT  +1] or '??')) end
+	if mark.ext.POV_REJECTED then table.insert(res, "Отвергнутые: " .. (variants_rejected[mark.ext.POV_REJECTED+1] or '??')) end
+	
 	return table.concat(res, sep or ' | ')
 end
 
---[[ установить флаги отметки в соответстви c настройками
-]]
+--[[ установить флаги отметки в соответстви c настройками ]]
 function UpdateMarks(marks, save_marks)
-	-- если передана одна отметка, а не список, делаем список
-	if marks.prop or marks.ext then marks = {marks}	end
-	
-	local reg_values = read_reg() 	-- прочитаем значения из реестра
+	if marks.prop or marks.ext then marks = {marks}	end		-- если передана одна отметка, а не список, делаем список
+	local values = read_pov_flags()		-- прочитаем значения из реестра
 	
 	for _, mark in ipairs(marks) do
-		for i, item in ipairs(PARAMETERS) do
-			mark.ext[item.sign] = reg_values[i]
+		for name, value in pairs(values) do
+			mark.ext[name] = value
 		end
-		if save_marks then
-			mark:Save()
-		end
+		
+		if save_marks then mark:Save() end
 	end
 end
 
---[[ пользователю предлагается окно редактирования значения 
-(с отображением предыдущего) и выбор флагов ПОВ (флаги по умолчанию 
+--[[ пользователю предлагается окно редактирования значения флагов отметки 
+
+(с отображением предыдущего набора) и выбор флагов ПОВ (флаги по умолчанию 
 соответствуют с выбранному сценарию).
 ]]
 function EditMarks(marks, save_marks)
 	if marks.prop or marks.ext then marks = {marks}	end 	-- если передана одна отметка, а не список, делаем список
-	if #marks == 0 then return end
+	if #marks == 0 then return end	-- если список пустой, то выходим
 	
-	local reg_values = read_reg() 	-- прочитаем значения из реестра
+	local values_def = read_pov_flags() 	-- прочитаем значения из реестра
 	
-	-- прочитать параметры отметки
-	local mark_params = {}
-	for i, item in ipairs(PARAMETERS) do
-		mark_params[i] = marks[1].ext[item.sign] or reg_values[i] or 0
+	-- прочитать параметры первой отметки и примем их поумолчанию для остальных
+	local values = {}
+	for i, name in ipairs(NAMES) do
+		values[name] = marks[1].ext[name] or values_def[name] or 0
 	end
 	
-	local title = "Настройка флагов ПОВ отметки"	
-	local sign2res = show_settings(mark_params, title, false) -- запрос у пользователя
-	if sign2res then
+	local title = "Настройка флагов ПОВ отметки"
+	local fmt = "\z
+		Подтверждено оператором: %o|Нет|Да|\n\z
+		Отметки для отправки в ЕКАСУИ: %o|Нет|Подготовлено|Отправлено|\n\z
+		Отметки для формирования отчетов: %o|Нет|Да|\n\z
+		Отвергнутые: %o|Нет|Да|\n"
+
+	local ok, operator, ekasui, report, rejected = 
+		iup.GetParam(title, nil, fmt, 
+			values.POV_OPERATOR, values.POV_EAKSUI, values.POV_REPORT, values.POV_REJECTED)
+	
+	if ok then
 		for _, mark in ipairs(marks) do
-			for sign, value in pairs(sign2res) do
-				mark.ext[sign] = value
-			end
+			mark.ext.POV_OPERATOR = operator
+			mark.ext.POV_EAKSUI   = ekasui
+			mark.ext.POV_REPORT   = report
+			mark.ext.POV_REJECTED = rejected
 			if save_marks then mark:Save() end
 		end
 	end
 end
 
 --[[ Для ряда объектов (шпалы, ..) вводится пункт меню Отвергнуть дефектность. 
-При этом устанавливается соответствующий флаг ПОВ.
-]]
+При этом устанавливается соответствующий флаг ПОВ. ]]
 function RejectDefects(marks, save_marks, reject)
 	if marks.prop or marks.ext then marks = {marks}	end 	-- если передана одна отметка, а не список, делаем список
 	
@@ -203,11 +187,12 @@ function RejectDefects(marks, save_marks, reject)
 	end
 end
 
+-- проверить что у отметки поставлен флаг отвергнутая дефектность
 function IsRejectDefect(mark)
 	return mark and mark.ext and mark.ext['POV_REJECTED'] == 1
 end
 
-
+-- установить признак Подготовлено для отправки в ЕКАСУИ 
 function AcceptEKASUI(marks, save_marks, accept)
 	if marks.prop or marks.ext then marks = {marks}	end 	-- если передана одна отметка, а не список, делаем список
 	
@@ -217,117 +202,140 @@ function AcceptEKASUI(marks, save_marks, accept)
 	end
 end
 
+-- проверить признак Подготовлено для отправки в ЕКАСУИ 
 function IsAcceptEKASUI(mark, save_marks)
 	return mark and mark.ext and mark.ext['POV_EAKSUI'] == 1
 end
 
 
 
-function MakeReportFilter(mode, tip)
-	local reg = hkey.HKEY_CURRENT_USER:create(reg_path .. mode)
-	
-	local fmt = ''
-	local values = {}
-	local groups = {}
-	
-	for i, item in ipairs(PARAMETERS) do
-		groups[i] = {}
-		local reg_val = reg:queryvalue(item.sign) or 0
-		fmt = fmt .. string.format("%s: %%t|\n", item.dialog)
-		for vi, var in ipairs(item.variants) do
-			fmt = fmt .. string.format("%s: %%b[пропустить,Включить]|\n", var)
-			table.insert(groups[i], #values)
-			table.insert(values, bit32.band(reg_val, bit32.lshift(1,vi-1)))
+function MakeReportFilter(ekasui)
+	local function read_reg_bits(reg, name, default)
+		local value = reg:queryvalue(name)
+		value = value and type(value) == 'number' and tonumber(value) or default
+		local res = {}
+		for i = 1, 32 do
+			res[i] = bit32.btest(value, bit32.lshift(1, i-1)) and 1 or 0
 		end
+		return res
 	end
-
-	local function param_action(dialog, param_index)
-		if param_index == iup.GETPARAM_OK then 
-			-- проверяем, что группы не пустые
-			local failed = {}
-			for i, group in ipairs(groups) do
-				local s = 0
-				for _, idx in ipairs(group) do
-					local param = iup.GetParamParam(dialog, idx)
-					s = s + param.value
-				end
-				if s == 0 then
-					table.insert(failed, PARAMETERS[i].dialog)
-				end
-			end
-			if #failed ~= 0 then
-				local msg = 'В отчет не попадет ни одной отметки.\n\nНе заполнена группа: \n\t- ' .. table.concat(failed, '\n\t- ')
-				iup.Message('Ошибка', msg)
-				return 0
+	
+	local function make_mask(...)
+		local res = 0
+		for i, v in ipairs{...} do
+			if v and v ~=0 then
+				res = bit32.bor(res, bit32.lshift(1, i-1))
 			end
 		end
-		return 1
+		return res
 	end
-
-	local title = "Настройка ПОВ фильтрации отчета"
-	if tip then title = title .. ": " .. tip end
-
-	local res = {iup.GetParam(title, param_action, fmt, table.unpack(values))}  -- !!!!!
+			
+	local ok = false
+	local op_no, op_yes, ek_no, ek_prep, ek_snd, rp_no, rp_yes = 0, 0, 0, 0, 0, 0, 0
 	
-	local masks = {}
-	if table.remove(res, 1) then -- pop first element
-		-- save to registry
-		for i, item in ipairs(PARAMETERS) do
-			local mask = 0
-			for vi, var in ipairs(item.variants) do
-				local user_value = table.remove(res, 1)
-				if user_value ~= 0 then
-					mask = bit32.bor(mask, bit32.lshift(1, vi-1))
-				end
+	if ekasui then
+		local reg = hkey.HKEY_CURRENT_USER:create(reg_path .. 'ekasui')
+		
+		local reg_POV_OPERATOR = read_reg_bits(reg, 'POV_OPERATOR', 0)
+		local reg_POV_EAKSUI = read_reg_bits(reg, 'POV_EAKSUI', 2)
+	
+		local title = "Настройка ПОВ фильтрации отчета: ЕКАСУИ"
+		local fmt = "\z
+			Подтверждено оператором: %t|\n\z
+				Нет: %b[пропустить,включить]|\n\z
+				Да: %b[пропустить,включить]|\n\z
+			Отметки для отправки в ЕКАСУИ: %t|\n\z
+				Нет: %b[пропустить,включить]|\n\z
+				Подготовлено: %b[пропустить,включить]|\n\z
+				Отправлено: %b[пропустить,включить]|\n"
+		ok, op_no, op_yes, ek_no, ek_prep, ek_snd = iup.GetParam(title, nil, fmt, 
+				reg_POV_OPERATOR[1], reg_POV_OPERATOR[2],
+				reg_POV_EAKSUI[1],   reg_POV_EAKSUI[2], reg_POV_EAKSUI[3])
+	
+		if ok then
+			reg:setvalue('POV_OPERATOR', make_mask(op_no, op_yes))
+			reg:setvalue('POV_EAKSUI',   make_mask(ek_no, ek_prep, ek_snd))
+		end
+	else -- vedomost
+		local reg = hkey.HKEY_CURRENT_USER:create(reg_path .. 'vedomost')
+		
+		local reg_POV_OPERATOR = read_reg_bits(reg, 'POV_OPERATOR', 0)
+		local reg_POV_REPORT = read_reg_bits(reg, 'POV_REPORT', 2)
+		
+		local title = "Настройка ПОВ фильтрации отчета: ВК"
+		local fmt = "\z
+			Подтверждено оператором: %t|\n\z
+				Нет: %b[пропустить,включить]|\n\z
+				Да: %b[пропустить,включить]|\n\z
+			Отметки для формирования отчетов: %t|\n\z
+				Нет: %b[пропустить,включить]|\n\z
+				Да: %b[пропустить,включить]|\n"
+		ok, op_no, op_yes, rp_no, rp_yes = iup.GetParam(title, nil, fmt, 
+				reg_POV_OPERATOR[1], reg_POV_OPERATOR[2],
+				reg_POV_REPORT[1],   reg_POV_REPORT[2])
+		
+		if ok then
+			reg:setvalue('POV_OPERATOR', make_mask(op_no, op_yes))
+			reg:setvalue('POV_REPORT',   make_mask(rp_no, rp_yes))
+		end
+	end
+	
+	if ok then
+		local check_mark = function (mark)
+			if mark.ext.POV_REJECTED == 1 then
+				return false
 			end
-			reg:setvalue(item.sign, mask)
-			masks[item.sign] = mask
+			
+			if op_no ~= 0 or op_yes ~= 0 then
+				local v = mark.ext.POV_OPERATOR or 1
+				if op_no  ~= 0 and v == 0 then return true end
+				if op_yes ~= 0 and v == 1 then return true end
+			end
+			
+			if ek_no ~= 0 or ek_prep ~= 0 or ek_snd ~= 0 then
+				local v = mark.ext.POV_EAKSUI or 1
+				if ek_no   ~= 0 and v == 0 then return true end
+				if ek_prep ~= 0 and v == 1 then return true end
+				if ek_snd  ~= 0 and v == 2 then return true end
+			end
+			
+			if rp_no ~= 0 or rp_yes ~= 0 then
+				local v = mark.ext.POV_REPORT or 1
+				if rp_no  ~= 0 and v == 0 then return true end
+				if rp_yes ~= 0 and v == 1 then return true end
+			end
+		
+			return false
 		end
 		
-		return function (mark)
-			local defaults = 
-			{
-				POV_OPERATOR = 1,
-				POV_EAKSUI = 1,
-				POV_REPORT = 1,	
-				POV_REJECTED = 0
-			}
-			
-			if not mark or not mark.ext then return false end
-			for name, mask in pairs(masks) do
-				local val = mark.ext[name] or defaults[name]
-				if val then
-					local mm = bit32.lshift(1, val)
-					if not bit32.btest(mm, mask) then
-						return false
+		return function(marks)
+			if marks.prop and marks.ext then 
+				-- single mark
+				return check_mark(marks)
+			else
+				-- mark array
+				local res = {}
+				for _, mark in ipairs(marks) do 
+					if check_mark(mark) then
+						table.insert(res, mark)
 					end
 				end
+				return res
 			end
-			return true
 		end
 	end
 end
 
 
+
 -- =====================================================
-
---ShowSettings()
---print(GetCurrentSettingsDescription())
-
---local fltr = MakeReportFilter('ekasui', 'EKASUI')
---if fltr then
---	local mark = {ext={POV_OPERATOR=1, POV_EAKSUI=0, POV_REPORT=0, POV_REJECTED=0}}
---	print(fltr(mark))
---end
-
-
 -- =====================================================
 
 return 
 {
 	ShowSettings = ShowSettings,
 	UpdateMarks = UpdateMarks,
-	GetCurrentSettingsDescription = GetCurrentSettingsDescription,
+	GetCurrentSettingsDescription = GetShortCurPOVDesc,
 	GetMarkDescription = GetMarkDescription,
 	EditMarks = EditMarks,
 	RejectDefects = RejectDefects,
