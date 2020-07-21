@@ -479,7 +479,7 @@ local function GetSurfDefectPrm(mark)
 			end
 			
 			if res.SurfaceLength then 
-				res.SurfaceLength = res.SurfaceLength/10 or 0
+				res.SurfaceLength = (res.SurfaceLength/10) or 0
 			end
 
 			if not res.SurfaceArea and res.SurfaceWidth and res.SurfaceLength then
@@ -845,10 +845,15 @@ end
 
 -- получить температуру у отметки
 local function GetTemperature(mark)
-	local prop = mark.prop
-	local r = bit32.band(prop.RailMask, 3)-1
-	local temperature = Driver:GetTemperature(r, prop.SysCoord)
-	return temperature and temperature.target
+	if mark and mark.prop then
+		local rail = bit32.btest(mark.prop.RailMask, 0x01) and 0 or 1
+		local temp = Driver:GetTemperature(rail, mark.prop.SysCoord)
+		
+		local v = temp and (temp.target or temp.head)
+		if v then
+			return math.floor(v + 0.5)
+		end
+	end
 end
 	
 -- создание таблицы подстановок с общими параметрами отметки
@@ -998,6 +1003,23 @@ function MakeMarkUri(markid)
 	return "atape:" .. link
 end
 
+local table_gap_types = {
+	["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = 0, 	-- Стык(Видео)
+	["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = 0, 	-- Стык(Видео)
+	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = 0, 	-- СтыкЗазор(Пользователь)
+	["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = 2, 	-- АТСтык(Видео)
+	["{CBD41D28-9308-4FEC-A330-35EAED9FC805}"] = 2, 	-- АТСтык(Пользователь)
+}
+
+--[[ получить тип стыка 
+(0 - болтовой, 1 - изолированный, 2 - сварной)]]
+local function GetGapType(mark)
+	local t = mark and mark.prop and table_gap_types[mark.prop.Guid]
+	return t or -1
+end
+
+
+
 -- =================== ЭКПОРТ ===================
 
 
@@ -1034,6 +1056,7 @@ return{
 	GetGapWidth = GetGapWidth,
 	GetGapWidthName = GetGapWidthName,
 	GetRailGapStep = GetRailGapStep,
+	GetGapType = GetGapType,
 	
 	GetFishplateState = GetFishplateState,
 	

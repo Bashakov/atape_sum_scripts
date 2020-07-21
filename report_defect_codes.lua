@@ -1,4 +1,4 @@
-return {
+local codes = {
 	
 	-- 1.1 Определение и вычисление размеров поверхностных дефектов рельсов, седловин, в том числе в местах сварки, пробуксовок (длина, ширина и площадь).
 	RAIL_DEFECT_BASE 			=	{ "090004012002", "Дефекты и повреждения подошвы рельса"},
@@ -61,3 +61,13 @@ return {
 	--BEACON_LESS_UNREAD  	=   { "90004015367", "Отсутствует/нечитаемая маркировка маячных шпал"},		
 	
 }
+
+codes.code2desc = function (code)
+	for _, value in pairs(codes) do
+		if type(value) == 'table' and #value == 2 and value[1] == code then
+			return value[2]
+		end
+	end
+end
+
+return codes

@@ -35,19 +35,19 @@ function EnterScope(work_fn)
 	local defer = function(defer_fn, ...)
 		table.insert(stack, {fn=defer_fn, args = {...}})
 	end
-	
+
 	local ok, msg = pcall(function() work_fn(defer) end)
-	
+
 	for i = #stack, 1, -1 do
 		local s = stack[i]
-		local o, m = pcall(function() 
+		local o, m = pcall(function()
 			s.fn(table.unpack(s.args))
 		end)
 		if not o then
 			print(m)
 		end
 	end
-	
+
 	if not ok then
 		error(msg)
 	end

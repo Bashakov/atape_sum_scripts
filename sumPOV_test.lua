@@ -16,7 +16,7 @@ local function make_test_mark(str_flags)
 	local mark = {
 		prop = {Description = str_flags},
 		ext = {} }
-	for i, name in ipairs(names) do if tonumber(ff[i]) then mark.ext[name] = tonumber(ff[i]) end end 
+	for i, name in ipairs(names) do if tonumber(ff[i]) then mark.ext[name] = tonumber(ff[i]) end end
 	return mark
 end
 
@@ -60,7 +60,7 @@ if 1 == 0 then
 	print('after: ', sumPOV.GetMarkDescription(mark))
 end
 
--- проверка редактирования отметки 
+-- проверка редактирования отметки
 if 1 == 0 then
 	local mark = make_test_mark('1.0.')
 	print('before:', sumPOV.GetMarkDescription(mark))
@@ -71,13 +71,13 @@ end
 -- проверка фильтрации отметок
 if 1 == 0 then
 	local mark = make_test_mark('.1.0')
-	
-	local filter_ekasui = MakeReportFilter(true)
+
+	local filter_ekasui = sumPOV.MakeReportFilter(true)
 	if filter_ekasui then
 		print(filter_ekasui(mark))
 	end
-	
-	local filter_vedomost = MakeReportFilter(false)
+
+	local filter_vedomost = sumPOV.MakeReportFilter(false)
 	if filter_vedomost then
 		print(filter_vedomost(mark))
 	end
@@ -90,7 +90,7 @@ if 1 == 1 then
 	local res = {}
 	for _, ekasui in ipairs{true, false} do
 		local r = {}
-		local filter = MakeReportFilter(ekasui)
+		local filter = sumPOV.MakeReportFilter(ekasui)
 		if filter then
 			for i, mark in ipairs(test_marks) do
 				r[i] = filter(mark)
@@ -98,7 +98,7 @@ if 1 == 1 then
 		end
 		res[ekasui] = r
 	end
-	
+
 	print('N   | ekasui | vedom | flags | desc')
 	for i, mark in ipairs(test_marks) do
 		print(i, res[true][i], res[false][i], mark.prop.Description, sumPOV.GetMarkDescription(mark))

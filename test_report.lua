@@ -2,6 +2,26 @@ require "luacom"
 local sqlite3 = require "lsqlite3"
 local OOP = require "OOP"
 
+local function binsearch(tbl, value, fcompval, allow_nearest)
+	fcompval = fcompval or function(v) return v end
+	local iStart, iEnd, iMid = 1, #tbl, 1
+	while iStart < iEnd do
+		iMid = math.floor( (iStart+iEnd)/2 )  
+		local value2 = fcompval( tbl[iMid] )
+		if value == value2 then
+			return iMid
+		elseif value < value2 then
+			iEnd = iMid - 1
+		else
+			iStart = iMid + 1
+		end
+	end
+	
+	if #tbl > 0 and allow_nearest then 
+		return iMid
+	end        
+end
+
 local function read_sum_file(file_path, guids, mark_id)
 	local function format_guid(hex_guid)
 		-- print(hex_guid)
@@ -229,13 +249,26 @@ local function read_XmlC(file_path)
 end
 
 
-local Temperature = OOP.class
-{
-	ctor = function(self, filename)
-	end,
-}
 
+local function read_temerature(gps)
+	local res = {}  
+	for _, g in ipairs(gps) do
+		if g.name == "TEMP_TARGET" or g.name == "TEMP_HEAD" then
+			if not res[g.rail] then res[g.rail] = {} end
+			if not res[g.rail][g.name] then res[g.rail][g.name] = {} end
+			table.insert(res[g.rail][g.name], {g.coord, g.value / 10})
+		end
+	end
+	for _, r in pairs(res) do
+		for _, rr in pairs(r) do
+			table.sort(rr, function	(a,b) return a[1] < b[1] end)
+		end
+	end
+	return res
+end
 
+			
+				
 
 Driver = OOP.class
 {
@@ -249,6 +282,7 @@ Driver = OOP.class
 		
 		self._gps = read_XmlC(string.gsub(psp_path, '.xml', '.gps'))
 		--self._marks = read_sum_file(self._sum_path)
+		self._temerature = read_temerature(self._gps)
 		
 		_G.Driver = self
 		_G.Passport = self._passport
@@ -283,16 +317,15 @@ Driver = OOP.class
 		assert(rail == 0 or rail == 1)
 		local head = nil
 		local target = nil
-		for _, g in ipairs(self._gps) do
-			if g.rail == rail+1 then
-				if g.name == "TEMP_TARGET" then
-					target = g.value / 10
-				elseif	g.name == "TEMP_HEAD" then
-					head = g.value / 10
-				end
+		local rail_temp = self._temerature[rail+1]
+		if rail_temp then
+			local i_t = binsearch(rail_temp.TEMP_TARGET or {}, sys, function(v) return v[1] end, true)
+			if i_t then
+				target = rail_temp.TEMP_TARGET[i_t][2]
 			end
-			if g.coord > sys then
-				break
+			local i_h = binsearch(rail_temp.TEMP_HEAD   or {}, sys, function(v) return v[1] end, true)
+			if i_h then
+				target = rail_temp.TEMP_HEAD[i_h][2]
 			end
 		end
 		return {head=head, target=target}

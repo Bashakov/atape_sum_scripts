@@ -1,6 +1,5 @@
 if not ATAPE then
 	require "iuplua" 
-	socket = require 'socket'
 end
 
 OOP = require 'OOP'
@@ -8,7 +7,7 @@ OOP = require 'OOP'
 
 ProgressDlg = OOP.class
 {
-	ctor = function(self)
+	ctor = function(self, title)
 		iup.SetGlobal('UTF8MODE', 1)
 		self.cancelflag = false
 		
@@ -40,7 +39,7 @@ ProgressDlg = OOP.class
 		}
 	
 		self.dlgProgress = iup.dialog{
-			title = "Report generator",
+			title = title or "Report generator",
 			--menubox = "NO",
 			size = "320x80",
 			close_cb = _close_cb,
@@ -66,6 +65,14 @@ ProgressDlg = OOP.class
 		if (iup and self and self.dlgProgress) then
 			iup.Destroy(self.dlgProgress)
 		end
+	end,
+	
+	Hide = function(self)
+		iup.Hide(self.dlgProgress)
+	end,
+	
+	Show = function(self)
+		iup.Show(self.dlgProgress)
 	end,
 }
 
