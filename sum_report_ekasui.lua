@@ -4,7 +4,6 @@ if not ATAPE then
 end
 
 local OOP = require 'OOP'
-local stuff = require 'stuff'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 require "ExitScope"

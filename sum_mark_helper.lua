@@ -1,8 +1,8 @@
 require "luacom"
 
-function printf (s,...) return print(s:format(...)) end
-function sprintf (s,...) return s:format(...) end
-
+local function printf (s,...) return print(s:format(...)) end
+local function sprintf (s,...) return s:format(...) end
+local function errorf(s,...)  error(string.format(s, ...)) end
 
 local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 if not xmlDom then
@@ -1025,6 +1025,7 @@ end
 
 
 return{
+	errorf = errorf,
 	printf = printf,
 	sprintf = sprintf,
 	sort_marks = sort_marks,

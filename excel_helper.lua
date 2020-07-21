@@ -2,9 +2,11 @@ if not ATAPE then
 	require "luacom"
 end
 
-stuff = require 'stuff'
-OOP = require 'OOP'
-codecs = require 'process_utf8'
+local OOP = require 'OOP'
+local codecs = require 'process_utf8'
+
+local function errorf(s,...)  error(string.format(s, ...)) end
+local function sprintf(s,...) return string.format(s, ...) end
 
 -- ======================  stuff  ============================= -- 
 
@@ -46,7 +48,7 @@ local function CopyFile(src, dst)
 	assert(fso, "can not create FileSystemObject object")
 	
 	if not fso:FileExists(src) then
-		stuff.errorf("template %s not exist", src)
+		errorf("template %s not exist", src)
 	end
 	
 	local path, name = SplitPath(dst)
@@ -71,7 +73,7 @@ local function CopyTemplate(template_path, sheet_name, dest_name)		-- скопи
 	user_dir = codecs.cp1251_utf8(user_dir)
 	local new_name = user_dir .. '\\ATapeReport\\' .. file_name .. '.xls'
 	if not CopyFile(template_path, new_name) then
-		stuff.errorf('copy file %s -> %s failed', template_path, new_name)
+		errorf('copy file %s -> %s failed', template_path, new_name)
 	end
 	return new_name
 end
@@ -152,10 +154,10 @@ local excel_helper = OOP.class
 		
 		self._file_path = CopyTemplate(template_path, sheet_name, dest_name)	-- скопируем шаблон в папку отчетов
 		self._workbook = OpenWorkbook(self._excel, self._file_path)	
-		assert(self._workbook, stuff.sprintf("can not open %s", self._file_path))
+		assert(self._workbook, sprintf("can not open %s", self._file_path))
 		
 		self._worksheet = FindWorkSheet(self._workbook, sheet_name)
-		assert(self._worksheet, stuff.sprintf('can not find "%s" worksheet', sheet_name))
+		assert(self._worksheet, sprintf('can not find "%s" worksheet', sheet_name))
 		
 		self._calc_state = self._excel.Calculation
 		self._excel.Calculation = XlCalculation.xlCalculationManual
@@ -351,7 +353,7 @@ local excel_helper = OOP.class
 			local row_range = user_range:Range(cell_LT, cell_RB)
 
 			self:ReplaceTemplates(row_range, {row_data})
-			if dlgProgress and not dlgProgress:step(line / dst_row_count, stuff.sprintf('Сохранение %d / %d', line, dst_row_count)) then 
+			if dlgProgress and not dlgProgress:step(line / dst_row_count, sprintf('Сохранение %d / %d', line, dst_row_count)) then 
 				break
 			end
 		end
