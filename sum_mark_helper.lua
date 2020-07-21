@@ -868,6 +868,7 @@ local function MakeCommonMarkTemplate(mark)
 	
 	local row = {}
 	
+	row.mark_id = prop.ID
 	row.SYS = prop.SysCoord
 	row.KM = km
 	row.M = m
