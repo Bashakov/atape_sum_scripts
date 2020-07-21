@@ -1,5 +1,6 @@
 local GUIDS = require "sum_list_pane_guids"
 local sumPOV = require "sumPOV"
+local rubki = require "sum_report_rubki"
 
 -- =========== stuff ============== -- 
 
@@ -269,6 +270,9 @@ function GetMenuItems(mark)
 	else
 		table.insert(menu_items, {name='Отвергнуть дефектность (без удаления отметки)', fn=accept_pov, mark=mark, method=4})
 	end
+
+	table.insert(menu_items, {name='Ведомость оценки стыка', fn=function (o) rubki.MakeEkasuiGapReport(mark) end})
+	
 	
 	return menu_items
 end
