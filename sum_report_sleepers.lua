@@ -295,7 +295,6 @@ local function make_report_generator(...)
 
 	local function gen()
 		EnterScope(function (defer)
-		
 			local pov_filter = sumPOV.MakeReportFilter(false)
 			if not pov_filter then return {} end
 
@@ -322,7 +321,6 @@ local function make_report_generator(...)
 				return row.SYS
 			end)
 			SaveAndShow(report_rows, dlgProgress)
-		
 		end)
 	end
 

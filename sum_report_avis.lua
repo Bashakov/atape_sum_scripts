@@ -1,7 +1,7 @@
 require "luacom"
 
 if not ATAPE then
-	require "iuplua" 
+	require "iuplua"
 end
 
 if iup then
@@ -11,6 +11,7 @@ end
 local luaiup_helper = require 'luaiup_helper'
 local excel_helper = require 'excel_helper'
 local mark_helper = require 'sum_mark_helper'
+require 'ExitScope'
 
 -- ============================================================
 
@@ -19,7 +20,7 @@ local function SaveAndShow(report_rows, dlgProgress, report_template_name, sheet
 		iup.Message('Info', "Подходящих отметок не найдено")
 		return
 	end
-	
+
 	if #report_rows > 1000 then
 		local msg = sprintf('Найдено %d отметок, построение отчета может занять большое время, продолжить?', #report_rows)
 		local cont = iup.Alarm("Warning", msg, "Yes", "No")
@@ -27,11 +28,11 @@ local function SaveAndShow(report_rows, dlgProgress, report_template_name, sheet
 			return
 		end
 	end
-	
+
 	local template_path = Driver:GetAppPath() .. 'Scripts/'  .. report_template_name
 	local ext_psp = mark_helper.GetExtPassport(Passport)
 	local excel = excel_helper(template_path, sheet_name, false)
-	
+
 	excel:ApplyPassportValues(ext_psp)
 	excel:ApplyRows(report_rows, nil, dlgProgress)
 	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
@@ -41,33 +42,34 @@ end
 
 local function make_report_generator(getMarks, report_template_name, sheet_name, ...)
 	local row_generators = {...}
-		
-	function gen()
-		local marks = getMarks()
-		local dlgProgress = luaiup_helper.ProgressDlg()
-		
-		local report_rows = {}
-		for _, fn_gen in ipairs(row_generators) do
-			local cur_rows = fn_gen(marks, dlgProgress)
-			if not cur_rows then 
-				break
+
+	local function gen()
+		EnterScope(function (defer)
+			local marks = getMarks()
+			local dlgProgress = luaiup_helper.ProgressDlg()
+			defer(dlgProgress.Destroy, dlgProgress)
+
+			local report_rows = {}
+			for _, fn_gen in ipairs(row_generators) do
+				local cur_rows = fn_gen(marks, dlgProgress)
+				if not cur_rows then
+					break
+				end
+				for _, row in ipairs(cur_rows) do
+					table.insert(report_rows, row)
+				end
 			end
-			for _, row in ipairs(cur_rows) do
-				table.insert(report_rows, row)
-			end
-		end
-		
-		report_rows = mark_helper.sort_stable(report_rows, function(row)
-			local c = row.SYS
-			return c
+
+			report_rows = mark_helper.sort_stable(report_rows, function(row)
+				return row.SYS
+			end)
+
+			SaveAndShow(report_rows, dlgProgress, report_template_name, sheet_name)
 		end)
-	
-		SaveAndShow(report_rows, dlgProgress, report_template_name, sheet_name)
-		dlgProgress:Destroy()
 	end
-	
+
 	return gen
-end	
+end
 
 local function IsAvailable()
 	return EKASUI

@@ -1,3 +1,5 @@
+if false then iup = nil; luacom = nil; ATAPE = nil; Driver = nil end -- suppress lua diagnostic (undefined global)
+
 if not ATAPE then
 	require "iuplua"
 end
@@ -31,11 +33,12 @@ local guid_surface_user =
 local filter_juids = mark_helper.table_merge(guid_surface_defects, guid_surface_user)
 
 local function get_user_filter_surface()
-		local res, user_width, user_lenght, user_area = iup.GetParam("Фильтрация ( AND ) дефектов", nil,
-		"Ширина(поперек рельса), мм  >=: %s\n\z
-		 Длина(вдоль рельса), мм >=: %s\n\z
-		 Площадь(д.б. число), см**2 >=: %i\n",
-		'', '', 10)
+		local res, user_width, user_lenght, user_area = iup.GetParam(
+			"Фильтрация ( AND ) дефектов", nil,
+			"Ширина(поперек рельса), мм  >=: %s\n\z
+			Длина(вдоль рельса), мм >=: %s\n\z
+			Площадь(д.б. число), см**2 >=: %i\n",
+			'', '', 10)
 
 	if not res then
 		return
@@ -147,7 +150,7 @@ end
 local function make_report_videogram(...)
 	local row_generators = {...}
 
-	function gen(mark)
+	local function gen(mark)
 		local report_rows = {}
 		if mark and mark_helper.table_find(filter_juids, mark.prop.Guid) then
 			for _, fn_gen in ipairs(row_generators) do
@@ -197,7 +200,7 @@ end
 -- тестирование
 if not ATAPE then
 
-	test_report  = require('test_report')
+	local test_report  = require('test_report')
 	test_report('D:\\ATapeXP\\Main\\494\\video\\[494]_2017_06_08_12.xml')
 
 	report_rails_user()
