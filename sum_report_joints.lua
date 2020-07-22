@@ -384,7 +384,7 @@ local function report_broken_insulation()
 	iup.Message('Error', "Отчет не реализован")
 end
 
--- вместо функций генераторов, вставляем функции обертки вызывающие генераторы с доп параметромами
+-- вместо функций генераторов, вставляем функции обертки вызывающие генераторы с доп параметрами
 local function make_gen_pov_filter(generator, ...)
 	local args = {...}
 	for i, gen in ipairs(generator) do

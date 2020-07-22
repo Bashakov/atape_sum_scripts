@@ -161,7 +161,7 @@ end
 local function make_report_videogram(...)
 	local row_generators = {...}
 
-	function gen(mark)
+	local function gen(mark)
 		local report_rows = {}
 		if mark and mark_helper.table_find(guids_fasteners, mark.prop.Guid) then
 			for _, fn_gen in ipairs(row_generators) do
