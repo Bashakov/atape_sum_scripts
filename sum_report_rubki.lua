@@ -1,4 +1,4 @@
-local stuff = require 'stuff'
+
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 local excel_helper = require 'excel_helper'
@@ -9,6 +9,9 @@ local resty = require "resty.template"
 if iup then
 	iup.SetGlobal('UTF8MODE', 1)
 end
+
+local sprintf = mark_helper.sprintf
+local table_find = mark_helper.table_find
 
 -- =============================================== --
 
@@ -140,7 +143,7 @@ local function get_marks(dlg)
 
 	marks = mark_helper.filter_marks(marks,
 		function (mark) -- filter
-			return stuff.table_find(joints_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
+			return table_find(joints_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
 		end,
 		function (all, checked, accepted) -- progress
 			if checked % 50 == 0 and dlg then
@@ -304,7 +307,7 @@ local function report_short_rails(params)
 				insert_frame(excel, data_range, mark1, line, 6, nil, {prop1.SysCoord-500, prop2.SysCoord+500})
 			end
 
-			if not dlg:step(line / #short_rails, stuff.sprintf('Сохранение %d / %d', line, #short_rails)) then
+			if not dlg:step(line / #short_rails, sprintf('Сохранение %d / %d', line, #short_rails)) then
 				break
 			end
 		end
@@ -381,7 +384,7 @@ local function report_short_rails_ekasui()
 				add_text_node(node_marking, 'error', img_data)
 			end
 
-			if not dlg:step(i / #short_rails, stuff.sprintf('Сохранение рельсов %d / %d', i, #short_rails)) then
+			if not dlg:step(i / #short_rails, sprintf('Сохранение рельсов %d / %d', i, #short_rails)) then
 				return
 			end
 		end
@@ -392,27 +395,22 @@ local function report_short_rails_ekasui()
 			"gaptype", "nakltype", "temp", "left", "speedlimit", "km", "m", "pros", "zazor",
 			"vstup", "gstup", "smatie", "nakl", "bolt", "viplesk", "skrepl", "podkl", "shpal",
 			"epur", "ballast", "sneg"}
-		local saved_gaps = {}
-		local exit = false
-		for i, mark_pair in ipairs(short_rails) do
-			for _, mark in ipairs(mark_pair) do
-				if not saved_gaps[mark.prop.ID] then
-					saved_gaps[mark.prop.ID] = true
-					local gap_params = make_gap_description(mark)
 
-					local node_railgap = add_node(node_railgapset, 'railgap', {gapid=mark.prop.ID})
-					for _, param_name in ipairs(gap_param_order) do
-						add_text_node(node_railgap, param_name, gap_params.values[param_name] or -1)
-					end
+		for i, mark in ipairs(marks) do
+			local gap_params = make_gap_description(mark)
 
-					local node_picset = add_node(node_railgap, 'picset')
-					add_text_node(node_picset, 'pic', gap_params.img_data)
-					if gap_params.img_error then
-						add_text_node(node_picset, 'error', gap_params.img_error)
-					end
-				end
+			local node_railgap = add_node(node_railgapset, 'railgap', {gapid=mark.prop.ID})
+			for _, param_name in ipairs(gap_param_order) do
+				add_text_node(node_railgap, param_name, gap_params.values[param_name] or -1)
 			end
-			if not dlg:step(i / #short_rails, stuff.sprintf('Сохранение стыков %d / %d', i*2, #short_rails*2)) then
+
+			local node_picset = add_node(node_railgap, 'picset')
+			add_text_node(node_picset, 'pic', gap_params.img_data)
+			if gap_params.img_error then
+				add_text_node(node_picset, 'error', gap_params.img_error)
+			end
+
+			if not dlg:step(i / #marks, sprintf('Сохранение стыков %d / %d', i, #marks)) then
 				return
 			end
 		end
@@ -602,13 +600,13 @@ if not ATAPE then
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 
 	-- отчет ЕКАСУИ
-	if 1 == 0 then
+	if 1 == 1 then
 		local r = cur_reports[2]
 		r.fn(r.params)
 	end
 
 	-- ведомость стыка
-	if 1 == 1 then
+	if 1 == 0 then
 		local mark = Driver:GetMarks({mark_id=100})[1]
 		MakeEkasuiGapReport(mark)
 	end
