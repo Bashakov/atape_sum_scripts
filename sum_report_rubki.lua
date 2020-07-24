@@ -117,15 +117,11 @@ local function insert_frame(excel, data_range, mark, row, col, video_channel, sh
 	end
 end
 
--- local function make_rail_image(mark1, mark2)
--- 	local ok, img_data = pcall(function ()
--- 			return mark_helper.MakeMarkImage(mark1, nil, {mark1.prop.SysCoord-500, mark2.prop.SysCoord+500}, true)
--- 		end)
--- 	return ok, img_data
--- end
-
 local function make_rail_image(mark1, mark2)
-	return true, ""
+	local ok, img_data = pcall(function ()
+			return mark_helper.MakeMarkImage(mark1, nil, {mark1.prop.SysCoord-500, mark2.prop.SysCoord+500}, true)
+		end)
+	return ok, img_data
 end
 
 local function get_marks(dlg)
@@ -186,10 +182,10 @@ end
 
 
 
-local function save_res_xml(node)
+local function save_res_xml(dst_dir, node)
 	local fromKM = Passport.FromKm or string.match(Passport.START_CHOORD, '^(-?%d+):') or ''
 	local toKM = Passport.ToKm or string.match(Passport.END_CHOORD, '^(-?%d+):') or ''
-	local path_dst = sprintf("%s\\%s_%s_%s.xml", EKASUI_PARAMS.ExportFolder, Passport.SOURCE, fromKM, toKM)
+	local path_dst = sprintf("%s\\%s_%s_%s.xml", dst_dir, Passport.SOURCE, fromKM, toKM)
 	if true then
 		-- with formation
 		local f = io.open(path_dst, 'w+b')
@@ -415,8 +411,10 @@ local function report_short_rails_ekasui()
 			end
 		end
 
-		local path_dst = save_res_xml(node_videocontrol)
-		os.execute(path_dst)
+		local dst_dir = EKASUI_PARAMS.ExportFolder
+		local path_dst = save_res_xml(dst_dir, node_videocontrol)
+		os.execute(string.format("%s//make_short_rail_html.js %s", dst_dir, path_dst))
+		--os.execute(path_dst)
 	end)
 end
 
@@ -596,7 +594,7 @@ local cur_reports =
 -- тестирование
 if not ATAPE then
 
-	test_report  = require('test_report')
+	local test_report = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 
 	-- отчет ЕКАСУИ
