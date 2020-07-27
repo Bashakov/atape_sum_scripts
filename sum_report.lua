@@ -15,15 +15,14 @@ end
 
 
 mark_helper = require 'sum_mark_helper'
-stuff = require 'stuff'
 luaiup_helper = require 'luaiup_helper'
 excel_helper = require 'excel_helper'
 
 
-local table_find = stuff.table_find
-local sprintf = stuff.sprintf
-local printf = stuff.printf
-local errorf = stuff.errorf
+local table_find = mark_helper.table_find
+local sprintf = mark_helper.sprintf
+local printf = mark_helper.printf
+local errorf = mark_helper.errorf
 
 local get_rail_name = mark_helper.GetRailName
 make_mark_uri = mark_helper.MakeMarkUri
@@ -309,7 +308,7 @@ local function ProgressCounter(dlg, desc, all_count)
 	local i = 0
 	return function()
 		i = i + 1
-		if not dlg:step(i / all_count, stuff.sprintf('%s: %d / %d', desc, i, all_count)) then 
+		if not dlg:step(i / all_count, sprintf('%s: %d / %d', desc, i, all_count)) then 
 			error("Прервано пользователем") 
 		end
 		return i
@@ -334,107 +333,6 @@ end
 
 -- =================================================================================
 
-local function report_test()
-	local marks = Driver:GetMarks()	
-	-- iup.Message('Info', sprintf("load %d marks", #marks))
-	
-	local path1 = Driver:GetVideoImage(0, 100000, {rail=3})
-	os.execute("start " .. path1)
-	--iup.Message('Info', path1)
-	
-	local path2 = Driver:GetFrame(18, 100000)
-	--os.execute("start " .. path2)
-end
-
-local function dump_mark_list(template_name, sheet_name)
-	local filedlg = iup.filedlg{
-		dialogtype = "dir", 
-		title = "Select dir for dump mark", 
-		directory = "c:\\1\\",
-	} 
-	filedlg:popup (iup.ANYWHERE, iup.ANYWHERE)
-	if filedlg.status == -1 then
-		return
-	end
-	local out_dir = filedlg.value .. '\\' .. Passport.NAME
-	os.execute('mkdir ' .. out_dir)
-
-	local marks = Driver:GetMarks()
-	local dlg = luaiup_helper.ProgressDlg()
-
-	local out = {}
-	for i = 1, #marks do 
-		local mark = marks[i]
-		local prop = mark.prop
-		local vch = bit32.btest(prop.RailMask, 1) and 17 or 18
-		out[i] = {
-			prop = prop, 
-			ext = mark.ext, 
-			user = {},
-			path = { Driver:GetPathCoord(prop.SysCoord) }, 
-			name = Driver:GetSumTypeName(prop.Guid)
-		}
-		if ShowVideo ~= 0 then 
-			out[i].img_path = Driver:GetFrame(
-				vch, 
-				prop.SysCoord, {
-					mark_id = prop.ID,
-					file_path = stuff.sprintf('%s\\img\\%d_%d.jpg', out_dir, prop.SysCoord, vch),
-					width = 400,          -- ширина кадра
-					height = 300,          -- высота кадра
-				}
-			)
-		end
-
-		if i % 10 == 1 and not dlg:step(1.0 * i / #marks, stuff.sprintf('progress %d / %d mark', i, #marks)) then 
-			return 
-		end
-	end
-
-	dlg:step(1, 'Dump saving ...');
-
-	local prev_output = io.output()
-	io.output(out_dir .. "\\dump.lua")
-	--stuff.save("marks", out)
-	stuff.save("data", {marks=out, Passport=Passport})
-	io.output(prev_output)
-end
-
-
-local function mark2excel(params)
-	local marks = Driver:GetMarks()
-	
-	local dlg = luaiup_helper.ProgressDlg()
-
-	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
-	excel:ApplyPassportValues(Passport)
-	local data_range = excel:CloneTemplateRow(#marks)
-
-	assert(#marks == data_range.Rows.count, 'misamtch count of marks and table rows')
-
-	for i = 1, #marks do 
-		local mark = marks[i]
-		local c = 1
-
-		for n, v in pairs(mark.prop) do
-			data_range.Cells(i, c).Value2 = stuff.sprintf('%s=%s', n, v)
-			c = c + 1
-		end
-		for n, v in pairs(mark.ext) do
-			data_range.Cells(i, c).Value2 = stuff.sprintf('%s=%s', n, v)
-			c = c + 1
-		end
-
-		--excel_helper.InsertLink(data_range.Cells(i, 10), 'http://google.com', 'google')
-		--excel_helper.InsetImage(data_range.Cells(i, 8), mark.img_path)
-
-		if not dlg:step(1.0 * i / #marks, stuff.sprintf(' Process %d / %d mark', i, #marks)) then 
-			return 
-		end
-	end
-
-	excel:SaveAndShow()
-end
 
 
 -- Ведомость болтовых стыков 
@@ -519,7 +417,7 @@ local function report_crew_join(params)
 				insert_mark(line, r, mark)
 			end
 			
-			if not dlg:step(line / #mark_pairs, stuff.sprintf(' Process %d / %d line', line, #mark_pairs)) then 
+			if not dlg:step(line / #mark_pairs, sprintf(' Process %d / %d line', line, #mark_pairs)) then 
 				break
 			end
 		end 
@@ -711,7 +609,7 @@ local function report_gaps(params)
 				data_range.Cells(line, 9).Value2 = sprintf('%.02f', (c2 - c1) / 1000)
 			end
 		
-			if not dlg:step(line / #mark_pairs, stuff.sprintf(' Process %d / %d line', line, #mark_pairs)) then 
+			if not dlg:step(line / #mark_pairs, sprintf(' Process %d / %d line', line, #mark_pairs)) then 
 				break
 			end
 		end 
@@ -886,7 +784,7 @@ local function report_welding(params)
 			insert_mark(line, r, mark)
 		end
 			
-		if not dlg:step(line / #mark_pairs, stuff.sprintf(' Process %d / %d line', line, #mark_pairs)) then 
+		if not dlg:step(line / #mark_pairs, sprintf(' Process %d / %d line', line, #mark_pairs)) then 
 			break
 		end
 	end 
@@ -949,7 +847,7 @@ local function report_unspec_obj(params)
 			excel:InsertImage(data_range.Cells(line, 5), img_path)
 		end
 			
-		if not dlg:step(line / #marks, stuff.sprintf(' Process %d / %d mark', line, #marks)) then 
+		if not dlg:step(line / #marks, sprintf(' Process %d / %d mark', line, #marks)) then 
 			break
 		end
 	end 
@@ -1018,7 +916,7 @@ local function report_coord(params)
 			excel:InsertImage(data_range.Cells(line, 7), img_path)
 		end
 		
-		if not dlg:step(line / #marks, stuff.sprintf(' Process %d / %d mark', line, #marks)) then 
+		if not dlg:step(line / #marks, sprintf(' Process %d / %d mark', line, #marks)) then 
 			break
 		end
 	end 
@@ -1092,7 +990,7 @@ local fastener_fault_names = {
 		data_range.Cells(line, 5).Value2 = fastener_fault_names[fastener_params['FastenerFault']] or '??'
 		insert_frame(excel, data_range, mark, line, 6)
 		
-		if not dlg:step(line / #marks, stuff.sprintf(' Process %d / %d mark', line, #marks)) then 
+		if not dlg:step(line / #marks, sprintf(' Process %d / %d mark', line, #marks)) then 
 			break
 		end
 	end 
@@ -1152,7 +1050,7 @@ local function report_recog_joint_step(params)
 		data_range.Cells(line, 3).Value2 = sprintf("%d", step)
 		insert_frame(excel, data_range, mark, line, 4)
 		
-		if not dlg:step(line / #marks, stuff.sprintf(' Process %d / %d mark', line, #marks)) then 
+		if not dlg:step(line / #marks, sprintf(' Process %d / %d mark', line, #marks)) then 
 			break
 		end
 	end 
@@ -1243,7 +1141,7 @@ local function report_surface_defects(params)
 		
 		insert_frame(excel, data_range, mark, line, 5)
 		
-		if not dlg:step(line / #marks, stuff.sprintf(' Process %d / %d mark', line, #marks)) then 
+		if not dlg:step(line / #marks, sprintf(' Process %d / %d mark', line, #marks)) then 
 			break
 		end
 	end 
@@ -1338,7 +1236,7 @@ function MakeReport(name) -- exported
 	for _, n in ipairs(Report_Functions) do 
 		if n.name == name then
 			if not n.fn then
-				stuff.errorf('report function (%s) not defined', name)
+				errorf('report function (%s) not defined', name)
 			end
 			name = nil
 			n.fn(n.params)
@@ -1350,7 +1248,7 @@ function MakeReport(name) -- exported
 	end
 
 	if name then -- if reporn not found
-		stuff.errorf('can not find report [%s]', name)
+		errorf('can not find report [%s]', name)
 	end
 end
 

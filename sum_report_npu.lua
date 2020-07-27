@@ -1,11 +1,11 @@
-local stuff = require 'stuff'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 local excel_helper = require 'excel_helper'
 
-local sprintf = stuff.sprintf
-local printf = stuff.printf
-local errorf = stuff.errorf
+local sprintf = mark_helper.sprintf
+local printf = mark_helper.printf
+local errorf = mark_helper.errorf
+local table_find = mark_helper.table_find
 
 -- ============================================================================= 
 
@@ -34,7 +34,7 @@ local function report_NPU(params)
 	marks = mark_helper.filter_marks(
 		marks, 
 		function(mark)
-			return stuff.table_find(params.guids, mark.prop.Guid)
+			return table_find(params.guids, mark.prop.Guid)
 		end, 
 		function(all, checked, accepted)
 			if checked % 20 == 0 then
@@ -98,7 +98,7 @@ local function report_NPU(params)
 		data_range.Cells(line,19).Value2 = create_time
 		data_range.Cells(line,20).Value2 = update_time
 		
-		if not dlg:step(line / #marks, stuff.sprintf(' Out %d / %d line', line, #marks)) then 
+		if not dlg:step(line / #marks, sprintf(' Out %d / %d line', line, #marks)) then 
 			break
 		end
 		
