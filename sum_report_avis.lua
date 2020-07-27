@@ -49,6 +49,7 @@ local function make_report_generator(getMarks, report_template_name, sheet_name,
 			local dlgProgress = luaiup_helper.ProgressDlg()
 			defer(dlgProgress.Destroy, dlgProgress)
 
+			local code2marks = {} -- убрать дублирование отметок полученных через стандартную функцию отчетов (включающую пользовательские отметки с опр. гуидом) и пользовательскую функцию отчетов
 			local report_rows = {}
 			for _, fn_gen in ipairs(row_generators) do
 				local cur_rows = fn_gen(marks, dlgProgress)
@@ -56,7 +57,13 @@ local function make_report_generator(getMarks, report_template_name, sheet_name,
 					break
 				end
 				for _, row in ipairs(cur_rows) do
-					table.insert(report_rows, row)
+					local code = row.DEFECT_CODE or ''
+					local id = row.mark_id or -1
+					if not code2marks[code] then code2marks[code] = {} end
+					if id < 0 or not code2marks[code][id] then
+						code2marks[code][id] = true
+						table.insert(report_rows, row)
+					end
 				end
 			end
 
