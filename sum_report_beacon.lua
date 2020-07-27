@@ -145,8 +145,8 @@ local report_beacon = make_report_generator(generate_row_beacon)
 local ekasui_beacon = make_report_ekasui(generate_row_beacon)
 local videogram = make_report_videogram(generate_row_beacon)
 
-local report_beacon_user = make_report_generator(generate_row_beacon_user)
-local ekasui_beacon_user = make_report_ekasui(generate_row_beacon_user)
+local report_beacon_all = make_report_generator(generate_row_beacon_user, generate_row_beacon)
+local ekasui_beacon_all = make_report_ekasui(generate_row_beacon_user, generate_row_beacon)
 
 -- =========================================================================
 
@@ -155,13 +155,13 @@ local function AppendReports(reports)
 
 	local sleppers_reports =
 	{
+		{name = name_pref..'Все',    				fn=report_beacon_all, },
+		{name = name_pref..'ЕКАСУИ Все',    		fn=ekasui_beacon_all, },
+
 		{name = name_pref..'Смещения рельсовых плетей относительно «маячных» шпал, мм',    		fn=report_beacon, 			},
 		{name = name_pref..'*Определение наличия отсутствующих и неработающих противоугонов',   fn=report_not_implement, 	},
 
 		{name = name_pref..'ЕКАСУИ Смещения рельсовых плетей относительно «маячных» шпал, мм',  fn=ekasui_beacon, 			},
-
-		{name = name_pref..'Пользовательские',    				fn=report_beacon_user, },
-		{name = name_pref..'ЕКАСУИ Пользовательские',    		fn=ekasui_beacon_user, },
 	}
 
 	for _, report in ipairs(sleppers_reports) do

@@ -183,20 +183,24 @@ local report_fastener = make_report_generator(generate_rows_fastener)
 local ekasui_fastener = make_report_ekasui(generate_rows_fastener)
 local videogram = make_report_videogram(generate_rows_fastener)
 
-local report_fastener_user = make_report_generator(generate_rows_fastener_user)
-local ekasui_fastener_user = make_report_ekasui(generate_rows_fastener_user)
+local report_fastener_all = make_report_generator(generate_rows_fastener_user, generate_rows_fastener)
+local ekasui_fastener_all = make_report_ekasui(generate_rows_fastener_user, generate_rows_fastener)
 
 -- =========================================================================
 
 local function AppendReports(reports)
 	local name_pref = 'Ведомость отступлений в содержании скреплений|'
+	local name_fastener = '\
+Определение параметров и состояния рельсовых скреплений \
+(наличие визуально фиксируемых ослабленных скреплений, сломанных подкладок, \
+отсутствие болтов, негодные прокладки, закладные и клеммные болты, шурупы, клеммы, анкеры)'
 
 	local sleppers_reports =
 	{
-		{name = name_pref..'Определение параметров и состояния рельсовых скреплений (наличие визуально фиксируемых ослабленных скреплений, сломанных подкладок, отсутствие болтов, негодные прокладки, закладные и клеммные болты, шурупы, клеммы, анкеры)',    			fn=report_fastener, },
-		{name = name_pref..'ЕКАСУИ Определение параметров и состояния рельсовых скреплений (наличие визуально фиксируемых ослабленных скреплений, сломанных подкладок, отсутствие болтов, негодные прокладки, закладные и клеммные болты, шурупы, клеммы, анкеры)',    		fn=ekasui_fastener, },
-		{name = name_pref..'Пользовательские',    				fn=report_fastener_user, },
-		{name = name_pref..'ЕКАСУИ Пользовательские',    		fn=ekasui_fastener_user, },
+		{name = name_pref..'Все',    						fn=report_fastener_all, },
+		{name = name_pref..'ЕКАСУИ Все',    				fn=ekasui_fastener_all, },
+		{name = name_pref.. name_fastener,    				fn=report_fastener, },
+		{name = name_pref..'ЕКАСУИ ' .. name_fastener,    	fn=ekasui_fastener, },
 	}
 
 	for _, report in ipairs(sleppers_reports) do

@@ -350,8 +350,6 @@ end
 
 local report_sleeper_dist = make_report_generator(generate_rows_sleeper_dist)
 local report_sleeper_angle = make_report_generator(generate_rows_sleeper_angle)
-local report_sleeper_user = make_report_generator(generate_rows_sleeper_user)
-
 
 local report_ALL = make_report_generator(
 	generate_rows_sleeper_dist,
@@ -359,10 +357,10 @@ local report_ALL = make_report_generator(
 	generate_rows_sleeper_user
 )
 
+
 local videogram = make_report_videogram(
 	generate_rows_sleeper_dist,
-	generate_rows_sleeper_angle,
-	generate_rows_sleeper_user
+	generate_rows_sleeper_angle
 )
 
 -- =============================================================================
@@ -379,7 +377,6 @@ local function AppendReports(reports)
 		{name = name_pref..'*Параметры и размеры дефектов шпал, мостовых и переводных брусьев, мм',	fn=report_not_implement,	},
 		{name = name_pref..'*Определение кустовой негодности шпал',									fn=report_not_implement,	},
 		{name = name_pref..'*Фиксация шпал с разворотом относительно своей оси',					fn=report_not_implement,	},
-		{name = name_pref..'Пользовательские',														fn=report_sleeper_user,		},
 	}
 
 	for _, report in ipairs(sleppers_reports) do
@@ -394,7 +391,7 @@ if not ATAPE then
 	local test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 
-	report_sleeper_dist()
+	report_ALL()
 end
 
 return {

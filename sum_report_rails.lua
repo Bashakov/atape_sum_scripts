@@ -32,6 +32,7 @@ local guid_surface_user =
 
 local filter_juids = mark_helper.table_merge(guid_surface_defects, guid_surface_user)
 
+
 local function get_user_filter_surface()
 		local res, user_width, user_lenght, user_area = iup.GetParam(
 			"Фильтрация ( AND ) дефектов", nil,
@@ -172,8 +173,8 @@ local report_rails = make_report_generator(generate_rows_rails)
 local ekasui_rails = make_report_ekasui(generate_rows_rails)
 local videogram = make_report_videogram(generate_rows_rails)
 
-local report_rails_user = make_report_generator(generate_rows_rails_user)
-local ekasui_rails_user = make_report_ekasui(generate_rows_rails_user)
+local report_rails_all = make_report_generator(generate_rows_rails_user, generate_rows_rails)
+local ekasui_rails_all = make_report_ekasui(generate_rows_rails_user, generate_rows_rails)
 
 -- =============================================================================
 
@@ -182,13 +183,17 @@ local ekasui_rails_user = make_report_ekasui(generate_rows_rails_user)
 local function AppendReports(reports)
 	local name_pref = 'Ведомость отступлений в содержании рельсов|'
 
+	local name_surf = '\
+Определение и вычисление размеров поверхностных дефектов рельсов, \
+седловин, в том числе в местах сварки, пробуксовок (длина, ширина и площадь)'
+
 	local sleppers_reports =
 	{
-		{name = name_pref .. 'Определение и вычисление размеров поверхностных дефектов рельсов, седловин, в том числе в местах сварки, пробуксовок (длина, ширина и площадь)',    		fn = report_rails, guids=filter_juids},
-		{name = name_pref .. 'ЕКАСУИ Определение и вычисление размеров поверхностных дефектов рельсов, седловин, в том числе в местах сварки, пробуксовок (длина, ширина и площадь)',   fn = ekasui_rails, guids=filter_juids},
+		{name = name_pref .. name_surf,    					fn = report_rails},
+		{name = name_pref .. 'ЕКАСУИ ' .. name_surf,   		fn = ekasui_rails},
 
-		{name = name_pref .. 'Пользовательские',    		fn = report_rails_user, guids=guid_surface_user},
-		{name = name_pref .. 'ЕКАСУИ Пользовательские',   	fn = ekasui_rails_user, guids=guid_surface_user},
+		{name = name_pref .. 'Все',    						fn = report_rails_all},
+		{name = name_pref .. 'ЕКАСУИ Все',   				fn = ekasui_rails_all},
 	}
 
 	for _, report in ipairs(sleppers_reports) do
@@ -203,7 +208,13 @@ if not ATAPE then
 	local test_report  = require('test_report')
 	test_report('D:\\ATapeXP\\Main\\494\\video\\[494]_2017_06_08_12.xml')
 
-	report_rails_user()
+	local reports = {};
+	AppendReports(reports)
+
+	local report = reports[4]
+	print('name: ', report.name)
+	print('GUIDS:' , table.concat(report.guids, ', '))
+	report.fn()
 	--ekasui_rails()
 end
 

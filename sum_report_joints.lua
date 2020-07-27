@@ -379,6 +379,23 @@ local function generate_rows_WeldedBond(marks, dlgProgress, pov_filter)
 	return report_rows
 end
 
+local function generate_rows_user(marks, dlgProgress, pov_filter)
+	if #marks == 0 then return end
+
+	local report_rows = {}
+	for i, mark in ipairs(marks) do
+		if pov_filter(mark) and mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and mark.ext.CODE_EKASUI then
+			local row = MakeJointMarkRow(mark)
+			row.DEFECT_CODE = mark.ext.CODE_EKASUI
+			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
+			table.insert(report_rows, row)
+		end
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, string.format('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
+			return
+		end
+	end
+	return report_rows
+end
 
 local function report_broken_insulation()
 	iup.Message('Error', "Отчет не реализован")
@@ -444,6 +461,7 @@ end
 -- =============================================================================
 
 local all_generators = {
+	generate_rows_user,
 	generate_rows_joint_width,
 	generate_rows_neigh_blind_joint,
 	generate_rows_joint_step,
@@ -518,9 +536,9 @@ if not ATAPE then
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
     --test_report('D:/ATapeXP/Main/TEST/ZeroGap/2019_06_13/Avikon-03M/6284/[494]_2017_06_14_03.xml')
 
-	report_joint_width()
+	-- report_joint_width()
 	--report_neigh_blind_joint()
-	--report_ALL()
+	report_ALL()
 	--ekasui_ALL()
 end
 
