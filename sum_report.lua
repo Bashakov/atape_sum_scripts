@@ -1264,6 +1264,7 @@ function GetFilterGuids(reportName)
 	-- код для обслуживания отчетов с подотчетами, 
 	-- когда открывается диалог генерации отчетов, там нужно показать количество отметок каждого типа
 	-- но конкретный отчет еще не задан, известен только префикс, по нему и ищем
+	reportName = reportName .. '|'
 	for _, n in ipairs(Report_Functions) do 
 		local item_name = n.name:sub(1, reportName:len())
 		if item_name == reportName and n.guids then
@@ -1275,7 +1276,8 @@ function GetFilterGuids(reportName)
 
 	local res = {}
 	for k,_ in pairs(guids) do table.insert(res, k) end
-	return res;
+	print('GetFilterGuids:', table.concat(res, ','))
+	return res
 end
 
 -- =======================================================================
@@ -1285,6 +1287,9 @@ if not ATAPE then
 	test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	
-	MakeReport('Стыковые зазоры|ЕКАСУИ ')
+	--MakeReport('Стыковые зазоры|ЕКАСУИ ')
+	local guids = GetFilterGuids('Ведомость отступлений в содержании рельсов')
+	print(guids)
+
 end
 
