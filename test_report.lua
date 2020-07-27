@@ -6,7 +6,7 @@ local function binsearch(tbl, value, fcompval, allow_nearest)
 	fcompval = fcompval or function(v) return v end
 	local iStart, iEnd, iMid = 1, #tbl, 1
 	while iStart < iEnd do
-		iMid = math.floor( (iStart+iEnd)/2 )  
+		iMid = math.floor( (iStart+iEnd)/2 )
 		local value2 = fcompval( tbl[iMid] )
 		if value == value2 then
 			return iMid
@@ -16,10 +16,10 @@ local function binsearch(tbl, value, fcompval, allow_nearest)
 			iStart = iMid + 1
 		end
 	end
-	
-	if #tbl > 0 and allow_nearest then 
+
+	if #tbl > 0 and allow_nearest then
 		return iMid
-	end        
+	end
 end
 
 local function read_sum_file(file_path, guids, mark_id)
@@ -36,16 +36,16 @@ local function read_sum_file(file_path, guids, mark_id)
 		-- print(s)
 		return s
 	end
-	
+
 	local db = sqlite3.open(file_path)
-	
+
 	local tids = nil
 	if guids then
 		local ids = {}
 		for tid, tg in db:urows('SELECT TYPEID, hex(GUID) FROM SumrkMarkTypeTable') do
 			tg = format_guid(tg)
 			for _, ig in ipairs(guids) do
-				if tg == ig then 
+				if tg == ig then
 					table.insert(ids, tid)
 					break
 				end
@@ -54,20 +54,20 @@ local function read_sum_file(file_path, guids, mark_id)
 		tids = table.concat(ids, ',')
 		-- print(tids)
 	end
-	
+
 	local str_stat = [[
-		SELECT 
-			m.MARKID as ID, 
-			hex(t.GUID) as Guid, 
-			m.SYSCOORD as SysCoord, 
-			m.LENGTH as Len, 
-			m.RAILMASK as RailMask, 
-			m.ChannelMask as ChannelMask, 
+		SELECT
+			m.MARKID as ID,
+			hex(t.GUID) as Guid,
+			m.SYSCOORD as SysCoord,
+			m.LENGTH as Len,
+			m.RAILMASK as RailMask,
+			m.ChannelMask as ChannelMask,
 			d.DESCRIPTION as Description
 		FROM SumrkMainTable as m
 		JOIN SumrkMarkTypeTable as t ON m.TYPEID = t.TYPEID
 		LEFT JOIN SumrkDescTable as d ON m.MARKID = d.MARKID
-		WHERE ( m.INNERFLAGS & 1) = 0 
+		WHERE ( m.INNERFLAGS & 1) = 0
 		]]
 	if tids then
 		str_stat = str_stat .. ' AND t.TYPEID in (' .. tids .. ') '
@@ -75,7 +75,7 @@ local function read_sum_file(file_path, guids, mark_id)
 	if mark_id then
 		str_stat = str_stat .. ' AND m.MARKID == ' .. mark_id .. ' '
 	end
-	
+
 	local st = assert( db:prepare(str_stat) )
 	local marks = {}
 	while st:step() == sqlite3.ROW do
@@ -88,7 +88,7 @@ local function read_sum_file(file_path, guids, mark_id)
 		}
 		marks[mark.prop.ID] = mark
 	end
-	
+
 	for ext_name in db:urows('SELECT NAME FROM SumrkPropDescTable') do
 		--print(ext_name)
 		local req_params = 'SELECT * FROM SumrkXtndParamTable_' .. ext_name
@@ -114,24 +114,24 @@ local function psp2table(psp_path)						-- открыть xml паспорт и 
 	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 	assert(xmlDom, 'can not create MSXML object')
 	assert(xmlDom:load(psp_path), "can not open xml file: " .. psp_path)
-	
+
 	local function parse_attr(node) 						-- извлечение значений из атрибута
-		return node.nodeName, node.nodeValue 
+		return node.nodeName, node.nodeValue
 	end
-	
+
 	local function parse_item(name, value)					-- извлеченеи значений из ноды по именам атрибутов
 		return function(node)
-			return node.attributes:getNamedItem(name).nodeValue, node.attributes:getNamedItem(value).nodeValue  
+			return node.attributes:getNamedItem(name).nodeValue, node.attributes:getNamedItem(value).nodeValue
 		end
 	end
-	
+
 	local requests = {
 		{path = "/DATA_SET/DRIVER/@*",									fn = parse_attr },
 		{path = "/DATA_SET/DEVICE/@*",									fn = parse_attr },
 		{path = "/DATA_SET/REGISTRATION_DATA/@*",						fn = parse_attr },
 		{path = "/DATA_SET/REGISTRATION_DATA/DATA[@INNER and @VALUE]", 	fn = parse_item('INNER', 'VALUE')},
 	}
-	
+
 	local res = {}
 	for _, req in ipairs(requests) do
 		local nodes = xmlDom:SelectNodes(req.path)
@@ -148,7 +148,7 @@ end
 
 local function read_guids()
 	local res = {}
-			
+
 	local pathCfg = os.getenv("ProgramFiles") .. '\\ATapeXP\\SpecUserMark.xml'
 	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 	assert(xmlDom and xmlDom:load(pathCfg), 'can not create MSXML object')
@@ -156,7 +156,7 @@ local function read_guids()
 	while true do
 		local node = nodes:nextNode()
 		if not node then break end
-		local guid = node.attributes:getNamedItem("GUID").nodeValue 
+		local guid = node.attributes:getNamedItem("GUID").nodeValue
 		local name = node.attributes:getNamedItem('VALUE').nodeValue
 		res[string.upper(guid)] = name
 	end
@@ -165,10 +165,10 @@ end
 
 local function read_EKASUI_cfg()
 	local pathCfg = os.getenv("ProgramFiles") .. '\\ATapeXP\\ekasui.cfg'
-	
+
 	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 	assert(xmlDom, 'can not create MSXML object')
-	
+
 	if xmlDom:load(pathCfg) then
 		local nodes = xmlDom:SelectNodes('/EKASUI/@*')
 		local res = {}
@@ -181,12 +181,32 @@ local function read_EKASUI_cfg()
 	end
 end
 
-local function read_XmlC(file_path)
-	local function pop_int(state, size)
-		assert(#state.stream >= state.pos + size - 1)
-		local bytes = table.pack(string.byte(state.stream, state.pos, state.pos+size-1))
-		state.pos = state.pos + size
-		
+local Stream = OOP.class{
+	ctor = function (self, file_path, error_if_no_file)
+		self.pos = 1
+		self.stream = ''
+		local file = io.open(file_path, 'rb')
+		if file then
+			self.stream = file:read('*a')
+			file:close()
+		elseif error_if_no_file then
+			error('Can no open file:' .. file_path)
+		end
+	end,
+
+	left = function (self)
+		return #self.stream + 1 - self.pos
+	end,
+
+	empty = function (self)
+		return self:left() <= 0
+	end,
+
+	pop_num = function(self, size)
+		assert(#self.stream >= self.pos + size - 1)
+		local bytes = table.pack(string.byte(self.stream, self.pos, self.pos+size-1))
+		self.pos = self.pos + size
+
 		local res = bytes[size]
 		for i = size-1, 1, -1 do
 			res = res * 0x100 + bytes[i]
@@ -195,44 +215,40 @@ local function read_XmlC(file_path)
 			res = res - bit32.lshift(1, size*8)
 		end
 		return res
-	end
+	end,
 
-
-	local function pop_string(state, length)
-		assert(#state.stream + 1 >= state.pos + length)
-		local res = string.sub(state.stream, state.pos, state.pos+length-1)
-		state.pos = state.pos + length
+	pop_string = function (self, length)
+		assert(#self.stream + 1 >= self.pos + length)
+		local res = string.sub(self.stream, self.pos, self.pos+length-1)
+		self.pos = self.pos + length
 		return res
 	end
+}
 
-	local function pop_header(state)
-		local res = {}
-		res.idx = pop_int(state, 1)
-		res.rail = pop_int(state, 1)
-		res.channel = pop_int(state, 1)
-		res.type = pop_int(state, 1)
-		res.coord = pop_int(state, 4)
-		res.value = pop_int(state, 4)
-		return res
-	end
-			
-	local file = io.open(file_path, 'rb')
-	if not file then return {} end
-	local state = {stream=file:read('*a'), pos=1}
-	file:close()
-	if #(state.stream) == 0 then return {} end
-	assert(pop_string(state, 4) == 'XMLc')
-	
-	local values = {}	
+
+
+local function read_XmlC(file_path)
+	local stream = Stream(file_path)
+	if stream:left() == 0 then return {} end
+	assert(stream:pop_string(4) == 'XMLc')
+
+
+	local values = {}
 	local idx2names = {}
-	
-	while #state.stream+1 > state.pos do
+
+	while not stream:empty() do
 		--print(#state.stream, state.pos)
-		local h = pop_header(state)
+		local h = {}
+		h.idx = stream:pop_num(1)
+		h.rail = stream:pop_num(1)
+		h.channel = stream:pop_num(1)
+		h.type = stream:pop_num(1)
+		h.coord = stream:pop_num(4)
+		h.value = stream:pop_num(4)
 		--print(h.idx, h.rail, h.channel, h.type, h.coord, h.value)
-		
+
 		if h.type == 0 then 			-- HWS_CXML_INDEX_NAME
-			local name = pop_string(state, h.value)
+			local name = stream:pop_string(h.value)
 			assert(not idx2names[h.idx] or idx2names[h.idx] == name)
 			idx2names[h.idx] = name
 		elseif h.type == 2 then 		-- HWS_CXML_INDEXED_VALUE
@@ -248,10 +264,65 @@ local function read_XmlC(file_path)
 	return values
 end
 
+local Deltas = OOP.class{
+	ctor = function (self, psp_path, start_km, start_pk, increase)
+		self.items = {}
+		local stream = Stream(string.gsub(psp_path, '.xml', '.dlt'))
+		while not stream:empty() do
+			table.insert(self.items, {
+				coord = stream:pop_num(4),
+				delta=stream:pop_num(4)
+			})
+		end
+		stream = nil
+		self.start_km = start_km
+		self.start_pk = start_pk
+		self.increase = increase
+	end,
+
+	by_coord = function (self, coord)
+		local item = nil
+		for _, cur_item in ipairs(self.items) do
+			if cur_item.coord > coord then break end
+			item = cur_item
+		end
+
+		if item then
+			-- CRegFileBasket::TranslateToPathCoord
+			local nMmFromStart = coord + item.delta
+
+			local start_pk = self.start_pk ~= 0 and self.start_pk - 1 or self.start_pk
+			local realPath = (self.start_km * 10 + start_pk) * 100000
+
+			if self.increase ~= '0' then
+				realPath = realPath + nMmFromStart
+			else
+				realPath = realPath - nMmFromStart
+			end
+
+			local MMinKM = 1000*1000
+
+			local m_mm = realPath % MMinKM;
+			local km = math.floor(realPath / MMinKM);
+			if m_mm < 0 then
+				m_mm = m_mm + MMinKM
+				km = km - 1
+			end
+			local mm = math.floor (m_mm % 1000)
+			local m =  math.floor (m_mm / 1000)
+			return km, m, mm
+		else
+			local km = math.floor(coord / 1000000)
+			local m = math.floor(coord / 1000) % 1000
+			local mm = math.floor(coord) % 1000
+			return km, m, mm
+		end
+	end,
+}
 
 
 local function read_temerature(gps)
-	local res = {}  
+	local res = {}
 	for _, g in ipairs(gps) do
 		if g.name == "TEMP_TARGET" or g.name == "TEMP_HEAD" then
 			if not res[g.rail] then res[g.rail] = {} end
@@ -267,52 +338,50 @@ local function read_temerature(gps)
 	return res
 end
 
-			
-				
+
+
 
 Driver = OOP.class
 {
 	ctor = function(self, psp_path, sum_path)
 		self._passport = psp2table(psp_path)
-		
+
 		if not sum_path then
 			sum_path = string.gsub(psp_path, '.xml', '.sum')
 		end
 		self._sum_path = sum_path
-		
+
 		self._gps = read_XmlC(string.gsub(psp_path, '.xml', '.gps'))
 		--self._marks = read_sum_file(self._sum_path)
 		self._temerature = read_temerature(self._gps)
-		
+		self.deltas = Deltas(psp_path, self._passport.START_KM, self._passport.START_PK, self._passport.INCREASE)
+
 		_G.Driver = self
 		_G.Passport = self._passport
 		_G.EKASUI_PARAMS = read_EKASUI_cfg()
 		self._guids = read_guids()
 	end,
-	
+
 	GetMarks = function(self, filter)
 		local g = filter and filter.GUIDS
 		local mark_id = filter and filter.mark_id
 		local marks = read_sum_file(self._sum_path, g, mark_id)
 		return marks
 	end,
-	
+
 	GetAppPath = function(self)
 		local cd = io.popen"cd":read'*l'
 		return cd:match('(.+\\)%S+')
 	end,
-	
+
 	GetPathCoord = function(self, sys)
-		local km = math.floor(sys / 1000000)
-		local m = math.floor(sys / 1000) % 1000
-		local mm = math.floor(sys) % 1000
-		return km, m, mm
+		return self.deltas:by_coord(sys)
 	end,
-	
+
 	GetSumTypeName = function(self, guid)
 		return self._guids[string.upper(guid)] or tostring(guid)
 	end,
-	
+
 	GetTemperature = function(self, rail, sys)
 		assert(rail == 0 or rail == 1)
 		local head = nil
@@ -330,7 +399,7 @@ Driver = OOP.class
 		end
 		return {head=head, target=target}
 	end,
-	
+
 	GetFrame = function(self, channel, sys, params)
 		local path = string.format("c:\\out\\%s\\img\\%d_%d.jpg", Passport.NAME, sys, channel)
 		return path
