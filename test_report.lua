@@ -22,7 +22,7 @@ local function binsearch(tbl, value, fcompval, allow_nearest)
 	end
 end
 
-local function read_sum_file(file_path, guids, mark_id)
+local function read_sum_file(file_path, guids, mark_id, load_marks_range)
 	local function format_guid(hex_guid)
 		-- print(hex_guid)
 		local m = table.pack(string.match(hex_guid, '\z
@@ -74,6 +74,10 @@ local function read_sum_file(file_path, guids, mark_id)
 	end
 	if mark_id then
 		str_stat = str_stat .. ' AND m.MARKID == ' .. mark_id .. ' '
+	end
+	if load_marks_range then
+		str_stat = str_stat .. ' AND m.SYSCOORD >= ' .. load_marks_range[1] .. ' '
+		str_stat = str_stat .. ' AND m.SYSCOORD <= ' .. load_marks_range[2] .. ' '
 	end
 
 	local st = assert( db:prepare(str_stat) )
@@ -343,7 +347,7 @@ end
 
 Driver = OOP.class
 {
-	ctor = function(self, psp_path, sum_path)
+	ctor = function(self, psp_path, sum_path, load_marks_range)
 		self._passport = psp2table(psp_path)
 
 		if not sum_path then
@@ -360,12 +364,13 @@ Driver = OOP.class
 		_G.Passport = self._passport
 		_G.EKASUI_PARAMS = read_EKASUI_cfg()
 		self._guids = read_guids()
+		self._load_marks_range = load_marks_range
 	end,
 
 	GetMarks = function(self, filter)
 		local g = filter and filter.GUIDS
 		local mark_id = filter and filter.mark_id
-		local marks = read_sum_file(self._sum_path, g, mark_id)
+		local marks = read_sum_file(self._sum_path, g, mark_id, self._load_marks_range)
 		return marks
 	end,
 

@@ -118,43 +118,54 @@ local function scan_for_neigh_blind_joint(marks, dlg)
 	return groups
 end
 
--- =============================================================================
+-- ============================================================================= --
+
+local function make_mark_gap_width_exceed(mark)
+	local function width2speed(gap_width)
+		if gap_width <= 26 then return '100' end
+		if gap_width <= 30 then	return '60'	 end
+		if gap_width <= 35 then	return '25'	 end
+		return 'Движение закрывается'
+	end
+
+	if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[1] then
+		local gap_width = mark_helper.GetGapWidth(mark)
+		local row = MakeJointMarkRow(mark)
+		row.DEFECT_CODE = mark.ext.CODE_EKASUI
+		row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
+		row.GAP_WIDTH = gap_width
+		row.SPEED_LIMIT = width2speed(gap_width)
+		return row
+	else
+		local gap_width = mark_helper.GetGapWidth(mark)
+		if gap_width and gap_width > 24 then
+			local row = MakeJointMarkRow(mark)
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[1]
+			row.DEFECT_DESC = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[2]
+			row.GAP_WIDTH = gap_width
+			row.SPEED_LIMIT = width2speed(gap_width)
+			return row
+		end
+	end
+end
 
 local function generate_rows_joint_width(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		if pov_filter(mark) then
-			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[1] then
-				local row = MakeJointMarkRow(mark)
-				row.DEFECT_CODE = mark.ext.CODE_EKASUI
-				row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
+			local row = make_mark_gap_width_exceed(mark)
+			if row then
 				table.insert(report_rows, row)
-			else
-				local gap_width = mark_helper.GetGapWidth(mark)
-				if gap_width and gap_width > 24 then
-					local row = MakeJointMarkRow(mark)
-					row.DEFECT_CODE = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[1]
-					row.DEFECT_DESC = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[2]
-					row.GAP_WIDTH = gap_width
-
-					if     gap_width <= 26 then 					row.SPEED_LIMIT = '100'
-					elseif gap_width > 26 and gap_width <=30 then	row.SPEED_LIMIT = '60'
-					elseif gap_width > 30 and gap_width <=35 then	row.SPEED_LIMIT = '25'
-					else											row.SPEED_LIMIT = 'Движение закрывается'
-					end
-
-					table.insert(report_rows, row)
-				end
 			end
 		end
 		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d отметок, найдено %d', i, #marks, #report_rows)) then
 			return
 		end
 	end
-
 	return report_rows
 end
 
+-- -------------------------------------------- --
 
 local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
 	local report_rows = {}
@@ -236,6 +247,7 @@ local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
 	return report_rows
 end
 
+-- -------------------------------------------- --
 
 local function generate_rows_joint_step(marks, dlgProgress, pov_filter)
 	local report_rows = {}
@@ -385,9 +397,12 @@ local function generate_rows_user(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		if pov_filter(mark) and mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and mark.ext.CODE_EKASUI then
-			local row = MakeJointMarkRow(mark)
-			row.DEFECT_CODE = mark.ext.CODE_EKASUI
-			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
+			local row = make_mark_gap_width_exceed(mark)
+			if not row then
+				row = MakeJointMarkRow(mark)
+				row.DEFECT_CODE = mark.ext.CODE_EKASUI
+				row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
+			end
 			table.insert(report_rows, row)
 		end
 		if i % 10 == 0 and not dlgProgress:step(i / #marks, string.format('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
@@ -533,12 +548,19 @@ end
 -- тестирование
 if not ATAPE then
 	local test_report  = require('test_report')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 100000})
     --test_report('D:/ATapeXP/Main/TEST/ZeroGap/2019_06_13/Avikon-03M/6284/[494]_2017_06_14_03.xml')
+
+	local reports = {}
+	AppendReports(reports)
+
+	local report = reports[1]
+	print(report.name)
+	report.fn()
 
 	-- report_joint_width()
 	--report_neigh_blind_joint()
-	report_ALL()
+	-- report_ALL()
 	--ekasui_ALL()
 end
 
