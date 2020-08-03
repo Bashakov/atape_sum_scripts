@@ -319,7 +319,8 @@ end
 function GetToolTip(row, col)
 	--print ('GetToolTip', row, col) -- отладочная печать
 	local mark = work_marks_list[row]
-	local res = sprintf('tooltip\nrow = %d\ncol = %d', row, col)
+	--local res = sprintf('tooltip\nrow = %d\ncol = %d', row, col)
+	local res = 'tooltip:'
 
 	if mark then
 		res = res .. '\n' .. mark.prop.Description

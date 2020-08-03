@@ -1,4 +1,7 @@
+local mark_helper = require 'sum_mark_helper'
+
 local defect_codes = require 'report_defect_codes'
+local table_merge = mark_helper.table_merge
 
 local filters = 
 {
@@ -20,7 +23,7 @@ local filters =
 			column_user_accept,
 			column_pov_common,
 			}, 
-		GUIDS = recognition_guids,
+		GUIDS = table_merge(recognition_guids, '{3601038C-A561-46BB-8B0F-F896C2130003}'),
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
@@ -70,7 +73,9 @@ local filters =
 			}, 
 		GUIDS = {
 			"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}",
-			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",}
+			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",
+			"{3601038C-A561-46BB-8B0F-F896C2130006}",
+		}
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
@@ -98,7 +103,9 @@ local filters =
 --			column_fastener_width,
 			}, 
 		GUIDS = {
-			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",}
+			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",
+			"{3601038C-A561-46BB-8B0F-F896C2130001}",
+		}
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
@@ -112,10 +119,15 @@ local filters =
 			column_recogn_rail_gap_step,
 			column_recogn_video_channel,
 			}, 
-		GUIDS = recognition_guids,
+		GUIDS = table_merge(recognition_guids, '{3601038C-A561-46BB-8B0F-F896C2130003}'),
 		filter = function(mark)
-			local step = mark_helper.GetRailGapStep(mark)
-			return step 
+			if mark.prop.Guid == '{3601038C-A561-46BB-8B0F-F896C2130003}' and mark.ext.CODE_EKASUI == '090004012059' then
+				return true
+			elseif mark.ext.RAWXMLDATA then
+				local step = mark_helper.GetRailGapStep(mark)
+				return step
+			end
+			return false
 		end,
 	},
 	{
@@ -240,11 +252,16 @@ local filters =
 			column_mark_id,
 			column_sleeper_dist_prev,
 			}, 
-		GUIDS = recognition_guids,
+		GUIDS = table_merge(recognition_guids, '{3601038C-A561-46BB-8B0F-F896C2130003}'),
 		filter = function(mark)
-			local width = mark_helper.GetGapWidth(mark)
-			return width and width <= 3
-		end,	
+			if mark.prop.Guid == '{3601038C-A561-46BB-8B0F-F896C2130003}' and mark.ext.CODE_EKASUI == '090004015840' then
+				return true
+			elseif mark.ext.RAWXMLDATA then
+				local width = mark_helper.GetGapWidth(mark)
+				return width and width <= 3
+			end
+			return false
+		end,
 		post_load = function(marks)
 			local prev_pos = {} -- координата пред стыка (по рельсам)
 			marks = sort_stable(marks, column_sys_coord.sorter, true)	-- сортируем отметки от драйвера по координате

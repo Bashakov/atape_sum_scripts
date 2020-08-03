@@ -1,9 +1,8 @@
 mark_helper = require 'sum_mark_helper'
-stuff = require 'stuff'
 
-sprintf = stuff.sprintf
-printf = stuff.printf
-table_find = stuff.table_find
+sprintf = mark_helper.sprintf
+printf = mark_helper.printf
+table_find = mark_helper.table_find
 
 SelectNodes = mark_helper.SelectNodes
 sort_marks = mark_helper.sort_marks
@@ -38,6 +37,8 @@ end
 -- получить параметр скрепления по имени (поиск строки, работает не всегда)
 local function GetFastenerParamName1(mark, name)
 	local x = mark.ext.RAWXMLDATA
+	if not x then return nil end
+
 	local req = 'PARAM%s+name%s*=%s*"' .. name .. '"%s*value%s*=%s*"([^"]+)"'
 	--local req = 'PARAM%s+name="' .. name .. '"[^>]+value="([^"]+)"'
 	local res = string.match(x, req)
