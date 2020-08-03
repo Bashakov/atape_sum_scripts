@@ -1,8 +1,9 @@
 local GUIDS = require "sum_list_pane_guids"
 local sumPOV = require "sumPOV"
 local rubki = require "sum_report_rubki"
+local mark_helper = require 'sum_mark_helper'
 
--- =========== stuff ============== -- 
+-- =========== stuff ============== --
 
 local function find(array, elem)
 	for i, val in ipairs(array) do
@@ -38,34 +39,34 @@ end
 local function clear_desc_attrib(xml)
 	local names = {'_value', 'value_', '_desc'}
 	for _,name in ipairs(names) do
-		for n in select_nodes(xml, "//*[@" .. name .. "]") do 
-			n:removeAttribute(name) 
+		for n in select_nodes(xml, "//*[@" .. name .. "]") do
+			n:removeAttribute(name)
 		end
 	end
 end
 
--- ================================== -- 
+-- ================================== --
 
 -- открыть xml распознавания в редакторе
 local function show_mark_xml(obj)
 	local mark = obj.mark
 	local str_xml = mark.ext.RAWXMLDATA
-	
+
 	local file_path = os.getenv('tmp') .. "\\recognition_result_" .. os.date('%y%m%d-%H%M%S') .. ".xml"
 	local f = assert(io.open(file_path, 'w+b'))
 	f:write(str_xml)
 	f:close()
-	
+
 	os.execute('start ' .. file_path)
 end
 
 local function edit_width(obj)
 	local mark = obj.mark
 	local recog_xml = parse_xml(mark.ext.RAWXMLDATA or '<a/>')
-	
+
 	local function gw(propExt, xmlAttr)
-		if mark.ext[propExt] then 
-			return mark.ext[propExt] 
+		if mark.ext[propExt] then
+			return mark.ext[propExt]
 		end
 		local r = "ACTION_RESULTS/PARAM[@value='" .. xmlAttr .. "']/PARAM[@name='FrameNumber' and @value='0']/PARAM[@name='Result' and @value='main']/PARAM[@name='RailGapWidth_mkm' and @value]/@value"
 		local nv = recog_xml:selectSingleNode(r)
@@ -74,14 +75,14 @@ local function edit_width(obj)
 		end
 		return 0
 	end
-	
+
 	local wt = gw('VIDEOIDENTGWT', 'CalcRailGap_Head_Top')
 	local ws = gw('VIDEOIDENTGWS', 'CalcRailGap_Head_Side')
 
 	res, wt, ws = iup.GetParam(
 		'Корректировка ширины', nil, "\z
 		Ширина зазора Top (мм): %i[0,100]\n\z
-		Ширина зазора Side (мм): %i[0,100]\n", 
+		Ширина зазора Side (мм): %i[0,100]\n",
 		wt, ws)
 
 	if res then
@@ -118,7 +119,7 @@ local function edit_bolts(obj)
 		fmt = fmt .. string.format('Канал %s отв. %s: %%o|нет|болтается|есть|болт|гайка|\n', bolt.ch, bolt.num)
 		states[i] = bolt.state
 	end
-	
+
 	local res = {iup.GetParam("Редактирование болтов", nil, fmt, table.unpack(states))}
 	if res[1] then
 		for i, bolt in ipairs(bolts) do
@@ -131,7 +132,7 @@ local function edit_bolts(obj)
 		mark:Save()
 		return RETURN_STATUS.UPDATE_MARK
 	end
-end
+end	
 
 local function remove_mark(obj)
 	local mark = obj.mark
@@ -146,7 +147,7 @@ end
 local function videogram_mark(obj)
 	local mark = obj.mark
 	local sum_videogram = require 'sum_videogram'
-	
+
 	-- work_filter если запускаем из таблицы отметок
 	local defect_codes = work_filter and work_filter.videogram_defect_codes
 	local videogram_direct_set_defect = work_filter and work_filter.videogram_direct_set_defect
@@ -162,16 +163,16 @@ end
 
 --[[ 4.2.1.4 Редактирование свойств отметки распознавания
 
-В контекстное меню входят минимально три пункта: Подтвердить, Подтвердить*, 
+В контекстное меню входят минимально три пункта: Подтвердить, Подтвердить*,
 Ввести пользовательский.
 
-- По пункту Подтвердить флаги ПОВ заполняются в соответствии с 
+- По пункту Подтвердить флаги ПОВ заполняются в соответствии с
 	выбранным типом сценария.
 - По пункту Подтвердить* пользователю предлагается окно выбора типа ПОВ.
-- По пункту Ввести пользовательский пользователю предлагается окно редактирования 
-	значения (с отображением предыдущего) и выбор флагов ПОВ 
+- По пункту Ввести пользовательский пользователю предлагается окно редактирования
+	значения (с отображением предыдущего) и выбор флагов ПОВ
 	(флаги по умолчанию соответствуют с выбранному сценарию).
-]]	
+]]
 local function accept_pov(obj)
 	if obj.method == 0 then -- Подтверждать в ЕКАСУИ
 		sumPOV.AcceptEKASUI(obj.mark, true, not obj.CHECKED)
@@ -194,10 +195,48 @@ local function accept_pov(obj)
 	return RETURN_STATUS.UPDATE_MARK
 end
 
-			
+-- =============================================
+
+--[[из ТЗ 4.2.1.4
+Для Стыковых Зазоров пункт Подтвердить, Подтвердить* разветвляются на три подуровня:
+- с нерабочей грани,
+- c поверхности катания,
+- c рабочей грани.
+Отображать в меню текущее значение зазора и предупреждение что остальные зазоры будут удалены. ]]
+local function mark_accept_width_checker(menu_items, mark)
+	local sides = {
+		{sign = 'inactive', lbl = 'с нерабочей грани'},
+		{sign = 'thread', lbl = 'c поверхности катания'},
+		{sign = 'active', lbl = 'c рабочей грани'},
+	}
+	for _, side in ipairs(sides) do
+		local width = mark_helper.GetGapWidthName(mark, side.sign)
+		if width then
+			local text = string.format('Подтвердить ширину зазора (удалить остальные)|%s (%d мм)', side.lbl, width)
+			local fn = function ()
+				mark.ext['VIDEOIDENTGWT'] = width
+				mark.ext['VIDEOIDENTGWS'] = width
+				sumPOV.UpdateMarks(mark, false)
+
+				if mark.ext.RAWXMLDATA then
+					local recog_xml = parse_xml(mark.ext.RAWXMLDATA)
+					for node_width in select_nodes(recog_xml, "//PARAM[@name='RailGapWidth_mkm' and @value]") do
+						node_width.parentNode:removeChild(node_width)
+					end
+					clear_desc_attrib(recog_xml)
+					mark.ext.RAWXMLDATA = recog_xml.xml
+				end
+				mark:Save()
+				return RETURN_STATUS.UPDATE_MARK
+			end
+			table.insert(menu_items, {name=text, fn=fn})
+		end
+	end
+end
+
 -- =============== EXPORT ===============
 
--- статусы обработки для подсказки таблице отметок как обновлятся
+-- статусы обработки для подсказки таблице отметок как обновляться
 RETURN_STATUS = {
 	NONE = 0,
 	UPDATE_MARK = 1,
@@ -206,7 +245,7 @@ RETURN_STATUS = {
 	RELOAD_ALL = 3,
 }
 
---[[ функция вызывается из программы для получения списка элементов меню 
+--[[ функция вызывается из программы для получения списка элементов меню
 
 должна вернуть массив объектов с обязательными полями "name" и "fn":
 - "name" строка - будет отображено в меню, поддерживается формат "lvl1|lvl2|lvl3", в этом случае строятся подменю,
@@ -220,7 +259,7 @@ RETURN_STATUS = {
 		vector<script_item> items = GetMenuItems(mark);
 		for(item in items)
 			menu.add_items(item.name);
-			
+
 		int ixd = menu.Show()
 		script_item item = items[ixd];
 		item.fn(item);
@@ -238,14 +277,14 @@ function GetMenuItems(mark)
 	if recog_xml and #recog_xml > 0 then
 		table.insert(menu_items, {name="Показать XML распознавания", fn=show_mark_xml, mark=mark})
 	end
-	
+
 	if find(GUIDS.recognition_guids, mark_guid) then
 		table.insert(menu_items, {name='Редактировать ширину зазора', fn=edit_width, mark=mark})
 		if recog_xml and #recog_xml > 0 then
 			table.insert(menu_items, {name="Редактировать наличие болтов", fn=edit_bolts, mark=mark})
 		end
 	end
-	
+
 	if find(GUIDS.NPU_guids, mark_guid) then
 		table.insert(menu_items, {name='Конвертировать в|Возможн. НПУ', fn=npu_convert, mark=mark, guid="{19FF08BB-C344-495B-82ED-10B6CBAD508F}"})
 		table.insert(menu_items, {name='Конвертировать в|Подтвр. НПУ',  fn=npu_convert, mark=mark, guid="{19FF08BB-C344-495B-82ED-10B6CBAD5090}"})
@@ -253,18 +292,20 @@ function GetMenuItems(mark)
 	end
 	table.insert(menu_items, {name='Сформировать выходную форму видеофиксации', fn=videogram_mark, mark=mark}) --  (д.б. открыт нужный видеокомпонент)
 	table.insert(menu_items, {name='Удалить отметку', fn=remove_mark, mark=mark})
-	
+
 	table.insert(menu_items, '')
-	table.insert(menu_items, {name='Сценарий: ' .. sumPOV.GetCurrentSettingsDescription(', '), GRAYED=true}) 
-	table.insert(menu_items, {name='Настройка сценария установки ПОВ', fn=sumPOV.ShowSettings}) 
-	
+	table.insert(menu_items, {name='Сценарий: ' .. sumPOV.GetCurrentSettingsDescription(', '), GRAYED=true})
+	table.insert(menu_items, {name='Настройка сценария установки ПОВ', fn=sumPOV.ShowSettings})
+
 	table.insert(menu_items, '')
 	-- 4.2.1.4 Редактирование свойств отметки распознавания
-	table.insert(menu_items, {name='Отметка: ' .. sumPOV.GetMarkDescription(mark, ', '), GRAYED=true}) 
+	table.insert(menu_items, {name='Отметка: ' .. sumPOV.GetMarkDescription(mark, ', '), GRAYED=true})
 	--table.insert(menu_items, {name='Подтверждать в ЕКАСУИ', fn=accept_pov, mark=mark, method=0, CHECKED=sumPOV.IsAcceptEKASUI(mark)})
 	table.insert(menu_items, {name='Подтвердить отметку', fn=accept_pov, mark=mark, method=1})
 	--table.insert(menu_items, {name='Подтвердить*', fn=accept_pov, mark=mark, method=2})
 	table.insert(menu_items, {name='Подтвердить отметку не по сценарию установки', fn=accept_pov, mark=mark, method=3})
+	mark_accept_width_checker(menu_items, mark)
+
 	if sumPOV.IsRejectDefect(mark) then
 		table.insert(menu_items, {name='Вернуть дефектность', fn=accept_pov, mark=mark, method=4})
 	else
@@ -272,8 +313,7 @@ function GetMenuItems(mark)
 	end
 
 	table.insert(menu_items, {name='Ведомость оценки стыка', fn=function (o) rubki.MakeEkasuiGapReport(mark) end})
-	
-	
+
 	return menu_items
 end
 
@@ -281,4 +321,4 @@ end
 return {
 	GetMenuItems = GetMenuItems,
 	RETURN_STATUS = RETURN_STATUS
-} 
+}

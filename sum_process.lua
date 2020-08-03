@@ -56,8 +56,10 @@ local function parse_ActionResult(ar)                                        -- 
 	end
 
 	local parseFN = function(fnum, coords)
-		local w = fnum.PARAM.PARAM[2]._attr
-		table.insert(coords, {fn=fnum._attr.value, crd=fnum._attr.coord, w=w.value} )
+		if fnum and fnum.PARAM and fnum.PARAM.PARAM and fnum.PARAM.PARAM[2] then
+			local w = fnum.PARAM.PARAM[2]._attr
+			table.insert(coords, {fn=fnum._attr.value, crd=fnum._attr.coord, w=w.value} )
+		end
 	end
 
 	local parseRG = function(prm)
@@ -136,10 +138,12 @@ local function _get_video_recog_desc(mark, desc)
 		["CalcRailGap_Head_Side"] = 'по рабочей грани' }
 	for n, cw in pairs(ar) do
 		local t = ''
-		for _, w in pairs(cw) do 
-			t = t .. sprintf('\n     %d [%d] = %g mm', w.fn, w.crd, math.round(w.w/1000, 1)) 
+		for _, w in pairs(cw) do
+			t = t .. sprintf('\n     %d [%d] = %g mm', w.fn, w.crd, math.round(w.w/1000, 1))
 		end
-		desc = desc .. sprintf('\nШирина %s:%s', kvnrt[n] or n, t)
+		if #t > 0 then
+			desc = desc .. sprintf('\nШирина %s:%s', kvnrt[n] or n, t)
+		end
 	end
 	return desc
 end -- function _get_video_recog_desc
