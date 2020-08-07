@@ -221,7 +221,12 @@ local function mark_accept_width_checker(menu_items, mark)
 				if mark.ext.RAWXMLDATA then
 					local recog_xml = parse_xml(mark.ext.RAWXMLDATA)
 					for node_width in select_nodes(recog_xml, "//PARAM[@name='RailGapWidth_mkm' and @value]") do
-						node_width.parentNode:removeChild(node_width)
+						local cur_width = tonumber(node_width:SelectSingleNode("@value").nodeValue) / 1000
+						if cur_width ~= width then
+							local node_result = node_width.parentNode        -- оставить только подтвержденный зазор и
+							node_result.parentNode:removeChild(node_result)  -- и его отрисованное значение
+							--node_width.parentNode:removeChild(node_width) -- оставить все зазор, но отрисованное значение только у подтвержденного
+						end
 					end
 					clear_desc_attrib(recog_xml)
 					mark.ext.RAWXMLDATA = recog_xml.xml
