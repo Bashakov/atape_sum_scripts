@@ -76,7 +76,6 @@ local function generate_rows_fastener(marks, dlgProgress)
 		if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130001}" and
 		 (mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1] or
 		  mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP[1] or
-		  mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_BOLT[1] or
 		  mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_BOLT[1]) then
 			local row = MakeFastenerMarkRow(mark)
 			row.DEFECT_CODE = mark.ext.CODE_EKASUI

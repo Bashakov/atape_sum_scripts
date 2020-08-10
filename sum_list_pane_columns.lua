@@ -755,3 +755,17 @@ column_pov_common =
 		return 0
 	end
 }
+
+column_group_defect_count = 
+{
+	name = 'Кол.',
+	width = 40,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		return  mark.ext.GROUP_DEFECT_COUNT
+	end,
+	sorter = function(mark)
+		return mark.ext.GROUP_DEFECT_COUNT
+	end
+}

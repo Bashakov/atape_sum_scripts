@@ -1,0 +1,391 @@
+--[[
+https://bt.abisoft.spb.ru/view.php?id=600#c2554
+
+Dmitry Alexeyev	(участник)
+
+2020-08-07 20:12
+
+Логика вырисовывается следующая в крайне упрощенном варианте.
+Вводится новые типы групповых отметок для зазоров(нулевых),
+скреплений, шпал - автоматические и ручные, всего 6 получается.
+
+Автоматические групповые отметки создаются на основании уже
+распознанных автоматически - пункт меню ("Сформировать групповые отметки").
+
+Автоматические групповые отметки не являются подтвержденными и следуют обычным правилам подтверждения.
+Ручные отметки ставятся с указанием количества либо протяженности.
+Оператор может нарисовать отметку длинную покрывающую все дефекты, если сможет,
+но принципе достаточно и короткой с указанием количества шпал и скреплений.
+
+При выводе картинки используется максимальное значение из ширины нарисованного дефекта и введенной длины количества.
+
+Для нулевых зазоров ручной режим необязателен.
+Оператор будет подтверждать каждый нулевой зазор.
+"Сформировать групповые отметки" для нулевых будет действовать особо.
+Все подтвержденные нулевые зазоры формируют подтвержденную групповую отметку.
+
+Все неподтвержденные нулевые зазоры формируют неподтвержденную групповую отметку.
+Формирование картинки для нулевых либо все, но при такой логике можно слить
+только кадры нулевых (без рельсов межу ними)
+]]
+
+local OOP = require 'OOP'
+local mark_helper = require 'sum_mark_helper'
+local DEFECT_CODES = require 'report_defect_codes'
+local luaiup_helper = require 'luaiup_helper'
+require 'ExitScope'
+
+-- =============================================
+
+local function list(itrable)
+    local res = {}
+    while true do
+        local element = itrable()
+        if element == nil then break end
+        table.insert(res, element)
+    end
+    return res
+end
+
+local function imap(fn, array)
+    local i = 0
+    return function ()
+        i = i + 1
+        local obj = array[i]
+        if obj ~= nil then
+            return fn(obj)
+        end
+    end
+end
+
+local function map(fn, array)
+    return list(imap(fn, array))
+end
+
+local function ifilter(fn, array)
+    local i = 0
+    return function ()
+        while i < #array do
+            i = i + 1
+            local obj = array[i]
+            if fn(obj) then
+                return obj
+            end
+        end
+    end
+end
+
+local function filter(fn, array)
+    return list(ifilter(fn, array))
+end
+
+-- =============================================
+
+local function loadMarks(guids)
+    local marks = Driver:GetMarks{GUIDS=guids, ListType='all'}
+    marks = mark_helper.sort_mark_by_coord(marks)
+    return marks
+end
+
+local function makeMark(guid, coord, lenght, rail_mask, object_count)
+    local mark = Driver:NewSumMark()
+
+	mark.prop.SysCoord = coord
+	mark.prop.Len = lenght
+	mark.prop.RailMask = rail_mask + 8   -- video_mask_bit
+	mark.prop.Guid = guid
+	mark.prop.ChannelMask = 0
+	mark.prop.MarkFlags = 0x01 -- MarkFlags.eIgnoreShift
+
+	mark.ext.GROUP_DEFECT_COUNT = object_count
+
+    -- sumPOV.UpdateMarks(mark, false)
+    return mark
+end
+
+local function scanGroupDefect(defect_type, dlg)
+    local params = defect_type.PARAMETERS or {1}
+    for _, param in ipairs(params) do
+        local marks = defect_type:LoadMarks(param)
+
+        local group = {}
+        for i, mark in ipairs(marks) do
+            if i % 23 == 0 and dlg then
+                local text = string.format('%s: обработка %d / %d отметок', defect_type.NAME, i, #marks)
+                if not dlg:step(i / #marks, text) then
+                    return
+                end
+            end
+            local function get_near_mark(index) return marks[i+index] end
+            local accept = defect_type:Check(get_near_mark)
+            --print(i, accept, mark.prop.SysCoord)
+            if accept then
+                table.insert(group, mark)
+            else
+                defect_type:OnGroup(group, param)
+                group = {}
+            end
+        end
+        defect_type:OnGroup(group, param)
+    end
+end
+
+
+local function remove_old_marks(guids_to_delete, dlg)
+    local marks = loadMarks(guids_to_delete)
+    for i, mark in ipairs(marks) do
+        mark:Delete()
+        if i % 17 == 1 and dlg then
+            local text = string.format('Удаление %d / %d отметок', i, #marks)
+            if not dlg:step(i / #marks, text) then
+                return
+            end
+        end
+    end
+end
+
+local function save_marks(marks, dlg)
+    for i, mark in ipairs(marks) do
+        mark:Save()
+        if i % 17 == 1 and dlg then
+            local text = string.format('Сохранение %d / %d отметок', i, #marks)
+            if not dlg:step(i / #marks, text) then
+                return false
+            end
+        end
+    end
+end
+
+-- ==================================================
+
+local GapGroups = OOP.class
+{
+    NAME = 'Слепые зазоры',
+    GUID = '{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
+    PARAMETERS = {
+        {rail=1},
+        {rail=2}
+    },
+
+    ctor = function (self, width_threshold)
+        self.width_threshold = width_threshold
+        self.marks = {}
+    end,
+
+    LoadMarks = function (self, param)
+        assert(param and param.rail)
+        local video_joints_juids =
+        {
+            "{CBD41D28-9308-4FEC-A330-35EAED9FC801}",	-- Стык(Видео)
+            "{CBD41D28-9308-4FEC-A330-35EAED9FC802}",	-- Стык(Видео)
+            "{CBD41D28-9308-4FEC-A330-35EAED9FC803}",	-- СтыкЗазор(Пользователь)
+            "{CBD41D28-9308-4FEC-A330-35EAED9FC804}",	-- АТСтык(Видео)
+            "{3601038C-A561-46BB-8B0F-F896C2130003}",	-- Рельсовые стыки(Пользователь)
+        }
+        local marks = loadMarks(video_joints_juids)
+        local res = {}
+        for _, mark in ipairs(marks) do
+            if bit32.btest(mark.prop.RailMask, param.rail) then
+                table.insert(res, mark)
+            end
+        end
+        return res
+    end,
+
+    Check = function (self, get_near_mark)
+        local mark = get_near_mark(0)
+        if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" then
+            return mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1]
+        else
+            local width = mark_helper.GetGapWidth(mark) or 100000
+			return width <= self.width_threshold
+        end
+    end,
+
+    OnGroup = function (self, group, param)
+        if #group > 1 then
+            assert(param and param.rail)
+
+            local mark = makeMark(
+                self.GUID,
+                group[1].prop.SysCoord,
+                group[#group].prop.SysCoord - group[1].prop.SysCoord,
+                param.rail,
+                #group
+            )
+            table.insert(self.marks, mark)
+
+            --print('Gaps', param.rail, #group, table.unpack(map(function (mark) return mark.prop.SysCoord end, group)))
+        end
+    end,
+}
+
+local SleeperGroups = OOP.class
+{
+    NAME = 'Шпалы',
+    GUID = '{B6BAB49E-4CEC-4401-A106-355BFB2E0011}',
+
+    ctor = function (self, sleeper_count, MEK)
+        self.ref_dist = 1000000 / sleeper_count
+        self.MEK = MEK
+        self.marks = {}
+    end,
+
+    LoadMarks = function (self)
+        local guigs_sleepers =
+        {
+            "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",	-- Шпалы
+            "{3601038C-A561-46BB-8B0F-F896C2130002}",	-- Шпалы(Пользователь)
+        }
+        return loadMarks(guigs_sleepers)
+    end,
+
+    Check = function (self, get_near_mark)
+        local mark = get_near_mark(0)
+        if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130002}" then
+            return
+                mark.ext.CODE_EKASUI == DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1] or
+			    mark.ext.CODE_EKASUI == DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[1]
+        else
+            local material_diffs = {
+                [1] = 2*40, -- "бетон",
+                [2] = 2*80, -- "дерево",
+            }
+            local function check_distance_normal(max_diff, cur_dist)
+                if cur_dist < 200 then
+                    return true
+                end
+                for i = 1, self.MEK do
+                    if math.abs(cur_dist/i - self.ref_dist) <= max_diff then
+                        return true
+                    end
+                end
+                return false
+            end
+
+            local cur_material = mark_helper.GetSleeperMeterial(mark)
+            local max_diff = material_diffs[cur_material] or 80
+
+            local near = get_near_mark(1) or get_near_mark(-1) -- возьмем следующую или предыдущую
+            if near then
+                local near_dist = math.abs(near.prop.SysCoord - mark.prop.SysCoord)
+                return not check_distance_normal(max_diff, near_dist)
+            end
+        end
+    end,
+
+    OnGroup = function (self, group)
+        if #group > 1 then
+            -- print('Sleepers', #group, table.unpack(map(function (mark) return mark.prop.SysCoord end, group)))
+            local mark = makeMark(
+                self.GUID,
+                group[1].prop.SysCoord,
+                group[#group].prop.SysCoord - group[1].prop.SysCoord,
+                3,
+                #group
+            )
+            table.insert(self.marks, mark)
+        end
+    end,
+}
+
+local FastenerGroups = OOP.class{
+    NAME = 'Скрепления',
+    GUID = '{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
+
+    ctor = function (self)
+        self.marks = {}
+    end,
+
+    LoadMarks = function (self)
+       local guids_fasteners =
+        {
+            "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",	-- Скрепление
+            "{3601038C-A561-46BB-8B0F-F896C2130001}",	-- Скрепления(Пользователь)
+        }
+        return loadMarks(guids_fasteners)
+    end,
+
+    Check = function (self, get_near_mark)
+        local mark = get_near_mark(0)
+        if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130001}" then
+            return
+                mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1] or
+                mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP[1] or
+                mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_BOLT[1]
+        else
+            local prm = mark_helper.GetFastenetParams(mark)
+			local FastenerFault = prm and prm.FastenerFault
+			return FastenerFault and FastenerFault > 0
+        end
+    end,
+
+    OnGroup = function (self, group)
+        if #group > 1 then
+            collectgarbage("collect")
+            local mark = makeMark(
+                self.GUID,
+                group[1].prop.SysCoord,
+                group[#group].prop.SysCoord - group[1].prop.SysCoord,
+                3,
+                #group
+            )
+            table.insert(self.marks, mark)
+            -- print('Fastener', #group, table.unpack(map(function (mark) return mark.prop.SysCoord end, group)))
+        end
+    end,
+}
+
+-- =========================================
+
+local function SearchGroupAutoDefects(guids)
+    EnterScope(function (defer)
+        local dlg = luaiup_helper.ProgressDlg('Поиск групповых дефектов')
+        defer(dlg.Destroy, dlg)
+
+        local defect_types = {GapGroups(5), SleeperGroups(1840, 4), FastenerGroups()}
+        local message = 'Найдено:\n'
+        local marks = {}
+        local guids_to_delete = {}
+        for _, defect_type in ipairs(defect_types) do
+            if not guids or mark_helper.table_find(guids, defect_type.GUID) then
+                scanGroupDefect(defect_type, dlg)
+                message = message .. string.format('    %s: %d отметок\n', defect_type.NAME, #defect_type.marks)
+                for _, mark in ipairs(defect_type.marks) do
+                    table.insert(marks, mark)
+                end
+                table.insert(guids_to_delete, defect_type.GUID)
+            end
+        end
+        message = message .. '\nСохранить?'
+        local buttons = {"Да (удалить старые)", "Да (оставить старые)", "Нет"}
+
+        -- print(#marks)
+        local anwser = iup.Alarm("ATape", message, table.unpack(buttons))
+        if 3 == anwser then return end
+        if 1 == anwser then
+            remove_old_marks(guids_to_delete, dlg)
+        end
+        save_marks(marks, dlg)
+    end)
+end
+
+-- =========================================
+
+if not ATAPE then
+    local test_report  = require('test_report')
+    test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+
+    local t = os.clock()
+    SearchGroupAutoDefects({
+        '{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
+        --'{B6BAB49E-4CEC-4401-A106-355BFB2E0011}',
+    })
+    print(os.clock() - t)
+end
+
+-- =========================================
+
+return {
+    SearchGroupAutoDefects = SearchGroupAutoDefects,
+}

@@ -279,6 +279,26 @@ local filters =
 			return marks	-- возвращаем список для отображения
 		end,
 	},
+	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		name = 'Групповые дефекты',
+		columns = {
+			column_num,
+			column_path_coord,
+			column_length,
+			column_rail,
+			column_group_defect_count,
+			column_mark_type_name,
+		},
+		GUIDS = {
+			"{B6BAB49E-4CEC-4401-A106-355BFB2E0001}",
+			"{B6BAB49E-4CEC-4401-A106-355BFB2E0002}",
+			"{B6BAB49E-4CEC-4401-A106-355BFB2E0011}",
+			"{B6BAB49E-4CEC-4401-A106-355BFB2E0012}",
+			"{B6BAB49E-4CEC-4401-A106-355BFB2E0021}",
+			"{B6BAB49E-4CEC-4401-A106-355BFB2E0022}",
+		}
+	},
 }
 
 

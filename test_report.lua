@@ -433,6 +433,15 @@ Driver = OOP.class
 		end
 		return lat, lon
 	end,
+
+	NewSumMark = function (self)
+		return {
+			prop = {},
+			ext = {},
+			Save = function (self) end,
+			Delete = function (self) end,
+		}
+	end,
 }
 
 return Driver
