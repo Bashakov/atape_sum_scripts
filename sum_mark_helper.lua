@@ -137,7 +137,7 @@ end
 -- создать таблицу из переданных аргументов, если аргумент таблица, то она распаковывается рекурсивно
 local function table_merge(...)
 	local res = {}
-	
+
 	for _, item in ipairs{...} do
 		if type(item) == 'table' then
 			local v = table_merge(table.unpack(item))
@@ -261,7 +261,7 @@ local function GetGapWidthName(mark, name)
 			if w[17] then return w[17], 17 end
 			if w[18] then return w[18], 18 end
 			if w[0] then 
-				local video_channel = mark_helper.GetSelectedBits(mark.prop.ChannelMask)
+				local video_channel = GetSelectedBits(mark.prop.ChannelMask)
 				video_channel = video_channel and video_channel[1]
 				return w[0], video_channel 
 			end

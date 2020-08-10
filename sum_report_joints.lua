@@ -456,12 +456,14 @@ end
 
 local function make_report_videogram(...)
 	local row_generators = {...}
+	local function fake_pov_filter() return true end
+	local dlgProgress = nil
 
 	local function gen(mark)
 		local report_rows = {}
 		if mark and mark_helper.table_find(video_joints_juids, mark.prop.Guid) then
 			for _, fn_gen in ipairs(row_generators) do
-				local cur_rows = fn_gen({mark}, nil)
+				local cur_rows = fn_gen({mark}, dlgProgress, fake_pov_filter)
 				for _, row in ipairs(cur_rows) do
 					table.insert(report_rows, row)
 				end
