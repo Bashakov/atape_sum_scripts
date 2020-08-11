@@ -1,6 +1,9 @@
 package.loaded.sumPOV = nil -- для перезагрузки в дебаге
 local sumPOV = require "sumPOV"
 
+
+local function errorf(s,...)  error(string.format(s, ...)) end
+
 -- ================= математика =================
 
 -- округление до idp значачих цифр после запятой
@@ -368,6 +371,46 @@ function make_simple_defect(name, objects, driver, defect)
 	
 	--error('make_simple_defect error') -- testing
 	return marks
+end
+
+function make_group_defect(name, objects, driver, defect)
+	-- if #objects ~= defect.objects_count then
+	-- 	errorf("\n\nВведено %d объектов, ожидается %d", #objects, defect.objects_count)
+	-- end
+
+	local mark = driver:NewMark()
+
+	local rmask, chmask = get_rail_channel_mask(objects)
+	mark.prop.RailMask = rmask + 8   -- video_mask_bit
+	mark.prop.ChannelMask = chmask
+	mark.prop.Guid = defect.guid
+	mark.prop.MarkFlags = MarkFlags.eIgnoreShift
+	mark.prop.Description = defect.name .. '\nЕКАСУИ = ' .. defect.ekasui_code
+	mark.ext.CODE_EKASUI = defect.ekasui_code
+	mark.ext.GROUP_DEFECT_COUNT = defect.objects_count
+
+	local l = get_common_system_coord({objects[1]})
+	local r = l
+	local str_points = ''
+
+	for i, object in ipairs(objects) do
+		local points_on_frame, _ = rect2corners(object, "ltrtrblb") -- left, top, rigth, top, rigth, bottom, left, bottom
+		str_points = str_points .. string.format("%d,%d %d,%d %d,%d %d,%d;", table.unpack(points_on_frame))
+
+		local c = get_common_system_coord({object})
+		local w = tonumber(points_on_frame[3] - points_on_frame[1])
+		l = math.min(l, c-w/2)
+		r = math.max(r, c+w/2)
+	end
+
+	mark.ext.UNSPCOBJPOINTS = str_points
+	mark.prop.SysCoord = math.floor(l + 0.5)
+	mark.prop.Len = math.floor(r - l + 0.5)
+
+	sumPOV.UpdateMarks({mark}, false)
+
+	--error('make_group_defect error') -- testing
+	return {mark}
 end
 
 -- загружаем после определения функция генерации отметок
