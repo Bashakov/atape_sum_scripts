@@ -293,6 +293,13 @@ local Img_guid2idx = {
 
 	["{D4607B05-17C2-4C30-A303-69005A08C000}"] = 10, -- move backward
 	["{D4607B05-17C2-4C30-A303-69005A08C001}"] = 11, -- move backward
+
+	["{B6BAB49E-4CEC-4401-A106-355BFB2E0001}"] = 15, -- GROUP_GAP_AUTO"
+	["{B6BAB49E-4CEC-4401-A106-355BFB2E0002}"] = 15, -- GROUP_GAP_USER
+	["{B6BAB49E-4CEC-4401-A106-355BFB2E0011}"] = 17, -- GROUP_SPR_AUTO
+	["{B6BAB49E-4CEC-4401-A106-355BFB2E0012}"] = 17, -- GROUP_SPR_USER
+	["{B6BAB49E-4CEC-4401-A106-355BFB2E0021}"] = 16, -- GROUP_FSTR_AUTO
+	["{B6BAB49E-4CEC-4401-A106-355BFB2E0022}"] = 16, -- GROUP_FSTR_USER
 }
 
 
@@ -349,6 +356,10 @@ function GetMarkImage(mark) -- exported (return ico desc from mark)
 	if rail < 1 or rail > 3 then                        -- if rail chaching failde then use default too
 		img_x = 0
 		img_y = 0
+	end
+
+	if img_x == 17 then -- GROUP_FSTR
+		img_y = 2 -- всегда показываем кор+куп
 	end
 
 	-- print (RailMask, rail, coord, typeGuid, img_x, img_y)

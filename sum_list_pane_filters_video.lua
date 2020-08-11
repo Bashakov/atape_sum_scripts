@@ -289,6 +289,7 @@ local filters =
 			column_rail,
 			column_group_defect_count,
 			column_ekasui_code,
+			column_pov_common,
 			column_mark_type_name,
 		},
 		GUIDS = {

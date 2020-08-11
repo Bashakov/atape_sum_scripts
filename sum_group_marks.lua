@@ -22,17 +22,18 @@ Dmitry Alexeyev	(участник)
 Для нулевых зазоров ручной режим необязателен.
 Оператор будет подтверждать каждый нулевой зазор.
 "Сформировать групповые отметки" для нулевых будет действовать особо.
-Все подтвержденные нулевые зазоры формируют подтвержденную групповую отметку.
 
+Все подтвержденные нулевые зазоры формируют подтвержденную групповую отметку.
 Все неподтвержденные нулевые зазоры формируют неподтвержденную групповую отметку.
-Формирование картинки для нулевых либо все, но при такой логике можно слить
-только кадры нулевых (без рельсов межу ними)
+
+Формирование картинки для нулевых либо все, но при такой логике можно слить только кадры нулевых (без рельсов межу ними)
 ]]
 
 local OOP = require 'OOP'
 local mark_helper = require 'sum_mark_helper'
 local DEFECT_CODES = require 'report_defect_codes'
 local luaiup_helper = require 'luaiup_helper'
+local sumPOV = require "sumPOV"
 require 'ExitScope'
 
 local printf  = function(fmt, ...)	print(string.format(fmt, ...)) end
@@ -135,7 +136,6 @@ local function scanGroupDefect(defect_type, dlg)
     end
 end
 
-
 local function remove_old_marks(guids_to_delete, dlg)
     local marks = loadMarks(guids_to_delete)
     for i, mark in ipairs(marks) do
@@ -203,8 +203,10 @@ local GapGroups = OOP.class
     NAME = 'Слепые зазоры',
     GUID = '{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
     PARAMETERS = {
-        {rail=1},
-        {rail=2}
+        {rail=1, pov_operator=1},
+        {rail=2, pov_operator=1},
+        {rail=1, pov_operator=0},
+        {rail=2, pov_operator=0},
     },
 
     ctor = function (self, width_threshold)
@@ -213,7 +215,7 @@ local GapGroups = OOP.class
     end,
 
     LoadMarks = function (self, param)
-        assert(param and param.rail)
+        assert(param and param.rail and param.pov_operator)
         local video_joints_juids =
         {
             "{CBD41D28-9308-4FEC-A330-35EAED9FC801}",	-- Стык(Видео)
@@ -226,7 +228,10 @@ local GapGroups = OOP.class
         local res = {}
         for _, mark in ipairs(marks) do
             if bit32.btest(mark.prop.RailMask, param.rail) then
-                table.insert(res, mark)
+                local accept_operator = (mark.ext.POV_OPERATOR == 1)  -- maybe 0 or missing (nil)
+                if (param.pov_operator == 1) == accept_operator then
+                    table.insert(res, mark)
+                end
             end
         end
         return res
@@ -244,7 +249,7 @@ local GapGroups = OOP.class
 
     OnGroup = function (self, group, param)
         if #group > 1 then
-            assert(param and param.rail)
+            assert(param and param.rail and param.pov_operator)
 
             local mark = makeMark(
                 self.GUID,
@@ -269,6 +274,11 @@ local GapGroups = OOP.class
                     mark.ext.CODE_EKASUI = '090004015839' -- Три и более слепых (нулевых) зазоров подряд по правой нити
                 end
             end
+
+            if param.pov_operator == 1 then
+                sumPOV.UpdateMarks(mark)
+            end
+
             table.insert(self.marks, mark)
 
             --print('Gaps', param.rail, #group, table.unpack(map(function (mark) return mark.prop.SysCoord end, group)))
@@ -468,9 +478,9 @@ if not ATAPE then
 
     local t = os.clock()
     SearchGroupAutoDefects({
-        --'{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
+        '{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
         --'{B6BAB49E-4CEC-4401-A106-355BFB2E0011}',
-        '{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
+        --'{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
     })
     print(os.clock() - t)
 end
