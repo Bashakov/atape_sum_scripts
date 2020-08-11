@@ -154,12 +154,6 @@ local function videogram_mark(obj)
 	sum_videogram.MakeVideogram('mark', {mark=mark, defect_codes=defect_codes, direct_set_defect=videogram_direct_set_defect})
 end
 
-local function npu_convert(obj)
-	local mark = obj.mark
-	mark.prop.Guid = obj.guid
-	mark:Save()
-	return RETURN_STATUS.UPDATE_MARK
-end
 
 --[[ 4.2.1.4 Редактирование свойств отметки распознавания
 
@@ -239,6 +233,43 @@ local function mark_accept_width_checker(menu_items, mark)
 	end
 end
 
+local function npu_convert(obj)
+	local mark = obj.mark
+	mark.prop.Guid = obj.guid
+	mark:Save()
+	return RETURN_STATUS.UPDATE_MARK
+end
+
+local function add_npu_tune(menu_items, mark)
+	local name_type =
+	{
+		{name='Возможн. НПУ', guid="{19FF08BB-C344-495B-82ED-10B6CBAD508F}"},
+		{name='Подтвр. НПУ',  guid="{19FF08BB-C344-495B-82ED-10B6CBAD5090}"},
+		{name='БС. НПУ',      guid="{19FF08BB-C344-495B-82ED-10B6CBAD5091}"},
+	}
+	local prefix = 'Изменить тип НПУ|'
+
+	local is_npu = false
+	for _, nt in ipairs(name_type) do
+		if nt.guid == mark.prop.Guid then is_npu = true end
+	end
+	if not is_npu then return false end
+
+	for _, nt in ipairs(name_type) do
+		table.insert(menu_items, {
+			name = prefix .. nt.name,
+			fn = function ()
+				mark.prop.Guid = nt.guid
+				mark:Save()
+				return RETURN_STATUS.UPDATE_MARK
+			end,
+			CHECKED = (nt.guid == mark.prop.Guid),
+			GRAYED = (nt.guid == mark.prop.Guid),
+		})
+	end
+	return true
+end
+
 -- =============== EXPORT ===============
 
 -- статусы обработки для подсказки таблице отметок как обновляться
@@ -290,34 +321,33 @@ function GetMenuItems(mark)
 		end
 	end
 
-	if find(GUIDS.NPU_guids, mark_guid) then
-		table.insert(menu_items, {name='Конвертировать в|Возможн. НПУ', fn=npu_convert, mark=mark, guid="{19FF08BB-C344-495B-82ED-10B6CBAD508F}"})
-		table.insert(menu_items, {name='Конвертировать в|Подтвр. НПУ',  fn=npu_convert, mark=mark, guid="{19FF08BB-C344-495B-82ED-10B6CBAD5090}"})
-		table.insert(menu_items, {name='Конвертировать в|БС. НПУ',      fn=npu_convert, mark=mark, guid="{19FF08BB-C344-495B-82ED-10B6CBAD5091}"})
-	end
-	table.insert(menu_items, {name='Сформировать выходную форму видеофиксации', fn=videogram_mark, mark=mark}) --  (д.б. открыт нужный видеокомпонент)
+	local npu_mark = add_npu_tune(menu_items, mark)
+
 	table.insert(menu_items, {name='Удалить отметку', fn=remove_mark, mark=mark})
 
-	table.insert(menu_items, '')
-	table.insert(menu_items, {name='Сценарий: ' .. sumPOV.GetCurrentSettingsDescription(', '), GRAYED=true})
-	table.insert(menu_items, {name='Настройка сценария установки ПОВ', fn=sumPOV.ShowSettings})
+	if not npu_mark then
+		table.insert(menu_items, {name='Сформировать выходную форму видеофиксации', fn=videogram_mark, mark=mark}) --  (д.б. открыт нужный видеокомпонент)
 
-	table.insert(menu_items, '')
-	-- 4.2.1.4 Редактирование свойств отметки распознавания
-	table.insert(menu_items, {name='Отметка: ' .. sumPOV.GetMarkDescription(mark, ', '), GRAYED=true})
-	--table.insert(menu_items, {name='Подтверждать в ЕКАСУИ', fn=accept_pov, mark=mark, method=0, CHECKED=sumPOV.IsAcceptEKASUI(mark)})
-	table.insert(menu_items, {name='Подтвердить отметку', fn=accept_pov, mark=mark, method=1})
-	--table.insert(menu_items, {name='Подтвердить*', fn=accept_pov, mark=mark, method=2})
-	table.insert(menu_items, {name='Подтвердить отметку не по сценарию установки', fn=accept_pov, mark=mark, method=3})
-	mark_accept_width_checker(menu_items, mark)
+		table.insert(menu_items, '')
+		table.insert(menu_items, {name='Сценарий: ' .. sumPOV.GetCurrentSettingsDescription(', '), GRAYED=true})
+		table.insert(menu_items, {name='Настройка сценария установки ПОВ', fn=sumPOV.ShowSettings})
 
-	if sumPOV.IsRejectDefect(mark) then
-		table.insert(menu_items, {name='Вернуть дефектность', fn=accept_pov, mark=mark, method=4})
-	else
-		table.insert(menu_items, {name='Отвергнуть дефектность (без удаления отметки)', fn=accept_pov, mark=mark, method=4})
+		table.insert(menu_items, '')
+
+		-- 4.2.1.4 Редактирование свойств отметки распознавания
+		table.insert(menu_items, {name='Отметка: ' .. sumPOV.GetMarkDescription(mark, ', '), GRAYED=true})
+		table.insert(menu_items, {name='Подтвердить отметку', fn=accept_pov, mark=mark, method=1})
+		table.insert(menu_items, {name='Подтвердить отметку не по сценарию установки', fn=accept_pov, mark=mark, method=3})
+		mark_accept_width_checker(menu_items, mark)
+
+		if sumPOV.IsRejectDefect(mark) then
+			table.insert(menu_items, {name='Вернуть дефектность', fn=accept_pov, mark=mark, method=4})
+		else
+			table.insert(menu_items, {name='Отвергнуть дефектность (без удаления отметки)', fn=accept_pov, mark=mark, method=4})
+		end
+
+		table.insert(menu_items, {name='Ведомость оценки стыка', fn=function () rubki.MakeEkasuiGapReport(mark) end})
 	end
-
-	table.insert(menu_items, {name='Ведомость оценки стыка', fn=function (o) rubki.MakeEkasuiGapReport(mark) end})
 
 	return menu_items
 end
