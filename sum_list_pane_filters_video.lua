@@ -289,6 +289,7 @@ local filters =
 			column_rail,
 			column_group_defect_count,
 			column_mark_type_name,
+			column_ekasui_code,
 		},
 		GUIDS = {
 			"{B6BAB49E-4CEC-4401-A106-355BFB2E0001}",

@@ -769,3 +769,17 @@ column_group_defect_count =
 		return mark.ext.GROUP_DEFECT_COUNT
 	end
 }
+
+column_ekasui_code =
+{
+	name = 'ЕКАСУИ',
+	width = 85,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		return mark.ext.CODE_EKASUI or ''
+	end,
+	sorter = function(mark)
+		return mark.ext.CODE_EKASUI or ''
+	end
+}
