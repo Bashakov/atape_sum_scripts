@@ -35,6 +35,9 @@ local DEFECT_CODES = require 'report_defect_codes'
 local luaiup_helper = require 'luaiup_helper'
 require 'ExitScope'
 
+local printf  = function(fmt, ...)	print(string.format(fmt, ...)) end
+local sprintf = function(fmt, ...) return string.format(fmt, ...)  end
+
 -- =============================================
 
 local function list(itrable)
@@ -110,6 +113,8 @@ local function scanGroupDefect(defect_type, dlg)
 
         local group = {}
         for i, mark in ipairs(marks) do
+            if i % 100 == 0 then collectgarbage("collect") end
+
             if i % 23 == 0 and dlg then
                 local text = string.format('%s: обработка %d / %d отметок', defect_type.NAME, i, #marks)
                 if not dlg:step(i / #marks, text) then
@@ -155,6 +160,41 @@ local function save_marks(marks, dlg)
         end
     end
 end
+
+-- список стрелок
+local Switchers = OOP.class{
+
+    ctor = function (self)
+        local switch_guids = {
+            "{19253263-2C0B-41EE-8EAA-000000100000}",
+            "{19253263-2C0B-41EE-8EAA-000000200000}",
+            "{19253263-2C0B-41EE-8EAA-000000400000}",
+            "{19253263-2C0B-41EE-8EAA-000000800000}",
+        }
+        -- найти все стрелки
+        local marks = Driver:GetMarks{ListType='all', GUIDS=switch_guids}
+        self._items = {}
+        for i = 1, #marks do
+            local mark = marks[i]
+            local prop = mark.prop
+            table.insert(self._items, {from=prop.SysCoord, to=prop.SysCoord + prop.Len, id=prop.ID})
+        end
+        printf('found %d switches', #self._items)
+    end,
+
+    -- проверить что координата находится в стрелке
+    overalped = function(self, c1, c2)
+        for _, switch in ipairs(self._items) do
+            local l = math.max(c1, switch.from)
+            local r = math.min(c2, switch.to)
+            if l <= r then
+                return switch.id
+            end
+        end
+        return nil
+    end,
+}
+
 
 -- ==================================================
 
@@ -213,6 +253,22 @@ local GapGroups = OOP.class
                 param.rail,
                 #group
             )
+
+            -- 2020.08.05 Классфикатор ред для ATape.xlsx
+            if #group == 2 then
+                local rail_len = group[2].prop.SysCoord - group[1].prop.SysCoord
+                if math.abs(rail_len - 25000) < 2000 then
+                    mark.ext.CODE_EKASUI = '090004000795' -- Наличие двух подряд слитых зазоров при длине рельсов 25 м
+                else
+                    mark.ext.CODE_EKASUI = '090004012061' -- Наличие двух подряд слитых зазоров
+                end
+            else
+                if mark_helper.GetMarkRailPos(mark) == -1 then
+                    mark.ext.CODE_EKASUI = '090004015838' -- Три и более слепых (нулевых) зазоров подряд по левой нити
+                else
+                    mark.ext.CODE_EKASUI = '090004015839' -- Три и более слепых (нулевых) зазоров подряд по правой нити
+                end
+            end
             table.insert(self.marks, mark)
 
             --print('Gaps', param.rail, #group, table.unpack(map(function (mark) return mark.prop.SysCoord end, group)))
@@ -292,9 +348,14 @@ local SleeperGroups = OOP.class
 local FastenerGroups = OOP.class{
     NAME = 'Скрепления',
     GUID = '{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
+    PARAMETERS = {
+        {rail=1},
+        {rail=2}
+    },
 
     ctor = function (self)
         self.marks = {}
+        self._switchers = Switchers()
     end,
 
     LoadMarks = function (self)
@@ -320,17 +381,46 @@ local FastenerGroups = OOP.class{
         end
     end,
 
-    OnGroup = function (self, group)
-        if #group > 1 then
-            collectgarbage("collect")
-            local mark = makeMark(
-                self.GUID,
-                group[1].prop.SysCoord,
-                group[#group].prop.SysCoord - group[1].prop.SysCoord,
-                3,
-                #group
-            )
-            table.insert(self.marks, mark)
+    OnGroup = function (self, group, param)
+        if #group >= 3 then
+            assert(param and param.rail)
+            local inside_switch = self._switchers:overalped(group[1].prop.SysCoord, group[#group].prop.SysCoord)
+            local code_ekasui = nil
+
+            -- 2020.08.05 Классфикатор ред для ATape.xlsx
+            if inside_switch then
+                if #group == 2 then
+                    code_ekasui = '090004017105' -- Отсутствует или дефектное скрепление скрепление на рамном рельсе, в крестовине или контррельсовом рельсе стрелочного перевода по одной нити  на 2-х брусьях подряд по одной нити
+                elseif #group == 3 then
+                    code_ekasui = '090004017106' -- Отсутствует или дефектное скрепление скрепление на рамном рельсе, в крестовине или контррельсовом рельсе стрелочного перевода по одной нити  на 3-х брусьях подряд по одной нити
+                elseif #group == 4 then
+                    code_ekasui = '090004017107' -- Отсутствует или дефектное скрепление скрепление на рамном рельсе, в крестовине или контррельсовом рельсе стрелочного перевода по одной нити  на 4-х брусьях подряд по одной нити
+                elseif #group >= 4 then
+                    code_ekasui = '090004017108' -- Отсутствует или дефектное скрепление скрепление на рамном рельсе, в крестовине или контррельсовом рельсе стрелочного перевода по одной нити  на 5 и более брусьях подряд 
+                end
+            else
+                if #group == 4 then
+                    code_ekasui = '090004017099' -- Отсутствует или дефектное скрепление скрепление в прямых и кривых радиусом более 650 м на 4-х шпалах подряд  по одной нити
+                elseif #group == 5 then
+                    code_ekasui = '090004017100'  -- Отсутствует или дефектное скрепление скрепление в прямых и кривых радиусом более 650 м на 5 шпалах подряд по одной нити
+                elseif #group == 6 then
+                    code_ekasui = '090004017101' -- Отсутствует или дефектное скрепление скрепление в прямых и кривых радиусом более 650 м на 6 шпалах подряд по одной нити
+                elseif #group > 6 then
+                    code_ekasui = '090004017098' --  Отсутствует или дефектное скрепление скрепление в прямых и кривых радиусом более 650 м более чем на 6 шпалах подряд по одной нити
+                end
+            end
+
+            if code_ekasui then
+                local mark = makeMark(
+                    self.GUID,
+                    group[1].prop.SysCoord,
+                    group[#group].prop.SysCoord - group[1].prop.SysCoord,
+                    param.rail,
+                    #group
+                )
+                mark.ext.CODE_EKASUI = code_ekasui
+                table.insert(self.marks, mark)
+            end
             -- print('Fastener', #group, table.unpack(map(function (mark) return mark.prop.SysCoord end, group)))
         end
     end,
@@ -378,8 +468,9 @@ if not ATAPE then
 
     local t = os.clock()
     SearchGroupAutoDefects({
-        '{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
+        --'{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
         --'{B6BAB49E-4CEC-4401-A106-355BFB2E0011}',
+        '{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
     })
     print(os.clock() - t)
 end
