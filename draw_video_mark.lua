@@ -109,30 +109,33 @@ end
 
 -- ============================ XML =========================
 
-local function getMarkRawXml(mark)
+local function load_xml_str(str_xml)
 	if not xmlDom then
 		showError("Ошибка загрузки MSXML")
 		return
 	end
-	
+
+	if not xmlDom:loadXML(str_xml) then
+		local msg = string.format('Error parse XML: %d %s\nmark id = %d\n%s', 
+			xmlDom.parseError.errorCode, 
+			xmlDom.parseError.reason,
+			mark.prop.ID,
+			str_xml)
+		showError(msg)
+		error(msg)
+		return
+	end
+
+	return xmlDom.documentElement
+end
+
+local function getMarkRawXml(mark)
 	local raw_xml = mark.ext.RAWXMLDATA
 	if not raw_xml or #raw_xml  == 0 then
 		showError(string.format('mark id = %d not contain RAWXMLDATA', mark.prop.ID))
 		return
 	end
-	
-	if not xmlDom:loadXML(raw_xml) then
-		local msg = string.format('Error parse XML: %d %s\nmark id = %d\n%s', 
-			xmlDom.parseError.errorCode, 
-			xmlDom.parseError.reason,
-			mark.prop.ID,
-			raw_xml)
-		showError(msg)
-		error(msg)
-		return
-	end
-	
-	return xmlDom.documentElement
+	return load_xml_str(raw_xml)
 end
 
 local function SelectNodes(xml, xpath)
@@ -523,20 +526,51 @@ local function ProcessUnspecifiedObject(mark)
 	end
 end
 
+local function ProcessGroupDefectObject(mark)
+	local color_line = {r=167, g=49, b=29, a=200}
+	local color_fill = {r=167, g=49, b=29, a=50}
+
+	local cur_frame_coord = Frame.coord.raw
+	local prop, ext = mark.prop, mark.ext
+	local text = prop.Description
+	local all_points = {}
+
+	if ext.GROUP_OBJECT_DRAW and #ext.GROUP_OBJECT_DRAW > 0 then
+		local node = load_xml_str(ext.GROUP_OBJECT_DRAW)
+		local req = sprintf('/draw/object[@type="rect" and @channel="%d" and @points and @frame]', Frame.channel)
+
+		for node_obj in SelectNodes(node, req) do
+			local str_points = node_obj.attributes:getNamedItem('points').nodeValue
+			local frame = tonumber(node_obj.attributes:getNamedItem('frame').nodeValue)
+
+			local points = parse_polygon(str_points, cur_frame_coord, frame)
+			for _, p in ipairs(points) do table.insert(all_points, p) end
+
+			if #points == 8 then
+				drawPolygon(points, 1, color_line, color_fill)
+			end
+		end
+		print('#all_points', #all_points)
+		if #all_points > 0 then
+			local tcx, tcy = get_center_point(all_points)
+			OutlineTextOut(tcx, tcy, text, {height=10})
+		end
+	end
+end
+
 -- ==================== MARK TYPES ====================
 
-local recorn_guids = 
+local recorn_guids =
 {
 	["{0860481C-8363-42DD-BBDE-8A2366EFAC90}"] = {ProcessUnspecifiedObject}, -- Ненормативный объект
-	
+
 	["{3601038C-A561-46BB-8B0F-F896C2130001}"] = {ProcessUnspecifiedObject}, -- Скрепления(Пользователь)
 	["{3601038C-A561-46BB-8B0F-F896C2130002}"] = {ProcessUnspecifiedObject}, -- Шпалы(Пользователь)
 	["{3601038C-A561-46BB-8B0F-F896C2130003}"] = {ProcessUnspecifiedObject}, -- Рельсовые стыки(Пользователь)
 	["{3601038C-A561-46BB-8B0F-F896C2130004}"] = {ProcessUnspecifiedObject}, -- Дефекты рельсов(Пользователь)
 	["{3601038C-A561-46BB-8B0F-F896C2130005}"] = {ProcessUnspecifiedObject}, -- Балласт(Пользователь)
 	["{3601038C-A561-46BB-8B0F-F896C2130006}"] = {ProcessUnspecifiedObject}, -- Бесстыковой путь(Пользователь)
-	
-	
+
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = {ProcessMarkRawXml}, -- Стык(Видео)
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = {ProcessMarkRawXml}, -- Стык(Видео)
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = {ProcessMarkRawXml}, -- СтыкЗазор(Пользователь)
@@ -556,6 +590,13 @@ local recorn_guids =
 	["{41486CAC-EBE9-46FF-ACCA-041AFAFFC531}"] = {ProcessMarkRawXml}, -- UIC_2251 (user)
 	["{3401C5E7-7E98-4B4F-A364-701C959AFE99}"] = {ProcessMarkRawXml}, -- UIC_2252 (user)
 	["{13A7906C-BBFB-4EB3-86FA-FA74B77F5F35}"] = {ProcessMarkRawXml}, -- UIC_227 (user)
+
+	["{B6BAB49E-4CEC-4401-A106-355BFB2E0001}"] = {ProcessGroupDefectObject}, -- GROUP_GAP_AUTO
+	["{B6BAB49E-4CEC-4401-A106-355BFB2E0002}"] = {ProcessGroupDefectObject}, -- GROUP_GAP_USER
+	["{B6BAB49E-4CEC-4401-A106-355BFB2E0011}"] = {ProcessGroupDefectObject}, -- GROUP_SPR_AUTO
+	["{B6BAB49E-4CEC-4401-A106-355BFB2E0012}"] = {ProcessGroupDefectObject}, -- GROUP_SPR_USER
+	["{B6BAB49E-4CEC-4401-A106-355BFB2E0021}"] = {ProcessGroupDefectObject}, -- GROUP_FSTR_AUTO
+	["{B6BAB49E-4CEC-4401-A106-355BFB2E0022}"] = {ProcessGroupDefectObject}, -- GROUP_FSTR_USER
 }
 
 -- ================= EXPORT FUNCTION ================ 
@@ -564,8 +605,10 @@ function Draw(drawer, frame, marks)
 	-- совместимость
 	if drawer then _G.Drawer = drawer end
 	if frame then _G.Frame = frame end
-		
+
+	--print('Draw ', #marks)
 	for _, mark in ipairs(marks) do
+		--print('Draw mark', mark.prop.Guid)
 		local fns = recorn_guids[mark.prop.Guid] or {}
 		for _, fn in ipairs(fns) do
 			fn(mark)

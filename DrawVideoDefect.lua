@@ -1,4 +1,5 @@
 package.loaded.sumPOV = nil -- для перезагрузки в дебаге
+
 local sumPOV = require "sumPOV"
 
 
@@ -391,19 +392,25 @@ function make_group_defect(name, objects, driver, defect)
 
 	local l = get_common_system_coord({objects[1]})
 	local r = l
-	local str_points = ''
 
-	for i, object in ipairs(objects) do
-		local points_on_frame, _ = rect2corners(object, "ltrtrblb") -- left, top, rigth, top, rigth, bottom, left, bottom
-		str_points = str_points .. string.format("%d,%d %d,%d %d,%d %d,%d;", table.unpack(points_on_frame))
+	local str_xml = '<draw>\n'
+	for _, object in ipairs(objects) do
+		local points_on_frame, frame_coord = rect2corners(object, "ltrtrblb") -- left, top, rigth, top, rigth, bottom, left, bottom
+		local rect = string.format("%d,%d,%d,%d,%d,%d,%d,%d", table.unpack(points_on_frame))
+
+		str_xml = str_xml .. string.format("\t<object channel='%d' type='rect' frame='%d' points='%s'/>\n", object.area.channel, frame_coord, rect)
 
 		local c = get_common_system_coord({object})
 		local w = tonumber(points_on_frame[3] - points_on_frame[1])
 		l = math.min(l, c-w/2)
 		r = math.max(r, c+w/2)
 	end
+	str_xml = str_xml .. '</draw>'
 
-	mark.ext.UNSPCOBJPOINTS = str_points
+	if l ~= r then
+		mark.ext.GROUP_OBJECT_DRAW = str_xml
+	end
+
 	mark.prop.SysCoord = math.floor(l + 0.5)
 	mark.prop.Len = math.floor(r - l + 0.5)
 
