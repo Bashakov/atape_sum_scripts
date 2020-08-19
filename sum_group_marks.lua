@@ -474,13 +474,15 @@ end
 
 if not ATAPE then
     local test_report  = require('test_report')
-    test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+    local data = 'D:\\d-drive\\ATapeXP\\Main\\494\\video_recog\\2019_05_17\\Avikon-03M\\30346\\[494]_2019_03_15_01.xml'
+    --local data = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+    test_report(data)
 
     local t = os.clock()
     SearchGroupAutoDefects({
-        '{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
+        --'{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
         --'{B6BAB49E-4CEC-4401-A106-355BFB2E0011}',
-        --'{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
+        '{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
     })
     print(os.clock() - t)
 end

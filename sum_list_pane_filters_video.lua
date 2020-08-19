@@ -20,7 +20,6 @@ local filters =
 			column_recogn_width_user,
 			column_recogn_bolt,
 			column_recogn_video_channel,
-			column_user_accept,
 			column_pov_common,
 			}, 
 		GUIDS = table_merge(recognition_guids, '{3601038C-A561-46BB-8B0F-F896C2130003}'),
@@ -37,7 +36,7 @@ local filters =
 			column_joint_speed_limit,
 			--column_recogn_reability,
 			column_recogn_video_channel,
-			column_user_accept,
+			column_pov_common,
 			}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
@@ -69,12 +68,14 @@ local filters =
 			column_path_coord, 
 			column_rail,
 			column_beacon_offset,
-			column_user_accept,
+			column_pov_common,
+			column_mark_type_name
 			}, 
 		GUIDS = {
 			"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}",
 			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",
 			"{3601038C-A561-46BB-8B0F-F896C2130006}",
+			"{D3736670-0C32-46F8-9AAF-3816DE00B755}",
 		}
 	},
 	{
@@ -101,6 +102,7 @@ local filters =
 			column_fastener_fault,
 --			column_recogn_reability,
 --			column_fastener_width,
+			column_pov_common,
 			}, 
 		GUIDS = {
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",
@@ -118,6 +120,7 @@ local filters =
 			column_recogn_width,
 			column_recogn_rail_gap_step,
 			column_recogn_video_channel,
+			column_pov_common,
 			}, 
 		GUIDS = table_merge(recognition_guids, '{3601038C-A561-46BB-8B0F-F896C2130003}'),
 		filter = function(mark)
@@ -141,6 +144,7 @@ local filters =
 			column_connections_all,
 			column_connections_defect,
 			column_recogn_video_channel,
+			column_pov_common,
 			}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
@@ -159,6 +163,7 @@ local filters =
 			column_rail_lr,
 			column_weldedbond_status,
 			--column_mark_id, для проверки
+			column_pov_common,
 		}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
@@ -179,6 +184,7 @@ local filters =
 			column_surf_defect_len,
 			column_surf_defect_wdh,
 			column_recogn_video_channel,
+			column_pov_common,
 			}, 
 		GUIDS = recognition_surface_defects,
 	},	
@@ -192,6 +198,7 @@ local filters =
 			column_rail,
 			column_fishplate_state,
 			column_recogn_video_channel,
+			column_pov_common,
 			}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
@@ -213,6 +220,7 @@ local filters =
 			column_sleeper_dist_prev,
 			column_sleeper_dist_next,
 			column_sys_coord,
+			column_pov_common,
 			}, 
 		GUIDS = {
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
@@ -251,6 +259,7 @@ local filters =
 			column_recogn_video_channel,
 			column_mark_id,
 			column_sleeper_dist_prev,
+			column_pov_common,
 			}, 
 		GUIDS = table_merge(recognition_guids, '{3601038C-A561-46BB-8B0F-F896C2130003}'),
 		filter = function(mark)
@@ -289,8 +298,8 @@ local filters =
 			column_rail,
 			column_group_defect_count,
 			column_ekasui_code,
-			column_pov_common,
 			column_mark_type_name,
+			column_pov_common,
 		},
 		GUIDS = {
 			"{B6BAB49E-4CEC-4401-A106-355BFB2E0001}",

@@ -1,5 +1,7 @@
 require "luacom"
 
+
+
 local sprintf = function(s,...)	return s:format(...) end
 local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 
@@ -7,18 +9,18 @@ local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 
 local function parse_polygon(str, cur_frame_coord, item_frame)
 	local points = {}
-	
+
 	for x,y in str:gmatch('(-?%d+),(-?%d+)') do
 		if cur_frame_coord and item_frame and item_frame ~= cur_frame_coord then
 			x, y = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, x, y)
 		else
 			x, y = Convertor:ScalePoint(x, y)
 		end
-			
+
 		table.insert(points, x)
 		table.insert(points, y)
 	end
-			
+
 	return points
 end
 
@@ -38,29 +40,29 @@ local function drawEllipse(ellipse, color)
 	Drawer.prop:lineWidth(1)
 	Drawer.prop:fillColor( color.r, color.g, color.b,   0 )
 	Drawer.prop:lineColor( color.r, color.g, color.b, 255 )
-	cx, cy, rx, ry = table.unpack(ellipse)
+	local cx, cy, rx, ry = table.unpack(ellipse)
 	Drawer.fig:ellipse(cx, cy, rx, ry)
 end
 
 local function drawRectangle(points, color, inflateSize)
 	local ix = inflateSize and (inflateSize.x or inflateSize[1]) or 0
 	local iy = inflateSize and (inflateSize.y or inflateSize[2]) or 0
-	
+
 	Drawer.prop:lineWidth(1)
 	Drawer.prop:fillColor( color.r, color.g, color.b,   0 )
 	Drawer.prop:lineColor( color.r, color.g, color.b, 255 )
-	x1,y1, x2,y2 = table.unpack(points)
+	local x1,y1, x2,y2 = table.unpack(points)
 	Drawer.fig:rectangle(x1-ix,y1-iy, x2+ix,y2+iy)
 end
 
-function drawPolygon(points, lineWidth, line_color, fill_color)	
+local function drawPolygon(points, lineWidth, line_color, fill_color)
 	if not points or #points == 0 or #points % 2 ~= 0 then
 		--assert(0)
 		return
 	end
-	
+
 	if not fill_color then fill_color = line_color end
-	
+
 	Drawer.prop:lineWidth(lineWidth)
 	Drawer.prop:fillColor(fill_color.r, fill_color.g, fill_color.b, fill_color.a or   0)
 	Drawer.prop:lineColor(line_color.r, line_color.g, line_color.b, line_color.a or 200)
@@ -75,20 +77,20 @@ local function drawMultiline(x, y, text, lineWidth, color)
 end
 
 local function OutlineTextOut(x, y, text, params)
-	drawer = Drawer
+	local drawer = Drawer
 	params = params or {}
 	local fill_color = params.fill_color or {r=255, g=255, b=255}
 	local line_color = params.line_color or {r=0, g=0, b=0}
 	local ox = params.offset and (params.offset.x or params.offset[1]) or 0
 	local oy = params.offset and (params.offset.y or params.offset[2]) or 0
-	
+
 	drawer.text:font { name=params.font or "Tahoma", render="VectorFontCache", height=params.height or 13, bold=0}
 	drawer.text:alignment("AlignLeft", "AlignBottom")
-	
+
 	local tw, th = drawer.text:calcSize(text)
 	x = x - tw/2 + ox
 	y = y - th/2 + oy
-	
+
 	drawMultiline(x, y, text, 3, line_color)
 	drawMultiline(x, y, text, 1, fill_color)
 end
@@ -116,8 +118,8 @@ local function load_xml_str(str_xml)
 	end
 
 	if not xmlDom:loadXML(str_xml) then
-		local msg = string.format('Error parse XML: %d %s\nmark id = %d\n%s', 
-			xmlDom.parseError.errorCode, 
+		local msg = string.format('Error parse XML: %d %s\nmark id = %d\n%s',
+			xmlDom.parseError.errorCode,
 			xmlDom.parseError.reason,
 			mark.prop.ID,
 			str_xml)
@@ -159,12 +161,12 @@ end
 local function getDrawFig(nodeParamResult)
 	assert(nodeParamResult)
 	local res = {}
-	
+
 	local cur_frame_coord = Frame.coord.raw
 	local nodeFrameCoord = nodeParamResult:SelectSingleNode("../@coord") or nodeParamResult:SelectSingleNode("../../@coord")
 	if nodeFrameCoord then
 		local item_frame = nodeFrameCoord.nodeValue
-		
+
 		local req = 'PARAM[@name="Coord" and @value and (@type="polygon" or @type="line" or @type="rect")]'
 		for nodeFig in SelectNodes(nodeParamResult, req) do
 			local value = nodeFig:SelectSingleNode('@value').nodeValue
@@ -175,7 +177,7 @@ local function getDrawFig(nodeParamResult)
 				end
 			end
 		end
-		
+
 		local nodeEllipse = nodeParamResult:SelectSingleNode('PARAM[@name="Coord" and @type="ellipse" and @value]/@value')
 		if nodeEllipse then
 			local ellipse = nodeEllipse.nodeValue
@@ -202,14 +204,14 @@ end
 local beacon_shifts = {}
 
 local function drawSimpleResult(resultType, points, params)
-	
+
 	if string.match(resultType, 'CalcRailGap_') then
 		local colorsGap = {
 			["CalcRailGap_Head_Top"] =  {r=255, g=255, b=0  },
 			["CalcRailGap_Head_Side"] = {r=0,   g=255, b=255},
 			["CalcRailGap_User"] =      {r=255, g=0,   b=255},
 		}
-		
+
 		local color = colorsGap[resultType]
 		if color then
 			drawPolygon(points, 1, color, color)
@@ -218,17 +220,17 @@ local function drawSimpleResult(resultType, points, params)
 			end
 		end
 	end
-	
+
 	if resultType == 'CalcRailGapStep' then
 		if #points == 4 then
 			local color = {r=0, g=0, b=255}
 			drawPolygon(points, 2, color, color)
-			
+
 			local strWidth = sprintf('%d mm', tonumber(params.RailGapStepWidth)/1000)
 			textOut(points, strWidth, {fill_color={r=0, g=0, b=192}, line_color={r=128, g=128, b=128}, offset={0, 10}})
 		end
 	end
-	
+
 	if resultType == 'WeldedBond' then
 		local colors = {
 			[0] = {r=0, g=192, b=128}, -- хороший соединитель
@@ -237,7 +239,7 @@ local function drawSimpleResult(resultType, points, params)
 		local color = colors[tonumber(params.ConnectorFault)] or {r=128, g=128, b=128}
 		drawPolygon(points, 1, color, color)
 	end
-	
+
 	if resultType == 'Connector' then
 		local colors = {
 			[0] = {r=0, g=192, b=128}, -- хороший соединитель
@@ -247,28 +249,28 @@ local function drawSimpleResult(resultType, points, params)
 		local color = colors[tonumber(params.ConnectorFault)] or {r=128, g=128, b=128}
 		drawEllipse(points, color)
 	end
-	
+
 	if resultType == 'CrewJoint' then
 		local colors = {
 			[-1] = {r=255, g=0,   b=0},  	-- отсутствует
 			[ 0] = {r=255, g=255, b=0},  	-- болтается
-			[ 1] = {r=128, g=128, b=255},  	-- есть 
+			[ 1] = {r=128, g=128, b=255},  	-- есть
 			[ 2] = {r=128, g=192, b=255},   -- болт
-			[ 3] = {r=128, g=64, b=255},    -- гайка	
-		}	
+			[ 3] = {r=128, g=64, b=255},    -- гайка
+		}
 
 		local color = colors[tonumber(params.CrewJointSafe)] or {r=128, g=128, b=128}
 		drawEllipse(points, color)
 	end
-	
+
 	if string.match(resultType, 'Beacon_') then
 		local colors = {
 			Beacon_Web 		= {r=67, g=149, b=209},
-			Beacon_Fastener = {r=0,  g=169, b=157}, 
+			Beacon_Fastener = {r=0,  g=169, b=157},
 		}
-		
+
 		local color = colors[resultType]
-		
+
 		if color and #points > 0 and params.Shift_mkm then
 			local shift = tonumber(params.Shift_mkm) / 1000
 			drawRectangle(points, color, {5, 0})
@@ -276,76 +278,76 @@ local function drawSimpleResult(resultType, points, params)
 			if beacon_shifts.frame and beacon_shifts.frame ~= Frame.coord.raw then	 -- предполагаем что не больше одной маячной отметки на кадре
 				beacon_shifts = {frame = Frame.coord.raw}
 			end
-			
+
 			beacon_shifts[resultType] = {coords = points, shift = shift}
 			if beacon_shifts.Beacon_Web and beacon_shifts.Beacon_Fastener then
 				local c1 = beacon_shifts.Beacon_Web.coords
 				local c2 = beacon_shifts.Beacon_Fastener.coords
 				local tcx = (c1[1] + c1[3] + c2[1] + c2[3]) / 4
 				local tcy = (c1[4] + c2[2]) / 2
-				
+
 				local text = sprintf('%.1f mm', beacon_shifts.Beacon_Web.shift)
 				textOut({tcx, tcy}, text)
 				beacon_shifts = {} -- сбросим нарисованное
 			end
 		end
 	end
-	
+
 	if resultType == 'Fastener' then
 		local fastener_type_names = {
-			[0] = 'КБ-65', 
-			[1] = 'Аpc',  
-			[2] = 'ДО', -- скрепление на деревянной шпале на костылях 
-			[3] = 'КД', -- скрепление на деревянной шпале как КБ-65 но на двух шурупах 
+			[0] = 'КБ-65',
+			[1] = 'Аpc',
+			[2] = 'ДО', -- скрепление на деревянной шпале на костылях
+			[3] = 'КД', -- скрепление на деревянной шпале как КБ-65 но на двух шурупах
 		}
-			
+
 		local fastener_fault_names = {
 			[0] = 'норм.',
-			[1] = 'От.КБ',  -- отсутствие клемного болта kb65
-			[2] = 'От.КЛМ',	-- отсуствие клеммы apc
+			[1] = 'От.КБ',  -- отсутствие клеммного болта kb65
+			[2] = 'От.КЛМ',	-- отсутствие клеммы apc
 			[10] = 'От.ЗБ',  -- отсутствие закладного болта kb65
-			[11] = 'От.КЗБ',  -- отсутствие клемного и закладного болта kb65	
+			[11] = 'От.КЗБ',  -- отсутствие клеммного и закладного болта kb65
 		}
 		local color = {r=127, g=0, b=127}
 
 		if #points == 8 then
 			drawPolygon(points, 1, color, color)
-			
-			local strText = sprintf('тип..:  %s\nсост.:  %s\n', 
-				params.FastenerType and (fastener_type_names[tonumber(params.FastenerType)] or params.FastenerType) or '', 
+
+			local strText = sprintf('тип..:  %s\nсост.:  %s\n',
+				params.FastenerType and (fastener_type_names[tonumber(params.FastenerType)] or params.FastenerType) or '',
 				params.FastenerFault and (fastener_fault_names[tonumber(params.FastenerFault)] or params.FastenerFault) or '')
-			
+
 			textOut(points, strText, {height=11})
 		end
 	end
-	
+
 	if resultType == 'Sleeper' then
 		local color = {r=128, g=0, b=0}
-		
+
 		if #points == 8 then
 			local l1 = {points[1], points[2], points[3], points[4]}
 			local l2 = {points[5], points[6], points[7], points[8]}
 			drawPolygon(l1, 1, color, color)
 			drawPolygon(l2, 1, color, color)
-			
-			local text = sprintf('разв.=%4.1f', (params.Angle_mrad or 0) *180/3.14/1000 ) 				
+
+			local text = sprintf('разв.=%4.1f', (params.Angle_mrad or 0) *180/3.14/1000 )
 			textOut(l2, text, {fill_color= {r=0, g=0, b=0}, line_color={r=255, g=255, b=255}, offset={35, 15}})
 		end
 	end
-	
+
 	if resultType == 'Surface' then
 		local color = {r=192, g=0, b=192}
 		if #points == 8 then
 			drawPolygon(points, 1, color, color)
-			
-			local strText = sprintf('п.д.[a=%d,l=%d]', params.SurfaceWidth or 0 , params.SurfaceLength or 0) 
+
+			local strText = sprintf('п.д.[a=%d,l=%d]', params.SurfaceWidth or 0 , params.SurfaceLength or 0)
 			textOut(points, strText, {offset={0, 20}})
 		end
 	end
-	
+
 	local hun_act_types_color = {
 		["Surface_SQUAT_UIC_227"] 				= {r=0,   g=255, b=0    }, -- зеленый
-		["Surface_SLEEPAGE_SKID_UIC_2251"] 		= {r=0,   g=255, b=255  }, -- циан	
+		["Surface_SLEEPAGE_SKID_UIC_2251"] 		= {r=0,   g=255, b=255  }, -- циан
 		["Surface_SLEEPAGE_SKID_UIC_2252"] 		= {r=255, g=255, b=0  },  -- желтый
 
 		["Surface_SQUAT_UIC_227_USER"] 			= {r=255, g=0,   b=255  }, -- малиновый
@@ -360,7 +362,7 @@ end
 
 local function drawFishplate(points, faults)
 	local color_fishplate = {r=0, g=255, b=0}
-	
+
 	local color_fault = {r=128, g=0, b=0}
 	local fishpalte_fault_str = {
 		[0] = 'испр.',
@@ -368,15 +370,15 @@ local function drawFishplate(points, faults)
 		[3] = 'тре.',
 		[4] = 'изл.',
 	}
-	
+
 	if #points ~= 0 then
 		assert(#points == 8)
 		drawPolygon(points, 1, color_fishplate, color_fishplate)
 	end
-	
+
 	for _, fault in ipairs(faults) do
 		drawPolygon(fault.points, 1, color_fault, color_fault)
-	
+
 		local text = fishpalte_fault_str[fault.code] or fault.code
 		local tcx, tcy = get_center_point(fault.points)
 		textOut(fault.points, text, {fill_color=color_fault, line_color={r=128, g=128, b=0}})
@@ -390,7 +392,7 @@ local function processSimpleResult(nodeActRes, resultType)
 	local req = '\z
 		PARAM[@name="FrameNumber" and @coord]/\z
 		PARAM[@name="Result" and @value="main"]'
-		
+
 	for nodeResult in SelectNodes(nodeActRes, req) do
 		local params = getParameters(nodeResult)
 		local points = getDrawFig(nodeResult)
@@ -414,21 +416,21 @@ end
 
 local function processFishplate(nodeActionResFishplate)
 	local cur_frame_coord = Frame.coord.raw
-	
+
 	local pointsFishplate = {}
 	local reqFishplate = '\z
 		PARAM[@name="FrameNumber" and @coord]/\z
 		PARAM[@name="Result" and @value="main"]/\z
 		PARAM[@name="FishplateEdge"]/\z
 		PARAM[@name="Coord" and @type="polygon" and @value]'
-		
+
 	for nodeParamPolygon in SelectNodes(nodeActionResFishplate, reqFishplate) do
 		local item_frame = nodeParamPolygon:SelectSingleNode("../../../@coord").nodeValue
 		local polygon = nodeParamPolygon:SelectSingleNode('@value').nodeValue
 		local x1,y1, x2,y2 = string.match(polygon, '(%d+),(%d+)%s+(%d+),(%d+)')
 		x1, y1 = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, x1, y1)
 		x2, y2 = Convertor:GetPointOnFrame(cur_frame_coord, item_frame, x2, y2)
-	
+
 		if x1 and y1 and x2 and y2 then
 			if #pointsFishplate ~= 0 then
 				x1, y1, x2, y2 = x2, y2, x1, y1
@@ -439,7 +441,7 @@ local function processFishplate(nodeActionResFishplate)
 			table.insert(pointsFishplate, y2)
 		end
 	end
-	
+
 	local faults = {}
 	local reqFault = '\z
 		PARAM[@name="FrameNumber" and @coord]/\z
@@ -452,7 +454,7 @@ local function processFishplate(nodeActionResFishplate)
 			faults[#faults+1] = {points = points, code=tonumber(nodeFaultCode.nodeValue)}
 		end
 	end
-	
+
 	drawFishplate(pointsFishplate, faults)
 end
 
@@ -460,7 +462,7 @@ end
 
 -- ======================================================
 
-local ActionResTypes = 
+local ActionResTypes =
 {
 	["CalcRailGap_Head_Top"] 		= {processSimpleResult},
 	["CalcRailGap_Head_Side"]	 	= {processSimpleResult},
@@ -472,6 +474,7 @@ local ActionResTypes =
 	["Fishplate"]	 	 			= {processFishplate},
 	["Beacon_Web"]	 	 			= {processSimpleResult},
 	["Beacon_Fastener"]	 	 		= {processSimpleResult},
+	["Beacon_FirTreeMark"]	 	 	= {processSimpleResult},
 	["Fastener"]	 	 			= {processSimpleResult},
 	["Sleeper"]	 	 				= {processSimpleResult},
 	["Surface"]	 	 				= {processSimpleResult},
@@ -487,9 +490,9 @@ local ActionResTypes =
 local function ProcessMarkRawXml(mark)
 	local rawXmlRoot = getMarkRawXml(mark)
 	if not rawXmlRoot then return end
-	
+
 	local req = sprintf('/ACTION_RESULTS\z
-		/PARAM[@name="ACTION_RESULTS" and @value and @channel="%d"]', 
+		/PARAM[@name="ACTION_RESULTS" and @value and @channel="%d"]',
 		Frame.channel)
 
 	for nodeActionResult in SelectNodes(rawXmlRoot, req) do
@@ -508,20 +511,20 @@ end
 
 local function ProcessUnspecifiedObject(mark)
 	local color = {r=67, g=149, b=209}
-		
+
 	local cur_frame_coord = Frame.coord.raw
 	local prop, ext = mark.prop, mark.ext
-	
+
 	if ext.VIDEOFRAMECOORD and ext.VIDEOIDENTCHANNEL and ext.UNSPCOBJPOINTS and math.abs(ext.VIDEOFRAMECOORD - cur_frame_coord) < 1500 then
 		local points = parse_polygon(ext.UNSPCOBJPOINTS, cur_frame_coord, ext.VIDEOFRAMECOORD)
-		
+
 		if #points == 8 then
 			drawPolygon(points, 1, color, color)
-			
+
 			--drawer.fig:rectangle(points[1], points[2], points[5], points[6])
 			local text = prop.Description
 			local tcx, tcy = get_center_point(points)
-			OutlineTextOut(tcx, tcy, text, {height=10})	
+			OutlineTextOut(tcx, tcy, text, {height=10})
 		end
 	end
 end
@@ -578,7 +581,8 @@ local recorn_guids =
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC805}"] = {ProcessMarkRawXml}, -- АТСтык(Пользователь)
 	["{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"] = {ProcessMarkRawXml}, -- Маячная
 	["{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}"] = {ProcessMarkRawXml}, -- Маячная(Пользователь)
-	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"] = {ProcessMarkRawXml}, -- Скрепление	
+	["{D3736670-0C32-46F8-9AAF-3816DE00B755}"] = {ProcessMarkRawXml}, -- Маячная Ёлка
+	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"] = {ProcessMarkRawXml}, -- Скрепление
 	["{28C82406-2773-48CB-8E7D-61089EEB86ED}"] = {ProcessMarkRawXml}, -- Болты(Пользователь)
 	["{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}"] = {ProcessMarkRawXml}, -- Поверх.(Видео)
 	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"] = {ProcessMarkRawXml}, -- Шпалы
@@ -599,7 +603,7 @@ local recorn_guids =
 	["{B6BAB49E-4CEC-4401-A106-355BFB2E0022}"] = {ProcessGroupDefectObject}, -- GROUP_FSTR_USER
 }
 
--- ================= EXPORT FUNCTION ================ 
+-- ================= EXPORT FUNCTION ================
 
 function Draw(drawer, frame, marks)
 	-- совместимость
@@ -619,7 +623,7 @@ end
 -- запрос какие отметки следует загружать для отображения
 function GetMarkGuids()
 	local res = {}
-	for g, f in pairs(recorn_guids) do
+	for g, _ in pairs(recorn_guids) do
 		table.insert(res, g)
 	end
 	return res
