@@ -392,6 +392,33 @@ local FastenerGroups = OOP.class{
     end,
 
     OnGroup = function (self, group, param)
+        --[[ https://bt.abisoft.spb.ru/view.php?id=600 
+        как как хорошие скрепления могут фильтроваться рекогменом,
+        то в данных остаются только  плохие и scanGroupDefect собирается их всех в одну группу (в две, по 1 и 2 рельсу)
+        значит нужно тут идти по группу и смотреть что если между отметками больше чем 1000/1840 м.,
+        то подразумеваем что между ними есть хорошая отметка.]]
+
+        local cur_group = {}
+        local max_dist = 1000000/1840 * 1.5
+        for _, mark in ipairs(group) do
+            if #cur_group == 0 then
+                table.insert(cur_group, mark)
+            else
+                local dist = mark.prop.SysCoord - cur_group[#cur_group].prop.SysCoord
+                print(dist, mark.prop.SysCoord)
+                if dist < max_dist then
+                    table.insert(cur_group, mark)
+                else
+                    self:_InnerOnGroup(cur_group, param)
+                    cur_group = {}
+                end
+            end
+        end
+        self:_InnerOnGroup(cur_group, param)
+    end,
+
+    _InnerOnGroup = function (self, group, param)
+        printf('_InnerOnGroup %d', #group)
         if #group >= 3 then
             assert(param and param.rail)
             local inside_switch = self._switchers:overalped(group[1].prop.SysCoord, group[#group].prop.SysCoord)

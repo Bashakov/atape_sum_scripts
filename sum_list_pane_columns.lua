@@ -11,6 +11,8 @@ sort_stable = mark_helper.sort_stable
 shallowcopy = mark_helper.shallowcopy
 deepcopy = mark_helper.deepcopy
 
+local DEFECT_CODES = require 'report_defect_codes'
+
 -- =====================================================================  
 
 -- dofile 'Scripts/sum_list_pane_guids.lua'
@@ -813,5 +815,11 @@ column_ekasui_code =
 	end,
 	sorter = function(mark)
 		return mark.ext.CODE_EKASUI or ''
+	end,
+	get_tooltip = function (row)
+		local mark = work_marks_list[row]
+		local code = mark.ext.CODE_EKASUI
+		local desc = code and DEFECT_CODES.code2desc(code) or code
+		return desc
 	end
 }

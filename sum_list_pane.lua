@@ -305,9 +305,9 @@ function GetItemText(row, col)
 	if row > 0 and row <= #work_marks_list and 		-- если номер строки валидный
 	   work_filter and 								-- задан рабочий фильтр
 	   col > 0 and col <= #(work_filter.columns) 	-- и номер колонки валиден
-	then	
+	then
 		local fn = work_filter.columns[col].text -- в описании колонки берем метод получения текста
-		if fn then								
+		if fn then
 			local res = fn(row)					-- и вызываем его, предавая номер строки
 			return tostring(res)				-- возвращаем результат в программу
 		end
@@ -318,14 +318,24 @@ end
 -- функция вызывается из программы, для запроса текста подсказки
 function GetToolTip(row, col)
 	--print ('GetToolTip', row, col) -- отладочная печать
-	local mark = work_marks_list[row]
-	--local res = sprintf('tooltip\nrow = %d\ncol = %d', row, col)
-	local res = 'tooltip:'
 
-	if mark then
-		res = res .. '\n' .. mark.prop.Description
+	if row > 0 and row <= #work_marks_list and work_filter and col > 0 and col <= #(work_filter.columns) then
+		local fnFilter = work_filter.get_tooltip
+		if fnFilter then
+			local tt = fnFilter(row, col)
+			if tt ~= nil then return tostring(tt) end
+		end
+		local fnColumn = work_filter.columns[col].get_tooltip
+		if fnColumn then
+			local tt = fnColumn(row)
+			if tt ~= nil then return tostring(tt) end
+		end
+		local fnText = work_filter.columns[col].text
+		if fnText then
+			local res = fnText(row)
+			return tostring(res)
+		end
 	end
-	return res
 end
 
 -- функция вызывается из программы, при переключении пользователем режима сортировки
@@ -341,7 +351,7 @@ function SortMarks(col, inc)
 			end
 		end
 	end
-	
+
 	selected_row = 0
 	work_sort_param[0] = col
 	work_sort_param[1] = inc
@@ -352,7 +362,7 @@ function GetItemColor(row, col)
 	if selected_row == row  then
 		return {0xffffff, 0x0000ff}
 	end
-			
+
 	if row > 0 and row <= #work_marks_list and work_filter and col > 0 and col <= #(work_filter.columns) then
 		local fnFilter = work_filter.get_color
 		if fnFilter then
