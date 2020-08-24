@@ -25,6 +25,7 @@ local juids_beacon =
 	"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",	-- Маячная
 	"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}", 	-- Маячная(Пользователь)
 	"{3601038C-A561-46BB-8B0F-F896C2130006}",	-- Бесстыковой путь(Пользователь)
+	"{D3736670-0C32-46F8-9AAF-3816DE00B755}",	-- Маячная Ёлка
 }
 
 
@@ -83,7 +84,6 @@ local function generate_row_beacon(marks, dlgProgress)
 end
 
 local function generate_row_beacon_user(marks, dlgProgress)
-
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130006}" and mark.ext.CODE_EKASUI then
@@ -98,6 +98,50 @@ local function generate_row_beacon_user(marks, dlgProgress)
 		end
 	end
 
+	return report_rows
+end
+
+local function generate_missing_beacon_mark(marks, dlgProgress)
+	local beacons = {} -- список маячных отметок с рисками по рельсам
+	local report_rows = {}
+
+	for i, mark in ipairs(marks) do
+		if mark.prop.Guid == "{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}" or
+		   mark.prop.Guid == "{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}" then
+			local rail_mask = bit32.band(mark.prop.RailMask, 0x03)
+			if not beacons[rail_mask] then beacons[rail_mask] = {} end
+			table.insert(beacons[rail_mask], mark)
+		end
+		if i % 34 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d отметок', i, #marks)) then
+			return
+		end
+	end
+
+	-- проходим по всем елкам и ищем для них соответствующие отметка с рисками
+	for i, mark in ipairs(marks) do
+		if mark.prop.Guid == "{D3736670-0C32-46F8-9AAF-3816DE00B755}" then
+			local found = false
+			local rail_mask = bit32.band(mark.prop.RailMask, 0x03)
+			if beacons[rail_mask] then
+				for _, bm in ipairs(beacons[rail_mask]) do
+					local dist = math.abs(mark.prop.SysCoord - bm.prop.SysCoord)
+					if dist < 1000 then
+						found = true
+						break
+					end
+				end
+			end
+			if not found then
+				local row = MakeBeaconMarkRow(mark)
+				row.DEFECT_CODE = DEFECT_CODES.BEACON_MISSING_LINE[1]
+				row.DEFECT_DESC = DEFECT_CODES.BEACON_MISSING_LINE[2]
+				table.insert(report_rows, row)
+			end
+		end
+		if i % 34 == 0 and not dlgProgress:step(i / #marks, sprintf('Поиск %d / %d отметок', i, #marks)) then
+			return
+		end
+	end
 	return report_rows
 end
 
@@ -143,10 +187,13 @@ end
 
 local report_beacon = make_report_generator(generate_row_beacon)
 local ekasui_beacon = make_report_ekasui(generate_row_beacon)
+local report_missing_beacon_mark = make_report_generator(generate_missing_beacon_mark)
+
 local videogram = make_report_videogram(generate_row_beacon)
 
-local report_beacon_all = make_report_generator(generate_row_beacon_user, generate_row_beacon)
-local ekasui_beacon_all = make_report_ekasui(generate_row_beacon_user, generate_row_beacon)
+local report_beacon_all = make_report_generator(generate_row_beacon_user, generate_row_beacon, generate_missing_beacon_mark)
+local ekasui_beacon_all = make_report_ekasui(generate_row_beacon_user, generate_row_beacon, generate_missing_beacon_mark)
+
 
 -- =========================================================================
 
@@ -162,6 +209,7 @@ local function AppendReports(reports)
 		{name = name_pref..'*Определение наличия отсутствующих и неработающих противоугонов',   fn=report_not_implement, 	},
 
 		{name = name_pref..'ЕКАСУИ Смещения рельсовых плетей относительно «маячных» шпал, мм',  fn=ekasui_beacon, 			},
+		{name = name_pref..'Отсутствует маркировка «маячных» шпал', fn=report_missing_beacon_mark}
 	}
 
 	for _, report in ipairs(sleppers_reports) do
@@ -174,12 +222,14 @@ end
 if not ATAPE then
 	local test_report  = require('test_report')
 	--test_report('D:\\ATapeXP\\Main\\494\\Москва Курская - Подольск\\Москва Курская - Подольск\\2019_05_16\\Avikon-03M\\4240\\[494]_2019_03_15_01.xml')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	--test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	test_report('D:/d-drive/ATapeXP/Main/494/video_recog/2020_08_24/Avikon-03M/4858/[494]_2019_09_03_01.xml')
 
 	-- report_beacon_user()
-	ekasui_beacon_user()
+	--ekasui_beacon_user()
 	-- report_beacon()
 	--ekasui_beacon()
+	report_beacon_all()
 end
 
 return {
