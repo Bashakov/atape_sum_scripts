@@ -997,7 +997,7 @@ end
 
 -- сделать строку ссылку для открытия атейпа на данной отметке
 function MakeMarkUri(markid)
-	local link = stuff.sprintf(" -g %s -mark %d", Passport.GUID, markid)
+	local link = sprintf(" -g %s -mark %d", Passport.GUID, markid)
 	link = string.gsub(link, "[%s{}]", function (c)
 			return string.format("%%%02X", string.byte(c))
 		end)

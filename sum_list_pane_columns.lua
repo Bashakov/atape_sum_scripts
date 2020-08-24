@@ -326,7 +326,39 @@ column_beacon_offset =
 		return offset
 	end
 }
-	
+
+-- найдена рядом с елочкой риска
+column_firtree_beacon =
+{
+	name = 'Найд Риск',
+	width = 50, 
+	align = 'r', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		if mark.prop.Guid == "{D3736670-0C32-46F8-9AAF-3816DE00B755}" then
+			local found = mark.user.beacon_id
+			return found and 'Да' or 'нет'
+		end
+		return ''
+	end,
+	sorter = function(mark)
+		if mark.prop.Guid == "{D3736670-0C32-46F8-9AAF-3816DE00B755}" then
+			local found = mark.user.beacon_id
+			return found and 1 or 0
+		end
+		return -1
+	end,
+	get_color = function(row)
+		local mark = work_marks_list[row]
+		if mark.prop.Guid == "{D3736670-0C32-46F8-9AAF-3816DE00B755}" then
+			local found = mark.user.beacon_id
+			--return found and {0x00FF00, 0xFFFFFF} or {0xFF0000, 0xFFFFFF}
+			return found and {0x000000, 0xCCFFCC} or {0x000000, 0xFFCCCC}
+		end
+	end,
+}
+
+
 local fastener_type_names = {
 	[0] = 'КБ-65', 
 	[1] = 'Аpc',  

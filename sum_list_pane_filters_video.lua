@@ -68,15 +68,43 @@ local filters =
 			column_path_coord, 
 			column_rail,
 			column_beacon_offset,
+			column_firtree_beacon,
 			column_pov_common,
 			column_mark_type_name
 			}, 
 		GUIDS = {
-			"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}",
-			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",
-			"{3601038C-A561-46BB-8B0F-F896C2130006}",
-			"{D3736670-0C32-46F8-9AAF-3816DE00B755}",
-		}
+			"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}", 	-- Маячная(Пользователь)
+			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",	-- Маячная
+			"{3601038C-A561-46BB-8B0F-F896C2130006}",	-- Бесстыковой путь(Пользователь)
+			"{D3736670-0C32-46F8-9AAF-3816DE00B755}",	-- Маячная Ёлка
+		},
+		post_load = function(marks)
+			-- строим список отметок с рисками по рельсам, для поиска
+			local beacons = {} -- список маячных отметок с рисками по рельсам
+			for _, mark in ipairs(marks) do
+				if mark.prop.Guid == "{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}" or
+				   mark.prop.Guid == "{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}" then
+					local rail_mask = bit32.band(mark.prop.RailMask, 0x03)
+					if not beacons[rail_mask] then beacons[rail_mask] = {} end
+					table.insert(beacons[rail_mask], mark)
+				end
+			end
+			-- проходим по всем елкам и ищем для них соответствующие отметка с рисками
+			for _, mark in ipairs(marks) do
+				if mark.prop.Guid == "{D3736670-0C32-46F8-9AAF-3816DE00B755}" then
+					local rail_mask = bit32.band(mark.prop.RailMask, 0x03)
+					if beacons[rail_mask] then
+						for _, bm in ipairs(beacons[rail_mask]) do
+							local dist = math.abs(mark.prop.SysCoord - bm.prop.SysCoord)
+							if dist < 1000 then
+								mark.user.beacon_id = bm.prop.ID
+							end
+						end
+					end
+				end
+			end
+			return marks
+		end,
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},

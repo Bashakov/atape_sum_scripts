@@ -1,5 +1,5 @@
 if not ATAPE then
-	HUN = true
+	HUN = false
 end
 
 mark_helper = require 'sum_mark_helper'
@@ -507,29 +507,30 @@ end
 -- ============================================================= --
 
 if not ATAPE then
-	for _, g in ipairs(GetGroupNames()) do 
-		print(g .. ':')
-		for _, n in ipairs(GetFilterNames(g)) do
-			print('\t' .. n)
-		end
-	end
-	
+	-- for _, g in ipairs(GetGroupNames()) do 
+	-- 	print(g .. ':')
+	-- 	for _, n in ipairs(GetFilterNames(g)) do
+	-- 		print('\t' .. n)
+	-- 	end
+	-- end
+
 	test_report  = require('test_report')
-	local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+	--local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
 	--local psp_path = 'D:/ATapeXP/Main/494/multimagnetic/2018_01_25/Avikon-03M/12216/[494]_2018_01_03_01.xml'
+	local psp_path = 'D:/d-drive/ATapeXP/Main/494/video_recog/2020_08_24/Avikon-03M/4858/[494]_2019_09_03_01.xml'
 	test_report(psp_path)
-	
+
 	local name 
 	if HUN then
 		name  = 'Surface Defects'
 	else
-		name  = 'Стыковые зазоры'
+		name  = 'Маячные отметки'
 	end
-	
+
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}
 	local col_names = {}
-	
+
 	for _, col in ipairs (columns) do
 		table.insert(col_names, col.name)
 		table.insert(col_fmt, sprintf('%%%ds', col.width/8))
@@ -538,7 +539,7 @@ if not ATAPE then
 	local str_header = sprintf(col_fmt, table.unpack(col_names))
 	print(str_header)
 	print(string.rep('=', #str_header))
-	
+
 	local cnt_row = InitMark(name)
 	for row = 1, cnt_row do
 		local values = {}

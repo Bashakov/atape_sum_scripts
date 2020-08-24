@@ -267,28 +267,32 @@ local function drawSimpleResult(resultType, points, params)
 		local colors = {
 			Beacon_Web 		= {r=67, g=149, b=209},
 			Beacon_Fastener = {r=0,  g=169, b=157},
+			Beacon_FirTreeMark = {r=100,  g=169, b=157},
 		}
 
 		local color = colors[resultType]
 
-		if color and #points > 0 and params.Shift_mkm then
-			local shift = tonumber(params.Shift_mkm) / 1000
+		if color and #points > 0  then
 			drawRectangle(points, color, {5, 0})
+			if params.Shift_mkm then
+				local shift = tonumber(params.Shift_mkm) / 1000
 
-			if beacon_shifts.frame and beacon_shifts.frame ~= Frame.coord.raw then	 -- предполагаем что не больше одной маячной отметки на кадре
-				beacon_shifts = {frame = Frame.coord.raw}
-			end
+				-- beacon_shifts используется для рисования текста с шириной посредине отметки (среднее положение по рискам)
+				if beacon_shifts.frame and beacon_shifts.frame ~= Frame.coord.raw then	 -- предполагаем что не больше одной маячной отметки на кадре
+					beacon_shifts = {frame = Frame.coord.raw}
+				end
 
-			beacon_shifts[resultType] = {coords = points, shift = shift}
-			if beacon_shifts.Beacon_Web and beacon_shifts.Beacon_Fastener then
-				local c1 = beacon_shifts.Beacon_Web.coords
-				local c2 = beacon_shifts.Beacon_Fastener.coords
-				local tcx = (c1[1] + c1[3] + c2[1] + c2[3]) / 4
-				local tcy = (c1[4] + c2[2]) / 2
+				beacon_shifts[resultType] = {coords = points, shift = shift}
+				if beacon_shifts.Beacon_Web and beacon_shifts.Beacon_Fastener then
+					local c1 = beacon_shifts.Beacon_Web.coords
+					local c2 = beacon_shifts.Beacon_Fastener.coords
+					local tcx = (c1[1] + c1[3] + c2[1] + c2[3]) / 4
+					local tcy = (c1[4] + c2[2]) / 2
 
-				local text = sprintf('%.1f mm', beacon_shifts.Beacon_Web.shift)
-				textOut({tcx, tcy}, text)
-				beacon_shifts = {} -- сбросим нарисованное
+					local text = sprintf('%.1f mm', beacon_shifts.Beacon_Web.shift)
+					textOut({tcx, tcy}, text)
+					beacon_shifts = {} -- сбросим нарисованное
+				end
 			end
 		end
 	end
@@ -396,6 +400,7 @@ local function processSimpleResult(nodeActRes, resultType)
 	for nodeResult in SelectNodes(nodeActRes, req) do
 		local params = getParameters(nodeResult)
 		local points = getDrawFig(nodeResult)
+		-- print(resultType, points)
 		if #points > 0 then
 			drawSimpleResult(resultType, points, params)
 		end
