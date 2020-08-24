@@ -188,6 +188,7 @@ end
 local report_beacon = make_report_generator(generate_row_beacon)
 local ekasui_beacon = make_report_ekasui(generate_row_beacon)
 local report_missing_beacon_mark = make_report_generator(generate_missing_beacon_mark)
+local ekasui_missing_beacon_mark = make_report_ekasui(generate_missing_beacon_mark)
 
 local videogram = make_report_videogram(generate_row_beacon)
 
@@ -206,10 +207,9 @@ local function AppendReports(reports)
 		{name = name_pref..'ЕКАСУИ Все',    		fn=ekasui_beacon_all, },
 
 		{name = name_pref..'Смещения рельсовых плетей относительно «маячных» шпал, мм',    		fn=report_beacon, 			},
-		{name = name_pref..'*Определение наличия отсутствующих и неработающих противоугонов',   fn=report_not_implement, 	},
-
 		{name = name_pref..'ЕКАСУИ Смещения рельсовых плетей относительно «маячных» шпал, мм',  fn=ekasui_beacon, 			},
-		{name = name_pref..'Отсутствует маркировка «маячных» шпал', fn=report_missing_beacon_mark}
+		{name = name_pref..'Отсутствует маркировка «маячных» шпал', 							fn=report_missing_beacon_mark},
+		{name = name_pref..'ЕКАСУИ Отсутствует маркировка «маячных» шпал', 						fn=ekasui_missing_beacon_mark},
 	}
 
 	for _, report in ipairs(sleppers_reports) do
@@ -229,7 +229,7 @@ if not ATAPE then
 	--ekasui_beacon_user()
 	-- report_beacon()
 	--ekasui_beacon()
-	report_beacon_all()
+	ekasui_missing_beacon_mark()
 end
 
 return {
