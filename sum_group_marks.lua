@@ -41,6 +41,12 @@ local sprintf = function(fmt, ...) return string.format(fmt, ...)  end
 
 -- =============================================
 
+local function format_sys_coord(coord)
+    local s = string.format("%9d", coord)
+    s = s:reverse():gsub('(%d%d%d)','%1.'):reverse()
+    return s
+end
+
 local function list(itrable)
     local res = {}
     while true do
@@ -103,6 +109,13 @@ local function makeMark(guid, coord, lenght, rail_mask, object_count)
 
 	mark.ext.GROUP_DEFECT_COUNT = object_count
 
+    -- https://bt.abisoft.spb.ru/view.php?id=600#c2643
+    -- При формировании групповых тоже им автоматом давать 0000
+    mark.ext.POV_OPERATOR = 0
+    mark.ext.POV_EAKSUI   = 0
+    mark.ext.POV_REPORT   = 0
+    mark.ext.POV_REJECTED = 0
+
     -- sumPOV.UpdateMarks(mark, false)
     return mark
 end
@@ -125,12 +138,11 @@ local function scanGroupDefect(defect_type, dlg)
             local function get_near_mark(index) return marks[i+index] end
             local accept = defect_type:Check(get_near_mark)
             --print(i, accept, mark.prop.SysCoord)
-            if accept then
-                table.insert(group, mark)
-            else
+            if not accept then
                 defect_type:OnGroup(group, param)
                 group = {}
             end
+            table.insert(group, mark)
         end
         defect_type:OnGroup(group, param)
     end
@@ -368,13 +380,21 @@ local FastenerGroups = OOP.class{
         self._switchers = Switchers()
     end,
 
-    LoadMarks = function (self)
-       local guids_fasteners =
+    LoadMarks = function (self, param)
+        assert(param and param.rail)
+        local guids_fasteners =
         {
             "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",	-- Скрепление
             "{3601038C-A561-46BB-8B0F-F896C2130001}",	-- Скрепления(Пользователь)
         }
-        return loadMarks(guids_fasteners)
+        local marks = loadMarks(guids_fasteners)
+        local res = {}
+        for _, mark in ipairs(marks) do
+            if bit32.btest(mark.prop.RailMask, param.rail) then
+                table.insert(res, mark)
+            end
+        end
+        return res
     end,
 
     Check = function (self, get_near_mark)
@@ -392,11 +412,13 @@ local FastenerGroups = OOP.class{
     end,
 
     OnGroup = function (self, group, param)
+        assert(param and param.rail)
+
         --[[ https://bt.abisoft.spb.ru/view.php?id=600 
         как как хорошие скрепления могут фильтроваться рекогменом,
         то в данных остаются только  плохие и scanGroupDefect собирается их всех в одну группу (в две, по 1 и 2 рельсу)
-        значит нужно тут идти по группу и смотреть что если между отметками больше чем 1000/1840 м.,
-        то подразумеваем что между ними есть хорошая отметка.]]
+        значит нужно тут идти по группе и смотреть что если между отметками больше чем 1000 м/1840,
+        то подразумеваем, что между ними есть хорошая отметка, и большую группу разбиваем на несколько]]
 
         local cur_group = {}
         local max_dist = 1000000/1840 * 1.5
@@ -405,13 +427,12 @@ local FastenerGroups = OOP.class{
                 table.insert(cur_group, mark)
             else
                 local dist = mark.prop.SysCoord - cur_group[#cur_group].prop.SysCoord
-                print(dist, mark.prop.SysCoord)
-                if dist < max_dist then
-                    table.insert(cur_group, mark)
-                else
+                -- printf("%d   %6d  %s", mark.prop.RailMask, dist, format_sys_coord(mark.prop.SysCoord))
+                if dist > max_dist then
                     self:_InnerOnGroup(cur_group, param)
                     cur_group = {}
                 end
+                table.insert(cur_group, mark)
             end
         end
         self:_InnerOnGroup(cur_group, param)

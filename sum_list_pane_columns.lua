@@ -91,6 +91,23 @@ column_path_coord =
 	end
 }
 
+column_path_coord_begin_end =
+{
+	name = 'Коорд.',
+	width = 100,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local prop = mark.prop
+		local km1, m1, mm1 = Driver:GetPathCoord(prop.SysCoord)
+		local km2, m2, mm2 = Driver:GetPathCoord(prop.SysCoord + prop.Len)
+		return string.format('%3d.%03d - %3d.%03d', km1, m1, km2, m2)
+	end,
+	sorter = function(mark)
+		return mark.prop.SysCoord + prop.Len/2
+	end
+}
+
 column_sys_coord = 
 {
 	name = 'Сист.', 

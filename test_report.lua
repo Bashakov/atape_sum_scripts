@@ -22,7 +22,7 @@ local function binsearch(tbl, value, fcompval, allow_nearest)
 	end
 end
 
-local function read_sum_file(file_path, guids, mark_id, load_marks_range)
+local function read_sum_file_inner(file_path, guids, mark_id, load_marks_range)
 	local function format_guid(hex_guid)
 		-- print(hex_guid)
 		local m = table.pack(string.match(hex_guid, '\z
@@ -112,6 +112,31 @@ local function read_sum_file(file_path, guids, mark_id, load_marks_range)
 	end
 	--print(#res)
 	return res
+end
+
+local function read_sum_file(file_path, guids, mark_id, load_marks_range)
+	assert(string.sub(file_path, -4) == '.sum')
+	local db = sqlite3.open(file_path)
+
+	local nums = {}
+	for name in db:urows('SELECT name FROM SumrkMarkTypeTable') do
+		local m = string.match(name, 'group_(%d+)')
+		nums[m] = true
+	end
+	db:close()
+
+	local marks = {}
+	for num, _ in pairs(nums) do
+		local file = file_path
+		if num ~= '0' then
+			file = string.sub(file_path, 1, -4) .. num .. string.sub(file_path, -4)
+		end
+		local r = read_sum_file_inner(file, guids, mark_id, load_marks_range)
+		for _, m in ipairs(r) do
+			marks[#marks+1] = m
+		end
+	end
+	return marks
 end
 
 local function psp2table(psp_path)						-- открыть xml паспорт и сохранить в таблицу его свойства

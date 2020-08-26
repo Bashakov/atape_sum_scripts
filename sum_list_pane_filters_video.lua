@@ -322,7 +322,7 @@ local filters =
 		name = 'Групповые дефекты',
 		columns = {
 			column_num,
-			column_path_coord,
+			column_path_coord_begin_end,
 			column_length,
 			column_rail,
 			column_group_defect_count,

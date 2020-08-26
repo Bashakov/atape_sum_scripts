@@ -286,21 +286,27 @@ function MakeReportFilter(ekasui)
 				return false
 			end
 
+			--[[ https://bt.abisoft.spb.ru/view.php?id=600#c2635
+				https://bt.abisoft.spb.ru/view.php?id=600#c2643
+				ПОВ по старым данным устанавливать в 0000
+				Старые данные это которые распознаны со старым sumlibproxy. И там тк нет ПОВ то трактуется как ....
+			]]
+			local VALUE_IF_MISSING = 0
 			if op_no ~= 0 or op_yes ~= 0 then
-				local v = mark.ext.POV_OPERATOR or 1
+				local v = mark.ext.POV_OPERATOR or VALUE_IF_MISSING
 				if op_no  ~= 0 and v == 0 then return true end
 				if op_yes ~= 0 and v == 1 then return true end
 			end
 
 			if ek_no ~= 0 or ek_prep ~= 0 or ek_snd ~= 0 then
-				local v = mark.ext.POV_EAKSUI or 1
+				local v = mark.ext.POV_EAKSUI or VALUE_IF_MISSING
 				if ek_no   ~= 0 and v == 0 then return true end
 				if ek_prep ~= 0 and v == 1 then return true end
 				if ek_snd  ~= 0 and v == 2 then return true end
 			end
 
 			if rp_no ~= 0 or rp_yes ~= 0 then
-				local v = mark.ext.POV_REPORT or 1
+				local v = mark.ext.POV_REPORT or VALUE_IF_MISSING
 				if rp_no  ~= 0 and v == 0 then return true end
 				if rp_yes ~= 0 and v == 1 then return true end
 			end
