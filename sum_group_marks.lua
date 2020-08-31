@@ -138,11 +138,12 @@ local function scanGroupDefect(defect_type, dlg)
             local function get_near_mark(index) return marks[i+index] end
             local accept = defect_type:Check(get_near_mark)
             --print(i, accept, mark.prop.SysCoord)
-            if not accept then
+            if accept then
+                table.insert(group, mark)
+            else
                 defect_type:OnGroup(group, param)
                 group = {}
             end
-            table.insert(group, mark)
         end
         defect_type:OnGroup(group, param)
     end
