@@ -421,6 +421,7 @@ local FastenerGroups = OOP.class{
         значит нужно тут идти по группе и смотреть что если между отметками больше чем 1000 м/1840,
         то подразумеваем, что между ними есть хорошая отметка, и большую группу разбиваем на несколько]]
 
+        local FastenerMaxDinstanceToSleeperJoin = 100
         local cur_group = {}
         local max_dist = 1000000/1840 * 1.5
         for _, mark in ipairs(group) do
@@ -429,11 +430,23 @@ local FastenerGroups = OOP.class{
             else
                 local dist = mark.prop.SysCoord - cur_group[#cur_group].prop.SysCoord
                 -- printf("%d   %6d  %s", mark.prop.RailMask, dist, format_sys_coord(mark.prop.SysCoord))
-                if dist > max_dist then
-                    self:_InnerOnGroup(cur_group, param)
-                    cur_group = {}
+                if dist < FastenerMaxDinstanceToSleeperJoin then
+                    -- то же скрепление на другой стороне рельса
+                    --[[ https://bt.abisoft.spb.ru/view.php?id=617
+                        Скрепления расположены на шпале. По одной нитке 2 скрепления .
+                        Это каналы 17 и 19 по купе. И отсутствие одного в такой паре является дефектом.
+                        Несколько таких дефектов - это групповая неисправность.
+                        Принадлежность к одной шпале оценивается по координате.
+                        Задаём максимальное смещение, при котором два скрепления принадлежат одной
+                        шпале определим константой FastenerMaxDinstanceToSleeperJoin = 100 мм.
+                    ]]
+                else
+                    if dist > max_dist then
+                        self:_InnerOnGroup(cur_group, param)
+                        cur_group = {}
+                    end
+                    table.insert(cur_group, mark)
                 end
-                table.insert(cur_group, mark)
             end
         end
         self:_InnerOnGroup(cur_group, param)

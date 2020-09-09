@@ -129,6 +129,7 @@ local filters =
 			column_rail,
 			column_fastener_type,
 			column_fastener_fault,
+			column_recogn_video_channel,
 --			column_recogn_reability,
 --			column_fastener_width,
 			column_pov_common,
