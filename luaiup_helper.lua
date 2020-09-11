@@ -51,7 +51,7 @@ ProgressDlg = OOP.class
 	end,
 	
 	step = function(self, value, text)
-		text = text or stuff.sprintf('progress: %.1f %%', value * 100.0)
+		text = text or string.format('progress: %.1f %%', value * 100.0)
 		self.label.title = text
 		self.gaugeProgress.value = value
 		iup.LoopStep()

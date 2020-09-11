@@ -89,6 +89,35 @@ local function filter(fn, array)
     return list(ifilter(fn, array))
 end
 
+local function filter_rail(marks, rail)
+    assert(rail == 1 or rail == 2)
+    local function f(mark)
+        return bit32.btest(mark.prop.RailMask, rail)
+    end
+    return filter(f, marks)
+end
+
+local function filter_pov_operator(marks, pov_operator)
+    assert(pov_operator == 0 or pov_operator == 1)
+    local function f(mark)
+        local accept_operator = (mark.ext.POV_OPERATOR == 1)  -- может быть 0 или отсутствовать (nil)
+        return (pov_operator == 1) == accept_operator
+    end
+    return filter(f, marks)
+end
+
+local function make_progress_cb(dlg, title, step)
+    step = step or 1
+    return function (cur, all)
+        if cur % 300 == 0 then collectgarbage("collect") end
+        local text = sprintf('%s: %d/%d', title, cur, all)
+        if cur % step == 0 and dlg and not dlg:step(cur / all, text) then
+            return false
+        end
+        return true
+    end
+end
+
 -- =============================================
 
 local function loadMarks(guids)
@@ -120,29 +149,50 @@ local function makeMark(guid, coord, lenght, rail_mask, object_count)
     return mark
 end
 
+local CHECK = {
+    ACCEPT          = 1,    -- добавить отметку в группу
+    REFUTE          = 2,    -- пропустить отметку и закрыть группу
+    SKIP            = 3,    -- пропустить отметку
+    ACCEPT_CLOSE    = 4,    -- добавить отметку в группу и закрыть группу
+    CLOSE_ACCEPT    = 5,    -- закрыть пред группу и добавить отметку в новую группу
+}
+
+--[[ defect_type должен быть классом с 3 методами:
+- LoadMarks: строит список отметок, которые нужно проверить
+- Check: проверить отметку на дефектность, должна вернуть CHECK
+- OnGroup: обработать полученную группу
+]]
 local function scanGroupDefect(defect_type, dlg)
     local params = defect_type.PARAMETERS or {1}
+    local search_group_progress = make_progress_cb(dlg, sprintf('%s: обработка', defect_type.NAME), 23)
     for _, param in ipairs(params) do
-        local marks = defect_type:LoadMarks(param)
+        local marks = defect_type:LoadMarks(param, dlg)
 
         local group = {}
         for i, mark in ipairs(marks) do
             if i % 100 == 0 then collectgarbage("collect") end
 
-            if i % 23 == 0 and dlg then
-                local text = string.format('%s: обработка %d / %d отметок', defect_type.NAME, i, #marks)
-                if not dlg:step(i / #marks, text) then
-                    return
-                end
-            end
+            if not search_group_progress(i, #marks) then return end
+
             local function get_near_mark(index) return marks[i+index] end
-            local accept = defect_type:Check(get_near_mark)
+            local result = defect_type:Check(get_near_mark)
             --print(i, accept, mark.prop.SysCoord)
-            if accept then
+            if result == CHECK.ACCEPT then
                 table.insert(group, mark)
-            else
+            elseif result == CHECK.REFUTE then
                 defect_type:OnGroup(group, param)
                 group = {}
+            elseif result == CHECK.SKIP then
+                -- skip
+            elseif result == CHECK.ACCEPT_CLOSE then
+                table.insert(group, mark)
+                defect_type:OnGroup(group, param)
+                group = {}
+            elseif result == CHECK.CLOSE_ACCEPT then
+                defect_type:OnGroup(group, param)
+                group = {mark}
+            else
+                assert(false, 'Unknow value' .. tostring(result))
             end
         end
         defect_type:OnGroup(group, param)
@@ -227,7 +277,7 @@ local GapGroups = OOP.class
         self.marks = {}
     end,
 
-    LoadMarks = function (self, param)
+    LoadMarks = function (self, param, dlg)
         assert(param and param.rail and param.pov_operator)
         local video_joints_juids =
         {
@@ -238,25 +288,26 @@ local GapGroups = OOP.class
             "{3601038C-A561-46BB-8B0F-F896C2130003}",	-- Рельсовые стыки(Пользователь)
         }
         local marks = loadMarks(video_joints_juids)
-        local res = {}
-        for _, mark in ipairs(marks) do
-            if bit32.btest(mark.prop.RailMask, param.rail) then
-                local accept_operator = (mark.ext.POV_OPERATOR == 1)  -- maybe 0 or missing (nil)
-                if (param.pov_operator == 1) == accept_operator then
-                    table.insert(res, mark)
-                end
-            end
-        end
-        return res
+        marks = filter_rail(marks, param.rail)
+        marks = filter_pov_operator(marks, param.pov_operator)
+        return marks
     end,
 
     Check = function (self, get_near_mark)
         local mark = get_near_mark(0)
         if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" then
-            return mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1]
+            if mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1] then
+                return CHECK.ACCEPT
+            else
+                return CHECK.REFUTE
+            end
         else
             local width = mark_helper.GetGapWidth(mark) or 100000
-			return width <= self.width_threshold
+			if width <= self.width_threshold then
+                return CHECK.ACCEPT
+            else
+                return CHECK.REFUTE
+            end
         end
     end,
 
@@ -322,9 +373,12 @@ local SleeperGroups = OOP.class
     Check = function (self, get_near_mark)
         local mark = get_near_mark(0)
         if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130002}" then
-            return
-                mark.ext.CODE_EKASUI == DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1] or
-			    mark.ext.CODE_EKASUI == DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[1]
+            if mark.ext.CODE_EKASUI == DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1] or
+			   mark.ext.CODE_EKASUI == DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[1] then
+                return CHECK.ACCEPT
+            else
+                return CHECK.REFUTE
+            end
         else
             local material_diffs = {
                 [1] = 2*40, -- "бетон",
@@ -348,7 +402,11 @@ local SleeperGroups = OOP.class
             local near = get_near_mark(1) or get_near_mark(-1) -- возьмем следующую или предыдущую
             if near then
                 local near_dist = math.abs(near.prop.SysCoord - mark.prop.SysCoord)
-                return not check_distance_normal(max_diff, near_dist)
+                if check_distance_normal(max_diff, near_dist)  then
+                    return CHECK.REFUTE
+                else
+                    return CHECK.ACCEPT
+                end
             end
         end
     end,
@@ -371,91 +429,108 @@ local SleeperGroups = OOP.class
 local FastenerGroups = OOP.class{
     NAME = 'Скрепления',
     GUID = '{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
+    FastenerMaxDinstanceToSleeperJoin = 100,
+    FastenerMaxGroupDistance = 1000000/1840 * 1.5,
+
     PARAMETERS = {
         {rail=1},
         {rail=2}
     },
 
     ctor = function (self)
-        self.marks = {}
-        self._switchers = Switchers()
+        self.marks = {}                 -- хранилище найденных отметок
+        self._switchers = Switchers()   -- стрелки
+        self._defect_mark_ids = {}      -- таблица id отметки - дефектность
     end,
 
-    LoadMarks = function (self, param)
+    _is_fastener_defect = function (self, mark)
+        local defect = self._defect_mark_ids[mark.prop.ID]
+        if defect == nil then
+            if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130001}" then
+                defect =
+                    mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1] or
+                    mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP[1] or
+                    mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_BOLT[1]
+            else
+                local prm = mark_helper.GetFastenetParams(mark)
+                local FastenerFault = prm and prm.FastenerFault
+                defect = not not FastenerFault and FastenerFault > 0
+            end
+            self._defect_mark_ids[mark.prop.ID] = defect
+        end
+        assert(type(defect) == 'boolean', type(defect))
+        return defect
+    end,
+
+    LoadMarks = function (self, param, dlg)
         assert(param and param.rail)
         local guids_fasteners =
         {
             "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",	-- Скрепление
             "{3601038C-A561-46BB-8B0F-F896C2130001}",	-- Скрепления(Пользователь)
         }
+        local progress = make_progress_cb(dlg, sprintf('загрузка скреплений рельс %d', param.rail), 123)
         local marks = loadMarks(guids_fasteners)
+        marks = filter_rail(marks, param.rail)
+
+        local function is_pair_defect(mark, neighbour)
+            if neighbour then
+                local dist = math.abs(neighbour.prop.SysCoord - mark.prop.SysCoord)
+                if dist < self.FastenerMaxDinstanceToSleeperJoin then
+                    return self:_is_fastener_defect(neighbour)
+                end
+            end
+            return false
+        end
+
+        -- удалим хорошие отметки, если с другой стороны рельса есть дефектная
         local res = {}
-        for _, mark in ipairs(marks) do
-            if bit32.btest(mark.prop.RailMask, param.rail) then
+        for i, mark in ipairs(marks) do
+            if not progress(i, #marks) then return {} end
+            if self:_is_fastener_defect(mark) then
+                -- если дефектная, то добавляем
                 table.insert(res, mark)
+            else
+                -- иначе посмотрим на соседей
+                if is_pair_defect(mark, marks[i-1]) or
+                   is_pair_defect(mark, marks[i+1]) then
+                    -- парная дефектная, значит эту пропускаем
+                    printf('skip %d/%d, on found pair defect', mark.prop.RailMask, mark.prop.SysCoord)
+                else
+                    -- нет парных, или они не дефектные. добавляем
+                    table.insert(res, mark)
+                end
             end
         end
+        printf('skip %d fasteners, leave %d', #marks - #res, #res)
         return res
     end,
 
     Check = function (self, get_near_mark)
         local mark = get_near_mark(0)
-        if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130001}" then
-            return
-                mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1] or
-                mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP[1] or
-                mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_BOLT[1]
-        else
-            local prm = mark_helper.GetFastenetParams(mark)
-			local FastenerFault = prm and prm.FastenerFault
-			return FastenerFault and FastenerFault > 0
+        if not self:_is_fastener_defect(mark) then
+            -- если отметка хорошая, то пропускаем ее и закрываем группу
+            return CHECK.REFUTE
         end
+        -- иначе посмотрим расстояние до предыдущей отметки
+        local prev = get_near_mark(-1)
+        if prev then
+            local dist = math.abs(prev.prop.SysCoord - mark.prop.SysCoord)
+            if dist > self.FastenerMaxGroupDistance then
+                --[[ если больше чем максимально возможное между шпалами,
+                значит что возможно хорошие скрепления не писались,
+                пред группу надо закрывать и начинать новую ]]
+                return CHECK.CLOSE_ACCEPT
+            end
+        end
+        -- иначе добавляем отметку в группу
+        return CHECK.ACCEPT
     end,
 
     OnGroup = function (self, group, param)
         assert(param and param.rail)
 
-        --[[ https://bt.abisoft.spb.ru/view.php?id=600 
-        как как хорошие скрепления могут фильтроваться рекогменом,
-        то в данных остаются только  плохие и scanGroupDefect собирается их всех в одну группу (в две, по 1 и 2 рельсу)
-        значит нужно тут идти по группе и смотреть что если между отметками больше чем 1000 м/1840,
-        то подразумеваем, что между ними есть хорошая отметка, и большую группу разбиваем на несколько]]
-
-        local FastenerMaxDinstanceToSleeperJoin = 100
-        local cur_group = {}
-        local max_dist = 1000000/1840 * 1.5
-        for _, mark in ipairs(group) do
-            if #cur_group == 0 then
-                table.insert(cur_group, mark)
-            else
-                local dist = mark.prop.SysCoord - cur_group[#cur_group].prop.SysCoord
-                -- printf("%d   %6d  %s", mark.prop.RailMask, dist, format_sys_coord(mark.prop.SysCoord))
-                if dist < FastenerMaxDinstanceToSleeperJoin then
-                    -- то же скрепление на другой стороне рельса
-                    --[[ https://bt.abisoft.spb.ru/view.php?id=617
-                        Скрепления расположены на шпале. По одной нитке 2 скрепления .
-                        Это каналы 17 и 19 по купе. И отсутствие одного в такой паре является дефектом.
-                        Несколько таких дефектов - это групповая неисправность.
-                        Принадлежность к одной шпале оценивается по координате.
-                        Задаём максимальное смещение, при котором два скрепления принадлежат одной
-                        шпале определим константой FastenerMaxDinstanceToSleeperJoin = 100 мм.
-                    ]]
-                else
-                    if dist > max_dist then
-                        self:_InnerOnGroup(cur_group, param)
-                        cur_group = {}
-                    end
-                    table.insert(cur_group, mark)
-                end
-            end
-        end
-        self:_InnerOnGroup(cur_group, param)
-    end,
-
-    _InnerOnGroup = function (self, group, param)
-        printf('_InnerOnGroup %d', #group)
-        if #group >= 3 then
-            assert(param and param.rail)
+        if #group >= 2 then
             local inside_switch = self._switchers:overalped(group[1].prop.SysCoord, group[#group].prop.SysCoord)
             local code_ekasui = nil
 
@@ -501,7 +576,7 @@ local FastenerGroups = OOP.class{
 -- =========================================
 
 local function SearchGroupAutoDefects(guids)
-    EnterScope(function (defer)
+    return EnterScope(function (defer)
         local dlg = luaiup_helper.ProgressDlg('Поиск групповых дефектов')
         defer(dlg.Destroy, dlg)
 
@@ -529,6 +604,7 @@ local function SearchGroupAutoDefects(guids)
             remove_old_marks(guids_to_delete, dlg)
         end
         save_marks(marks, dlg)
+        return #marks
     end)
 end
 
@@ -541,12 +617,12 @@ if not ATAPE then
     test_report(data)
 
     local t = os.clock()
-    SearchGroupAutoDefects({
+    local save_count = SearchGroupAutoDefects({
         --'{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
         --'{B6BAB49E-4CEC-4401-A106-355BFB2E0011}',
         '{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
     })
-    print(os.clock() - t)
+    printf("work %f sec, found %d mark", os.clock() - t, save_count or 0)
 end
 
 -- =========================================

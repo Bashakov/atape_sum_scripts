@@ -2,6 +2,9 @@ require "luacom"
 local sqlite3 = require "lsqlite3"
 local OOP = require "OOP"
 
+local printf  = function(fmt, ...)	print(string.format(fmt, ...)) end
+local sprintf = function(fmt, ...) return string.format(fmt, ...)  end
+
 local function binsearch(tbl, value, fcompval, allow_nearest)
 	fcompval = fcompval or function(v) return v end
 	local iStart, iEnd, iMid = 1, #tbl, 1
@@ -21,6 +24,22 @@ local function binsearch(tbl, value, fcompval, allow_nearest)
 		return iMid
 	end
 end
+
+local function _make_new_mark(prop)
+	local mark = {
+		prop = prop or {},
+		ext = {},
+		user = {},
+		Delete = function(self)
+			printf('Delete %d  %s %d %d', self.prop.ID, self.prop.Guid, self.prop.RailMask, self.prop.SysCoord)
+		end,
+		Save = function(self)
+			printf('Save %s %s %s %d', self.prop.ID, self.prop.Guid, self.prop.RailMask, self.prop.SysCoord)
+		end
+	}
+	return mark
+end
+
 
 local function read_sum_file_inner(file_path, guids, mark_id, load_marks_range)
 	local function format_guid(hex_guid)
@@ -85,12 +104,7 @@ local function read_sum_file_inner(file_path, guids, mark_id, load_marks_range)
 	while st:step() == sqlite3.ROW do
 		local prop = st:get_named_values()
 		prop.Guid = format_guid(prop.Guid)
-		local mark = {
-			prop = prop,
-			ext = {},
-			user = {},
-		}
-		marks[mark.prop.ID] = mark
+		marks[prop.ID] = _make_new_mark(prop)
 	end
 
 	for ext_name in db:urows('SELECT NAME FROM SumrkPropDescTable') do
@@ -120,7 +134,7 @@ local function read_sum_file(file_path, guids, mark_id, load_marks_range)
 
 	local nums = {}
 	for name in db:urows('SELECT name FROM SumrkMarkTypeTable') do
-		local m = string.match(name, 'group_(%d+)')
+		local m = string.match(name, 'group_(%d+)') or '0'
 		nums[m] = true
 	end
 	db:close()
@@ -460,12 +474,7 @@ Driver = OOP.class
 	end,
 
 	NewSumMark = function (self)
-		return {
-			prop = {},
-			ext = {},
-			Save = function (self) end,
-			Delete = function (self) end,
-		}
+		return _make_new_mark()
 	end,
 }
 
