@@ -525,16 +525,16 @@ if not ATAPE then
 	-- end
 
 	test_report  = require('test_report')
-	--local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-	--local psp_path = 'D:/ATapeXP/Main/494/multimagnetic/2018_01_25/Avikon-03M/12216/[494]_2018_01_03_01.xml'
-	local psp_path = 'D:/d-drive/ATapeXP/Main/494/video_recog/2020_08_24/Avikon-03M/4858/[494]_2019_09_03_01.xml'
+	local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+	-- local psp_path = 'D:/ATapeXP/Main/494/multimagnetic/2018_01_25/Avikon-03M/12216/[494]_2018_01_03_01.xml'
+	-- local psp_path = 'D:/d-drive/ATapeXP/Main/494/video_recog/2020_08_24/Avikon-03M/4858/[494]_2019_09_03_01.xml'
 	test_report(psp_path)
 
-	local name 
+	local name
 	if HUN then
 		name  = 'Surface Defects'
 	else
-		name  = 'Маячные отметки'
+		name  = 'Запуски распознавания'
 	end
 
 	local columns = GetColumnDescription(name)
@@ -551,6 +551,7 @@ if not ATAPE then
 	print(string.rep('=', #str_header))
 
 	local cnt_row = InitMark(name)
+	SortMarks(6, True)
 	for row = 1, cnt_row do
 		local values = {}
 		for col = 1, #columns do

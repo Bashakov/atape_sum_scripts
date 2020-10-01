@@ -118,6 +118,7 @@ local function generate_missing_beacon_mark(marks, dlgProgress)
 	end
 
 	-- проходим по всем елкам и ищем для них соответствующие отметка с рисками
+	local MAX_DISTANCE_TO_BEACON_TO_MISS = 300 -- интервал в котором относительно елки ищется маячная метка   
 	for i, mark in ipairs(marks) do
 		if mark.prop.Guid == "{D3736670-0C32-46F8-9AAF-3816DE00B755}" then
 			local found = false
@@ -125,7 +126,7 @@ local function generate_missing_beacon_mark(marks, dlgProgress)
 			if beacons[rail_mask] then
 				for _, bm in ipairs(beacons[rail_mask]) do
 					local dist = math.abs(mark.prop.SysCoord - bm.prop.SysCoord)
-					if dist < 1000 then
+					if dist < MAX_DISTANCE_TO_BEACON_TO_MISS then
 						found = true
 						break
 					end

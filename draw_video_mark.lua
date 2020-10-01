@@ -312,16 +312,24 @@ local function drawSimpleResult(resultType, points, params)
 			[10] = 'От.ЗБ',  -- отсутствие закладного болта kb65
 			[11] = 'От.КЗБ',  -- отсутствие клеммного и закладного болта kb65
 		}
-		local color = {r=127, g=0, b=127}
+		local color = {r=0, g=255, b=0}
+		local colorFault = {r=255, g=0, b=0}
 
-		if #points == 8 then
-			drawPolygon(points, 1, color, color)
 
+		if #points == 8 then --[[and params.FastenerFault == 0]]
+			
+			if fastener_fault_names[tonumber(params.FastenerFault)] == 'норм.' then
+				drawPolygon(points, 1, color, color)
+				else
+				drawPolygon(points, 2, colorFault, colorFault)
+			end
+			
 			local strText = sprintf('тип..:  %s\nсост.:  %s\n',
 				params.FastenerType and (fastener_type_names[tonumber(params.FastenerType)] or params.FastenerType) or '',
 				params.FastenerFault and (fastener_fault_names[tonumber(params.FastenerFault)] or params.FastenerFault) or '')
 
 			textOut(points, strText, {height=11})
+		
 		end
 	end
 

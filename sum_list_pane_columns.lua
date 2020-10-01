@@ -47,6 +47,13 @@ local function GetFastenerParamName1(mark, name)
 	return res
 end
 
+local function split(str, sep)
+   local sep, fields = sep or ":", {}
+   local pattern = string.format("([^%s]+)", sep)
+   str:gsub(pattern, function(c) fields[#fields+1] = c end)
+   return fields
+end
+
 -- =====================================================================  
 
 
@@ -708,61 +715,74 @@ local function get_recognition_run_info(mark)
 	local info = {}
 	local desc = mark and mark.prop.Description
 	if desc and #desc > 0 then
-		for k, v in string.gmatch(desc, '([%w_]+)=([%w%.]+)') do
-			info[k] = v
+		-- print(desc)
+		-- print('')
+		for _, l in ipairs(split(desc, '\n')) do
+			local k, v = string.match(l, '([%w_]+)=(.+)')
+			if k and v then
+				info[k] = v
+			end
 		end
 	end
 	return info
 end
 
+local function make_recog_prop_column(name, width, val_fn, sort_fn)
+	if type(val_fn) == 'string' then
+		local name_val_fn = val_fn
+		val_fn = function(info)
+			return info[name_val_fn]
+		end
+	end
+	if type(sort_fn) == 'string' then
+		local name_sort_fn = sort_fn
+		sort_fn = function(info)
+			return info[name_sort_fn]
+		end
+	end
+	if not sort_fn then
+		sort_fn = val_fn
+	end
+	return
+	{
+		name = name, 
+		width = width, 
+		align = 'r',
+		text = function(row)
+			local mark = work_marks_list[row]
+			local info = get_recognition_run_info(mark)
+			return val_fn(info) or ''
+		end,
+		sorter = function(mark)
+			local info = get_recognition_run_info(mark)
+			return sort_fn(info) or ''
+		end
+	}
+end
 
-column_recog_run_date =
-{
-	name = 'Произведен', 
-	width = 120, 
-	align = 'r',
-	text = function(row)
-		local mark = work_marks_list[row]
-		local info = get_recognition_run_info(mark)
+column_recog_run_date = make_recog_prop_column('Произведен', 120, function (info)
+	if info.RECOGNITION_START then
+		--return info.RECOGNITION_START
 		return os.date('%Y-%m-%d %H:%M:%S', info.RECOGNITION_START)
-	end,
-	sorter = function(mark)
-		local info = get_recognition_run_info(mark)
-		return info.RECOGNITION_START
 	end
-}
+end, 'RECOGNITION_START')
 
-column_recog_run_type = 
-{
-	name = 'Тип', 
-	width = 100, 
-	align = 'r',
-	text = function(row)
-		local mark = work_marks_list[row]
-		local info = get_recognition_run_info(mark)
-		return info.RECOGNITION_TYPE .. ' ' .. info.RECOGNITION_MODE
-	end,
-	sorter = function(mark)
-		local info = get_recognition_run_info(mark)
-		return info.RECOGNITION_TYPE .. ' ' .. info.RECOGNITION_MODE
+column_recog_run_type = make_recog_prop_column('Тип', 100, function (info)
+	local res = ''
+	if info.RECOGNITION_TYPE then
+		res = res .. info.RECOGNITION_TYPE
 	end
-}
+	if info.RECOGNITION_MODE then
+		res = res .. ' ' .. info.RECOGNITION_MODE
+	end
+	return res
+end)
 
-column_recog_dll_ver =
-{
-	name = 'Версия', 
-	width = 50, 
-	align = 'r',
-	text = function(row)
-		local mark = work_marks_list[row]
-		local info = get_recognition_run_info(mark)
-		return info.RECOGNITION_DLL_VERSION
-	end,
-	sorter = function(mark)
-		local info = get_recognition_run_info(mark)
-		return info.RECOGNITION_DLL_VERSION
-	end
-}
+column_recog_dll_ver = make_recog_prop_column('Версия', 50, 'RECOGNITION_DLL_VERSION')
+column_recog_dll_ver_VP = make_recog_prop_column('VR', 50, 'VP_dll_ver')
+column_recog_dll_ver_cpu = make_recog_prop_column('CPU', 50, 'cpu_dll_ver')
+column_recog_dll_ver_gpu = make_recog_prop_column('GPU', 50, 'gpu_dll_ver')
+column_recog_dll_ver_mod = make_recog_prop_column('MOD', 50, 'model_dll_ver')
 
 
 local function make_POV_column(name, sign)
