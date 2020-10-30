@@ -1,4 +1,3 @@
-
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 local excel_helper = require 'excel_helper'
@@ -10,6 +9,7 @@ if iup then
 	iup.SetGlobal('UTF8MODE', 1)
 end
 
+local printf  = mark_helper.printf
 local sprintf = mark_helper.sprintf
 local table_find = mark_helper.table_find
 
@@ -222,7 +222,8 @@ end
 
 local function get_left(mark)
 	local pos = mark_helper.GetMarkRailPos(mark) -- возвращает: -1 = левый, 0 = оба, 1 = правый
-	return pos < 0 and 1 or 0
+	-- return pos < 0 and 1 or 0
+   	return pos > 0 and 1 or 0  -- 0 левая 1 правая требование окт 2020 
 end
 
 
@@ -413,8 +414,13 @@ local function report_short_rails_ekasui()
 
 		local dst_dir = EKASUI_PARAMS.ExportFolder
 		local path_dst = save_res_xml(dst_dir, node_videocontrol)
-		os.execute(string.format("%s//make_short_rail_html.js %s", dst_dir, path_dst))
-		--os.execute(path_dst)
+		local anwser = iup.Alarm("ATape", sprintf("Сохранен файл: %s", path_dst), "Показать", "Конвертировать в HTML", "Закрыть")
+		if 1 == anwser then
+			os.execute(path_dst)
+		end
+        if 2 == anwser then
+			os.execute(sprintf("%s//make_short_rail_html.js %s", dst_dir, path_dst))
+		end
 	end)
 end
 

@@ -88,6 +88,7 @@ local function OutlineTextOut(x, y, text, params)
 	drawer.text:alignment("AlignLeft", "AlignBottom")
 
 	local tw, th = drawer.text:calcSize(text)
+	tw = -5  -- https://bt.abisoft.spb.ru/view.php?id=642
 	x = x - tw/2 + ox
 	y = y - th/2 + oy
 
@@ -99,6 +100,12 @@ local function textOut(center, text, params)
 	local tcx, tcy = table.unpack(center)
 	if #center > 2 then
 		tcx, tcy = get_center_point(center)
+	end
+	if true then -- https://bt.abisoft.spb.ru/view.php?id=642
+		tcx = center[1]
+		for i = 3, #center, 2 do
+			tcx = math.max(tcx, center[i])
+		end
 	end
 	OutlineTextOut(tcx, tcy, text, params)
 end
