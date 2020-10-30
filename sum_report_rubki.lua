@@ -32,7 +32,7 @@ local switch_guids = {
 
 -- =============================================== --
 
--- вычислить длинну рельса между двума стыками с учетом ширины зазора
+-- вычислить длину рельса между двумя стыками с учетом ширины зазора
 local function get_rail_len(mark1, mark2)
 	local l = math.abs(mark2.prop.SysCoord - mark1.prop.SysCoord)
 	local w1 = mark_helper.GetGapWidth(mark1) or 0
@@ -46,7 +46,7 @@ end
 к рельсовым рубкам относятся рельсы, длина которых отличается от стандартной (25,0-24,84 м, 12,52 – 12,38 м)
 и находится в диапазоне от 6 до 25 метров ]]
 local function check_rail_is_rubka(mark1, mark2)
-	local rail_len = get_rail_len(mark1, mark2)
+	local rail_len = get_rail_len(mark1, mark2) / 1000.0
 	if rail_len < 25 and rail_len > 24.84 then
 		return false
 	end
@@ -57,7 +57,7 @@ local function check_rail_is_rubka(mark1, mark2)
 end
 
 -- ищет рубки, возвращает массив пар отметок, ограничивающих врезку
-local function scan_for_short_rail(marks, min_length)
+local function scan_for_short_rail(marks, min_length, show_only_rubki)
 	if not marks then return nil end
 
 	local res = {}
@@ -66,7 +66,10 @@ local function scan_for_short_rail(marks, min_length)
 	for _, mark in ipairs(marks) do
 		local rail = bit32.band(mark.prop.RailMask)
 		local coord = mark.prop.SysCoord
-		if prev_mark[rail] and coord - prev_mark[rail].coord < min_length and check_rail_is_rubka(prev_mark[rail].mark, mark) then
+		if prev_mark[rail] and
+		   (not min_length or coord - prev_mark[rail].coord < min_length) and
+		   (not show_only_rubki or check_rail_is_rubka(prev_mark[rail].mark, mark))
+		then
 			table.insert(res, {prev_mark[rail].mark, mark})
 		end
 		prev_mark[rail] = {coord=coord, mark=mark}
@@ -124,19 +127,21 @@ local function make_rail_image(mark1, mark2)
 	return ok, img_data
 end
 
-local function get_marks(dlg)
-	if dlg then
-		dlg:Hide()
-	end
-
-	local ok, min_length = iup.GetParam("Рубки", nil, "Верхний порог длины рельса (м): %i\n", 30 )
+-- запрос у пользователя верхнего порога длинны рельса
+local function askUpperRailLen(dlg)
+	if dlg then	dlg:Hide() end
+	local ok, min_length, out = iup.GetParam("Рубки", nil, 
+		"Верхний порог длины рельса (м): %i\n\z
+		Отображать: %o|только РУБКИ|все рельсы|\n\z",
+		30, 1)
 	if dlg then dlg.Show(dlg) end
-	if not ok then
-		return
-	end
+	local show_only_rubki = out == 0
+	return ok and min_length, show_only_rubki
+end
 
+-- получить список с отметками стыков, отсортированный по системной координате
+local function get_marks(dlg)
 	local marks = Driver:GetMarks()
-
 	marks = mark_helper.filter_marks(marks,
 		function (mark) -- filter
 			return table_find(joints_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
@@ -148,7 +153,7 @@ local function get_marks(dlg)
 		end
 	)
 	marks = mark_helper.sort_mark_by_coord(marks)
-	return marks, min_length
+	return marks
 end
 
 local function dormate_date()
@@ -179,8 +184,6 @@ local function save_msxml_node(node)
 	local res = oWriter.output
 	return res
 end
-
-
 
 local function save_res_xml(dst_dir, node)
 	local fromKM = Passport.FromKm or string.match(Passport.START_CHOORD, '^(-?%d+):') or ''
@@ -226,7 +229,6 @@ local function get_left(mark)
    	return pos > 0 and 1 or 0  -- 0 левая 1 правая требование окт 2020 
 end
 
-
 local function make_gap_description(mark)
 	local km, m, mm = Driver:GetPathCoord(mark.prop.SysCoord)
 	local bolts_cnt, bolts_fault = mark_helper.GetCrewJointCount(mark)
@@ -255,17 +257,19 @@ local function make_gap_description(mark)
 	}
 end
 
-
 -- ======================= отчеты =========================
 
 -- отчет по коротким стыкам
 local function report_short_rails(params)
 	EnterScope(function(defer)
+		local min_length, show_only_rubki = askUpperRailLen()
+		if not min_length then return end
+
 		local dlg = luaiup_helper.ProgressDlg()
 		defer(dlg.Destroy, dlg)
 
-		local marks, min_length = get_marks(dlg)
-		local short_rails = scan_for_short_rail(marks, min_length*1000)
+		local marks = get_marks(dlg)
+		local short_rails = scan_for_short_rail(marks, min_length*1000, show_only_rubki)
 		if #short_rails == 0 then
 			iup.Message('Info', "Подходящих отметок не найдено")
 			return
@@ -318,11 +322,9 @@ local function report_short_rails(params)
 	end)
 end
 
-
-
 local function report_short_rails_ekasui()
 	EnterScope(function(defer)
-		if not EKASUI_PARAMS then 
+		if not EKASUI_PARAMS then
 			iup.Message("Генерация отчета", "Конфигурация ЕКАСУИ не обнаружена")
 			return
 		end
@@ -338,11 +340,14 @@ local function report_short_rails_ekasui()
 		)
 		if not ok then return end
 
+		local min_length, show_only_rubki = askUpperRailLen()
+		if not min_length then return end
+
 		local dlg = luaiup_helper.ProgressDlg('Отчет ЕКАСУИ')
 		defer(dlg.Destroy, dlg)
 
-		local marks, min_length = get_marks(dlg)
-		local short_rails = scan_for_short_rail(marks, min_length*1000)
+		local marks = get_marks(dlg)
+		local short_rails = scan_for_short_rail(marks, min_length*1000, show_only_rubki)
 		if #short_rails == 0 then
 			iup.Message('Info', "Подходящих отметок не найдено")
 			return
@@ -605,7 +610,8 @@ if not ATAPE then
 
 	-- отчет ЕКАСУИ
 	if 1 == 1 then
-		local r = cur_reports[2]
+		--local r = cur_reports[1] -- отчет Excel
+		local r = cur_reports[2] -- отчет ЕКАСУИ
 		r.fn(r.params)
 	end
 
