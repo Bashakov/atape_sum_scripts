@@ -1,6 +1,7 @@
 require "luacom"
 local sqlite3 = require "lsqlite3"
 local OOP = require "OOP"
+local GUID = require "guids"
 
 local printf  = function(fmt, ...)	print(string.format(fmt, ...)) end
 local sprintf = function(fmt, ...) return string.format(fmt, ...)  end
@@ -83,9 +84,14 @@ local function read_sum_file_inner(file_path, guids, mark_id, load_marks_range)
 			m.RAILMASK as RailMask,
 			m.ChannelMask as ChannelMask,
 			d.DESCRIPTION as Description
-		FROM SumrkMainTable as m
-		JOIN SumrkMarkTypeTable as t ON m.TYPEID = t.TYPEID
-		LEFT JOIN SumrkDescTable as d ON m.MARKID = d.MARKID
+		FROM
+			SumrkMainTable as m
+		JOIN
+			SumrkMarkTypeTable as t
+			ON m.TYPEID = t.TYPEID
+		LEFT JOIN
+			SumrkDescTable as d
+			ON m.MARKID = d.MARKID
 		WHERE ( m.INNERFLAGS & 1) = 0
 		]]
 	if tids then
@@ -382,9 +388,135 @@ local function read_temerature(gps)
 end
 
 
+local SumMarks = OOP.class
+{
+	ctor = function (self, file_path, sys_range)
+		assert(string.sub(file_path, -4) == '.sum')
+		self:_load_types(file_path)
+		self._sys_range = sys_range or {}
+	end,
+
+	GetMarks = function(self, filter)
+		local tids
+		if filter and filter.GUIDS then
+			tids = {}
+			for _, g in ipairs(filter.GUIDS) do
+				local tid = self._guid2tid[g]
+				if tid then
+					table.insert(tids, tid)
+				end
+			end
+			tids = table.concat(tids, ',')
+		end
+		local FromSys = filter and filter.FromSys or self._sys_range[1]
+		local ToSys = filter and filter.ToSys or self._sys_range[2]
+		local mark_id = filter and filter.mark_id
+		local marks = {}
+		for _, db in ipairs(self._db) do
+			self:_read_marks(db, marks, tids, mark_id, {FromSys, ToSys})
+		end
+		local res = {}
+		for _, mark in pairs(marks) do
+			res[#res+1] = mark
+		end
+		return res
+	end,
+
+	_read_marks = function (self, db, marks, tids, mark_id, sys_range)
+		assert(db:execute("CREATE TEMP TABLE IF NOT EXISTS MIDS (MID INT);"))
+		assert(db:execute("DELETE FROM MIDS;"))
+
+		local fill_MIDS = [[
+			INSERT INTO
+				MIDS
+			SELECT
+				m.MARKID
+			FROM
+				SumrkMainTable as m
+			WHERE ( m.INNERFLAGS & 1) = 0
+			]]
+		if tids then
+			fill_MIDS = fill_MIDS .. ' AND m.TYPEID in (' .. tids .. ') '
+		end
+		if mark_id then
+			fill_MIDS = fill_MIDS .. ' AND m.MARKID == ' .. mark_id .. ' '
+		end
+		if sys_range and sys_range[1] then
+			fill_MIDS = fill_MIDS .. ' AND m.SYSCOORD >= ' .. sys_range[1] .. ' '
+		end
+		if sys_range and sys_range[2] then
+			fill_MIDS = fill_MIDS .. ' AND m.SYSCOORD <= ' .. sys_range[2] .. ' '
+		end
+		assert(db:execute(fill_MIDS))
+
+		local str_stat = [[
+		SELECT
+			m.MARKID as ID,
+			m.TYPEID as Guid,
+			m.SYSCOORD as SysCoord,
+			m.LENGTH as Len,
+			m.RAILMASK as RailMask,
+			m.ChannelMask as ChannelMask,
+			d.DESCRIPTION as Description
+		FROM
+			SumrkMainTable as m
+		LEFT JOIN
+			SumrkDescTable as d
+			ON m.MARKID = d.MARKID
+		WHERE m.MARKID in (SELECT MID FROM MIDS);
+		]]
+
+		local st = assert( db:prepare(str_stat) )
+		while st:step() == sqlite3.ROW do
+			local prop = st:get_named_values()
+			prop.Guid = self._tid2guid[prop.Guid]
+			marks[prop.ID] = _make_new_mark(prop)
+		end
+
+		for ext_name in db:urows('SELECT NAME FROM SumrkPropDescTable') do
+			--print(ext_name)
+			local req_params = 'SELECT * FROM SumrkXtndParamTable_' .. ext_name ..
+			' WHERE MARKID in (SELECT MID FROM MIDS);'
+
+			for markid, value in db:urows(req_params) do
+				if marks[markid] then
+					marks[markid].ext[ext_name] = value
+				end
+			end
+		end
+	end,
+
+	_load_types = function(self, file_path)
+		local nums = {}
+		self._tid2guid = {}
+		self._guid2tid = {}
+
+		local db = sqlite3.open(file_path)
+		local sqlType = 'SELECT typeid, name, guid FROM SumrkMarkTypeTable'
+		for typeid, name, guid in db:urows(sqlType) do
+			local g = GUID.bin2str(guid, true)
+			-- print(typeid, name, g)
+			self._tid2guid[typeid] = g
+			self._guid2tid[g] = typeid
+
+			local m = string.match(name, 'group_(%d+)') or '0'
+			nums[m] = true
+		end
+		db:close()
+
+		self._db = {}
+		for num, _ in pairs(nums) do
+			local file = file_path
+			if num ~= '0' then
+				file = string.sub(file_path, 1, -4) .. num .. string.sub(file_path, -4)
+			end
+			table.insert(self._db, sqlite3.open(file))
+		end
+	end,
+}
 
 
-Driver = OOP.class
+local Driver = OOP.class
 {
 	ctor = function(self, psp_path, sum_path, load_marks_range)
 		self._passport = psp2table(psp_path)
@@ -392,10 +524,9 @@ Driver = OOP.class
 		if not sum_path then
 			sum_path = string.gsub(psp_path, '.xml', '.sum')
 		end
-		self._sum_path = sum_path
+		self._sum = SumMarks(sum_path, load_marks_range)
 
 		self._gps = read_XmlC(string.gsub(psp_path, '.xml', '.gps'))
-		--self._marks = read_sum_file(self._sum_path)
 		self._temerature = read_temerature(self._gps)
 		self.deltas = Deltas(psp_path, self._passport.START_KM, self._passport.START_PK, self._passport.INCREASE)
 
@@ -403,14 +534,10 @@ Driver = OOP.class
 		_G.Passport = self._passport
 		_G.EKASUI_PARAMS = read_EKASUI_cfg()
 		self._guids = read_guids()
-		self._load_marks_range = load_marks_range
 	end,
 
 	GetMarks = function(self, filter)
-		local g = filter and filter.GUIDS
-		local mark_id = filter and filter.mark_id
-		local marks = read_sum_file(self._sum_path, g, mark_id, self._load_marks_range)
-		return marks
+		return self._sum:GetMarks(filter)
 	end,
 
 	GetAppPath = function(self)
@@ -477,5 +604,7 @@ Driver = OOP.class
 		return _make_new_mark()
 	end,
 }
+
+Driver.GUID = GUID
 
 return Driver

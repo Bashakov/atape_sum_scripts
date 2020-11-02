@@ -30,6 +30,16 @@ local switch_guids = {
 	"{19253263-2C0B-41EE-8EAA-000000800000}",
 }
 
+local sleeper_guids = {
+	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",
+}
+
+local fastener_guids = {
+	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",
+}
+
+local SLEEPER_DIST_REF = 1000000 / 1840
+
 -- =============================================== --
 
 -- вычислить длину рельса между двумя стыками с учетом ширины зазора
@@ -128,23 +138,23 @@ local function make_rail_image(mark1, mark2)
 end
 
 -- запрос у пользователя верхнего порога длинны рельса
-local function askUpperRailLen(dlg)
-	if dlg then	dlg:Hide() end
-	local ok, min_length, out = iup.GetParam("Рубки", nil, 
-		"Верхний порог длины рельса (м): %i\n\z
-		Отображать: %o|только РУБКИ|все рельсы|\n\z",
-		30, 1)
-	if dlg then dlg.Show(dlg) end
+local function askUpperRailLen()
+	local ok, min_length, out =
+		iup.GetParam("Рубки", nil,
+			"Верхний порог длины рельса (м): %i\n\z
+			Отображать: %o|только РУБКИ|все рельсы|\n\z",
+			30, 1
+		)
 	local show_only_rubki = out == 0
 	return ok and min_length, show_only_rubki
 end
 
 -- получить список с отметками стыков, отсортированный по системной координате
 local function get_marks(dlg)
-	local marks = Driver:GetMarks()
+	local marks = Driver:GetMarks({GUIDS=joints_guids})
 	marks = mark_helper.filter_marks(marks,
 		function (mark) -- filter
-			return table_find(joints_guids, mark.prop.Guid) and mark.ext.RAWXMLDATA
+			return mark.ext.RAWXMLDATA
 		end,
 		function (all, checked, accepted) -- progress
 			if checked % 50 == 0 and dlg then
@@ -229,14 +239,90 @@ local function get_left(mark)
    	return pos > 0 and 1 or 0  -- 0 левая 1 правая требование окт 2020 
 end
 
+local function load_near_marks(join_mark, mark_types, mark_count, search_dist)
+	local filter = {
+		GUIDS = mark_types,
+		FromSys = join_mark.prop.SysCoord - search_dist,
+		ToSys = join_mark.prop.SysCoord + search_dist,
+	}
+	local marks = Driver:GetMarks(filter)
+	marks = mark_helper.sort_mark_by_coord(marks)
+
+	-- найдем по mark_count ближайшие отметки с каждой стороны
+	local left = {}
+	for i = #marks, 1, -1 do
+		local mark = marks[i]
+		if mark.prop.SysCoord <= join_mark.prop.SysCoord and #left < mark_count then
+			table.insert(left, 1, mark)
+		end
+	end
+
+	local rigth = {}
+	for i = 1, #marks, 1 do
+		local mark = marks[i]
+		if mark.prop.SysCoord >= join_mark.prop.SysCoord and #rigth < mark_count then
+			table.insert(rigth, mark)
+		end
+	end
+
+	-- объединим 2 списка
+	for _, m in ipairs(rigth) do
+		table.insert(left, m)
+	end
+	return left
+end
+
+local function get_epur_skrepl(join_mark)
+	-- https://bt.abisoft.spb.ru/view.php?id=638
+	-- 2. относительно зазора отсчитываются 3 шпалы влево и вправо и для них заполняются epur и skrepl
+
+	local CHECK_SLEEPER_COUNT = 3
+	local search_dist = CHECK_SLEEPER_COUNT * SLEEPER_DIST_REF * 1.5 -- возьмем с запасом
+
+	-- проверим эпюру
+	local epur = 0
+	local sleepers = load_near_marks(join_mark, sleeper_guids, CHECK_SLEEPER_COUNT, search_dist)
+	for i = 1, #sleepers-1 do
+		local l = sleepers[i]
+		local r = sleepers[i+1]
+		local dist = r.prop.SysCoord - l.prop.SysCoord
+		local dist_error = math.abs(dist - SLEEPER_DIST_REF)
+		if dist_error > 80 then
+			epur = epur + 1
+		end
+	end
+
+	-- проверим скрепления
+	local skrepl = 0
+	local fasteners = load_near_marks(join_mark, fastener_guids, CHECK_SLEEPER_COUNT, search_dist)
+
+	for i = 1, #fasteners do
+		local f = fasteners[i]
+		local prm = mark_helper.GetFastenetParams(f)
+		local FastenerFault = prm and prm.FastenerFault
+		if FastenerFault and FastenerFault > 0 then
+			skrepl = skrepl + 1
+		end
+	end
+
+	return epur, skrepl
+end
+
 local function make_gap_description(mark)
 	local km, m, mm = Driver:GetPathCoord(mark.prop.SysCoord)
 	local bolts_cnt, bolts_fault = mark_helper.GetCrewJointCount(mark)
 	local gap_step = mark_helper.GetRailGapStep(mark)
+	local epur, skrepl = get_epur_skrepl(mark)
 
-	local values = {}
+	local values =
+	{
+		epur = epur,
+		skrepl = skrepl,
+		sneg = 0, -- Нода есть всегда. 0, если не определяется
+	}
+
 	values.gaptype = mark_helper.GetGapType(mark)
-	values.nakltype = (bolts_cnt == 6 and 1) or (bolts_cnt == 4 and 2) -- Тип накладки (1 – шестидырная, 2 – четырехдырная накладка)
+	values.nakltype = (bolts_cnt == 6 and 1) or (bolts_cnt == 4 and 2) -- Тип накладки (1 – шестидырная, 2 – четырехдырная)
 	values.temp = mark_helper.GetTemperature(mark)
 	values.left = get_left(mark)
 	values.km = km
@@ -246,7 +332,7 @@ local function make_gap_description(mark)
 	values.nakl = mark_helper.GetFishplateState(mark) > 0 and 1 or 0
 	values.bolt = bolts_fault == 0 and 0 or 1
 
-	local img_ok, img_data = pcall(function ()	
+	local img_ok, img_data = pcall(function ()
 		return mark_helper.MakeMarkImage(mark, nil, nil, true)
 	end)
 
@@ -260,7 +346,7 @@ end
 -- ======================= отчеты =========================
 
 -- отчет по коротким стыкам
-local function report_short_rails(params)
+local function report_short_rails_excel(params)
 	EnterScope(function(defer)
 		local min_length, show_only_rubki = askUpperRailLen()
 		if not min_length then return end
@@ -335,9 +421,9 @@ local function report_short_rails_ekasui()
 				идентификатор средства диагностики (ID БД ЕК АСУИ): %s\n\z
 				дата (ГГГГММДД_ЧЧММСС): %s\n\z
 				вид проверки: %o|рабочая|контрольная|дополнительная|\n\z
-				ID пути БД ЕК АСУИ: %s\n\z
-			", 	Passport.DIR_CODE, "", dormate_date(), 0, Passport.TRACK_CODE
-		)
+				ID пути БД ЕК АСУИ: %s\n\z",
+				Passport.DIR_CODE, "", dormate_date(), 0, Passport.TRACK_CODE
+			)
 		if not ok then return end
 
 		local min_length, show_only_rubki = askUpperRailLen()
@@ -403,7 +489,9 @@ local function report_short_rails_ekasui()
 
 			local node_railgap = add_node(node_railgapset, 'railgap', {gapid=mark.prop.ID})
 			for _, param_name in ipairs(gap_param_order) do
-				add_text_node(node_railgap, param_name, gap_params.values[param_name] or -1)
+				if gap_params.values[param_name] then
+					add_text_node(node_railgap, param_name, gap_params.values[param_name])
+				end
 			end
 
 			local node_picset = add_node(node_railgap, 'picset')
@@ -494,7 +582,7 @@ img {
             </tr>
             <tr>
                 <td>Тип накладки</td>
-                <td>{{gap.nakltype == 1 and 'шестидырная' or gap.nakltype == 2 and 'четырехдырная накладка' or gap.nakltype}}</td>
+                <td>{{gap.nakltype == 1 and 'шестидырная' or gap.nakltype == 2 and 'четырехдырная накладка' or gap.nakltype or ""}}</td>
             </tr>
             <tr>
                 <td>Тип скрепления</td>
@@ -591,7 +679,7 @@ local cur_reports =
 {
 	{
 		name = "Короткие рубки|Excel",
-		fn = report_short_rails,
+		fn = report_short_rails_excel,
 		params = {filename="Scripts\\ProcessSum.xlsm", sheetname="Рубки"},
 		guids = joints_guids,
 	},
@@ -606,7 +694,9 @@ local cur_reports =
 if not ATAPE then
 
 	local test_report = require('test_report')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	local data_path = 'D:/ATapeXP/Main/494/video_recog/2019_05_17/Avikon-03M/30346/[494]_2019_03_15_01.xml'
+	-- local data_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+	test_report(data_path, nil)
 
 	-- отчет ЕКАСУИ
 	if 1 == 1 then
