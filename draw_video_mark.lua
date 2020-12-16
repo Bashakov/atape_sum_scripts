@@ -174,7 +174,7 @@ local function getDrawFig(nodeParamResult)
 	if nodeFrameCoord then
 		local item_frame = nodeFrameCoord.nodeValue
 
-		local req = 'PARAM[@name="Coord" and @value and (@type="polygon" or @type="line" or @type="rect")]'
+		local req = 'descendant::PARAM[@name="Coord" and @value and (@type="polygon" or @type="line" or @type="rect")]'
 		for nodeFig in SelectNodes(nodeParamResult, req) do
 			local value = nodeFig:SelectSingleNode('@value').nodeValue
 			local points = parse_polygon(value, cur_frame_coord, item_frame)
@@ -210,7 +210,7 @@ end
 
 local beacon_shifts = {}
 
-local function drawSimpleResult(resultType, points, params)
+local function drawSimpleResult(resultType, points, params, mark)
 
 	if string.match(resultType, 'CalcRailGap_') then
 		local colorsGap = {
@@ -222,8 +222,24 @@ local function drawSimpleResult(resultType, points, params)
 		local color = colorsGap[resultType]
 		if color then
 			drawPolygon(points, 1, color, color)
-			if params.RailGapWidth_mkm then
-				textOut(points, sprintf('%d mm', tonumber(params.RailGapWidth_mkm) / 1000))
+
+			local width = nil
+			if resultType == "CalcRailGap_Head_Top" then
+				width = mark.ext.VIDEOIDENTGWT
+				if not width and not mark.ext.VIDEOIDENTGWS and params.RailGapWidth_mkm then
+					width = tonumber(params.RailGapWidth_mkm) / 1000
+				end
+			elseif resultType == "CalcRailGap_Head_Side" then
+				width = mark.ext.VIDEOIDENTGWS 
+				if not width and not mark.ext.VIDEOIDENTGWT and params.RailGapWidth_mkm then
+					width = tonumber(params.RailGapWidth_mkm) / 1000
+				end
+			else
+				width = mark.ext.VIDEOIDENTGWS or mark.ext.VIDEOIDENTGWT
+			end
+
+			if width then
+				textOut(points, sprintf('%d mm', width))
 			end
 		end
 	end
@@ -341,6 +357,7 @@ local function drawSimpleResult(resultType, points, params)
 	end
 
 	if resultType == 'Sleeper' then
+		-- print("Sleeper", #points)
 		local color = {r=128, g=0, b=0}
 
 		if #points == 8 then
@@ -348,6 +365,18 @@ local function drawSimpleResult(resultType, points, params)
 			local l2 = {points[5], points[6], points[7], points[8]}
 			drawPolygon(l1, 1, color, color)
 			drawPolygon(l2, 1, color, color)
+
+			local text = sprintf('разв.=%4.1f', (params.Angle_mrad or 0) *180/3.14/1000 )
+			textOut(l2, text, {fill_color= {r=0, g=0, b=0}, line_color={r=255, g=255, b=255}, offset={35, 15}})
+		end
+
+		if #points == 12 then
+			local l1 = {points[1], points[2], points[3], points[4]}
+			local l2 = {points[5], points[6], points[7], points[8]}
+			local l3 = {points[9], points[10], points[11], points[12]}
+			drawPolygon(l1, 1, color, color)
+			drawPolygon(l2, 1, color, color)
+			drawPolygon(l3, 1, color, color)
 
 			local text = sprintf('разв.=%4.1f', (params.Angle_mrad or 0) *180/3.14/1000 )
 			textOut(l2, text, {fill_color= {r=0, g=0, b=0}, line_color={r=255, g=255, b=255}, offset={35, 15}})
@@ -406,7 +435,7 @@ end
 
 -- ======================================================
 
-local function processSimpleResult(nodeActRes, resultType)
+local function processSimpleResult(nodeActRes, resultType, mark)
 	-- and @value="0"
 	local req = '\z
 		PARAM[@name="FrameNumber" and @coord]/\z
@@ -415,14 +444,14 @@ local function processSimpleResult(nodeActRes, resultType)
 	for nodeResult in SelectNodes(nodeActRes, req) do
 		local params = getParameters(nodeResult)
 		local points = getDrawFig(nodeResult)
-		-- print(resultType, points)
+		-- print("processSimpleResult", resultType, #points)
 		if #points > 0 then
-			drawSimpleResult(resultType, points, params)
+			drawSimpleResult(resultType, points, params, mark)
 		end
 	end
 end
 
-local function processCrewJoint(nodeActRes, resultType)
+local function processCrewJoint(nodeActRes, resultType, mark)
 	local req = '\z
 			PARAM[@name="FrameNumber" and @coord]/\z
 			PARAM[@name="Result" and @value="main"]/\z
@@ -430,11 +459,11 @@ local function processCrewJoint(nodeActRes, resultType)
 	for nodeResult in SelectNodes(nodeActRes, req) do
 		local params = getParameters(nodeResult)
 		local points = getDrawFig(nodeResult)
-		drawSimpleResult(resultType, points, params)
+		drawSimpleResult(resultType, points, params, mark)
 	end
 end
 
-local function processFishplate(nodeActionResFishplate)
+local function processFishplate(nodeActionResFishplate, mark)
 	local cur_frame_coord = Frame.coord.raw
 
 	local pointsFishplate = {}
@@ -508,6 +537,7 @@ local ActionResTypes =
 }
 
 local function ProcessMarkRawXml(mark)
+	-- print("ProcessMarkRawXml", mark)
 	local rawXmlRoot = getMarkRawXml(mark)
 	if not rawXmlRoot then return end
 
@@ -520,7 +550,7 @@ local function ProcessMarkRawXml(mark)
 		local fns = ActionResTypes[resultType]
 		if fns then
 			for _, fn in ipairs(fns) do
-				fn(nodeActionResult, resultType)
+				fn(nodeActionResult, resultType, mark)
 			end
 		else
 			local msg = sprintf('Unknown: %s', resultType)
@@ -630,9 +660,9 @@ function Draw(drawer, frame, marks)
 	if drawer then _G.Drawer = drawer end
 	if frame then _G.Frame = frame end
 
-	--print('Draw ', #marks)
+	-- print('Draw ', #marks)
 	for _, mark in ipairs(marks) do
-		--print('Draw mark', mark.prop.Guid)
+		-- print('Draw mark', mark.prop.Guid)
 		local fns = recorn_guids[mark.prop.Guid] or {}
 		for _, fn in ipairs(fns) do
 			fn(mark)
