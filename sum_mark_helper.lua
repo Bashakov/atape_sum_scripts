@@ -856,32 +856,44 @@ local function GetTemperature(mark)
 	end
 end
 	
+local function prepare_row_path(row, prefix, coord)
+	local km, m, mm = Driver:GetPathCoord(coord)
+	row[prefix .. 'KM'] = km
+	row[prefix .. 'M'] = m
+	row[prefix .. 'MM'] = mm
+	row[prefix .. 'M_MM1'] = sprintf('%.1f', m + mm/1000)
+	row[prefix .. 'M_MM2'] = sprintf('%.2f', m + mm/1000)
+	row[prefix .. 'PK'] = sprintf('%d', m/100+1) 
+	row[prefix .. 'PATH'] = sprintf('%d км %.1f м', km, m + mm/1000)
+end
+
 -- создание таблицы подстановок с общими параметрами отметки
 local function MakeCommonMarkTemplate(mark)
 	local rails_names = {
-		[-1]= 'лев.', 
+		[-1]= 'лев.',
 		[0] = 'оба',
 		[1] = 'прав.'}
 	local prop = mark.prop
-	local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-	local temperature = GetTemperature(mark)
-	
+	local sys_center = prop.SysCoord + prop.Len / 2
+	local inc_offset = Passport.INCREASE == '0' and (-prop.Len / 2) or (prop.Len / 2)
+
 	local row = {}
-	
+	local temperature = GetTemperature(mark)
+
+	prepare_row_path(row, "BEGIN_", 	sys_center-inc_offset)
+	prepare_row_path(row, "", 		sys_center)
+	prepare_row_path(row, "END_", 	sys_center+inc_offset)
+
 	row.mark_id = prop.ID
 	row.SYS = prop.SysCoord
-	row.KM = km
-	row.M = m
-	row.MM = mm
-	row.M_MM1 = sprintf('%.1f', m + mm/1000)
-	row.M_MM2 = sprintf('%.2f', m + mm/1000)
-	row.PK = sprintf('%d', m/100+1) 
-	row.PATH = sprintf('%d км %.1f м', km, m + mm/1000)
+	row.LENGTH = prop.Len
+	row.DESCRIPTION = prop.Description
+
 	row.RAIL_RAW_MASK = prop.RailMask
 	row.RAIL_POS = GetMarkRailPos(mark)
 	row.RAIL_NAME = rails_names[row.RAIL_POS]
 	row.RAIL_TEMP = temperature and sprintf('%+.1f', temperature) or ''
-	
+
 	if Driver.GetGPS then
 		row.LAT, row.LON = Driver:GetGPS(prop.SysCoord)
 	else
@@ -891,7 +903,7 @@ local function MakeCommonMarkTemplate(mark)
 
 	row.DEFECT_CODE = ''
 	row.DEFECT_DESC = ''
-	
+
 	return row
 end
 
