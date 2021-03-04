@@ -422,7 +422,7 @@ local function report_short_rails_ekasui()
 				дата (ГГГГММДД_ЧЧММСС): %s\n\z
 				вид проверки: %o|рабочая|контрольная|дополнительная|\n\z
 				ID пути БД ЕК АСУИ: %s\n\z",
-				Passport.DIR_CODE, "", dormate_date(), 0, Passport.TRACK_CODE
+				EKASUI_PARAMS.SITEID, EKASUI_PARAMS.carID, dormate_date(), 0, Passport.TRACK_CODE
 			)
 		if not ok then return end
 
