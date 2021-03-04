@@ -397,4 +397,12 @@ end
 return {
 	AppendReports = AppendReports,
 	videogram = videogram,
+	all_generators = {
+		generate_rows_sleeper_dist,
+		generate_rows_sleeper_angle,
+		generate_rows_sleeper_user
+	},
+	get_marks = function (pov_filter)
+		return GetMarks()
+	end,
 }

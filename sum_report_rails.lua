@@ -51,8 +51,10 @@ local function get_user_filter_surface()
 end
 
 
-local function GetMarks(ekasui)
-	local pov_filter = sumPOV.MakeReportFilter(ekasui)
+local function GetMarks(ekasui, pov_filter)
+	if not pov_filter then
+		pov_filter = sumPOV.MakeReportFilter(ekasui)
+	end
 	if not pov_filter then return {} end
 	local marks = Driver:GetMarks{GUIDS=filter_juids}
 	marks = pov_filter(marks)
@@ -221,4 +223,11 @@ end
 return {
 	AppendReports = AppendReports,
 	videogram = videogram,
+	all_generators = {
+		generate_rows_rails_user,
+		generate_rows_rails
+	},
+	get_marks = function (pov_filter)
+		return GetMarks(false, pov_filter)
+	end,
 }

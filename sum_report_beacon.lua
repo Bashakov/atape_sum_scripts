@@ -29,8 +29,10 @@ local juids_beacon =
 }
 
 
-local function GetMarks(ekasui)
-	local pov_filter = sumPOV.MakeReportFilter(ekasui)
+local function GetMarks(ekasui, pov_filter)
+	if not pov_filter then
+		pov_filter = sumPOV.MakeReportFilter(ekasui)
+	end
 	if not pov_filter then return {} end
 	local marks = Driver:GetMarks{GUIDS=juids_beacon}
 	marks = pov_filter(marks)
@@ -236,4 +238,12 @@ end
 return {
 	AppendReports = AppendReports,
 	videogram = videogram,
+	all_generators = {
+		generate_row_beacon_user,
+		generate_row_beacon,
+		generate_missing_beacon_mark
+	},
+	get_marks = function (pov_filter)
+		return GetMarks(false, pov_filter)
+	end,
 }

@@ -571,4 +571,6 @@ end
 return {
 	AppendReports = AppendReports,
 	videogram = videogram,
+	all_generators = all_generators,
+	get_marks = GetMarks,
 }

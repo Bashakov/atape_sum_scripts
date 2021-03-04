@@ -466,7 +466,10 @@ local SumMarks = OOP.class
 		WHERE m.MARKID in (SELECT MID FROM MIDS);
 		]]
 
-		local st = assert( db:prepare(str_stat) )
+		local st = db:prepare(str_stat)
+		if not st then
+			error(db:errmsg())
+		end
 		while st:step() == sqlite3.ROW do
 			local prop = st:get_named_values()
 			prop.Guid = self._tid2guid[prop.Guid]
@@ -510,7 +513,11 @@ local SumMarks = OOP.class
 			if num ~= '0' then
 				file = string.sub(file_path, 1, -4) .. num .. string.sub(file_path, -4)
 			end
-			table.insert(self._db, sqlite3.open(file))
+
+			local db = sqlite3.open(file)
+			if db:prepare('SELECT * FROM SumrkVersion') then -- check db not empty
+				table.insert(self._db, db)
+			end
 		end
 	end,
 }
