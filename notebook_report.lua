@@ -1,5 +1,5 @@
 if not ATAPE then
-	require "iuplua" 
+	require "iuplua"
 end
 
 if iup then
@@ -10,6 +10,7 @@ end
 luaiup_helper = require 'luaiup_helper'
 excel_helper = require 'excel_helper'
 mark_helper = require 'sum_mark_helper'
+require 'ExitScope'
 
 local stuff = require 'stuff'
 local sprintf = stuff.sprintf
@@ -24,14 +25,14 @@ local function make_filter_progress_fn(dlg)
 end
 
 local function is_record_included(record)
-	local ok = record.INCLUDED ~= "FALSE" 
+	local ok = record.INCLUDED ~= "FALSE"
 	return ok
 end
 
 local function is_record_selected(record)
-	local ok = record.USER_SELECTED == "1" 
+	local ok = record.USER_SELECTED == "1"
 	return ok
-end	
+end
 
 local function filter_included_mark(records, dlg)
 	local res = mark_helper.filter_marks(records, is_record_included, make_filter_progress_fn(dlg))
@@ -52,7 +53,7 @@ local function get_record_rail(record)
 			record_left_rail = record_left_rail or thread:match(t)
 		end
 	end
-	
+
 	local res = tonumber(Passport.FIRST_LEFT)
 	if record_left_rail then
 		res = bit32.bxor(res, 1)
@@ -77,7 +78,7 @@ local function get_str_sved(record)
 	local res = desc[record.SVED+1]
 	return res
 end
-	
+
 local function GetBase64EncodedFrame(record)
 	local rail = get_record_rail(record)
 	local video_channel = rail==1 and 18 or 17
@@ -85,7 +86,7 @@ local function GetBase64EncodedFrame(record)
 	local ok, err = pcall(function()
 		video_img = Driver:GetFrame(video_channel, record.MARK_COORD, {mode=3, panoram_width=700, width=400, height=300, base64=true} )
 	end)
-	if not ok then 
+	if not ok then
 		video_img = err
 	end
 	return video_img
@@ -96,11 +97,11 @@ local function InsertVideoFrame(excel, cell, record)
 	local rail = get_record_rail(record)
 	local video_channel = rail==1 and 18 or 17
 	local prms = {mode=3, panoram_width=700, width=800, height=500, base64=base64}
-	
-	local ok, res = pcall(function() 
+
+	local ok, res = pcall(function()
 		return Driver:GetFrame(video_channel, record.MARK_COORD, prm)
 	end)
-	
+
 	if ok then
 		if res and #res > 1 then
 			excel:InsertImage(cell, res)
@@ -111,15 +112,35 @@ local function InsertVideoFrame(excel, cell, record)
 	end
 end
 
+
+local function insertVideoScreen(excel, cell, record)
+	local ok, res = pcall(function()
+		local frame_prm = {
+			width 		= excel:point2pixel(cell.MergeArea.Width) * 2,
+			height 		= excel:point2pixel(cell.MergeArea.Height) * 2,
+			rail 		= get_record_rail(record),
+			width_mm	= 700, }
+		return Driver:GetVideoImage(0, record.MARK_COORD, frame_prm)
+	end)
+
+	if ok then
+		if res and #res > 1 then
+			excel:InsertImage(cell, res)
+		end
+	else
+		cell.Value2 = res
+	end
+end
+
 -- =================== Отчеты =====================
 
 -- отчет по отметкам записой книжки с выводом в excel
 local function vedomost_with_US_images_excel(records)
 	local insert_us_img = true
 	local insert_video_img = true
-	
+
 	local dlg = luaiup_helper.ProgressDlg()
-	
+
 	records = filter_included_mark(records, dlg)
 
 	if #records == 0 then
@@ -131,7 +152,7 @@ local function vedomost_with_US_images_excel(records)
 	local excel = excel_helper(Driver:GetAppPath() .. 'Telegrams\\VedomostTemplate.xls', nil, false)
 	excel:ApplyPassportValues(Passport)
 	local data_range = excel:CloneTemplateRow(#records, 1)
-	
+
 	if insert_us_img then
 		data_range.Columns(18).ColumnWidth = 40.0
 	end
@@ -143,29 +164,29 @@ local function vedomost_with_US_images_excel(records)
 
 	for line, record in ipairs(records) do
 		local km, m, mm = Driver:GetPathCoord(record.MARK_COORD)
-		
+
 		local dst_row = data_range.Rows(line)
 		excel:ReplaceTemplates(dst_row, {record, {N=line}})
-		
+
 		if insert_us_img or insert_video_img then
 			data_range.Rows(line).RowHeight = 100.0
 		end
-		
+
 		if insert_us_img and Driver.GetUltrasoundImage then
 			local us_img_path = Driver:GetUltrasoundImage{note_rec=record, width=800, height=600, color=1, coord=record.MARK_COORD}
 			if us_img_path and #us_img_path then
 				excel:InsertImage(data_range.Cells(line, 18), us_img_path)
 			end
 		end
-		
+
 		if insert_video_img and Driver.GetFrame then
 			InsertVideoFrame(excel, data_range.Cells(line, 19), record)
 		end
 
-		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then 
+		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then
 			break
 		end
-	end 
+	end
 
 	dlg:Destroy()
 	excel:SaveAndShow()
@@ -179,11 +200,11 @@ local function report_html_properties(records)
 	<head>
 		<meta charset="utf-8">
 		<title>{{Passport.NAME}}</title>
-	</head> 
-	
+	</head>
+
 <body>
 	<h1>Список Свойств отметок</h1>
-	
+
 	<table>
 	{% for i, record in ipairs(records) do %}
 		<tr>
@@ -203,23 +224,23 @@ local function report_html_properties(records)
 
 	local folter = make_report_dir()
 	local file_name = folter .. 'record_propertyes.html'
-	
+
 	local res = view{records=records}
 
 	local dst_file = assert(io.open(file_name, 'w+'))
 	dst_file:write(res)
 	dst_file:close()
-	
+
 	os.execute("start " .. file_name)
 end
 
 
 local function vedomost_with_US_images_html(records)
 	local resty = require "resty.template"
-	
+
 	local css_style = [[
 html {
-    font-family: Times New Roman; 
+    font-family: Times New Roman;
 	font-size: 14px;
 }
 
@@ -249,7 +270,7 @@ td {
 }
 
 
-.Records th, 
+.Records th,
 .Records td {
 	border: 1px solid #ccc;
 }
@@ -262,7 +283,7 @@ table.DataDesc {
 .DataDesc td {
 	border: none;
 	font-size: 14px;
-	
+
 }
 ]]
 
@@ -272,13 +293,13 @@ table.DataDesc {
 	<head>
 		<meta charset="utf-8">
 		<title>{{Passport.NAME}}</title>
-	</head> 
+	</head>
 	<style type="text/css">{{css_style}}</style>
 <body>
 	<h1>Начальнику дистанции пути ПЧ<br/>
 	ВЕДОМОСТЬ №
 	</h1>
-	
+
 	<table class='DataDesc'>
 		<tr>
 			<td>
@@ -338,14 +359,14 @@ table.DataDesc {
 	{% end %}
 	<table>
 	<br/>
-	ПС-{{Passport.FORMED}} &nbsp;&nbsp;&nbsp;&nbsp; {{Passport.SIGNED}} 
+	ПС-{{Passport.FORMED}} &nbsp;&nbsp;&nbsp;&nbsp; {{Passport.SIGNED}}
 </body>
 </html>]]
 
 
 	local folter = make_report_dir()
 	local file_name = folter .. 'report.html'
-	
+
 	local filtred_records = {}
 	for _, record in ipairs(records) do
 		if is_record_included(record) then
@@ -354,27 +375,27 @@ table.DataDesc {
 			table.insert(filtred_records, record)
 		end
 	end
-	
+
 	local res = view{Passport=Passport, records=filtred_records, css_style=css_style}
 
 	local dst_file = assert(io.open(file_name, 'w+'))
 	dst_file:write(res)
 	dst_file:close()
-	
+
 	os.execute("start " .. file_name)
 end
 
 local function report_make_dump(records)
 	local filedlg = iup.filedlg{
-		dialogtype = "dir", 
-		title = "Select dir for dump mark", 
+		dialogtype = "dir",
+		title = "Select dir for dump mark",
 		directory = "c:\\out",
-	} 
+	}
 	filedlg:popup (iup.ANYWHERE, iup.ANYWHERE)
 	if filedlg.status == -1 then
 		return
 	end
-	
+
 	local out_dir = filedlg.value .. '\\' .. Passport.NAME
 	os.execute('mkdir ' .. out_dir)
 
@@ -385,28 +406,29 @@ local function report_make_dump(records)
 end
 
 
-local function excel_defectogram(records)
+local function excel_defectogram(records, params)
+	return EnterScope(function (defer)
 	local insert_us_img = true
-	local insert_video_img = true
+	local insert_video_img = params.insert_video_img
 	local dlg = luaiup_helper.ProgressDlg()
-	
+	defer(dlg.Destroy, dlg)
+
 	records = filter_selected_mark(records, dlg)
 
 	if #records == 0 then
 		iup.Message('Info', "Выделенных отметок не найдено")
-		dlg:Destroy()
 		return
 	end
-	
+
 	local excel = excel_helper(Driver:GetAppPath() .. 'Telegrams\\Defectogram.xlsx', nil, false)
-	
+
 	excel:ApplyPassportValues(Passport)
 	for line, dst_tbl in excel:EnumDstTable(#records) do
 		local record = records[line]
 		record.PATH = format_path_coord(record)
 		record.STR_SVED = get_str_sved(record)
 		excel:ReplaceTemplates(dst_tbl, {record})
-		
+
 		if insert_us_img and Driver.GetUltrasoundImage then
 			local us_img_path = Driver:GetUltrasoundImage{note_rec=record, width=800, height=600, color=1, coord=record.MARK_COORD}
 			if us_img_path and #us_img_path then
@@ -415,20 +437,21 @@ local function excel_defectogram(records)
 		else
 			dst_tbl.Cells(11, 1).RowHeight = 1
 		end
-		
+
 		if insert_video_img and Driver.GetFrame then
-			InsertVideoFrame(excel, dst_tbl.Cells(12, 1), record)
+			-- InsertVideoFrame(excel, dst_tbl.Cells(12, 1), record)
+			insertVideoScreen(excel, dst_tbl.Cells(12, 1), record)
 		else
 			dst_tbl.Cells(12, 1).RowHeight = 1
 		end
-		
-		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then 
+
+		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then
 			break
 		end
-	end 
+	end
 
-	dlg:Destroy()
 	excel:SaveAndShow()
+	end)
 end
 
 local function report_EKSUI(records)
@@ -441,7 +464,7 @@ local function report_EKSUI(records)
 		<PARAM name="{{name}}" value="{{value}}"/>
 	{% end %}
 	</passport>
-	
+
 	{% for i, record in ipairs(records) do %}
 	<record>
 	{% for name, value in pairs(record) do %}
@@ -451,34 +474,34 @@ local function report_EKSUI(records)
 	</record>
 	{% end %}
 </report>]]
-	
+
 	local dlg = luaiup_helper.ProgressDlg()
-	
+
 	records = filter_selected_mark(records, dlg)
 
 	if #records == 0 then
 		iup.Message('Info', "Выделенных отметок не найдено")
 		return
 	end
-	
+
 	local mark_processed = 0
 	local function get_encoded_frame(record)
-		if not dlg:step(mark_processed / #records, stuff.sprintf(' Process %d / %d mark', mark_processed, #records)) then 
+		if not dlg:step(mark_processed / #records, stuff.sprintf(' Process %d / %d mark', mark_processed, #records)) then
 			error("Прервано пользователем")
 		end
-		mark_processed = mark_processed + 1 
+		mark_processed = mark_processed + 1
 		return GetBase64EncodedFrame(record)
 	end
-		
+
 	local res = view{Passport=Passport, records=records,get_encoded_frame=get_encoded_frame}
 
 	local file_name = "c:\\1.xml"
 	local dst_file = assert(io.open(file_name, 'w+'))
 	dst_file:write(res)
 	dst_file:close()
-	
+
 	os.execute("start " .. file_name)
-	
+
 end
 
 
@@ -491,7 +514,7 @@ end
 local function GetRailImages(record)
 	local rail = get_record_rail(record)
 	local video_channels = {}
-	
+
 	if rail == 0 then
 		video_channels = {
 			{19, 1},
@@ -503,20 +526,20 @@ local function GetRailImages(record)
 			{22, 1},
 			{20, 3},}
 	end
-	
+
 	local prms = {mode=3, panoram_width=700, width=500, height=800, rotate_fixed=0}
-	
+
 	local frames = {}
 	local errors = {}
-	
+
 	for i, num_rot in ipairs(video_channels) do
 		local num = num_rot[1]
 		prms.rotate_fixed = num_rot[2]
-		
-		local ok, res = pcall(function() 
+
+		local ok, res = pcall(function()
 			return Driver:GetFrame(num, record.MARK_COORD, prms)
 		end)
-		
+
 		if ok and res and #res > 1 then
 			table.insert(frames, res)
 		else
@@ -530,7 +553,7 @@ end
 
 local function report_videogram(records)
 	local dlg = luaiup_helper.ProgressDlg()
-	
+
 	records = filter_selected_mark(records, dlg)
 
 	if #records == 0 then
@@ -539,19 +562,19 @@ local function report_videogram(records)
 		return
 	end
 	local common_name = Passport.NAME .. os.date('%y%m%d-%H%M%S') .. '_'
-	
+
 	for line, record in ipairs(records) do
 		local excel = excel_helper(Driver:GetAppPath() .. 'Telegrams\\Videogram.xlsm', nil, false, common_name .. record.INNER)
 		local user_range = excel._worksheet.UsedRange
-		
+
 		excel:ApplyPassportValues(Passport)
-		
+
 		AddCustomRecordProperties(record)
 		excel:ReplaceTemplates(user_range, {record})
-		
+
 		local cell_video = nil
-		
-		for n = 1, user_range.Cells.count do						-- пройдем по всем ячейкам	
+
+		for n = 1, user_range.Cells.count do						-- пройдем по всем ячейкам
 			local cell = user_range.Cells(n)
 			local val = cell.Value2
 			if val == '$VIDEO$' then
@@ -559,73 +582,74 @@ local function report_videogram(records)
 				break
 			end
 		end
-		
+
 		if cell_video and Driver.GetFrame then
 			local frames, errors = GetRailImages(record)
 			if #frames > 1 then
 				local width = cell_video.MergeArea.Width / #frames
 				local shapes = cell_video.worksheet.Shapes
-				
+
 				for i, img_path in ipairs(frames) do
 					local left = cell_video.Left + (i-1) * width
-					
+
 					local picture = shapes:AddPicture(img_path, false, true, left, cell_video.Top, width, cell_video.MergeArea.Height)
 					picture.Placement = 1
 				end
 			end
 		end
-		
-		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then 
+
+		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then
 			break
 		end
-		
+
 		dlg:Destroy()
 		excel:SaveAndShow()
-	end 
+	end
 end
 
 -- =================== Описание отчетов =====================
 
-local REPORTS = 
+local REPORTS =
 {
 	{ name = 'Видеограмма Выделенных', fn = report_videogram, user_select_range=false },
 	--{ name = 'Создать дамп отметок', fn = report_make_dump, user_select_range=true },
 	--{ name = 'Свойства отметок', fn = report_html_properties, user_select_range=true },
 	--{ name = 'Ведомость HTML с изображениями УЗ', fn = vedomost_with_US_images_html, user_select_range=true },
 	{ name = 'Ведомость EXCEL с изображениями УЗ', fn = vedomost_with_US_images_excel, user_select_range=true },
-	{ name = 'Дефектограмма', fn = excel_defectogram, user_select_range=false },
+	{ name = 'Дефектограмма', fn = excel_defectogram, user_select_range=false, insert_video_img=false },
+	{ name = 'Дефектограмма с видео', fn = excel_defectogram, user_select_range=false, insert_video_img=true },
 	-- { name = 'Выделенные в отчет ЕКСУИ', fn = report_EKSUI, user_select_range=false },
 }
 
 -- =================== EXPORT FUNCTION =====================
 
 -- получить список названий доступных отчетов
-function GetAvailableReports() 
+function GetAvailableReports()
 	local res = {}
-	for n = 1, #REPORTS do 
+	for n = 1, #REPORTS do
 		res[n] = REPORTS[n].name
 	end
 	return res
 end
 
 function UserSelectRange(name)
-	for _, n in ipairs(REPORTS) do 
+	for _, n in ipairs(REPORTS) do
 		if n.name == name then
 			return n.user_select_range
 		end
 	end
-	
+
 	stuff.errorf('can not find report [%s] [%s]', name, REPORTS[2].name)
 end
 
 function MakeReport(name, records) -- exported
-	for _, n in ipairs(REPORTS) do 
+	for _, n in ipairs(REPORTS) do
 		if n.name == name then
 			if not n.fn then
 				stuff.errorf('report function (%s) not defined', name)
 			end
 			name = nil
-			n.fn(records)
+			n.fn(records, n)
 		end
 	end
 
