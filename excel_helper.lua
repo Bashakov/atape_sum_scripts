@@ -120,11 +120,11 @@ local function FindTemplateRowNum(user_range)
 		for c = 1, user_range.Columns.count do
 			local val = user_range.Cells(r, c).Value2			-- проверяем ячейку
 			-- print(r, c, val)
-			for _, table_marker in ipairs{'%%table%%', '%$table%$'} do
+			for _, table_marker in ipairs{'%%table%%', '%$table%$', '%$table_old%$'} do
 				local replaced, found = string.gsub(val or '', table_marker, '')
 				if found ~= 0 then
 					user_range.Cells(r, 1).Value2 = replaced		-- если нашли, то уберем маркер
-					return r
+					return r, table_marker
 				end
 			end
 		end
@@ -141,6 +141,13 @@ local XlCalculation =
 	xlCalculationManual 		=	-4135, 	-- Calculation is done when the user requests it.
 	xlCalculationSemiautomatic 	=	2, 		-- Excel controls recalculation but ignores changes in tables.
 }
+
+local XlInsertShiftDirection =
+{
+    xlShiftDown					= -4121,
+    xlShiftToRight				= -4161
+}
+
 
 local excel_helper = OOP.class
 {
@@ -171,12 +178,16 @@ local excel_helper = OOP.class
 		for n = 1, dst_range.Cells.count do						-- пройдем по всем ячейкам
 			local cell = dst_range.Cells(n);
 			local val = cell.Value2
-			if val then
+			-- print(n, val, cell.HasFormula, cell.Formula)
+			if val and not cell.HasFormula then
+				local orig = val
 				for _, src in ipairs(sources_values) do
 					val, _ = string.gsub(val, '%$([%w_]+)%$', src) -- и заменим шаблон
 				end
 				--print(n, cell.Value2, val)
-				cell.Value2 = val
+				if val ~= orig then
+					cell.Value2 = val
+				end
 			end
 		end
 	end,
@@ -186,29 +197,45 @@ local excel_helper = OOP.class
 		self:ReplaceTemplates(user_range, {psp})
 	end,
 
-	CloneTemplateRow = function(self, row_count, correction)
+	CloneTemplateRow = function(self, row_count, correction, dlg)
 		correction = correction or 0
 		local user_range = self._worksheet.UsedRange				-- возьмем пользовательский диаппазон (ограничен незаполненными ячейками, и имеет свою внутреннюю адресацию)
 
-		local template_row_num = FindTemplateRowNum(user_range)		-- номер шаблона строки с данными
+		local template_row_num, marker = FindTemplateRowNum(user_range)		-- номер шаблона строки с данными
 		assert(template_row_num, 'Can not find table marker in tempalate')
 		template_row_num = template_row_num + correction
 
-		if row_count == 0 then
-			user_range.Rows(template_row_num).EntireRow:Delete()
-		end
-		if row_count > 1 then
-			local row_template = user_range.Rows(template_row_num+1).EntireRow -- возьмем строку (включая размеремы EntireRow)
-			row_template:Resize(row_count-1):Insert()				-- размножим ее
-		end
+		if marker == '%$table_old%$' then
+			for i = 1, row_count-1 do
+				local row = user_range.Rows(template_row_num + i - 1)
+				row:Copy()
+				row:Insert(XlInsertShiftDirection.xlShiftDown)
 
-		self._data_range = self._worksheet:Range(					-- сделаем из них новый диаппазон
-			user_range.Cells(template_row_num, 1),
-			user_range.Cells(template_row_num + row_count - 1, user_range.Columns.count-1))
+				if dlg and not dlg:step(i / row_count, sprintf('Копирование строк %d / %d', i, row_count)) then
+					break
+				end
 
-		if row_count > 1 then
-			for c = 1, user_range.Columns.count do
-				self._data_range.Columns(c):FillDown()				-- а затем заполним его включая значения и форматирования на основе первой строки (шаблона)
+				self._data_range = self._worksheet:Range(					-- сделаем из них новый диаппазон
+					user_range.Cells(template_row_num, 1),
+					user_range.Cells(template_row_num + row_count - 1, user_range.Columns.count-1))
+			end
+		else
+			if row_count == 0 then
+				user_range.Rows(template_row_num).EntireRow:Delete()
+			end
+			if row_count > 1 then
+				local row_template = user_range.Rows(template_row_num+1).EntireRow -- возьмем строку (включая размеремы EntireRow)
+				row_template:Resize(row_count-1):Insert()				-- размножим ее
+			end
+
+			self._data_range = self._worksheet:Range(					-- сделаем из них новый диаппазон
+				user_range.Cells(template_row_num, 1),
+				user_range.Cells(template_row_num + row_count - 1, user_range.Columns.count-1))
+
+			if row_count > 1 then
+				for c = 1, user_range.Columns.count do
+					self._data_range.Columns(c):FillDown()				-- а затем заполним его включая значения и форматирования на основе первой строки (шаблона)
+				end
 			end
 		end
 
@@ -341,7 +368,7 @@ local excel_helper = OOP.class
 	-- клонируем шаблонную строку нужное число раз, и вставляем данные
 	ApplyRows = function (self, marks, fn_get_templates_data, dlgProgress)
 		local dst_row_count = #marks
-		local data_range, user_range = self:CloneTemplateRow(dst_row_count)
+		local data_range, user_range = self:CloneTemplateRow(dst_row_count, 0, dlgProgress)
 		for line = 1, dst_row_count do
 			local mark = marks[line]
 

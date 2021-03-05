@@ -887,6 +887,7 @@ local function MakeCommonMarkTemplate(mark)
 	row.mark_id = prop.ID
 	row.SYS = prop.SysCoord
 	row.LENGTH = prop.Len
+	row.TYPE = Driver:GetSumTypeName(prop.Guid)
 	row.DESCRIPTION = prop.Description
 
 	row.RAIL_RAW_MASK = prop.RailMask
