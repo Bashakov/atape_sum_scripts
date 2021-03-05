@@ -1213,6 +1213,9 @@ if not HUN then
 
 	local report_beacon = require 'sum_report_beacon'
 	report_beacon.AppendReports(Report_Functions)
+
+	local report_summory = require 'sum_report_summary'
+	report_summory.AppendReports(Report_Functions)
 else
 	local report_hun_video = require 'sum_report_hun'
 	report_hun_video.AppendReports(Report_Functions)

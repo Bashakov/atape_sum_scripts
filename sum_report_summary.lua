@@ -27,6 +27,9 @@ local REPORTS =
         form_8_column = 24,
         script_name = 'sum_report_rails',
     },
+    {   -- балласт
+        form_8_column = 31,
+    },
     {
         form_8_column = 38,
         script_name = 'sum_report_beacon',
@@ -34,26 +37,59 @@ local REPORTS =
 }
 
 local function load_reports()
+    local guids_table = {}
     local prev_atape = ATAPE
     ATAPE = true -- disable debug code while load scripts
     for _, report in ipairs(REPORTS) do
-        report.script = require(report.script_name)
-        report.get_marks = report.script.get_marks
-        report.generators = report.script.all_generators
+        if report.script_name then
+            report.script = require(report.script_name)
+            report.get_marks = report.script.get_marks
+            report.generators = report.script.all_generators
+
+            local reports = {}
+            report.script.AppendReports(reports)
+            for _, report in ipairs(reports) do
+                for _, g in ipairs(report.guids) do
+                    guids_table[g] = true
+                end
+            end
+        end
     end
     ATAPE = prev_atape
+
+    local res = {}
+    for g, _ in pairs(guids_table) do
+        res[#res+1] = g
+    end
+    return res
 end
 
-load_reports()
+local guids = load_reports()
 
 
 -- ================================================================= --
+
+-- проход по таблице в сортированном порядке
+local function sorted(tbl)
+	local keys = {}
+	for n, _ in pairs(tbl) do table.insert(keys, n) end
+	table.sort(keys)
+	local i = 0
+	return function()
+		i = i + 1
+		return keys[i], tbl[keys[i]]
+	end
+end
+
 -- ================================================================= --
 
 local function make_cur_report_rows(pov_filter, dlg, report)
+    if not report.get_marks then
+        return {}
+    end
+
     local code2marks = {} -- убрать дублирование отметок полученных через стандартную функцию отчетов (включающую пользовательские отметки с опр. гуидом) и пользовательскую функцию отчетов
     local report_rows = {}
-
     local marks = report.get_marks(pov_filter)
     for _, gen in ipairs(report.generators) do
         local cur_rows = gen(marks, dlg, pov_filter)
@@ -95,17 +131,34 @@ local function make_all_reports_list()
     end)
 end
 
+local function get_num_speed_limit(row)
+    local disable_words = {
+        ['Закрытие движения'] = true,
+        ['ЗАПРЕЩЕНО'] = true,
+        ['Движение закрывается'] = true,
+    }
+
+    local cur_limit = row.SPEED_LIMIT
+    if disable_words[cur_limit] then
+        cur_limit = 0
+    elseif not cur_limit or not tonumber(cur_limit) then
+        cur_limit = nil
+    else
+        cur_limit = tonumber(cur_limit)
+    end
+    return cur_limit
+end
+
 local function group_by_velocity(rows, vel_limits)
     local others = 0 -- прочие
     local res = {}
-    for i, _ in ipairs(vel_limits) do res[i] = 0 end
+    for i, _ in ipairs(vel_limits) do
+        res[i] = 0
+    end
 
     for _, row in ipairs(rows) do
-        local cur_limit = row.SPEED_LIMIT
-        if cur_limit == 'Движение закрывается' then
-            cur_limit = 0
-        end
-        if not cur_limit or not tonumber(cur_limit) then
+        local cur_limit = get_num_speed_limit(row)
+        if not cur_limit then
             others = others + 1
         else
             cur_limit = tonumber(cur_limit)
@@ -120,6 +173,28 @@ local function group_by_velocity(rows, vel_limits)
     table.insert(res, others)
     table.insert(res, #rows)
     return res
+end
+
+local function group_by_KM(rows, n, result)
+    local OTHER = #REPORTS+1
+    local TOTAL = OTHER+1
+    local LIMITS = TOTAL+1
+
+    for _, row in ipairs(rows) do
+        local km = row.KM
+        local t = result[km]
+        if not t then
+            t = {}
+            for i = 1, LIMITS do t[i] = 0 end
+            result[km] = t
+        end
+
+        t[n] = t[n] + 1
+        t[TOTAL] = t[TOTAL] + 1
+        if get_num_speed_limit(row) then
+            t[LIMITS] = t[LIMITS] + 1
+        end
+    end
 end
 
 -- ================================================================= --
@@ -157,11 +232,80 @@ local function make_summary_report()
     excel:SaveAndShow()
 end
 
+
+local function make_per_km_report()
+    --local kms = {1,2,3,4,5,6,7,8,9,10}
+
+    local rep2mark = make_all_reports_list()
+    if not rep2mark then return end
+    local km2nums = {}
+    for rep_n, rows in ipairs(rep2mark) do
+        group_by_KM(rows, rep_n, km2nums)
+    end
+    local kms = {}
+    for km, _ in sorted(km2nums) do
+        kms[#kms+1] = km
+    end
+
+	local template_path = Driver:GetAppPath() .. 'Scripts/'  .. 'ПОКИЛОМЕТРОВАЯ ВЕДОМОСТЬ ОТСТУПЛЕНИЙ.xlsx'
+
+    local excel = excel_helper(template_path, nil, false)
+	excel:ApplyPassportValues(mark_helper.GetExtPassport(Passport))
+
+    local template_row_num = 12
+    local tamplate_col_start = 5
+    local user_range = excel._worksheet.UsedRange
+    if #kms > 1 then
+        local row_template = user_range.Rows(template_row_num+1).EntireRow -- возьмем строку (включая размеремы EntireRow)
+        row_template:Resize(#kms-1):Insert()				-- размножим ее
+    end
+
+    local all = {}
+    for i, km in ipairs(kms) do
+        local rn = template_row_num+i-1
+        user_range.Cells(rn, 1).Value2 = km
+        for rep_n, num in ipairs(km2nums[km]) do
+            local col = tamplate_col_start + rep_n - 1
+            user_range.Cells(rn, col).Value2 = num
+            all[col] = (all[col] or 0) + num
+        end
+    end
+
+    for col, num in pairs(all) do
+        user_range.Cells(template_row_num + #kms, col).Value2 = num
+    end
+    excel:SaveAndShow()
+end
+
+-- ================================================================= --
+
+
+local function AppendReports(reports)
+	local name_pref = 'Сводные ведомости|'
+
+    local cur_reports =
+	{
+        {name = name_pref..'СВОДНАЯ ВЕДОМОСТЬ ОТСТУПЛЕНИЙ',    		fn = make_summary_report, },
+        {name = name_pref..'ПОКИЛОМЕТРОВАЯ ВЕДОМОСТЬ ОТСТУПЛЕНИЙ',  fn = make_per_km_report, },
+    }
+
+    for _, report in ipairs(cur_reports) do
+        report.guids = guids
+        table.insert(reports, report)
+	end
+end
+
 -- ================================================================= --
 
 if not ATAPE then
     local test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 100000000})
 
-    make_summary_report()
+    --make_summary_report()
+    make_per_km_report()
 end
+
+
+return {
+	AppendReports = AppendReports,
+}
