@@ -299,7 +299,11 @@ end
 
 if not ATAPE then
     local test_report  = require('test_report')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 100000000})
+    -- local data_path = 'D:\\Downloads\\722\\492 dlt xml sum\\[492]_2021_03_14_03.xml'
+    -- local data_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+    local data_path = 'D:\\Downloads\\722\\2021.03.23\\[492]_2021_03_23_01.xml'
+
+	test_report(data_path, nil, {0, 100000000})
 
     --make_summary_report()
     make_per_km_report()

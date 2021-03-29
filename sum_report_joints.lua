@@ -379,6 +379,8 @@ local function generate_rows_missing_bolt(marks, dlgProgress, pov_filter)
 				end
 			end
 		end
+
+		if i % 300 == 0 then collectgarbage("collect") end
 		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
 			return
 		end

@@ -77,6 +77,7 @@ local function generate_row_beacon(marks, dlgProgress)
 			end
 		end
 
+		if i % 300 == 0 then collectgarbage("collect") end
 		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d отметок, найдено %d', i, #marks, #report_rows)) then
 			return
 		end
@@ -95,6 +96,7 @@ local function generate_row_beacon_user(marks, dlgProgress)
 			table.insert(report_rows, row)
 		end
 
+		if i % 300 == 0 then collectgarbage("collect") end
 		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d отметок, найдено %d', i, #marks, #report_rows)) then
 			return
 		end
@@ -114,6 +116,8 @@ local function generate_missing_beacon_mark(marks, dlgProgress)
 			if not beacons[rail_mask] then beacons[rail_mask] = {} end
 			table.insert(beacons[rail_mask], mark)
 		end
+
+		if i % 300 == 0 then collectgarbage("collect") end
 		if i % 34 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d отметок', i, #marks)) then
 			return
 		end
@@ -141,6 +145,8 @@ local function generate_missing_beacon_mark(marks, dlgProgress)
 				table.insert(report_rows, row)
 			end
 		end
+
+		if i % 300 == 0 then collectgarbage("collect") end
 		if i % 34 == 0 and not dlgProgress:step(i / #marks, sprintf('Поиск %d / %d отметок', i, #marks)) then
 			return
 		end
