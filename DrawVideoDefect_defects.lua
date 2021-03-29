@@ -225,7 +225,9 @@ table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="09000401584
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000465", name="Отсутствие стыковых болтов", tools={RAIL_JOINT_TOOL.fishplate_bolt}}))
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000477", name="Отсутствует стыковая накладка"}))
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000509", name="Отсутствующие или неисправные элементы изолирующего стыка"}))
-table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004012062", name="Превышение конструктивной величины стыкового зазора", add_width_from_user_rect=true}))
+--table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004012062", name="Превышение конструктивной величины стыкового зазора", add_width_from_user_rect=true})) -- https://bt.abisoft.spb.ru/view.php?id=722#c3398
+table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004016149", name="Превышение конструктивной величины стыкового зазора левой нити", add_width_from_user_rect=true}))
+table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004016150", name="Превышение конструктивной величины стыкового зазора правой нити", add_width_from_user_rect=true}))
 
 table.insert(DEFECTS,  {guid='{3601038C-A561-46BB-8B0F-F896C2130004}', group="Дефекты рельсов", ekasui_code="090004012002", name="Дефекты и повреждения подошвы рельса", fn = make_simple_defect, tools = {DRAW_TOOL.rect_defect}})
 table.insert(DEFECTS,  {guid='{3601038C-A561-46BB-8B0F-F896C2130004}', group="Дефекты рельсов", ekasui_code="090004012004", name="Излом рельса", fn = make_simple_defect, tools = {DRAW_TOOL.rect_defect}})

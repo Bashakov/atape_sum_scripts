@@ -42,7 +42,7 @@ end
 local function MakeJointMarkRow(mark)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
 	row.SPEED_LIMIT = ''
-	row.GAP_WIDTH = ''
+	row.GAP_WIDTH = mark_helper.GetGapWidth(mark)
 	row.BLINK_GAP_COUNT = ''
 	return row
 end
@@ -128,22 +128,37 @@ local function make_mark_gap_width_exceed(mark)
 		return 'Движение закрывается'
 	end
 
-	if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[1] then
-		local gap_width = mark_helper.GetGapWidth(mark)
+	local function get_code_by_rail(row, defect_code)
+		--[[ https://bt.abisoft.spb.ru/view.php?id=722#c3398
+		1. новый прикол дефект 090004012062 разнесен по 2 ниткам.
+		Превышение конструктивной ширины зазора левой нити(90004016149) и правой нити(90004016150). ]]
+		if not defect_code or defect_code == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[1] then
+			if row.RAIL_POS	== -1 then
+				defect_code = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH_LEFT[1]
+			else
+				defect_code = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH_RIGHT[1]
+			end
+		end
+		row.DEFECT_CODE = defect_code
+		row.DEFECT_DESC = DEFECT_CODES.code2desc(defect_code)
+	end
+
+	if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
+			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[1] or
+			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH_LEFT[1] or
+			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH_RIGHT[1]
+		) then
 		local row = MakeJointMarkRow(mark)
-		row.DEFECT_CODE = mark.ext.CODE_EKASUI
-		row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
-		row.GAP_WIDTH = gap_width
-		row.SPEED_LIMIT = width2speed(gap_width)
+		get_code_by_rail(row, mark.ext.CODE_EKASUI)
+		row.SPEED_LIMIT = width2speed(row.GAP_WIDTH)
 		return row
 	else
 		local gap_width = mark_helper.GetGapWidth(mark)
 		if gap_width and gap_width > 24 then
 			local row = MakeJointMarkRow(mark)
-			row.DEFECT_CODE = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[1]
-			row.DEFECT_DESC = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[2]
-			row.GAP_WIDTH = gap_width
+			get_code_by_rail(row, mark.ext.CODE_EKASUI, nil)
 			row.SPEED_LIMIT = width2speed(gap_width)
+			assert(row.GAP_WIDTH == gap_width)
 			return row
 		end
 	end
@@ -556,14 +571,14 @@ if not ATAPE then
 	local reports = {}
 	AppendReports(reports)
 
-	local report = reports[1]
-	print(report.name)
-	report.fn()
+	-- local report = reports[1]
+	-- print(report.name)
+	-- report.fn()
 
 	-- report_joint_width()
 	--report_neigh_blind_joint()
 	-- report_ALL()
-	--ekasui_ALL()
+	ekasui_ALL()
 end
 
 

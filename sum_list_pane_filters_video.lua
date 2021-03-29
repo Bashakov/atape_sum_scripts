@@ -8,7 +8,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
 		name = 'Стыковые зазоры', 
-		videogram_defect_codes = {'090004012062'},
+		videogram_defect_codes = {'090004012062', '090004016149', '090004016150'},
 		columns = {
 			column_num, 
 			column_path_coord, 

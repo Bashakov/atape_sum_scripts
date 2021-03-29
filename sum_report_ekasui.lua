@@ -144,7 +144,7 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg, path
 		node_incident:setAttribute("posM", mark.M)
 		node_incident:setAttribute("thread", rail_ekasui_table[mark.RAIL_POS])
 		node_incident:setAttribute("defectID", mark.DEFECT_CODE)
-		node_incident:setAttribute("sizeLength", "")
+		node_incident:setAttribute("sizeLength", mark.GAP_WIDTH or "")
 		node_incident:setAttribute("sizeWidth", "")
 		node_incident:setAttribute("sizeDepth", "")
 		node_incident:setAttribute("speedLimitID", mark.SPEED_LIMIT)
@@ -230,7 +230,7 @@ local function make_ekasui_generator(getMarks, ...)
             -- Получаем атрибуты проезда
         local SiteID   = EKASUI_PARAMS.SITEID
         local carID    = EKASUI_PARAMS.carID
-        local pathType = 0
+        local pathType = 1 						-- https://bt.abisoft.spb.ru/view.php?id=722#c3397
         local pathID   = Passport.TRACK_CODE
         local pathText = Passport.TRACK_NUM
             -- Диалог редактирования  атрибутов проезда

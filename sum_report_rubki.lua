@@ -236,7 +236,7 @@ end
 local function get_left(mark)
 	local pos = mark_helper.GetMarkRailPos(mark) -- возвращает: -1 = левый, 0 = оба, 1 = правый
 	-- return pos < 0 and 1 or 0
-   	return pos > 0 and 1 or 0  -- 0 левая 1 правая требование окт 2020 
+   	return pos > 0 and 1 or 0  -- 0 левая 1 правая требование окт 2020
 end
 
 local function load_near_marks(join_mark, mark_types, mark_count, search_dist)
@@ -304,13 +304,67 @@ local function get_epur_skrepl(join_mark)
 			skrepl = skrepl + 1
 		end
 	end
+	skrepl = math.min(skrepl, 12)
 
 	return epur, skrepl
 end
 
+local function get_nakl(mark)
+	--[[ https://bt.abisoft.spb.ru/view.php?id=722#c3396
+		2. в рубках по болтам Nakl – 0 это недопустимое значение: если нет реального значения (например излом), то не создавать
+
+		Все накладки целые – не создавать ноду
+		1 У одной накладки есть трещина или надрыв
+		2 У двух накладок есть трещина или надрыв
+		3 Хотя бы у одной накладки есть излом
+		]]
+	local fp_status, fp_broken_cnt = mark_helper.GetFishplateState(mark)
+	if fp_status == 4 then
+		return 3
+	end
+	if fp_broken_cnt >= 2 then
+		return 2
+	end
+	if fp_broken_cnt == 1 then
+		return 1
+	end
+end
+
+local function get_bolt_nakltype(mark)
+	local joints = mark_helper.GetCrewJointArray(mark)
+
+	--[[
+	1 Наличие всех болтов
+	2 Отсутствие 1 болта на конце рельса при 4-х дырных накладках
+	3 Отсутствие 2-х болтов на конце рельса при 6 дырных накладках
+	4 6 – дырные накладки: Отсутствие 3-х болтов на конце рельса
+	5 4 –х дырные накладки: Отсутствие 2-х болтов на конце рельса
+	]]
+	local broken2side = {0, 0}
+	for i, safe in ipairs(joints) do
+		local side = i > #joints/2 and 2 or 1
+		if safe <= 0 then
+			broken2side[side] = broken2side[side] + 1
+		end
+	end
+	local broken = math.max(table.unpack(broken2side))
+
+	local bolt
+	if #joints/2 == 4 and broken == 1 then	bolt = 1 end
+	if #joints/2 == 6 and broken == 2 then	bolt = 2 end
+	if #joints/2 == 6 and broken == 3 then	bolt = 3 end
+	if #joints/2 == 4 and broken == 2 then	bolt = 4 end
+
+	local nakltype = { -- Тип накладки
+		[6] = 1, -- 1 – шестидырная
+		[4] = 2, -- 2 – четырехдырная
+	}
+	return bolt, nakltype[#joints]
+end
+
 local function make_gap_description(mark)
-	local km, m, mm = Driver:GetPathCoord(mark.prop.SysCoord)
-	local bolts_cnt, bolts_fault = mark_helper.GetCrewJointCount(mark)
+	local center = mark.prop.SysCoord + mark.prop.Len / 2
+	local km, m, mm = Driver:GetPathCoord(center)
 	local gap_step = mark_helper.GetRailGapStep(mark)
 	local epur, skrepl = get_epur_skrepl(mark)
 
@@ -321,19 +375,33 @@ local function make_gap_description(mark)
 		sneg = 0, -- Нода есть всегда. 0, если не определяется
 	}
 
+	values.bolt, values.nakltype = get_bolt_nakltype(mark)
 	values.gaptype = mark_helper.GetGapType(mark)
-	values.nakltype = (bolts_cnt == 6 and 1) or (bolts_cnt == 4 and 2) -- Тип накладки (1 – шестидырная, 2 – четырехдырная)
 	values.temp = mark_helper.GetTemperature(mark)
 	values.left = get_left(mark)
 	values.km = km
 	values.m = string.format('%.3f', m + mm/1000)
 	values.zazor = mark_helper.GetGapWidth(mark)
 	values.gstup = gap_step and math.abs(gap_step)
-	values.nakl = mark_helper.GetFishplateState(mark) > 0 and 1 or 0
-	values.bolt = bolts_fault == 0 and 0 or 1
+	values.nakl	= get_nakl(mark)
 
 	local img_ok, img_data = pcall(function ()
-		return mark_helper.MakeMarkImage(mark, nil, nil, true)
+		--[[ https://bt.abisoft.spb.ru/view.php?id=722#c3400
+		4. в рубках по моему д.б. 3 шпалы до и 3 после стыка . 
+		Определяем ширину ((3*0.5)+0.25)*2=3.5 если можно ухудшение картинки добавить ]]
+
+		local img_prop = {
+			mark_id = mark.prop.ID,
+			mode = 3,  -- panorama
+			panoram_width = ((3*0.5)+0.25)*2,
+			width = 400,
+			height = 300,
+			base64=true
+		}
+
+		local recog_video_channels = mark_helper.GetSelectedBits(mark.prop.ChannelMask)
+		local video_channel = recog_video_channels and recog_video_channels[1]
+		return Driver:GetFrame(video_channel, center, img_prop)
 	end)
 
 	return {
@@ -463,15 +531,25 @@ local function report_short_rails_ekasui()
 
 			add_text_node(node_rels, 'length', string.format('%.3f', (mark2.prop.SysCoord - mark1.prop.SysCoord)/1000))
 
-			local node_marking = add_node(node_rels, 'marking')
-			add_text_node(node_marking, 'mark', '')
+			if false then
+				--[[ https://bt.abisoft.spb.ru/view.php?id=722#c3401
+				5. для рубок в ноде relset указываются якобы маркировки, но мы их не определяем.
+				Поэтому ноды
+				<marking>
+					<mark/>
+					<pic> ... </pic>
+				</marking>
+				- Удаляем.
+				]]
+				local node_marking = add_node(node_rels, 'marking')
+				add_text_node(node_marking, 'mark', '')
 
-			local ok, img_data = make_rail_image(mark1, mark2)
-			add_text_node(node_marking, 'pic', ok and img_data or '')
-			if not ok then
-				add_text_node(node_marking, 'error', img_data)
+				local ok, img_data = make_rail_image(mark1, mark2)
+				add_text_node(node_marking, 'pic', ok and img_data or '')
+				if not ok then
+					add_text_node(node_marking, 'error', img_data)
+				end
 			end
-
 			if not dlg:step(i / #short_rails, sprintf('Сохранение рельсов %d / %d', i, #short_rails)) then
 				return
 			end
@@ -528,7 +606,7 @@ local function MakeEkasuiGapReport(mark)
         <style type="text/css">
 body {
     font-family: "Times New Roman", "Tahoma", Sans-Serif;
-    font-size: 15px; 
+    font-size: 15px;
 	width: 500px;
 	margin: 20px;
 }
@@ -568,7 +646,7 @@ img {
         <br/>
 		<b>{{os.date("%d.%m.%Y %H:%M:%S")}}</b>
 		<br/>
-        Тестовый перегон
+		{{Passport.DIRECTION}}
         <br/>
         <img src='data:image/jpg;base64,{{image_base64}}'>
         <br/>
@@ -637,7 +715,7 @@ img {
             </tr>
             <tr>
                 <td>Отсутствующие или негодные накладки <i>(выход подошвы рельса из реборд накладок)</i></td>
-                <td>{{gap.nakl}}</td>
+                <td>{{gap.nakl or ''}}</td>
             </tr>
             <tr>
                 <td>Наличие негодных шпал в зоне стыка</td>
@@ -694,19 +772,20 @@ local cur_reports =
 if not ATAPE then
 
 	local test_report = require('test_report')
-	local data_path = 'D:/ATapeXP/Main/494/video_recog/2019_05_17/Avikon-03M/30346/[494]_2019_03_15_01.xml'
-	-- local data_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+	--local data_path = 'D:/ATapeXP/Main/494/video_recog/2019_05_17/Avikon-03M/30346/[494]_2019_03_15_01.xml'
+	local data_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+	-- local data_path = 'D:\\Downloads\\722\\492 dlt xml sum\\[492]_2021_03_16_01.xml'
 	test_report(data_path, nil)
 
 	-- отчет ЕКАСУИ
-	if 1 == 1 then
+	if  0 == 1 then
 		--local r = cur_reports[1] -- отчет Excel
 		local r = cur_reports[2] -- отчет ЕКАСУИ
 		r.fn(r.params)
 	end
 
 	-- ведомость стыка
-	if 1 == 0 then
+	if 1 == 1 then
 		local mark = Driver:GetMarks({mark_id=100})[1]
 		MakeEkasuiGapReport(mark)
 	end
