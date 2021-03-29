@@ -247,7 +247,7 @@ local Stream = OOP.class{
 		return #self.stream + 1 - self.pos
 	end,
 
-	empty = function (self)
+	if_empty = function (self)
 		return self:left() <= 0
 	end,
 
@@ -285,7 +285,7 @@ local function read_XmlC(file_path)
 	local values = {}
 	local idx2names = {}
 
-	while not stream:empty() do
+	while not stream:if_empty() do
 		--print(#state.stream, state.pos)
 		local h = {}
 		h.idx = stream:pop_num(1)
@@ -316,12 +316,21 @@ end
 local Deltas = OOP.class{
 	ctor = function (self, psp_path, start_km, start_pk, increase)
 		self.items = {}
-		local stream = Stream(string.gsub(psp_path, '.xml', '.dlt'))
-		while not stream:empty() do
-			table.insert(self.items, {
-				coord = stream:pop_num(4),
-				delta=stream:pop_num(4)
-			})
+		local filename = string.gsub(psp_path, '%.xml$', '')
+		local stream
+		for chunk = 0, 10 do
+			local schunk = chunk == 0 and '' or string.format('(%d)', chunk)
+			local path = filename .. schunk .. '.dlt'
+			stream = Stream(path)
+			if stream:if_empty() then
+				break
+			end
+			while not stream:if_empty() do
+				table.insert(self.items, {
+					coord = stream:pop_num(4),
+					delta = stream:pop_num(4)
+				})
+			end
 		end
 		stream = nil
 		self.start_km = start_km
@@ -529,11 +538,11 @@ local Driver = OOP.class
 		self._passport = psp2table(psp_path)
 
 		if not sum_path then
-			sum_path = string.gsub(psp_path, '.xml', '.sum')
+			sum_path = string.gsub(psp_path, '%.xml$', '.sum')
 		end
 		self._sum = SumMarks(sum_path, load_marks_range)
 
-		self._gps = read_XmlC(string.gsub(psp_path, '.xml', '.gps'))
+		self._gps = read_XmlC(string.gsub(psp_path, '%.xml$', '.gps'))
 		self._temerature = read_temerature(self._gps)
 		self.deltas = Deltas(psp_path, self._passport.START_KM, self._passport.START_PK, self._passport.INCREASE)
 
