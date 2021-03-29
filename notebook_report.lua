@@ -1,4 +1,5 @@
 if not ATAPE then
+	require "luacom"
 	require "iuplua"
 end
 
@@ -113,13 +114,13 @@ local function InsertVideoFrame(excel, cell, record)
 end
 
 
-local function insertVideoScreen(excel, cell, record)
+local function insertVideoScreen(excel, cell, record, width_mm)
 	local ok, res = pcall(function()
 		local frame_prm = {
 			width 		= excel:point2pixel(cell.MergeArea.Width) * 2,
 			height 		= excel:point2pixel(cell.MergeArea.Height) * 2,
 			rail 		= get_record_rail(record),
-			width_mm	= 700, }
+			width_mm	= width_mm, }
 		return Driver:GetVideoImage(0, record.MARK_COORD, frame_prm)
 	end)
 
@@ -129,6 +130,18 @@ local function insertVideoScreen(excel, cell, record)
 		end
 	else
 		cell.Value2 = res
+	end
+end
+
+local function read_pref_cfg_param(name)
+	local pref_path = os.getenv("ProgramFiles") .. '\\ATapeXP\\preferences.cfg'
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom, 'can not create MSXML object')
+	assert(xmlDom:load(pref_path), "can not open xml file: " .. pref_path)
+	local xpath = "//FIELD[@INNER_NAME='" .. name .. "']/@VALUE"
+	local scale = xmlDom:selectSingleNode(xpath)
+	if scale then
+		return tonumber(scale.nodeValue)
 	end
 end
 
@@ -429,10 +442,20 @@ local function excel_defectogram(records, params)
 		record.STR_SVED = get_str_sved(record)
 		excel:ReplaceTemplates(dst_tbl, {record})
 
+		local hide_video_cell = true
 		if insert_us_img and Driver.GetUltrasoundImage then
 			local us_img_path = Driver:GetUltrasoundImage{note_rec=record, width=800, height=600, color=1, coord=record.MARK_COORD}
 			if us_img_path and #us_img_path then
 				excel:InsertImage(dst_tbl.Cells(11, 1), us_img_path)
+			end
+			-- https://bt.abisoft.spb.ru/view.php?id=727
+			local second_scale = read_pref_cfg_param('DEFECTOGRAM_US_SECOND_SCALE')
+			if not insert_video_img and second_scale and second_scale > 1 then
+				hide_video_cell = false
+				local us_img_path = Driver:GetUltrasoundImage{width=800, height=600, color=1, coord=record.MARK_COORD, scale=second_scale}
+				if us_img_path and #us_img_path then
+					excel:InsertImage(dst_tbl.Cells(12, 1), us_img_path)
+				end
 			end
 		else
 			dst_tbl.Cells(11, 1).RowHeight = 1
@@ -440,8 +463,13 @@ local function excel_defectogram(records, params)
 
 		if insert_video_img and Driver.GetFrame then
 			-- InsertVideoFrame(excel, dst_tbl.Cells(12, 1), record)
-			insertVideoScreen(excel, dst_tbl.Cells(12, 1), record)
-		else
+			insertVideoScreen(excel, dst_tbl.Cells(12, 1), record, 700)
+			-- https://bt.abisoft.spb.ru/view.php?id=727
+			local second_scale = read_pref_cfg_param('DEFECTOGRAM_VIDEO_SECOND_SCALE')
+			if second_scale and second_scale > 10 then
+				insertVideoScreen(excel, dst_tbl.Cells(13, 1), record, second_scale)
+			end
+		elseif hide_video_cell then
 			dst_tbl.Cells(12, 1).RowHeight = 1
 		end
 
