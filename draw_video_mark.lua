@@ -383,6 +383,32 @@ local function drawSimpleResult(resultType, points, params, mark)
 		end
 	end
 
+	if resultType == 'SleeperFault' then
+		-- https://bt.abisoft.spb.ru/view.php?id=706
+		local fault2color =
+		{
+			[0] = {r=128, g=0,  b=40}, -- undef
+			[1] = {r=128, g=20, b=0},  -- fracture(ferroconcrete)
+			[2] = {r=128, g=40, b=0},  -- chip(ferroconcrete)
+			[3] = {r=128, g=60, b=0},  -- crack(wood)
+			[4] = {r=128, g=80, b=0},  -- rottenness(wood)
+		}
+		local fault2text =
+		{
+			[0] = "undef",
+			[1] = "fracture(ferroconcrete)",
+			[2] = "chip(ferroconcrete)",
+			[3] = "crack(wood)",
+			[4] = "rottenness(wood)",
+		}
+
+		local color = fault2color[params.FaultType] or {r=0, g=0, b=0}
+		local text = fault2text[params.FaultType] or ""
+
+		drawPolygon(points, 1, color, {r=0, g=0, b=0, a=0})
+		textOut(points, text, {fill_color= {r=0, g=0, b=0}, line_color={r=255, g=255, b=255}, offset={35, 15}})
+	end
+
 	if resultType == 'Surface' then
 		local color = {r=192, g=0, b=192}
 		if #points == 8 then
