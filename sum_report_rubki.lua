@@ -330,36 +330,36 @@ local function get_nakl(mark)
 	end
 end
 
+
 local function get_bolt_nakltype(mark)
-	local joints = mark_helper.GetCrewJointArray(mark)
+	local valid_on_half, broken_on_half, all_count = mark_helper.CalcValidCrewJointOnHalf(mark)
 
 	--[[
 	1 Наличие всех болтов
-	2 Отсутствие 1 болта на конце рельса при 4-х дырных накладках
-	3 Отсутствие 2-х болтов на конце рельса при 6 дырных накладках
-	4 6 – дырные накладки: Отсутствие 3-х болтов на конце рельса
-	5 4 –х дырные накладки: Отсутствие 2-х болтов на конце рельса
+	2 Отсутствие 1 болта (1 нормальный) на конце рельса при 4-х дырных накладках
+	3 Отсутствие 2-х болтов (1 нормальный) на конце рельса при 6 дырных накладках
+	4 6 – дырные накладки: Отсутствие 3-х болтов (0 нормальных) на конце рельса
+	5 4 –х дырные накладки: Отсутствие 2-х болтов (0 нормальных) на конце рельса
 	]]
-	local broken2side = {0, 0}
-	for i, safe in ipairs(joints) do
-		local side = i > #joints/2 and 2 or 1
-		if safe <= 0 then
-			broken2side[side] = broken2side[side] + 1
-		end
-	end
-	local broken = math.max(table.unpack(broken2side))
 
 	local bolt
-	if #joints/2 == 4 and broken == 1 then	bolt = 1 end
-	if #joints/2 == 6 and broken == 2 then	bolt = 2 end
-	if #joints/2 == 6 and broken == 3 then	bolt = 3 end
-	if #joints/2 == 4 and broken == 2 then	bolt = 4 end
+	if all_count == 6 then
+		if broken_on_half == 0 then	bolt = 1 end
+		if broken_on_half == 2 then	bolt = 3 end
+		if broken_on_half == 3 then	bolt = 4 end
+	end
+
+	if all_count == 4 then
+		if broken_on_half == 0 then	bolt = 1 end
+		if broken_on_half == 1 then	bolt = 2 end
+		if broken_on_half == 2 then	bolt = 5 end
+	end
 
 	local nakltype = { -- Тип накладки
 		[6] = 1, -- 1 – шестидырная
 		[4] = 2, -- 2 – четырехдырная
 	}
-	return bolt, nakltype[#joints]
+	return bolt, nakltype[all_count]
 end
 
 local function make_gap_description(mark)
@@ -773,19 +773,20 @@ if not ATAPE then
 
 	local test_report = require('test_report')
 	--local data_path = 'D:/ATapeXP/Main/494/video_recog/2019_05_17/Avikon-03M/30346/[494]_2019_03_15_01.xml'
-	local data_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+	-- local data_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
 	-- local data_path = 'D:\\Downloads\\722\\492 dlt xml sum\\[492]_2021_03_16_01.xml'
+	local data_path = 'D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2020_11_30_01.xml'
 	test_report(data_path, nil)
 
 	-- отчет ЕКАСУИ
-	if  0 == 1 then
+	if  1 == 1 then
 		--local r = cur_reports[1] -- отчет Excel
 		local r = cur_reports[2] -- отчет ЕКАСУИ
 		r.fn(r.params)
 	end
 
 	-- ведомость стыка
-	if 1 == 1 then
+	if 0 == 1 then
 		local mark = Driver:GetMarks({mark_id=100})[1]
 		MakeEkasuiGapReport(mark)
 	end

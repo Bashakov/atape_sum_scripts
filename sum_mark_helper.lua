@@ -371,23 +371,46 @@ end
 -- проверить стык на дефектность по наличие болтов (не больше одного плохого в половине накладки)
 local function CalcValidCrewJointOnHalf(mark)
 	local joints = GetCrewJointArray(mark)
-	
 	local valid_on_half = nil
-	if not joints or #joints == 0 then
-		-- no action
-	elseif #joints == 6 then
-		local l = CalcJointDefectInRange(joints, 1, 3)
-		local r = CalcJointDefectInRange(joints, 4, 6)
-		valid_on_half = math.min(l, r)
-	elseif #joints == 4 then
-		local l = CalcJointDefectInRange(joints, 1, 2)
-		local r = CalcJointDefectInRange(joints, 3, 4)
-		valid_on_half = math.min(l, r)
-	else
-		valid_on_half = 0
+	local broken_on_half = nil
+
+	if joints and #joints ~= 0 then
+		if true then
+			--[[ https://bt.abisoft.spb.ru/view.php?id=733
+				на картинке выделено синим 5/0
+				5 болтов найдено неисправных - 0
+				выдано закрытие.
+				но один не найден.
+				надо добавить его к неисправным.
+				тогда результат будет 6/1
+				и дальше использовать эти данные.
+
+				для другой строки где 3/0 считать 4/1, хотя это условие более спорное
+
+				т.е. если число болтов 5 - считаем накладку 6-дырной
+					если число болтов 3 - считаем накладку 4-дырной (если возможно в коде пометить где его отключать)
+			]]
+			if joints and (#joints == 3 or #joints == 5) then
+				table.insert(joints, -1)
+			end
+		end
+
+		if #joints == 6 then
+			local l = CalcJointDefectInRange(joints, 1, 3)
+			local r = CalcJointDefectInRange(joints, 4, 6)
+			valid_on_half = math.min(l, r)
+		elseif #joints == 4 then
+			local l = CalcJointDefectInRange(joints, 1, 2)
+			local r = CalcJointDefectInRange(joints, 3, 4)
+			valid_on_half = math.min(l, r)
+		else
+			valid_on_half = 0
+		end
+
+		broken_on_half = math.ceil(#joints/2) - valid_on_half
 	end
-	
-	return valid_on_half
+
+	return valid_on_half, broken_on_half, (joints and #joints)
 end
 
 -- =================== Накладка ===================
