@@ -17,8 +17,8 @@ local function parse_polygon(str, cur_frame_coord, item_frame)
 			x, y = Convertor:ScalePoint(x, y)
 		end
 
-		table.insert(points, x)
-		table.insert(points, y)
+		table.insert(points, tonumber(x))
+		table.insert(points, tonumber(y))
 	end
 
 	return points
@@ -153,14 +153,22 @@ local function SelectNodes(xml, xpath)
 	end, xml:SelectNodes(xpath)
 end
 
-local function getParameters(nodeResult)
+local function getParameters(nodeResult, parameters_common)
 	assert(nodeResult)
 	local res = {}
+
+	if parameters_common then
+		for key, value in pairs(parameters_common) do
+			res[key] = value
+		end
+	end
+
 	for nodeParam in SelectNodes(nodeResult, 'PARAM[@name and @value and not (@type)]') do
 		local attrib = nodeParam.attributes
 		local name = attrib:getNamedItem('name').nodeValue
 		local value = attrib:getNamedItem('value').nodeValue
-		res[name] = value
+		local num = tonumber(value)
+		res[name] = num or value
 	end
 	return res
 end
@@ -172,7 +180,7 @@ local function getDrawFig(nodeParamResult)
 	local cur_frame_coord = Frame.coord.raw
 	local nodeFrameCoord = nodeParamResult:SelectSingleNode("../@coord") or nodeParamResult:SelectSingleNode("../../@coord")
 	if nodeFrameCoord then
-		local item_frame = nodeFrameCoord.nodeValue
+		local item_frame = tonumber(nodeFrameCoord.nodeValue)
 
 		local req = 'descendant::PARAM[@name="Coord" and @value and (@type="polygon" or @type="line" or @type="rect")]'
 		for nodeFig in SelectNodes(nodeParamResult, req) do
@@ -387,11 +395,11 @@ local function drawSimpleResult(resultType, points, params, mark)
 		-- https://bt.abisoft.spb.ru/view.php?id=706
 		local fault2color =
 		{
-			[0] = {r=128, g=0,  b=40}, -- undef
-			[1] = {r=128, g=20, b=0},  -- fracture(ferroconcrete)
-			[2] = {r=128, g=40, b=0},  -- chip(ferroconcrete)
-			[3] = {r=128, g=60, b=0},  -- crack(wood)
-			[4] = {r=128, g=80, b=0},  -- rottenness(wood)
+			[0] = {r=255, g=0,  b=40}, -- undef
+			[1] = {r=255, g=20, b=0},  -- fracture(ferroconcrete)
+			[2] = {r=255, g=40, b=0},  -- chip(ferroconcrete)
+			[3] = {r=255, g=60, b=0},  -- crack(wood)
+			[4] = {r=255, g=80, b=0},  -- rottenness(wood)
 		}
 		local fault2text =
 		{
@@ -404,9 +412,10 @@ local function drawSimpleResult(resultType, points, params, mark)
 
 		local color = fault2color[params.FaultType] or {r=0, g=0, b=0}
 		local text = fault2text[params.FaultType] or ""
+		print("SleeperFault", text, table.concat(points, ', '))
 
-		drawPolygon(points, 1, color, {r=0, g=0, b=0, a=0})
-		textOut(points, text, {fill_color= {r=0, g=0, b=0}, line_color={r=255, g=255, b=255}, offset={35, 15}})
+		drawPolygon(points, 2, color, {r=0, g=0, b=0, a=0})
+		textOut(points, text, {fill_color= {r=255, g=255, b=255}, line_color={r=255, g=0, b=0}, offset={0, 0}})
 	end
 
 	if resultType == 'Surface' then
@@ -468,11 +477,40 @@ local function processSimpleResult(nodeActRes, resultType, mark)
 		PARAM[@name="Result" and @value="main"]'
 
 	for nodeResult in SelectNodes(nodeActRes, req) do
-		local params = getParameters(nodeResult)
-		local points = getDrawFig(nodeResult)
-		-- print("processSimpleResult", resultType, #points)
-		if #points > 0 then
-			drawSimpleResult(resultType, points, params, mark)
+		local params_common = getParameters(nodeResult)
+
+		--[[ пройдем по всем вложенным фигурам, так например в <PARAM name="Result" value="main"> может быть
+			как сразу описание фигуры например для стыка:
+				<PARAM name="Result" value="main">
+					<PARAM name="Coord" type="polygon" value="349,422 349,373 370,373 370,422"/>
+					<PARAM name="RailGapWidth_mkm" value="21000"/>
+				</PARAM>
+			так и вложенные объекты, например шпала и ее дефект:
+				<PARAM name="Result" value="main">
+					<PARAM name="Sleeper">
+						<PARAM name="Coord" type="line" value="776,8,776,488"></PARAM> ...
+					</PARAM>
+					<PARAM name="SleeperFault">
+						<PARAM name="Coord" type="polygon" value="924,222,1004,222,1004,129,924,129"></PARAM>
+						...
+					</PARAM>
+					<PARAM name="Angle_mrad" value="999"></PARAM>
+					...
+				</PARAM>
+			поэтому идем по PARAM у которых есть PARAM[@name="Coord"] а внутри уже извлекаем описание объекта
+		]]
+		for nodeFigure in SelectNodes(nodeResult, 'descendant-or-self::PARAM[PARAM/@name="Coord"]') do
+			local fig_type = nodeFigure:selectSingleNode('@name')
+			if fig_type and fig_type.nodeValue ~= "Result" then
+				resultType = fig_type.nodeValue
+			end
+
+			local params = getParameters(nodeFigure, params_common)
+			local points = getDrawFig(nodeFigure)
+			print("processSimpleResult", resultType, #points)
+			if #points > 0 then
+				drawSimpleResult(resultType, points, params, mark)
+			end
 		end
 	end
 end
@@ -688,7 +726,7 @@ function Draw(drawer, frame, marks)
 
 	-- print('Draw ', #marks)
 	for _, mark in ipairs(marks) do
-		-- print('Draw mark', mark.prop.Guid)
+		print('Draw mark', mark.prop.Guid)
 		local fns = recorn_guids[mark.prop.Guid] or {}
 		for _, fn in ipairs(fns) do
 			fn(mark)

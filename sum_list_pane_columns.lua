@@ -624,6 +624,41 @@ column_sleeper_angle =
 	end,
 }
 
+local sleeperfault2text =
+{
+	[0] = "undef",
+	[1] = "fracture(ferroconcrete)",
+	[2] = "chip(ferroconcrete)",
+	[3] = "crack(wood)",
+	[4] = "rottenness(wood)",
+}
+
+column_sleeper_fault = 
+{
+	name = 'дефект', 
+	width = 60, 
+	align = 'r', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local params = mark_helper.GetSleeperFault(mark)
+		if params and params.FaultType then
+			return sleeperfault2text[params.FaultType] or params.FaultType
+		end
+		return ''
+	end,
+	sorter = function(mark)
+		local params = mark_helper.GetSleeperFault(mark)
+		return params and params.FaultType or 0
+	end,
+	get_color = function(row)
+		local mark = work_marks_list[row]
+		local params = mark_helper.GetSleeperFault(mark)
+		if params and params.FaultType then
+			return {0xFF0000, 0xFFFFFF}
+		end
+	end,
+}
+
 local sleeper_meterial_names = 
 {
 	[1] = "бет",

@@ -245,6 +245,7 @@ local filters =
 			column_path_coord, 
 			column_rail, 
 			column_sleeper_angle,
+			column_sleeper_fault,
 			column_sleeper_meterial,
 			column_recogn_video_channel,
 			column_sleeper_dist_prev,

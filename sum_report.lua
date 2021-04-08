@@ -362,7 +362,7 @@ local function report_crew_join(params)
 			else
 				--accept = false
 			end
-			print(ua, accept)
+			-- print(ua, accept)
 		end
 		
 		if accept and filter_mode ~= 1 then  -- если отметка еще подходит и нужно выбрать не все (только тефектные или только нормальные)
@@ -1288,11 +1288,12 @@ end
 -- тестирование
 if not ATAPE then
 	test_report  = require('test_report')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	--test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	test_report('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2020_11_30_01.xml')
 	
-	--MakeReport('Стыковые зазоры|ЕКАСУИ ')
-	local guids = GetFilterGuids('Ведомость отступлений в содержании рельсов')
-	print(guids)
+	MakeReport('Болтовые стыки|Excel')
+	--local guids = GetFilterGuids('Ведомость отступлений в содержании рельсов')
+	--print(guids)
 
 end
 

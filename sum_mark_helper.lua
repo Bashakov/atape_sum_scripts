@@ -623,6 +623,24 @@ local function GetSleeperAngle(mark)
 	end
 end
 
+-- получить параметры дефекта шпалы
+local function GetSleeperFault(mark)
+	local res = {}
+	local ext = mark.ext
+
+	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
+		local req = '\z
+			/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Sleeper"]\z
+			//PARAM[@name="SleeperFault"]\z
+			/PARAM[@name and @value]'
+		for node in SelectNodes(xmlDom, req) do
+			local name, value = xml_attr(node, {'name', 'value'})
+			res[name] = tonumber(value) or value
+		end
+	end
+	return res
+end
+
 
 -- получить материал шпалы
 local function GetSleeperMeterial(mark)
@@ -1117,7 +1135,8 @@ return{
 	GetSleeperParam = GetSleeperParam,
 	GetSleeperAngle = GetSleeperAngle,
 	GetSleeperMeterial = GetSleeperMeterial,
-	
+	GetSleeperFault = GetSleeperFault,
+
 	MakeMarkImage = MakeMarkImage,
 	MakeMarkUri = MakeMarkUri,
 }
