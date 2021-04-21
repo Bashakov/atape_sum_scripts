@@ -633,11 +633,11 @@ local sleeperfault2text =
 	[4] = "rottenness(wood)",
 }
 
-column_sleeper_fault = 
+column_sleeper_fault =
 {
-	name = 'дефект', 
-	width = 60, 
-	align = 'r', 
+	name = 'дефект',
+	width = 80,
+	align = 'r',
 	text = function(row)
 		local mark = work_marks_list[row]
 		local params = mark_helper.GetSleeperFault(mark)
@@ -653,13 +653,13 @@ column_sleeper_fault =
 	get_color = function(row)
 		local mark = work_marks_list[row]
 		local params = mark_helper.GetSleeperFault(mark)
-		if params and params.FaultType then
-			return {0xFF0000, 0xFFFFFF}
+		if params and params.FaultType and params.FaultType > 0 then
+			return {0x000000, 0xFFF0F0}
 		end
 	end,
 }
 
-local sleeper_meterial_names = 
+local sleeper_meterial_names =
 {
 	[1] = "бет",
 	[2] = "дер",

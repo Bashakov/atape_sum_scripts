@@ -245,14 +245,13 @@ local filters =
 			column_path_coord, 
 			column_rail, 
 			column_sleeper_angle,
-			column_sleeper_fault,
 			column_sleeper_meterial,
 			column_recogn_video_channel,
 			column_sleeper_dist_prev,
 			column_sleeper_dist_next,
 			column_sys_coord,
 			column_pov_common,
-			}, 
+			},
 		GUIDS = {
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
 		post_load = function(marks)
@@ -265,6 +264,26 @@ local filters =
 			end
 			return marks
 		end,
+	},
+	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		name = 'Шпалы(дефекты)',
+		videogram_defect_codes = {'090004000370', '090004000375'},
+		columns = {
+			column_num,
+			column_path_coord,
+			column_rail,
+			column_sleeper_fault,
+			column_sleeper_meterial,
+			column_recogn_video_channel,
+			column_pov_common,
+			},
+		GUIDS = {
+			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
+		filter = function (mark)
+			local params = mark_helper.GetSleeperFault(mark)
+			return params and params.FaultType and params.FaultType > 0
+		end
 	},
 	{	
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},

@@ -588,6 +588,14 @@ end
 return {
 	AppendReports = AppendReports,
 	videogram = videogram,
-	all_generators = all_generators,
+	all_generators = {
+		{generate_rows_user, 				"Установленые пользователем"},
+		{generate_rows_joint_width, 		"Ширина стыкового зазора"},
+		{generate_rows_neigh_blind_joint, 	"Определение двух подряд и более нулевых зазоров"},
+		{generate_rows_joint_step, 			"Горизонтальные ступеньки в стыках"},
+		{generate_rows_fishplate, 			"Состояние накладок"},
+		{generate_rows_missing_bolt, 		"Состояние стыковых болтов"},
+		{generate_rows_WeldedBond,			"Состояние приварных рельсовых соединителей"},
+	},
 	get_marks = GetMarks,
 }

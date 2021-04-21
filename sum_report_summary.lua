@@ -6,6 +6,9 @@ local luaiup_helper = require 'luaiup_helper'
 local excel_helper = require 'excel_helper'
 local sumPOV = require "sumPOV"
 require "ExitScope"
+local hkey = require "windows_registry"
+
+local flags_reg_path = "Software\\Radioavionika\\Reports\\summary_report_flags"
 
 -- ================================================================= --
 
@@ -14,18 +17,22 @@ local REPORTS =
     {
         form_8_column = 3,
         script_name = 'sum_report_fastener',
+        title = "Отступления в содержании скреплений",
     },
     {
         form_8_column = 10,
         script_name = 'sum_report_joints',
+        title = "Отступления в содержании рельсовых стыков",
     },
     {
         form_8_column = 17,
         script_name = 'sum_report_sleepers',
+        title = "",
     },
     {
         form_8_column = 24,
         script_name = 'sum_report_rails',
+        title = "Отступления в содержании шпал",
     },
     {   -- балласт
         form_8_column = 31,
@@ -33,23 +40,91 @@ local REPORTS =
     {
         form_8_column = 38,
         script_name = 'sum_report_beacon',
+        title = 'Отступления в содержании бесстыкового пути',
     },
 }
 
+local function get_selected_reports(count)
+    local reg = hkey.HKEY_CURRENT_USER:create(flags_reg_path)
+	local value = reg:queryvalue('reports') or ''
+	local values = {}
+	string.gsub(value, '%d', function (v)
+        table.insert(values, tonumber(v) or 1)
+    end)
+    while #values < count do
+        table.insert(values, 1)
+    end
+    return table.unpack(values)
+end
+
+local function  save_selected_reports(values)
+    local reg = hkey.HKEY_CURRENT_USER:create(flags_reg_path)
+	reg:setvalue('reports', table.concat(values, ';')) 
+end
+
 local function load_reports()
-    local guids_table = {}
+    local res_reports = {}
+
     local prev_atape = ATAPE
     ATAPE = true -- disable debug code while load scripts
+
+    local dlg_text = ""
+    local count = 0
     for _, report in ipairs(REPORTS) do
         if report.script_name then
+            table.insert(res_reports, report)
+            dlg_text = dlg_text .. (report.title or report.script_name) .. "%t\n"
             report.script = require(report.script_name)
-            report.get_marks = report.script.get_marks
-            report.generators = report.script.all_generators
 
+            for i, gen in ipairs(report.script.all_generators) do
+                local name = type(gen) == "table" and gen[2] or tostring(i)
+                dlg_text = dlg_text .. name .. ": %b\t\n"
+                count = count + 1
+            end
+        end
+    end
+
+    local selected = {iup.GetParam("Выбор отчетов", nil, dlg_text, get_selected_reports(count))}
+
+    if selected[1] then
+        table.remove(selected, 1)
+        save_selected_reports(selected)
+
+        for _, report in ipairs(res_reports) do
+            report.generators = {}
+
+            for _, gen in ipairs(report.script.all_generators) do
+                if selected[1] == 1 then
+                    table.insert(report.generators, gen[1])
+                end
+                table.remove(selected, 1)
+            end
+
+            if #report.generators > 0 then
+                report.get_marks = report.script.get_marks
+            else
+                report.get_marks = function () return {}  end
+            end
+        end
+    end
+    ATAPE = prev_atape
+
+    return res_reports
+end
+
+local function load_guids()
+    local guids_table = {}
+
+    local prev_atape = ATAPE
+    ATAPE = true -- disable debug code while load scripts
+
+    for _, report in ipairs(REPORTS) do
+        if report.script_name then
+            local script = require(report.script_name)
             local reports = {}
-            report.script.AppendReports(reports)
-            for _, report in ipairs(reports) do
-                for _, g in ipairs(report.guids) do
+            script.AppendReports(reports)
+            for _, r in ipairs(reports) do
+                for _, g in ipairs(r.guids) do
                     guids_table[g] = true
                 end
             end
@@ -64,7 +139,7 @@ local function load_reports()
     return res
 end
 
-local guids = load_reports()
+local guids = load_guids()
 
 
 -- ================================================================= --
@@ -111,6 +186,8 @@ end
 
 local function make_all_reports_list()
     return EnterScope(function (defer)
+        local reports = load_reports()
+
         local pov_filter = sumPOV.MakeReportFilter(false)
         if not pov_filter then
             return
@@ -120,7 +197,8 @@ local function make_all_reports_list()
 		defer(dlg.Destroy, dlg)
 
         local result = {}
-        for i, report in ipairs(REPORTS) do
+        for i, report in ipairs(reports) do
+            dlg:setTitle(report.title or report.script_name)
             local rows = make_cur_report_rows(pov_filter, dlg, report)
             if not rows then
                 return
@@ -301,12 +379,12 @@ if not ATAPE then
     local test_report  = require('test_report')
     -- local data_path = 'D:\\Downloads\\722\\492 dlt xml sum\\[492]_2021_03_14_03.xml'
     -- local data_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-    local data_path = 'D:\\Downloads\\722\\2021.03.23\\[492]_2021_03_23_01.xml'
+    local data_path = 'D:\\Downloads\\722\\2021.03.23\\[492]_2021_01_26_02.xml'
 
-	test_report(data_path, nil, {0, 100000000})
+	test_report(data_path, nil, {0, 10000000})
 
-    --make_summary_report()
-    make_per_km_report()
+    make_summary_report()
+    --make_per_km_report()
 end
 
 

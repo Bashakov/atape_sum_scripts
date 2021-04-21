@@ -189,9 +189,10 @@ local function make_ekasui_generator(getMarks, ...)
 			return
 		end
 
-		local marks = getMarks()
 		local dlgProgress = luaiup_helper.ProgressDlg()
 		defer(dlgProgress.Destroy, dlgProgress)
+
+		local marks = getMarks(dlgProgress)
 
 		local code2marks = {} -- убрать дублирование отметок полученных через стандартную функцию отчетов (включающую пользовательские отметки с опр. гуидом) и пользовательскую функцию отчетов
 		local report_rows = {}

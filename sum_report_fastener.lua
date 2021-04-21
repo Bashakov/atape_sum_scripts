@@ -14,6 +14,8 @@ local DEFECT_CODES = require 'report_defect_codes'
 local EKASUI_REPORT = require 'sum_report_ekasui'
 local AVIS_REPORT = require 'sum_report_avis'
 local sumPOV = require "sumPOV"
+local functional = require "functional"
+require "UserAborted"
 
 local printf = mark_helper.printf
 local sprintf = mark_helper.sprintf
@@ -56,8 +58,9 @@ end
 
 -- =========================================================================
 
-local function generate_rows_fastener(marks, dlgProgress)
 
+local function igenerate_rows_fastener(marks, dlgProgress)
+	return coroutine.wrap(function ()
 	local fastener_type_names = {
 		[0] = 'КБ-65',
 		[1] = 'Аpc',
@@ -72,8 +75,7 @@ local function generate_rows_fastener(marks, dlgProgress)
 	--	[2] = 'От.Кл',	-- отсутствие клеммы apc
 	--}
 
-	local report_rows = {}
-
+	local accepted = 0
 	for i, mark in ipairs(marks) do
 		if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130001}" and
 		 (mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1] or
@@ -83,7 +85,8 @@ local function generate_rows_fastener(marks, dlgProgress)
 			row.DEFECT_CODE = mark.ext.CODE_EKASUI
 			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI) or string.match(mark.prop.Description, '([^\n]+)\n')
 			row.FASTENER_TYPE = get_user_options(mark).connector_type or ''
-			table.insert(report_rows, row)
+			coroutine.yield(row)
+			accepted = accepted + 1
 		else
 			local prm = mark_helper.GetFastenetParams(mark)
 			local FastenerType = prm and prm.FastenerType or -1
@@ -107,44 +110,56 @@ local function generate_rows_fastener(marks, dlgProgress)
 					row.DEFECT_DESC = DEFECT_CODES.FASTENER_MISSING_BOLT[2]
 				end
 
-				table.insert(report_rows, row)
+				coroutine.yield(row)
+				accepted = accepted + 1
 			end
 		end
 
 		if i % 300 == 0 then collectgarbage("collect") end
-		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d отметок, найдено %d', i, #marks, #report_rows)) then
-			return
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d СКРЕПЛЕНИЙ, найдено %d', i, #marks, accepted)) then
+			ErrorUserAborted()
 		end
 	end
-
-	return report_rows
+	end)
 end
 
-local function generate_rows_fastener_user(marks, dlgProgress)
-	if #marks == 0 then return end
 
-	local report_rows = {}
+local function igenerate_rows_fastener_user(marks, dlgProgress)
+	return coroutine.wrap(function ()
+
+	--local report_rows = {}
+	local accepted = 0
 	for i, mark in ipairs(marks) do
 		if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130001}" and mark.ext.CODE_EKASUI then
 			local row = MakeFastenerMarkRow(mark)
 			row.DEFECT_CODE = mark.ext.CODE_EKASUI
 			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI) or string.match(mark.prop.Description, '([^\n]+)\n')
 			row.FASTENER_TYPE = get_user_options(mark).connector_type or ''
-			table.insert(report_rows, row)
+
+			coroutine.yield(row)
+			accepted = accepted + 1
 		end
 
 		if i % 300 == 0 then collectgarbage("collect") end
-		if i % 10 == 0 and not dlgProgress:step(i / #marks, string.format('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
-			return
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, string.format('Сканирование %d / %d, найдено %d', i, #marks, accepted)) then
+			ErrorUserAborted()
 		end
 	end
-
-	return report_rows
+	end)
 end
 
-local function report_not_implement()
-	iup.Message('Error', "Отчет не реализован")
+local function igen_adapter(fn)
+	return function (...)
+		local args = {...}
+		return ErrorUserAborted.skip(function ()
+			local g = fn(table.unpack(args))
+			return functional.list(g)
+		end)
+	end
 end
+
+local generate_rows_fastener = igen_adapter(igenerate_rows_fastener)
+local generate_rows_fastener_user = igen_adapter(igenerate_rows_fastener_user)
 
 -- =============================================================================
 
@@ -225,7 +240,10 @@ end
 return {
 	AppendReports = AppendReports,
 	videogram = videogram,
-	all_generators = {generate_rows_fastener_user, generate_rows_fastener},
+	all_generators = {
+		{generate_rows_fastener_user, 	"Установленые пользователем"},
+		{generate_rows_fastener, 		"Состояние рельсовых скреплений"},
+	},
 	get_marks = function (pov_filter)
 		return GetMarks(false, pov_filter)
 	end,

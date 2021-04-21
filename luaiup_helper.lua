@@ -50,6 +50,10 @@ ProgressDlg = OOP.class
 		self.dlgProgress:showxy(iup.CENTER, iup.CENTER)
 	end,
 
+	setTitle = function (self, title)
+		self.dlgProgress.TITLE = tostring(title)
+	end,
+
 	step = function(self, value, text)
 		text = text or string.format('progress: %.1f %%', value * 100.0)
 		self.label.title = text

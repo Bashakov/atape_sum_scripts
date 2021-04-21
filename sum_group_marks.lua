@@ -35,6 +35,7 @@ local DEFECT_CODES = require 'report_defect_codes'
 local luaiup_helper = require 'luaiup_helper'
 local sumPOV = require "sumPOV"
 require 'ExitScope'
+local funcional = require 'functional'
 
 local printf  = function(fmt, ...)	print(string.format(fmt, ...)) end
 local sprintf = function(fmt, ...) return string.format(fmt, ...)  end
@@ -47,54 +48,12 @@ local function format_sys_coord(coord)
     return s
 end
 
-local function list(itrable)
-    local res = {}
-    while true do
-        local element = itrable()
-        if element == nil then break end
-        table.insert(res, element)
-    end
-    return res
-end
-
-local function imap(fn, array)
-    local i = 0
-    return function ()
-        i = i + 1
-        local obj = array[i]
-        if obj ~= nil then
-            return fn(obj)
-        end
-    end
-end
-
-local function map(fn, array)
-    return list(imap(fn, array))
-end
-
-local function ifilter(fn, array)
-    local i = 0
-    return function ()
-        while i < #array do
-            i = i + 1
-            local obj = array[i]
-            if fn(obj) then
-                return obj
-            end
-        end
-    end
-end
-
-local function filter(fn, array)
-    return list(ifilter(fn, array))
-end
-
 local function filter_rail(marks, rail)
     assert(rail == 1 or rail == 2)
     local function f(mark)
         return bit32.btest(mark.prop.RailMask, rail)
     end
-    return filter(f, marks)
+    return funcional.filter(f, marks)
 end
 
 local function filter_pov_operator(marks, pov_operator)
@@ -103,7 +62,7 @@ local function filter_pov_operator(marks, pov_operator)
         local accept_operator = (mark.ext.POV_OPERATOR == 1)  -- может быть 0 или отсутствовать (nil)
         return (pov_operator == 1) == accept_operator
     end
-    return filter(f, marks)
+    return funcional.filter(f, marks)
 end
 
 local function make_progress_cb(dlg, title, step)
@@ -323,7 +282,7 @@ local GapGroups = OOP.class
                 #group
             )
 
-            -- 2020.08.05 Классфикатор ред для ATape.xlsx
+            -- 2020.08.05 Классификатор ред для ATape.xlsx
             if #group == 2 then
                 local rail_len = group[2].prop.SysCoord - group[1].prop.SysCoord
                 if math.abs(rail_len - 25000) < 2000 then
@@ -534,7 +493,7 @@ local FastenerGroups = OOP.class{
             local inside_switch = self._switchers:overalped(group[1].prop.SysCoord, group[#group].prop.SysCoord)
             local code_ekasui = nil
 
-            -- 2020.08.05 Классфикатор ред для ATape.xlsx
+            -- 2020.08.05 Классификатор ред для ATape.xlsx
             if inside_switch then
                 if #group == 2 then
                     code_ekasui = '090004017105' -- Отсутствует или дефектное скрепление скрепление на рамном рельсе, в крестовине или контррельсовом рельсе стрелочного перевода по одной нити  на 2-х брусьях подряд по одной нити

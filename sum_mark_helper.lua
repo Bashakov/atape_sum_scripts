@@ -94,6 +94,48 @@ local function split_chunks(chunk_len, arr)
 	return res
 end
 
+local function lower_bound(array, value, pred)
+	if not pred then
+		pred = function(a,b) return a < b end
+	end
+    local count = #array
+	local first = 1
+    while count > 0 do
+        local step = math.floor(count / 2)
+		local i = first + step
+        if pred(array[i], value) then
+            first = i+1
+            count = count - (step + 1)
+        else
+            count = step
+		end
+    end
+    return first
+end
+
+local function upper_bound(array, value, pred)
+	if not pred then
+		pred = function(a,b) return a < b end
+	end
+    local count = #array
+	local first = 1
+    while count > 0 do
+        local step = math.floor(count / 2)
+		local i = first + step
+        if not pred(value, array[i]) then
+            first = i+1
+            count = count - (step + 1)
+        else
+            count = step
+		end
+    end
+    return first
+end
+
+local function equal_range(array, value, pred)
+	return lower_bound(array, value, pred), upper_bound(array, value, pred)
+end
+
 -- поверхностное копирование
 local function shallowcopy(orig)
     local orig_type = type(orig)
@@ -1097,6 +1139,9 @@ return{
 	deepcopy = deepcopy,
 	table_find = table_find,
 	table_merge = table_merge,
+	lower_bound = lower_bound,
+	upper_bound = upper_bound,
+	equal_range = equal_range,
 	
 	sort_mark_by_coord = sort_mark_by_coord,
 	format_path_coord = format_path_coord,

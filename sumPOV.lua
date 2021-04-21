@@ -314,16 +314,26 @@ function MakeReportFilter(ekasui)
 			return false
 		end
 
-		return function(marks)
+		return function(marks, dlgProgress)
 			if marks.prop and marks.ext then
 				-- single mark
 				return check_mark(marks)
 			else
 				-- mark array
 				local res = {}
-				for _, mark in ipairs(marks) do
+				for i, mark in ipairs(marks) do
 					if check_mark(mark) then
 						table.insert(res, mark)
+					end
+					if i % 300 == 0 then 
+						collectgarbage("collect")
+					end
+
+					if  i % 500 == 0 and dlgProgress then
+						local msg = string.format('ПОВ фильтр %d / %d, найдено %d (%d)', i, #marks, #res, i-#res)
+						if not dlgProgress:step(i / #marks, msg) then
+							return
+						end
 					end
 				end
 				return res

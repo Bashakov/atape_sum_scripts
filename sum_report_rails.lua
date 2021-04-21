@@ -224,8 +224,8 @@ return {
 	AppendReports = AppendReports,
 	videogram = videogram,
 	all_generators = {
-		generate_rows_rails_user,
-		generate_rows_rails
+		{generate_rows_rails_user,	"Установленые пользователем"},
+		{generate_rows_rails,		"поверхностных дефектов рельсов"},
 	},
 	get_marks = function (pov_filter)
 		return GetMarks(false, pov_filter)

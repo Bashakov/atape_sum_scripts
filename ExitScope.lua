@@ -54,3 +54,30 @@ function EnterScope(work_fn)
 		return msg
 	end
 end
+
+
+--[[ Try-except implementation.
+
+Usage:
+
+```lua
+	try(function()
+		-- Try block
+		--
+	end, function(e)
+		-- Except block.  E.g.:
+		--   Use e for conditional catch
+		--   Re-raise with error(e)
+	end)
+```
+]]
+function try(fn, catch)
+	local res = {pcall(fn)}
+	local status = res[1]
+	table.remove(res, 1)
+	if status then
+		return table.unpack(res)
+	end
+	return catch(table.unpack(res))
+end
+
