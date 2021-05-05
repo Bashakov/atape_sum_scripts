@@ -1,7 +1,15 @@
 require "luacom"
 
 local function printf (s,...) return print(s:format(...)) end
-local function sprintf (s,...) return s:format(...) end
+local function sprintf (s, ...)
+	assert(s)
+	local args = {...}
+	local ok, res = pcall(string.format, s, table.unpack(args))
+	if  not ok then
+		assert(false, res)  -- place for setup breakpoint
+	end
+	return res
+end
 local function errorf(s,...)  error(string.format(s, ...)) end
 
 local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")

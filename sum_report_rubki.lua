@@ -393,7 +393,7 @@ local function make_gap_description(mark)
 		local img_prop = {
 			mark_id = mark.prop.ID,
 			mode = 3,  -- panorama
-			panoram_width = ((3*0.5)+0.25)*2,
+			panoram_width = ((3*0.5)+0.25)*2 * 1000,
 			width = 400,
 			height = 300,
 			base64=true
@@ -455,7 +455,7 @@ local function report_short_rails_excel(params)
 			end
 
 			local temperature = Driver:GetTemperature(bit32.band(prop1.RailMask, 3)-1, (prop1.SysCoord+prop2.SysCoord)/2 )
-			local temperature_msg = temperature and sprintf("%.1f", temperature.target) or '-'
+			local temperature_msg = temperature and temperature.target and sprintf("%.1f", temperature.target) or '-'
 			data_range.Cells(line, 5).Value2 = temperature_msg:gsub('%.', ',')
 
 			if math.abs(prop1.SysCoord - prop2.SysCoord) < 30000 then
@@ -775,7 +775,9 @@ if not ATAPE then
 	--local data_path = 'D:/ATapeXP/Main/494/video_recog/2019_05_17/Avikon-03M/30346/[494]_2019_03_15_01.xml'
 	-- local data_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
 	-- local data_path = 'D:\\Downloads\\722\\492 dlt xml sum\\[492]_2021_03_16_01.xml'
-	local data_path = 'D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2020_11_30_01.xml'
+	--local data_path = 'D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2020_11_30_01.xml'
+	local data_path = 'D:\\Downloads\\742\\[498]_2021_04_29_38.xml'
+
 	test_report(data_path, nil)
 
 	-- отчет ЕКАСУИ
