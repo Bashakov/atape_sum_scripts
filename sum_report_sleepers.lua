@@ -14,6 +14,8 @@ local excel_helper = require 'excel_helper'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 local DEFECT_CODES = require 'report_defect_codes'
+local EKASUI_REPORT = require 'sum_report_ekasui'
+local AVIS_REPORT = require 'sum_report_avis'
 local sumPOV = require "sumPOV"
 require 'ExitScope'
 
@@ -60,31 +62,6 @@ local function GetMarks()
 	local marks = Driver:GetMarks{GUIDS=guigs_sleepers}
 	marks = mark_helper.sort_mark_by_coord(marks)
 	return marks
-end
-
-local function SaveAndShow(report_rows, dlgProgress)
-	local template_path = Driver:GetAppPath() .. 'Scripts/ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ ШПАЛ.xlsm'
-
-	if #report_rows == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-
-	if #report_rows > 1000 then
-		local msg = sprintf('Найдено %d проблемных шпал, построение отчета может занять большое время, продолжить?', #report_rows)
-		local cont = iup.Alarm("Warning", msg, "Yes", "No")
-		if cont == 2 then
-			return
-		end
-	end
-
-	local ext_psp = mark_helper.GetExtPassport(Passport)
-
-	local excel = excel_helper(template_path, "В3 ШП", false)
-	excel:ApplyPassportValues(ext_psp)
-	excel:ApplyRows(report_rows, nil, dlgProgress)
-	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
-	excel:SaveAndShow()
 end
 
 -- ==========================================================================
@@ -225,6 +202,38 @@ local function generate_rows_sleeper_user(marks, dlgProgress, pov_filter)
 	return report_rows
 end
 
+local function generate_rows_sleeper_defects(marks, dlgProgress, pov_filter)
+	local code2ekasui =
+	{
+		-- [0] = "undef",
+		[1] = DEFECT_CODES.SLEEPER_FRACTURE_FERROCONCRETE, -- "fracture(ferroconcrete)",
+		[2] = DEFECT_CODES.SLEEPER_CHIP_FERROCONCRETE, -- "chip(ferroconcrete)",
+		[3] = DEFECT_CODES.SLEEPER_CRACK_WOOD,  -- "crack(wood)",
+		[4] = DEFECT_CODES.SLEEPER_ROTTENNESS_WOOD, -- "rottenness(wood)",
+	}
+
+	if #marks == 0 then return end
+
+	local report_rows = {}
+	for i, mark in ipairs(marks) do
+		if pov_filter(mark) then
+			local params = mark_helper.GetSleeperFault(mark)
+			if params and params.FaultType and code2ekasui[params.FaultType] then
+				local code = code2ekasui[params.FaultType]
+				local row = MakeSleeperMarkRow(mark)
+				row.DEFECT_CODE = code[1]
+				row.DEFECT_DESC = code[1]
+				table.insert(report_rows, row)
+			end
+		end
+
+		if i % 10 == 0 and not dlgProgress:step(i / #marks, string.format('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
+			return
+		end
+	end
+
+	return report_rows
+end
 
 local function report_not_implement()
 	iup.Message('Error', "Отчет не реализован")
@@ -289,42 +298,40 @@ end
 
 -- =============================================================================
 
-local function make_report_generator(...)
-	local row_generators = {...}
-
-
-	local function gen()
-		EnterScope(function (defer)
-			local pov_filter = sumPOV.MakeReportFilter(false)
-			if not pov_filter then return {} end
-
-			local marks = GetMarks()
-			local dlgProgress = luaiup_helper.ProgressDlg()
-			defer(dlgProgress.Destroy, dlgProgress)
-
-			local mark_ids = {}
-			local report_rows = {}
-			for _, fn_gen in ipairs(row_generators) do
-				local cur_rows = fn_gen(marks, dlgProgress, pov_filter)
-				if not cur_rows then
-					break
-				end
-				for _, row in ipairs(cur_rows) do
-					if not mark_ids[row.mark_id] then
-						mark_ids[row.mark_id] = true
-						table.insert(report_rows, row)
-					end
-				end
-			end
-
-			report_rows = mark_helper.sort_stable(report_rows, function(row)
-				return row.SYS
-			end)
-			SaveAndShow(report_rows, dlgProgress)
-		end)
+-- вместо функций генераторов, вставляем функции обертки вызывающие генераторы с доп параметрами
+local function make_gen_pov_filter(generator, ...)
+	local args = {...}
+	for i, gen in ipairs(generator) do
+		generator[i] = function (marks, dlgProgress)
+			return gen(marks, dlgProgress, table.unpack(args))
+		end
 	end
+	return generator
+end
 
-	return gen
+local function make_report_generator(...)
+	local generators = {...}
+	return function()
+		local pov_filter = sumPOV.MakeReportFilter(false)
+		if not pov_filter then return {} end
+
+		local report_template_name = 'ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ ШПАЛ.xlsm'
+		local sheet_name = 'В3 ШП'
+
+		generators = make_gen_pov_filter(generators, pov_filter)
+		return AVIS_REPORT.make_report_generator(GetMarks,
+			report_template_name, sheet_name, table.unpack(generators))()
+	end
+end
+
+local function make_report_ekasui(...)
+	local generators = {...}
+	return function()
+		local pov_filter = sumPOV.MakeReportFilter(true)
+		if not pov_filter then return {} end
+		generators = make_gen_pov_filter(generators, pov_filter)
+		return EKASUI_REPORT.make_ekasui_generator(GetMarks, table.unpack(generators))()
+	end
 end
 
 local function make_report_videogram(...)
@@ -350,13 +357,23 @@ end
 
 local report_sleeper_dist = make_report_generator(generate_rows_sleeper_dist)
 local report_sleeper_angle = make_report_generator(generate_rows_sleeper_angle)
-
+local report_sleeper_defects = make_report_generator(generate_rows_sleeper_defects)
 local report_ALL = make_report_generator(
 	generate_rows_sleeper_dist,
 	generate_rows_sleeper_angle,
-	generate_rows_sleeper_user
+	generate_rows_sleeper_user,
+	generate_rows_sleeper_defects
 )
 
+local ekasui_sleeper_dist = make_report_ekasui(generate_rows_sleeper_dist)
+local ekasui_sleeper_angle = make_report_ekasui(generate_rows_sleeper_angle)
+local ekasui_sleeper_defects = make_report_ekasui(generate_rows_sleeper_defects)
+local ekasui_ALL = make_report_ekasui(
+	generate_rows_sleeper_dist,
+	generate_rows_sleeper_angle,
+	generate_rows_sleeper_user,
+	generate_rows_sleeper_defects
+)
 
 local videogram = make_report_videogram(
 	generate_rows_sleeper_dist,
@@ -374,9 +391,14 @@ local function AppendReports(reports)
 		{name = name_pref..'ВСЕ',    																fn=report_ALL, 			},
 		{name = name_pref..'Отслеживание соблюдения эпюры шпал',    								fn=report_sleeper_dist, 	},
 		{name = name_pref..'Перпендикулярность шпалы относительно оси пути, рад',					fn=report_sleeper_angle,	},
-		{name = name_pref..'*Параметры и размеры дефектов шпал, мостовых и переводных брусьев, мм',	fn=report_not_implement,	},
-		{name = name_pref..'*Определение кустовой негодности шпал',									fn=report_not_implement,	},
-		{name = name_pref..'*Фиксация шпал с разворотом относительно своей оси',					fn=report_not_implement,	},
+		{name = name_pref..'Дефекты',																fn=report_sleeper_defects,	},
+		-- {name = name_pref..'*Параметры и размеры дефектов шпал, мостовых и переводных брусьев, мм',	fn=report_not_implement,	},
+		-- {name = name_pref..'*Определение кустовой негодности шпал',									fn=report_not_implement,	},
+		-- {name = name_pref..'*Фиксация шпал с разворотом относительно своей оси',					fn=report_not_implement,	},
+		{name = name_pref..'ЕКАСУИ ВСЕ',    														fn=ekasui_ALL, 			},
+		{name = name_pref..'ЕКАСУИ Отслеживание соблюдения эпюры шпал',    							fn=ekasui_sleeper_dist, 	},
+		{name = name_pref..'ЕКАСУИ Перпендикулярность шпалы относительно оси пути, рад',			fn=ekasui_sleeper_angle,	},
+		{name = name_pref..'ЕКАСУИ Дефекты',														fn=ekasui_sleeper_defects,	},
 	}
 
 	for _, report in ipairs(sleppers_reports) do
@@ -389,9 +411,10 @@ end
 -- тестирование
 if not ATAPE then
 	local test_report  = require('test_report')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 1000000})
 
-	report_ALL()
+	ekasui_sleeper_defects()
+	-- report_ALL()
 end
 
 return {
@@ -401,6 +424,7 @@ return {
 		{generate_rows_sleeper_dist, 	"соблюдения эпюры шпал"},
 		{generate_rows_sleeper_angle, 	"Перпендикулярность шпалы"},
 		{generate_rows_sleeper_user, 	"Установленые пользователем"},
+		{generate_rows_sleeper_defects, "Дефекты"}
 	},
 	get_marks = function (pov_filter)
 		return GetMarks()
