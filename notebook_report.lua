@@ -139,10 +139,12 @@ local function read_pref_cfg_param(name)
 	assert(xmlDom, 'can not create MSXML object')
 	assert(xmlDom:load(pref_path), "can not open xml file: " .. pref_path)
 	local xpath = "//FIELD[@INNER_NAME='" .. name .. "']/@VALUE"
-	local scale = xmlDom:selectSingleNode(xpath)
-	if scale then
-		return tonumber(scale.nodeValue)
-	end
+	local value = xmlDom:selectSingleNode(xpath)
+	return value and value.nodeValue
+end
+
+local function read_pref_cfg_param_num(name)
+	return tonumber(read_pref_cfg_param(name))
 end
 
 -- =================== Отчеты =====================
@@ -444,15 +446,29 @@ local function excel_defectogram(records, params)
 
 		local hide_video_cell = true
 		if insert_us_img and Driver.GetUltrasoundImage then
-			local us_img_path = Driver:GetUltrasoundImage{note_rec=record, width=800, height=600, color=1, coord=record.MARK_COORD}
+			local params = {
+				note_rec=record,
+				width=800,
+				height=600,
+				color=1,
+				coord=record.MARK_COORD
+			}
+			local first_length = read_pref_cfg_param_num('DEFECTOGRAM_US_FIRST_LENGTH')
+			if first_length and first_length > 1 then
+				params.length =  first_length
+			end
+
+			local us_img_path = Driver:GetUltrasoundImage(params)
 			if us_img_path and #us_img_path then
 				excel:InsertImage(dst_tbl.Cells(11, 1), us_img_path)
 			end
 			-- https://bt.abisoft.spb.ru/view.php?id=727
-			local second_scale = read_pref_cfg_param('DEFECTOGRAM_US_SECOND_SCALE')
-			if not insert_video_img and second_scale and second_scale > 1 then
+			-- https://bt.abisoft.spb.ru/view.php?id=749
+			local second_length = read_pref_cfg_param_num('DEFECTOGRAM_US_SECOND_LENGTH')
+			if not insert_video_img and second_length and second_length > 1 then
 				hide_video_cell = false
-				local us_img_path = Driver:GetUltrasoundImage{width=800, height=600, color=1, coord=record.MARK_COORD, scale=second_scale}
+				params.length =  second_length
+				local us_img_path = Driver:GetUltrasoundImage(params)
 				if us_img_path and #us_img_path then
 					excel:InsertImage(dst_tbl.Cells(12, 1), us_img_path)
 				end
