@@ -244,6 +244,7 @@ local function load_near_marks(join_mark, mark_types, mark_count, search_dist)
 		GUIDS = mark_types,
 		FromSys = join_mark.prop.SysCoord - search_dist,
 		ToSys = join_mark.prop.SysCoord + search_dist,
+		ListType = 'all',
 	}
 	local marks = Driver:GetMarks(filter)
 	marks = mark_helper.sort_mark_by_coord(marks)
@@ -393,10 +394,11 @@ local function make_gap_description(mark)
 		local img_prop = {
 			mark_id = mark.prop.ID,
 			mode = 3,  -- panorama
-			panoram_width = ((3*0.5)+0.25)*2 * 1000,
+			panoram_width = ((3*0.5)+0.25)*2 * 1000, -- https://bt.abisoft.spb.ru/view.php?id=742
 			width = 400,
 			height = 300,
-			base64=true
+			base64=true,
+			show_marks=0,
 		}
 
 		local recog_video_channels = mark_helper.GetSelectedBits(mark.prop.ChannelMask)
