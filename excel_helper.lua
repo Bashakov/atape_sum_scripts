@@ -219,6 +219,11 @@ local excel_helper = OOP.class
 					user_range.Cells(template_row_num, 1),
 					user_range.Cells(template_row_num + row_count - 1, user_range.Columns.count-1))
 			end
+			if row_count == 1 then -- https://bt.abisoft.spb.ru/view.php?id=760
+				self._data_range = self._worksheet:Range(					-- сделаем из них новый диаппазон
+					user_range.Cells(template_row_num, 1),
+					user_range.Cells(template_row_num + 1, user_range.Columns.count-1))
+			end
 		else
 			if row_count == 0 then
 				user_range.Rows(template_row_num).EntireRow:Delete()
