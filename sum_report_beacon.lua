@@ -174,7 +174,7 @@ local function generate_missing_beacon_mark(marks, dlgProgress)
 			if not found then
 				local row = MakeBeaconMarkRow(mark)
 				row.DEFECT_CODE = DEFECT_CODES.BEACON_MISSING_LINE[1]
-				row.DEFECT_DESC = DEFECT_CODES.BEACON_MISSING_LINE[2]
+				row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
 				table.insert(report_rows, row)
 			end
 		end

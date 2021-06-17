@@ -125,10 +125,9 @@ local function load_xml_str(str_xml)
 	end
 
 	if not xmlDom:loadXML(str_xml) then
-		local msg = string.format('Error parse XML: %d %s\nmark id = %d\n%s',
+		local msg = string.format('Error parse XML: %d %s\n%s',
 			xmlDom.parseError.errorCode,
 			xmlDom.parseError.reason,
-			mark.prop.ID,
 			str_xml)
 		showError(msg)
 		error(msg)

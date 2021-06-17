@@ -221,11 +221,22 @@ DRAW_TOOL.rect_defect_rail_joint = copy_update(DRAW_TOOL.rect_defect, {options={
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004012058", name="Вертикальная ступенька в стыке"}))
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004012059", name="Горизонтальная ступенька в стыке"}))
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000474", name="Изломанная или дефектная стыковая накладка", tools={RAIL_JOINT_TOOL.fishplate_defect}}))
-table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004015840", name="Нулевые зазоры"}))
-table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000465", name="Отсутствие стыковых болтов", tools={RAIL_JOINT_TOOL.fishplate_bolt}}))
+-- https://bt.abisoft.spb.ru/view.php?id=765
+table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000475", name="Излом одной  накладки в стыке", tools={RAIL_JOINT_TOOL.fishplate_defect}}))
+table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000476", name="Излом 2-х накладок в стыке", tools={RAIL_JOINT_TOOL.fishplate_defect}}))
+
+-- https://bt.abisoft.spb.ru/view.php?id=765
+table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004012061", name="Наличие двух подряд слитых зазоров"}))
+table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004015838", name="Три и более слепых (нулевых) зазоров подряд по левой нити"}))
+table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004015839", name="Три и более слепых (нулевых) зазоров подряд по правой нити"}))
+
+-- https://bt.abisoft.spb.ru/view.php?id=765
+table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000466", name="Отсутствие болтов: ХОО-ООО", tools={RAIL_JOINT_TOOL.fishplate_bolt}}))
+table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000467", name="Отсутствие болтов: ХХ-ОО, ХХХ-000", tools={RAIL_JOINT_TOOL.fishplate_bolt}}))
+table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000471", name="Отсутствие болтов: ХО-ОО, ХХО-ООО", tools={RAIL_JOINT_TOOL.fishplate_bolt}}))
+
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000477", name="Отсутствует стыковая накладка"}))
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000509", name="Отсутствующие или неисправные элементы изолирующего стыка"}))
---table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004012062", name="Превышение конструктивной величины стыкового зазора", add_width_from_user_rect=true})) -- https://bt.abisoft.spb.ru/view.php?id=722#c3398
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004016149", name="Превышение конструктивной величины стыкового зазора левой нити", add_width_from_user_rect=true}))
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004016150", name="Превышение конструктивной величины стыкового зазора правой нити", add_width_from_user_rect=true}))
 
@@ -237,7 +248,11 @@ table.insert(DEFECTS,  {guid='{3601038C-A561-46BB-8B0F-F896C2130004}', group="Д
 table.insert(DEFECTS,  {guid='{3601038C-A561-46BB-8B0F-F896C2130005}', group="Балласт", ekasui_code="090004000482", name="Выплеск", fn = make_simple_defect, tools = {DRAW_TOOL.rect_defect}})
 table.insert(DEFECTS,  {guid='{3601038C-A561-46BB-8B0F-F896C2130005}', group="Балласт", ekasui_code="090004000484", name="Недостаточное количество балласта в шпальном ящике", fn = make_simple_defect, tools = {DRAW_TOOL.rect_defect}})
 
-table.insert(DEFECTS,  {guid='{3601038C-A561-46BB-8B0F-F896C2130006}', group="Бесстыковой путь", ekasui_code="000000000000", name="Ненормативные подвижки бесстыкового пути", fn = make_simple_defect, tools = {DRAW_TOOL.rect_defect}})
+-- https://bt.abisoft.spb.ru/view.php?id=765 3 новых кода взамен старого:
+table.insert(DEFECTS,  {guid='{3601038C-A561-46BB-8B0F-F896C2130006}', group="Бесстыковой путь", ekasui_code="090004015469", name="Угон плети до 5мм включительно", fn = make_simple_defect, tools = {DRAW_TOOL.rect_defect}})
+table.insert(DEFECTS,  {guid='{3601038C-A561-46BB-8B0F-F896C2130006}', group="Бесстыковой путь", ekasui_code="090004015470", name="Угон плети более 5 до 10мм",     fn = make_simple_defect, tools = {DRAW_TOOL.rect_defect}})
+table.insert(DEFECTS,  {guid='{3601038C-A561-46BB-8B0F-F896C2130006}', group="Бесстыковой путь", ekasui_code="090004015508", name="Угон плети более 10 мм",         fn = make_simple_defect, tools = {DRAW_TOOL.rect_defect}})
+
 table.insert(DEFECTS,  {guid='{3601038C-A561-46BB-8B0F-F896C2130006}', group="Бесстыковой путь", ekasui_code="090004015367", name="Отсутствует/нечитаемая маркировка маячных шпал", fn = make_simple_defect, tools = {DRAW_TOOL.rect_defect}})
 
 

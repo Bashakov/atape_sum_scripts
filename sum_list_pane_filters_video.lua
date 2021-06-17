@@ -8,7 +8,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
 		name = 'Стыковые зазоры', 
-		videogram_defect_codes = {'090004012062', '090004016149', '090004016150'},
+		--videogram_defect_codes = {'090004012062', '090004016149', '090004016150'},
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -27,7 +27,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
 		name = 'Отсутствующие болты (вне норматива)', 
-		videogram_defect_codes = {'090004000465'},
+		-- videogram_defect_codes = {'090004000465'},
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -62,7 +62,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Маячные отметки',
-		videogram_defect_codes = {'000000000000'},
+		--videogram_defect_codes = {'000000000000'},
 		columns = {
 			column_num,
 			column_path_coord, 
@@ -122,7 +122,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Скрепления',
-		videogram_defect_codes = {'090004000457','090004000389','090004000402','090004015853','090004000400','090004000384','090004000395','090004000409','090004003539','090004000394','090004000385','090004000397','090004000405','090004000401','090004000478',},
+		--videogram_defect_codes = {'090004000457','090004000389','090004000402','090004015853','090004000400','090004000384','090004000395','090004000409','090004003539','090004000394','090004000385','090004000397','090004000405','090004000401','090004000478',},
 		columns = {
 			column_num,
 			column_path_coord, 
@@ -142,7 +142,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Горизонтальные уступы', 
-		videogram_defect_codes = {'090004012059'},
+		--videogram_defect_codes = {'090004012059'},
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -185,7 +185,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Приварные соединители', 
-		videogram_defect_codes = {'000000000001'},
+		--videogram_defect_codes = {'000000000001'},
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -204,7 +204,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Поверхностные дефекты', 
-		videogram_defect_codes = {'090004012001'},
+		--videogram_defect_codes = {'090004012001'},
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -221,7 +221,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ',},
 		name = 'Дефекты накладок', 
-		videogram_defect_codes = {'090004000474'},
+		--videogram_defect_codes = {'090004000474'},
 		columns = {
 			column_num, 
 			column_path_coord, 
@@ -239,7 +239,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Шпалы(эпюра,перпедикулярность)',
-		videogram_defect_codes = {'090004000370', '090004000375'},
+		--videogram_defect_codes = {'090004000370', '090004000375'},
 		columns = {
 			column_num,
 			column_path_coord, 
@@ -268,7 +268,7 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Шпалы(дефекты)',
-		videogram_defect_codes = {'090004000370', '090004000375'},
+		--videogram_defect_codes = {'090004000370', '090004000375'},
 		columns = {
 			column_num,
 			column_path_coord,
@@ -318,7 +318,12 @@ local filters =
 			}, 
 		GUIDS = table_merge(recognition_guids, '{3601038C-A561-46BB-8B0F-F896C2130003}'),
 		filter = function(mark)
-			if mark.prop.Guid == '{3601038C-A561-46BB-8B0F-F896C2130003}' and mark.ext.CODE_EKASUI == '090004015840' then
+			if mark.prop.Guid == '{3601038C-A561-46BB-8B0F-F896C2130003}' and (
+				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP[1] or
+				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP_TWO[1] or
+				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1] or
+				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1]
+			) then
 				return true
 			elseif mark.ext.RAWXMLDATA then
 				local width = mark_helper.GetGapWidth(mark)

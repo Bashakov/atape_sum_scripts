@@ -186,7 +186,12 @@ local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 
 	for _, mark in ipairs(marks) do
-		if pov_filter(mark) and mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1] then
+		if pov_filter(mark) and mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
+			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1] or
+			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_TWO[1] or
+			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1] or
+			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1]
+		) then
 			local row = MakeJointMarkRow(mark)
 			row.DEFECT_CODE = mark.ext.CODE_EKASUI
 			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
@@ -200,8 +205,16 @@ local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
 		if #pov_filter(group) > 0 then
 		local row = MakeJointMarkRow(group[1])
 
-		row.DEFECT_CODE = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1]
-		row.DEFECT_DESC = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[2]
+		-- [[https://bt.abisoft.spb.ru/view.php?id=765]]
+		if #group == 2 then
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_TWO[1]
+		elseif(row.RAIL_POS == -1) then
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1]
+		else
+			row.DEFECT_CODE = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1]
+		end
+
+		row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
 		row.BLINK_GAP_COUNT = #group
 
 		local to_report = 0
@@ -318,7 +331,11 @@ local function generate_rows_fishplate(marks, dlgProgress, pov_filter)
 	40 км/ч при трещине двух накладок.
 ]]
 		if pov_filter(mark) then
-			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_FISHPLATE_DEFECT[1] then
+			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
+				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_FISHPLATE_DEFECT[1] or
+				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_FISHPLATE_DEFECT_ONE[1] or
+				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_FISHPLATE_DEFECT_BOTH[1]
+			) then
 				local row = MakeJointMarkRow(mark)
 				row.DEFECT_CODE = mark.ext.CODE_EKASUI
 				row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
@@ -327,8 +344,13 @@ local function generate_rows_fishplate(marks, dlgProgress, pov_filter)
 				local fishpalte_fault, fishpalte_fault_cnt = mark_helper.GetFishplateState(mark)
 				if fishpalte_fault and fishpalte_fault > 0 then
 					local row = MakeJointMarkRow(mark)
-					row.DEFECT_CODE = DEFECT_CODES.JOINT_FISHPLATE_DEFECT[1]
-					row.DEFECT_DESC = DEFECT_CODES.JOINT_FISHPLATE_DEFECT[2]
+					if fishpalte_fault_cnt == 1 then
+						row.DEFECT_CODE = DEFECT_CODES.JOINT_FISHPLATE_DEFECT_SINGLE[1]
+					else
+						row.DEFECT_CODE = DEFECT_CODES.JOINT_FISHPLATE_DEFECT_BOTH[1]
+					end
+
+					row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
 					if fishpalte_fault == 4 then
 						row.SPEED_LIMIT = 'Движение закрывается'
 					elseif fishpalte_fault == 3 then
@@ -356,25 +378,34 @@ local function generate_rows_missing_bolt(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		if pov_filter(mark) then
-			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT[1] then
+			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
+				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT[1] or
+				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT_NO_GOOD[1] or
+				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT_ONE_GOOD[1] or
+				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT_TWO_GOOD[1]
+			)
+			then
 				local row = MakeJointMarkRow(mark)
 				row.DEFECT_CODE = mark.ext.CODE_EKASUI
 				row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
 				table.insert(report_rows, row)
 			else
-				local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
-				if valid_on_half and valid_on_half < 2 then
+				local valid_on_half, broken_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
+				if broken_on_half then
 					local row = MakeJointMarkRow(mark)
-					row.DEFECT_CODE = DEFECT_CODES.JOINT_MISSING_BOLT[1]
-					row.DEFECT_DESC = DEFECT_CODES.JOINT_MISSING_BOLT[2]
 
 					if valid_on_half == 1 then
+						row.DEFECT_CODE = DEFECT_CODES.JOINT_MISSING_BOLT_ONE_GOOD[1]
 						row.SPEED_LIMIT = '25'
 					elseif valid_on_half == 0 then
+						row.DEFECT_CODE = DEFECT_CODES.JOINT_MISSING_BOLT_NO_GOOD[1]
 						row.SPEED_LIMIT = 'Закрытие движения'
 					else
+						row.DEFECT_CODE = DEFECT_CODES.JOINT_MISSING_BOLT_TWO_GOOD[1]
 						row.SPEED_LIMIT = '??'
 					end
+
+					row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
 					table.insert(report_rows, row)
 				end
 			end

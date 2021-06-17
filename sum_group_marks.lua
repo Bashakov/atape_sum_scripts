@@ -255,7 +255,11 @@ local GapGroups = OOP.class
     Check = function (self, get_near_mark)
         local mark = get_near_mark(0)
         if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" then
-            if mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1] then
+            if  mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1] or
+                mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_TWO[1] or
+                mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1] or
+                mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1]
+            then
                 return CHECK.ACCEPT
             else
                 return CHECK.REFUTE
@@ -283,18 +287,15 @@ local GapGroups = OOP.class
             )
 
             -- 2020.08.05 Классификатор ред для ATape.xlsx
+			--!!! актуальный 2021.02.18 Классфикатор ред  для ATape.xlsx
             if #group == 2 then
-                local rail_len = group[2].prop.SysCoord - group[1].prop.SysCoord
-                if math.abs(rail_len - 25000) < 2000 then
-                    mark.ext.CODE_EKASUI = '090004000795' -- Наличие двух подряд слитых зазоров при длине рельсов 25 м
-                else
-                    mark.ext.CODE_EKASUI = '090004012061' -- Наличие двух подряд слитых зазоров
-                end
+                -- local rail_len = group[2].prop.SysCoord - group[1].prop.SysCoord
+                mark.ext.CODE_EKASUI = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_TWO[1] -- Наличие двух подряд слитых зазоров
             else
                 if mark_helper.GetMarkRailPos(mark) == -1 then
-                    mark.ext.CODE_EKASUI = '090004015838' -- Три и более слепых (нулевых) зазоров подряд по левой нити
+                    mark.ext.CODE_EKASUI = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1] -- Три и более слепых (нулевых) зазоров подряд по левой нити
                 else
-                    mark.ext.CODE_EKASUI = '090004015839' -- Три и более слепых (нулевых) зазоров подряд по правой нити
+                    mark.ext.CODE_EKASUI = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1] -- Три и более слепых (нулевых) зазоров подряд по правой нити
                 end
             end
 
@@ -309,6 +310,7 @@ local GapGroups = OOP.class
     end,
 }
 
+--!!! групповые отметки по эпюре и развороту должны иметь разные коды для ДШ и ЖБШ
 local SleeperGroups = OOP.class
 {
     NAME = 'Шпалы',
@@ -380,6 +382,14 @@ local SleeperGroups = OOP.class
                 3,
                 #group
             )
+            local cur_material = mark_helper.GetSleeperMeterial(mark)
+
+            if cur_material == 1 then -- "бетон",
+                mark.ext.CODE_EKASUI = DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1]
+            else -- "дерево"
+                mark.ext.CODE_EKASUI = DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[1]
+            end
+
             table.insert(self.marks, mark)
         end
     end,
@@ -539,7 +549,12 @@ local function SearchGroupAutoDefects(guids)
         local dlg = luaiup_helper.ProgressDlg('Поиск групповых дефектов')
         defer(dlg.Destroy, dlg)
 
-        local defect_types = {GapGroups(5), SleeperGroups(1840, 4), FastenerGroups()}
+        local defect_types =
+        {
+            GapGroups(5),
+            SleeperGroups(1840, 4),
+            FastenerGroups()
+        }
         local message = 'Найдено:\n'
         local marks = {}
         local guids_to_delete = {}

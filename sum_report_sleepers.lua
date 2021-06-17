@@ -170,11 +170,17 @@ local function generate_rows_sleeper_angle(marks, dlgProgress, pov_filter)
 			cur_angle = cur_angle * 180/3.14/1000
 
 			if math.abs(cur_angle) > angle_threshold then
+				local material = mark_helper.GetSleeperMeterial(mark)
+
 				-- printf("%9d  %+8.1f\n", mark.prop.SysCoord, cur_angle)
 				local row = MakeSleeperMarkRow(mark)
 				row.SLEEPER_ANGLE = cur_angle
-				row.DEFECT_CODE = DEFECT_CODES.SLEEPER_ANGLE[1]
-				row.DEFECT_DESC = DEFECT_CODES.SLEEPER_ANGLE[2]
+				if material == 1 then -- "бетон"
+					row.DEFECT_CODE = DEFECT_CODES.SLEEPER_ANGLE_CONCRETE[1]
+				else -- дерево
+					row.DEFECT_CODE = DEFECT_CODES.SLEEPER_ANGLE_WOOD[1]
+				end
+				row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
 				table.insert(report_rows, row)
 			end
 		end
