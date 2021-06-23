@@ -281,7 +281,9 @@ local function generate_rows_joint_step(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		if pov_filter(mark) then
-			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_HOR_STEP[1] then
+			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
+				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_HOR_STEP[1] or
+				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_STEP_VH_LT25[1]) then
 				local row = MakeJointMarkRow(mark)
 				row.DEFECT_CODE = mark.ext.CODE_EKASUI
 				row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
@@ -291,8 +293,8 @@ local function generate_rows_joint_step(marks, dlgProgress, pov_filter)
 				step_vert = math.abs(step_vert)
 				if step_vert > 1 then
 					local row = MakeJointMarkRow(mark)
-					row.DEFECT_CODE = DEFECT_CODES.JOINT_HOR_STEP[1]
-					row.DEFECT_DESC = DEFECT_CODES.JOINT_HOR_STEP[2]
+					row.DEFECT_CODE = DEFECT_CODES.JOINT_STEP_VH_LT25[1]
+					row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
 					row.GAP_WIDTH = mark_helper.GetGapWidth(mark) or ''
 					local temperature = mark_helper.GetTemperature(mark) or 0
 
@@ -423,8 +425,9 @@ local function generate_rows_WeldedBond(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		if pov_filter(mark) then
-			local status = mark_helper.GetWeldedBondStatus(mark)
-			if status == 1 then  -- <PARAM name='ConnectorFault' value='1' value_='0-исправен, 1-неисправен'/>
+			local status = mark_helper.GetWeldedBondStatus(mark) -- <PARAM name='ConnectorFault' value='1' value_='0-исправен, 1-неисправен'/>
+			local gap_type = mark_helper.GetGapType(mark) -- 0 - болтовой, 1 - изолированный, 2 - сварной
+			if status == 1 and not (gap_type or gap_type == 0) then -- дефект необходимо выдавать на болтовых стыках (кроме АТС и изостыков) на которых нет приварного соединителя, на которых оборван приварной соединитель https://bt.abisoft.spb.ru/view.php?id=765#c3706
 				local row = MakeJointMarkRow(mark)
 				row.DEFECT_CODE = DEFECT_CODES.JOINT_WELDED_BOND_FAULT[1]
 				row.DEFECT_DESC = DEFECT_CODES.JOINT_WELDED_BOND_FAULT[2]
