@@ -41,7 +41,6 @@ local function _make_new_mark(prop)
 	return mark
 end
 
-
 local function psp2table(psp_path)						-- открыть xml паспорт и сохранить в таблицу его свойства
 	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 	assert(xmlDom, 'can not create MSXML object')
@@ -471,8 +470,33 @@ local Driver = OOP.class
 	end,
 
 	GetFrame = function(self, channel, sys, params)
-		local path = string.format("c:\\out\\%s\\img\\%d_%d.jpg", Passport.NAME, sys, channel)
-		return path
+		local text = sprintf('Test GetFrame:\\n  channel = %d\\n  system = %d', channel, sys)
+		for n, v in pairs(params) do
+			text = text .. sprintf('\\n  %s = %s', n, v)
+		end
+
+		local width = params.width or 600
+		local height = params.height or 400
+
+		local cmd = sprintf('ImageMagick_convert.exe convert -size %dx%d xc:skyblue -fill black -gravity West -annotate 0,0 "%s" ', width, height, text)
+		if params.base64 then
+			cmd = cmd .. ' INLINE:JPG:-'
+			local f = assert(io.popen(cmd, 'r'))
+			local data = assert(f:read('*a'))
+			f:close()
+			local hdr = 'data:image/jpeg;base64,'
+			if data:sub(1, #hdr) ~= hdr then
+				error( 'bad output file header: [' .. data:sub(1, #hdr) .. ']')
+			end
+			return data:sub(#hdr+1)
+		else
+			local path = os.tmpname()
+			cmd = cmd .. path
+			if not os.execute(cmd) then
+				error('command [' .. cmd .. '] failed')
+			end
+			return path
+		end
 	end,
 
 	GetRunTime = function(self, sys)

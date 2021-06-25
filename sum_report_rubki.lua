@@ -3,7 +3,7 @@ local luaiup_helper = require 'luaiup_helper'
 local excel_helper = require 'excel_helper'
 require "ExitScope"
 local resty = require "resty.template"
-
+local OOP = require 'OOP'
 
 if iup then
 	iup.SetGlobal('UTF8MODE', 1)
@@ -236,7 +236,7 @@ end
 local function get_left(mark)
 	local pos = mark_helper.GetMarkRailPos(mark) -- возвращает: -1 = левый, 0 = оба, 1 = правый
 	-- return pos < 0 and 1 or 0
-   	return pos > 0 and 1 or 0  -- 0 левая 1 правая требование окт 2020
+	return pos > 0 and 1 or 0  -- 0 левая 1 правая требование окт 2020
 end
 
 local function load_near_marks(join_mark, mark_types, mark_count, search_dist)
@@ -273,16 +273,17 @@ local function load_near_marks(join_mark, mark_types, mark_count, search_dist)
 	return left
 end
 
-local function get_epur_skrepl(join_mark)
+local CHECK_SLEEPER_COUNT = 3
+local SEARCH_DIST = CHECK_SLEEPER_COUNT * SLEEPER_DIST_REF * 1.5 -- возьмем с запасом
+
+local function get_sleepers_params(join_mark)
 	-- https://bt.abisoft.spb.ru/view.php?id=638
 	-- 2. относительно зазора отсчитываются 3 шпалы влево и вправо и для них заполняются epur и skrepl
 
-	local CHECK_SLEEPER_COUNT = 3
-	local search_dist = CHECK_SLEEPER_COUNT * SLEEPER_DIST_REF * 1.5 -- возьмем с запасом
-
-	-- проверим эпюру
+	-- проверим эпюру и дефекты шпал
 	local epur = 0
-	local sleepers = load_near_marks(join_mark, sleeper_guids, CHECK_SLEEPER_COUNT, search_dist)
+
+	local sleepers = load_near_marks(join_mark, sleeper_guids, CHECK_SLEEPER_COUNT, SEARCH_DIST)
 	for i = 1, #sleepers-1 do
 		local l = sleepers[i]
 		local r = sleepers[i+1]
@@ -293,21 +294,42 @@ local function get_epur_skrepl(join_mark)
 		end
 	end
 
+	-- дефекты шпал
+	local sleeper_defects = 0
+	for _, mark in ipairs(sleepers) do
+		local params = mark_helper.GetSleeperFault(mark)
+		if params and params.FaultType and params.FaultType > 0 then
+			sleeper_defects = sleeper_defects + 1
+		end
+	end
+
+	-- тип шпал
+	local sleeper_material
+	for _, mark in ipairs(sleepers) do
+		sleeper_material = mark_helper.GetSleeperMeterial(mark)
+		if sleeper_material then
+			break
+		end
+	end
+
+	return epur, sleeper_defects, sleeper_material
+end
+
+local function get_skrepl_params(join_mark)
 	-- проверим скрепления
 	local skrepl = 0
-	local fasteners = load_near_marks(join_mark, fastener_guids, CHECK_SLEEPER_COUNT, search_dist)
+	local fasteners = load_near_marks(join_mark, fastener_guids, CHECK_SLEEPER_COUNT, SEARCH_DIST)
 
 	for i = 1, #fasteners do
 		local f = fasteners[i]
 		local prm = mark_helper.GetFastenetParams(f)
-		local FastenerFault = prm and prm.FastenerFault
-		if FastenerFault and FastenerFault > 0 then
+		if prm and prm.FastenerFault and prm.FastenerFault > 0 then
 			skrepl = skrepl + 1
 		end
 	end
 	skrepl = math.min(skrepl, 12)
 
-	return epur, skrepl
+	return skrepl
 end
 
 local function get_nakl(mark)
@@ -363,19 +385,99 @@ local function get_bolt_nakltype(mark)
 	return bolt, nakltype[all_count]
 end
 
+--[[ ImageMagick умеет принимать изображения в base64 через командную стоку,
+	но есть ограничение системы на ее длину,
+	поэтому приходится сохранять в файл и передавать название временного файла ]]
+local TmpFiles = OOP.class{
+	ctor = function (self)
+		self.tmp_dir = os.getenv("TEMP")
+		self.files = {}
+	end,
+	close = function (self)
+		for _, path in ipairs(self.files) do
+			os.remove(path)
+		end
+	end,
+	save = function (self, data)
+		local path = os.tmpname()
+		if not string.find(path, ':') then
+			path = self.tmp_dir .. path
+		end
+		local f = assert(io.open(path, 'w+b'))
+		f:write(data)
+		f:close()
+		table.insert(self.files, path)
+		return path
+	end
+}
+
+--[[ построить изображение стыка для рубок (вид с боковых камер обоих рельсов)
+	https://bt.abisoft.spb.ru/view.php?id=752#c3727]]
+local function make_joint_image(mark)
+	return EnterScope(function (defer)
+		local tmp_files = TmpFiles()
+		defer(tmp_files.close, tmp_files)
+		local center = mark.prop.SysCoord + mark.prop.Len / 2
+
+		--[[ поправка по масштабу - 2 шпалы + 2 шпалы.
+			https://bt.abisoft.spb.ru/view.php?id=752#c3728
+			https://bt.abisoft.spb.ru/view.php?id=742 ]]
+		local panoram_width = ((2*0.5)+0.25)*2 * 1000
+
+		local channels = {17, 19, 18, 20}
+		local img_prop = {
+			mark_id = mark.prop.ID,
+			mode = 3,  -- panorama
+			panoram_width = panoram_width,
+			width = 600/#channels,
+			height = 300,
+			base64=true,
+			show_marks=0,
+		}
+
+		local jpg_hdr = 'data:image/jpeg;base64,'
+		local cmd = 'ImageMagick_convert.exe '
+
+		for _, video_channel in ipairs(channels) do
+			local img_ok, img_data = pcall(function ()
+				img_prop.rotate_fixed = video_channel < 19 and 7 or 3
+				return Driver:GetFrame(video_channel, center, img_prop)
+			end)
+			if img_ok then
+				cmd = cmd .. ' INLINE:' .. tmp_files:save(jpg_hdr .. img_data)
+			else
+				print('Error: ', img_data)
+			end
+		end
+		cmd = cmd .. ' +append INLINE:JPG:-'
+
+		-- склеить кадры в один
+		local f = assert(io.popen(cmd, 'r'))
+		local data = assert(f:read('*a'))
+		f:close()
+
+		data = data:sub(#jpg_hdr+1)
+		return data
+	end)
+end
+
 local function make_gap_description(mark)
 	local center = mark.prop.SysCoord + mark.prop.Len / 2
 	local km, m, mm = Driver:GetPathCoord(center)
 	local gap_step = mark_helper.GetRailGapStep(mark)
-	local epur, skrepl = get_epur_skrepl(mark)
+	local epur, sleeper_defects, sleeper_material = get_sleepers_params(mark)
+	local skrepl = get_skrepl_params(mark)
 
 	local values =
 	{
 		epur = epur,
 		skrepl = skrepl,
 		sneg = 0, -- Нода есть всегда. 0, если не определяется
+		diffelasticity = 0 -- 2021.05.24 ТребованияРУБКИ.docx 2. Исключение из п.1 для параметров, имеющих логический тип данных: 
 	}
 
+	values.shpal_material = sleeper_material
+	values.shpal = sleeper_defects
 	values.bolt, values.nakltype = get_bolt_nakltype(mark)
 	values.gaptype = mark_helper.GetGapType(mark)
 	values.temp = mark_helper.GetTemperature(mark)
@@ -386,30 +488,10 @@ local function make_gap_description(mark)
 	values.gstup = gap_step and math.abs(gap_step)
 	values.nakl	= get_nakl(mark)
 
-	local img_ok, img_data = pcall(function ()
-		--[[ https://bt.abisoft.spb.ru/view.php?id=722#c3400
-		4. в рубках по моему д.б. 3 шпалы до и 3 после стыка . 
-		Определяем ширину ((3*0.5)+0.25)*2=3.5 если можно ухудшение картинки добавить ]]
-
-		local img_prop = {
-			mark_id = mark.prop.ID,
-			mode = 3,  -- panorama
-			panoram_width = ((3*0.5)+0.25)*2 * 1000, -- https://bt.abisoft.spb.ru/view.php?id=742
-			width = 400,
-			height = 300,
-			base64=true,
-			show_marks=0,
-		}
-
-		local recog_video_channels = mark_helper.GetSelectedBits(mark.prop.ChannelMask)
-		local video_channel = recog_video_channels and recog_video_channels[1]
-		return Driver:GetFrame(video_channel, center, img_prop)
-	end)
-
+	local img_data = make_joint_image(mark)
 	return {
 		values = values,
-		img_data = img_ok and img_data or '',
-		img_error = not img_ok and img_data
+		img_data = img_data,
 	}
 end
 
@@ -562,7 +644,7 @@ local function report_short_rails_ekasui()
 		local gap_param_order = {
 			"gaptype", "nakltype", "temp", "left", "speedlimit", "km", "m", "pros", "zazor",
 			"vstup", "gstup", "smatie", "nakl", "bolt", "viplesk", "skrepl", "podkl", "shpal",
-			"epur", "ballast", "sneg"}
+			"epur", "ballast", "sneg", "diffelasticity"}
 
 		for i, mark in ipairs(marks) do
 			local gap_params = make_gap_description(mark)
@@ -670,7 +752,7 @@ img {
             </tr>
             <tr>
                 <td>Тип шпал</td>
-                <td></td>
+                <td>{{gap.shpal_material == 1 and 'ЖБШ' or 'ДШ'}}</td>
             </tr>
         </table>
         <br/>
@@ -713,7 +795,7 @@ img {
             </tr>
             <tr>
                 <td>Отсутствующие или негодные скрепления</td>
-                <td></td>
+                <td>{{gap.skrepl or ''}}</td>
             </tr>
             <tr>
                 <td>Отсутствующие или негодные накладки <i>(выход подошвы рельса из реборд накладок)</i></td>
@@ -721,7 +803,7 @@ img {
             </tr>
             <tr>
                 <td>Наличие негодных шпал в зоне стыка</td>
-                <td></td>
+                <td>{{gap.shpal or ''}}</td>
             </tr>
             <tr>
                 <td>Отклонение от эпюрных значений укладки деревянных или железобетонных шпал <i>(брусьев)</i></td>
@@ -780,7 +862,7 @@ if not ATAPE then
 	--local data_path = 'D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2020_11_30_01.xml'
 	local data_path = 'D:\\Downloads\\742\\[498]_2021_04_29_38.xml'
 
-	test_report(data_path, nil)
+	test_report(data_path, nil, {0, 500000})
 
 	-- отчет ЕКАСУИ
 	if  1 == 1 then
@@ -791,7 +873,7 @@ if not ATAPE then
 
 	-- ведомость стыка
 	if 0 == 1 then
-		local mark = Driver:GetMarks({mark_id=100})[1]
+		local mark = Driver:GetMarks({mark_id=3})[1]
 		MakeEkasuiGapReport(mark)
 	end
 end
