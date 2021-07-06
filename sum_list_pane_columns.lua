@@ -314,6 +314,30 @@ column_recogn_bolt =
 	end
 }
 
+column_gap_type =
+{
+	name = 'тип',
+	width = 60,
+	align = 'c',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local gap_type = mark_helper.GetGapType(mark) -- 0 - болтовой, 1 - изолированный, 2 - сварной
+		if gap_type == 0 then
+			return 'болтовой'
+		elseif gap_type == 1 then
+			return "изолированный"
+		elseif gap_type == 2 then
+			return "сварной"
+		end
+	end,
+	sorter = function(mark)
+		local gap_type = mark_helper.GetGapType(mark)
+		return gap_type or -1
+	end
+}
+
+
+
 -- колич нормальных болтов в половине накладки
 local joint_speed_limit_messages = {
 	[0] = 'ЗАКРЫТИЕ',

@@ -18,6 +18,7 @@ local filters =
 			column_recogn_width_active,
 			column_recogn_width_tread,
 			column_recogn_width_user,
+			column_gap_type,
 			column_recogn_bolt,
 			column_recogn_video_channel,
 			column_pov_common,
