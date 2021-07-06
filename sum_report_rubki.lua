@@ -433,6 +433,8 @@ local function make_joint_image(mark)
 			height = 300,
 			base64=true,
 			show_marks=0,
+			hibit_dev_method='average',
+			hibit_dev_param=50,
 		}
 
 		local jpg_hdr = 'data:image/jpeg;base64,'
