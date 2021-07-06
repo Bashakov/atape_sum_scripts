@@ -265,6 +265,12 @@ local filters =
 			end
 			return marks
 		end,
+		filter = function(mark)
+			local maskChannel = mark.prop.ChannelMask
+			local mask21 = bit32.lshift(1, 21)
+			local mask22 = bit32.lshift(1, 22)
+			return not(bit32.btest(maskChannel, mask21) or bit32.btest(maskChannel, mask22))
+		end,
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
