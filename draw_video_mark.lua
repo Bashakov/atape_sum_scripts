@@ -699,6 +699,7 @@ local recorn_guids =
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = {ProcessMarkRawXml}, -- СтыкЗазор(Пользователь)
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = {ProcessMarkRawXml}, -- АТСтык(Видео)
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC805}"] = {ProcessMarkRawXml}, -- АТСтык(Пользователь)
+	["{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}"] = {ProcessMarkRawXml}, -- ИзоСтык(Видео)
 	["{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"] = {ProcessMarkRawXml}, -- Маячная
 	["{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}"] = {ProcessMarkRawXml}, -- Маячная(Пользователь)
 	["{D3736670-0C32-46F8-9AAF-3816DE00B755}"] = {ProcessMarkRawXml}, -- Маячная Ёлка

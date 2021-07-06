@@ -245,6 +245,7 @@ local GapGroups = OOP.class
             "{CBD41D28-9308-4FEC-A330-35EAED9FC803}",	-- СтыкЗазор(Пользователь)
             "{CBD41D28-9308-4FEC-A330-35EAED9FC804}",	-- АТСтык(Видео)
             "{3601038C-A561-46BB-8B0F-F896C2130003}",	-- Рельсовые стыки(Пользователь)
+            "{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}",   -- ИзоСтык(Видео)
         }
         local marks = loadMarks(video_joints_juids)
         marks = filter_rail(marks, param.rail)

@@ -40,6 +40,7 @@ local gap_rep_filter_guids =
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
 	"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
+	"{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}", 	-- ИзоСтык(Видео)
 }
 
 local fastener_guids = {

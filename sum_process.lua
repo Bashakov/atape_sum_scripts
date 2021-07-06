@@ -290,6 +290,7 @@ local Img_guid2idx = {
     ["{CBD41D28-9308-4FEC-A330-35EAED9FC811}"] = 2, -- video_ident 50-70
     ["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = 2, -- video_ident 70-100
     ["{CBD41D28-9308-4FEC-A330-35EAED9FC812}"] = 2, -- video_ident 70-100
+	["{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}"] = 2, -- ИзоСтык(Видео)
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = 7, -- video_ident user
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = 6, -- ats
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC805}"] = 1, -- ats_user
@@ -386,6 +387,7 @@ local desc_vguids = {
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC811}"] = false, 					-- video_ident 50-70
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = _get_video_recog_desc, 	-- video_ident 70-100
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC812}"] = false, 					-- video_ident 70-100
+	["{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}"] = _get_video_recog_desc, 	-- ИзоСтык(Видео)
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = _get_video_recog_desc, 	-- video_ident (user)
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = _get_video_recog_desc, 	-- video_ident (ats)
 	
