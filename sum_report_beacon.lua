@@ -63,20 +63,30 @@ local function generate_row_beacon(marks, dlgProgress)
 
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
-		if mark.prop.Guid == GUID_USER_JOINTLESS_DEFECT and mark.ext.CODE_EKASUI == DEFECT_CODES.BEACON_UBNORMAL_MOVED[1] then
+		if mark.prop.Guid == GUID_USER_JOINTLESS_DEFECT and (
+			mark.ext.CODE_EKASUI == DEFECT_CODES.BEACON_UBNORMAL_MOVED_LE_5[1] or
+			mark.ext.CODE_EKASUI == DEFECT_CODES.BEACON_UBNORMAL_MOVED_LE_10[1] or
+			mark.ext.CODE_EKASUI == DEFECT_CODES.BEACON_UBNORMAL_MOVED_GT_10[1]
+		) then
 			local row = MakeBeaconMarkRow(mark)
 			row.DEFECT_CODE = mark.ext.CODE_EKASUI
 			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI) or string.match(mark.prop.Description, '([^\n]+)\n')
 			table.insert(report_rows, row)
 		else
 			local offset = mark_helper.GetBeaconOffset(mark)
-
-			if offset and math.abs(offset) > max_offset then
+			local abs_offset = offset and math.abs(offset)
+			if offset and abs_offset > max_offset then
 				local row = MakeBeaconMarkRow(mark)
 				row.BEACON_OFFSET = offset
 				row.OUT_PARAM = offset
-				row.DEFECT_CODE = DEFECT_CODES.BEACON_UBNORMAL_MOVED[1]
-				row.DEFECT_DESC = DEFECT_CODES.BEACON_UBNORMAL_MOVED[2]
+				if abs_offset <= 5 then
+					row.DEFECT_CODE = DEFECT_CODES.BEACON_UBNORMAL_MOVED_LE_5[1]
+				elseif abs_offset <= 10 then
+					row.DEFECT_CODE = DEFECT_CODES.BEACON_UBNORMAL_MOVED_LE_10[1]
+				else
+					row.DEFECT_CODE = DEFECT_CODES.BEACON_UBNORMAL_MOVED_GT_10[1]
+				end
+				row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
 				table.insert(report_rows, row)
 			end
 		end
@@ -266,11 +276,11 @@ if not ATAPE then
 	--test_report('D:\\ATapeXP\\Main\\494\\Москва Курская - Подольск\\Москва Курская - Подольск\\2019_05_16\\Avikon-03M\\4240\\[494]_2019_03_15_01.xml')
 	--test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	--test_report('D:/d-drive/ATapeXP/Main/494/video_recog/2020_08_24/Avikon-03M/4858/[494]_2019_09_03_01.xml')
-	test_report('D:\\Downloads\\722\\2021.03.23\\[492]_2021_01_26_02.xml', nil, {0, 1000000000})
+	test_report('D:\\Downloads\\722\\2021.03.23\\[492]_2021_01_26_02.xml', nil, {0, 10000})
 
 	-- report_beacon_user()
-	generate_row_beacon_user()
-	-- report_beacon()
+	--generate_row_beacon_user()
+	report_beacon()
 	--ekasui_beacon()
 	-- ekasui_missing_beacon_mark()
 end
