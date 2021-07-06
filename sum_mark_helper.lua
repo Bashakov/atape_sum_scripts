@@ -1126,10 +1126,11 @@ local function GetGapType(mark)
 		if node then
 			-- RA Тип стыка (1 - изолированный, 0 - болтовой, 2 - сварной
 			-- I: 1 - std, 2 - iso , 3 - ats
+			-- I: приведено к виду 0 - std, 1 - iso , 2 - ats
 			local inbusoft2radioavionica = {
-				[1] = 0, -- std > болтовой
-				[2] = 1, -- iso > изолированный
-				[3] = 2, -- ats > сварной
+				[0] = 0, -- std > болтовой
+				[1] = 1, -- iso > изолированный
+				[2] = 2, -- ats > сварной
 			}
 			local val = tonumber(node.nodeValue)
 			return inbusoft2radioavionica[val]
