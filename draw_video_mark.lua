@@ -364,6 +364,13 @@ local function drawSimpleResult(resultType, points, params, mark)
 	end
 
 	if resultType == 'Sleeper' then
+		local maskChannel = mark.prop.ChannelMask
+		local mask21 = bit32.lshift(1, 21)
+		local mask22 = bit32.lshift(1, 22)
+		if bit32.btest(maskChannel, mask21) or bit32.btest(maskChannel, mask22) then
+			points = {} -- При рисовании дефектов шпал по 21 22 - не рисовать шпалу и её разворот - только дефект.  https://bt.abisoft.spb.ru/view.php?id=764#c3718
+		end
+
 		-- print("Sleeper", #points)
 		local color = {r=128, g=0, b=0}
 
