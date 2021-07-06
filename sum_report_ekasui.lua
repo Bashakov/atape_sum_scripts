@@ -74,7 +74,18 @@ local function GetBase64EncodedFrame(row)
 		local channel_images_paths = {}
 		for _, ch in ipairs(video_channels) do
 			local ok, err = pcall(function()
-				local p = Driver:GetFrame(ch, row.SYS, {mode=3, panoram_width=700, width=400, height=300, base64=false} )
+				local image_params =
+				{
+					mode=3,
+					panoram_width=700,
+					width=400,
+					height=300,
+					base64=false,
+					show_marks=0,
+					hibit_dev_method='average',
+					hibit_dev_param=50,
+				}
+				local p = Driver:GetFrame(ch, row.SYS, image_params)
 				table.insert(channel_images_paths, p)
 			end)
 			if not ok then
