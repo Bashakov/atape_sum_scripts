@@ -490,7 +490,7 @@ local Driver = OOP.class
 			end
 			return data:sub(#hdr+1)
 		else
-			local path = os.tmpname()
+			local path = os.tmpname() .. ".jpg"
 			cmd = cmd .. path
 			if not os.execute(cmd) then
 				error('command [' .. cmd .. '] failed')
