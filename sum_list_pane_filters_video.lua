@@ -5,6 +5,35 @@ local table_merge = mark_helper.table_merge
 
 local filters = 
 {
+	--!!! вывод всех объектов с ограничением скорости или дефектами // https://bt.abisoft.spb.ru/view.php?id=779
+	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
+		name = 'Все замечания', 
+		--!!! добавлены коды из report_defect_codes: "Превышение конструктивной величины стыкового зазора левой рельсовой нити"	"090004016149", "Превышение конструктивной величины стыкового зазора правой рельсовой нити"	"090004016150"
+		videogram_defect_codes = {'090004012062', '090004016149', '090004016150', '090004000465','090004000466','090004000467','090004000471', "090004012002", "090004012004", "090004012001", "090004012008", "090004012062", "090004015840", "090004012058", "090004012059", "090004000474", "090004000477", "090004000465", "090004000521", "090004000394", "090004000394", "090004000394", "090004000370", "090004000375", "090004000370", "090004000375", "090004000999", "000000000000", "090004015367"}, --!!! все вместе
+		columns = {
+			column_num, 
+			column_path_coord,
+			column_pov_common,
+			column_mark_type_name,
+			column_joint_speed_limit,
+
+			--column_sys_coord, 
+			--column_rail,
+			--column_recogn_width_inactive,
+			--column_recogn_width_active,
+			--column_recogn_width_tread,
+			--column_recogn_width_user,
+			--column_recogn_bolt,
+			--column_recogn_video_channel,
+			}, 
+		GUIDS = recognition_guids,
+		filter = function(mark)
+			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
+			return valid_on_half and valid_on_half < 2
+		end,
+	},
+
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
 		name = 'Стыковые зазоры', 
@@ -291,6 +320,28 @@ local filters =
 			local params = mark_helper.GetSleeperFault(mark)
 			return params and params.FaultType and params.FaultType > 0
 		end
+	},
+	--!!!добавлен новый элемент в фильтр - шпалы с разворотом более условного порога
+	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		name = 'Шпалы с разворотом',
+		--!!! добавлены коды дефектов с перпендикулярностью шпал из report_defect_codes "Разворот ДШ"	'090004012308', "Разворот ЖБШ" '090004000373'
+		videogram_defect_codes = {'090004000370', '090004000375', '090004012308', '090004000373'},
+		columns = {
+			column_num,
+			column_path_coord, 
+			column_sleeper_angle,
+			column_sleeper_meterial,
+			column_pov_common,
+			}, 
+		GUIDS = table_merge(recognition_guids, '{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}'),
+		filter = function(mark)
+			if mark.prop.Guid == '{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}' then
+				local sl_angle = mark_helper.GetSleeperAngle(mark)
+				return sl_angle and sl_angle > 20 --!!!установка порога
+			end
+			return false
+		end,
 	},
 	{	
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
