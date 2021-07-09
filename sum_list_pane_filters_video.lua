@@ -325,22 +325,17 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Шпалы с разворотом',
-		--!!! добавлены коды дефектов с перпендикулярностью шпал из report_defect_codes "Разворот ДШ"	'090004012308', "Разворот ЖБШ" '090004000373'
-		videogram_defect_codes = {'090004000370', '090004000375', '090004012308', '090004000373'},
 		columns = {
 			column_num,
 			column_path_coord, 
 			column_sleeper_angle,
 			column_sleeper_meterial,
 			column_pov_common,
-			}, 
-		GUIDS = table_merge(recognition_guids, '{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}'),
+			},
+		GUIDS = {'{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}'},
 		filter = function(mark)
-			if mark.prop.Guid == '{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}' then
-				local sl_angle = mark_helper.GetSleeperAngle(mark)
-				return sl_angle and sl_angle > 20 --!!!установка порога
-			end
-			return false
+			local sl_angle = mark_helper.GetSleeperAngle(mark)
+			return sl_angle and sl_angle > 20 -- !!!установка порога
 		end,
 	},
 	{	
