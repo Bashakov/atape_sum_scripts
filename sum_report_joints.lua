@@ -377,11 +377,24 @@ local function generate_rows_fishplate(marks, dlgProgress, pov_filter)
 	return report_rows
 end
 
+local function bolt2defect_limit(mark)
+	local valid_on_half, broken_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
+	local join_type = mark_helper.GetGapType(mark) -- АТС - болты - не выводить неисправность по отсутствию болтов https://bt.abisoft.spb.ru/view.php?id=773#c3792
+	if broken_on_half and join_type ~= 2 then
+		if valid_on_half == 1 then
+			return DEFECT_CODES.JOINT_MISSING_BOLT_ONE_GOOD[1], '25'
+		elseif valid_on_half == 0 then
+			return DEFECT_CODES.JOINT_MISSING_BOLT_NO_GOOD[1], 'Закрытие движения'
+		else
+			return DEFECT_CODES.JOINT_MISSING_BOLT_TWO_GOOD[1], '??'
+		end
+	end
+end
 
 local function generate_rows_missing_bolt(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
-		if pov_filter(mark) then
+		if not pov_filter or pov_filter(mark) then
 			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT[1] or
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT_NO_GOOD[1] or
@@ -394,22 +407,11 @@ local function generate_rows_missing_bolt(marks, dlgProgress, pov_filter)
 				row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
 				table.insert(report_rows, row)
 			else
-				local valid_on_half, broken_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
-				local join_type = mark_helper.GetGapType(mark) -- АТС - болты - не выводить неисправность по отсутствию болтов https://bt.abisoft.spb.ru/view.php?id=773#c3792
-				if broken_on_half and join_type ~= 2 then
+				local code, limit = bolt2defect_limit(mark)
+				if code then
 					local row = MakeJointMarkRow(mark)
-
-					if valid_on_half == 1 then
-						row.DEFECT_CODE = DEFECT_CODES.JOINT_MISSING_BOLT_ONE_GOOD[1]
-						row.SPEED_LIMIT = '25'
-					elseif valid_on_half == 0 then
-						row.DEFECT_CODE = DEFECT_CODES.JOINT_MISSING_BOLT_NO_GOOD[1]
-						row.SPEED_LIMIT = 'Закрытие движения'
-					else
-						row.DEFECT_CODE = DEFECT_CODES.JOINT_MISSING_BOLT_TWO_GOOD[1]
-						row.SPEED_LIMIT = '??'
-					end
-
+					row.SPEED_LIMIT = limit
+					row.DEFECT_CODE = code
 					row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
 					table.insert(report_rows, row)
 				end
@@ -417,7 +419,7 @@ local function generate_rows_missing_bolt(marks, dlgProgress, pov_filter)
 		end
 
 		if i % 300 == 0 then collectgarbage("collect") end
-		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
+		if i % 10 == 0 and dlgProgress and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
 			return
 		end
 	end
@@ -635,4 +637,5 @@ return {
 		{generate_rows_WeldedBond,			"Состояние приварных рельсовых соединителей"},
 	},
 	get_marks = GetMarks,
+	bolt2defect_limit = bolt2defect_limit,
 }

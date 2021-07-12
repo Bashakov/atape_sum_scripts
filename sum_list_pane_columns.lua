@@ -1,5 +1,10 @@
 mark_helper = require 'sum_mark_helper'
 
+local prev_atape = ATAPE
+ATAPE = true -- disable debug code while load scripts
+	local sum_report_joints = require "sum_report_joints"
+ATAPE = prev_atape
+
 sprintf = mark_helper.sprintf
 printf = mark_helper.printf
 table_find = mark_helper.table_find
@@ -337,13 +342,6 @@ column_gap_type =
 }
 
 
-
--- колич нормальных болтов в половине накладки
-local joint_speed_limit_messages = {
-	[0] = 'ЗАКРЫТИЕ',
-	[1] = '<25 км/ч',
-}
-
 column_joint_speed_limit = 
 {
 	name = 'Огр. скор.', 
@@ -351,8 +349,8 @@ column_joint_speed_limit =
 	align = 'c', 
 	text = function(row)
 		local mark = work_marks_list[row]
-		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
-		return valid_on_half and (joint_speed_limit_messages[valid_on_half] or '??') or ''
+		local _, limit = sum_report_joints.bolt2defect_limit(mark)
+		return limit or ''
 	end,
 	sorter = function(mark)
 		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)

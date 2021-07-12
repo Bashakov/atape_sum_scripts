@@ -1,7 +1,11 @@
 local mark_helper = require 'sum_mark_helper'
-
 local defect_codes = require 'report_defect_codes'
 local table_merge = mark_helper.table_merge
+
+local prev_atape = ATAPE
+ATAPE = true -- disable debug code while load scripts
+	local sum_report_joints = require "sum_report_joints"
+ATAPE = prev_atape
 
 local filters = 
 {
@@ -64,30 +68,32 @@ local filters =
 			column_rail,
 			column_recogn_bolt,
 			column_joint_speed_limit,
+			column_gap_type,
 			--column_recogn_reability,
 			column_recogn_video_channel,
 			column_pov_common,
 			}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
+			local join_type = mark_helper.GetGapType(mark) 
 			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
-			return valid_on_half and valid_on_half < 2
+			return valid_on_half and valid_on_half < 2 and join_type ~= 2
 		end,
-		get_color = function(row, col)
-			if col == 1 then
-				return
-			end
-			local mark = work_marks_list[row]
-			if not mark.user.color then
-				local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
-				if valid_on_half and valid_on_half == 0 then
-					mark.user.color = {0xff0000, 0xffffff}
-				else
-					mark.user.color = {0x000000, 0xffffff}
-				end
-			end
-			return mark.user.color
-		end
+		-- get_color = function(row, col)
+		-- 	if col == 1 then
+		-- 		return
+		-- 	end
+		-- 	local mark = work_marks_list[row]
+		-- 	if not mark.user.color then
+		-- 		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
+		-- 		if valid_on_half and valid_on_half == 0 then
+		-- 			mark.user.color = {0xff0000, 0xffffff}
+		-- 		else
+		-- 			mark.user.color = {0x000000, 0xffffff}
+		-- 		end
+		-- 	end
+		-- 	return mark.user.color
+		-- end
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
