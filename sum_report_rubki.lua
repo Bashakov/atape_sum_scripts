@@ -422,28 +422,30 @@ local function make_joint_image(mark)
 
 		--[[ поправка по масштабу - 2 шпалы + 2 шпалы.
 			https://bt.abisoft.spb.ru/view.php?id=752#c3728
-			https://bt.abisoft.spb.ru/view.php?id=742 ]]
-		local panoram_width = ((2*0.5)+0.25)*2 * 1000
+			https://bt.abisoft.spb.ru/view.php?id=742
+			картинка было бы не плохо ужать до 4 шпал https://bt.abisoft.spb.ru/view.php?id=780#c3790 ]]
+		local panoram_width = 2 * 1000
 
-		local channels = {17, 19, 18, 20}
+		local channels = {19, 17, 18, 20} -- https://bt.abisoft.spb.ru/view.php?id=780#c3807
+		local rotate = {1, 5, 1, 5} -- повороты кадра https://bt.abisoft.spb.ru/view.php?id=780#c3807
 		local img_prop = {
 			mark_id = mark.prop.ID,
 			mode = 3,  -- panorama
 			panoram_width = panoram_width,
 			width = 600/#channels,
 			height = 300,
-			base64=true,
-			show_marks=0,
-			hibit_dev_method='average',
-			hibit_dev_param=50,
+			base64 = true,
+			show_marks = 0,
+			hibit_dev_method = 'average',
+			hibit_dev_param = 50,
 		}
 
 		local jpg_hdr = 'data:image/jpeg;base64,'
 		local cmd = 'ImageMagick_convert.exe '
 
-		for _, video_channel in ipairs(channels) do
+		for i, video_channel in ipairs(channels) do
 			local img_ok, img_data = pcall(function ()
-				img_prop.rotate_fixed = video_channel < 19 and 7 or 3
+				img_prop.rotate_fixed = rotate[i]
 				return Driver:GetFrame(video_channel, center, img_prop)
 			end)
 			if img_ok then
@@ -452,7 +454,9 @@ local function make_joint_image(mark)
 				print('Error: ', img_data)
 			end
 		end
-		cmd = cmd .. ' +append INLINE:JPG:-'
+		cmd = cmd
+			.. string.format(' -density %d -units PixelsPerCentimeter', img_prop.height / 19) -- высота 190 мм https://bt.abisoft.spb.ru/view.php?id=780#c3807
+			.. ' +append INLINE:JPG:-'
 
 		-- склеить кадры в один
 		local f = assert(io.popen(cmd, 'r'))
