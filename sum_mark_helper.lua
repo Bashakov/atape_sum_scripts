@@ -1117,7 +1117,7 @@ local table_gap_types = {
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC805}"] = 2, 	-- АТСтык(Пользователь)
 }
 
---[[ получить тип стыка 
+--[[ получить тип стыка
 (0 - болтовой, 1 - изолированный, 2 - сварной)]]
 local function GetGapType(mark)
 	-- 	https://bt.abisoft.spb.ru/view.php?id=743
@@ -1125,16 +1125,7 @@ local function GetGapType(mark)
 	if mark and mark.ext and mark.ext.RAWXMLDATA and dom:loadXML(mark.ext.RAWXMLDATA)	then
 		local node = dom:SelectSingleNode('//PARAM[@name="ACTION_RESULTS" and @value="Common"]/PARAM[@name="JointType"]/@value')
 		if node then
-			-- RA Тип стыка (1 - изолированный, 0 - болтовой, 2 - сварной
-			-- I: 1 - std, 2 - iso , 3 - ats
-			-- I: приведено к виду 0 - std, 1 - iso , 2 - ats
-			local inbusoft2radioavionica = {
-				[0] = 0, -- std > болтовой
-				[1] = 1, -- iso > изолированный
-				[2] = 2, -- ats > сварной
-			}
-			local val = tonumber(node.nodeValue)
-			return inbusoft2radioavionica[val]
+			return tonumber(node.nodeValue)
 		end
 	end
 
