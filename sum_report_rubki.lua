@@ -318,19 +318,44 @@ end
 
 local function get_skrepl_params(join_mark)
 	-- проверим скрепления
-	local skrepl = 0
+	--[[
+		https://bt.abisoft.spb.ru/view.php?id=785
+		diffelasticity 15. Разноупругость основания
+		Логическое
+			1 - Одинаковые шпалы (ДШ или ЖБШ)
+			0 - Шпалы различаются (ДШ или ЖБШ)
+		Тип шпал определяем по скреплениям:
+		АРС, ЖБР, Пандрол, КБ – ЖБШ
+		ДО, КД - ДШ
+		Все это в зоне стыка +/- 3 стыка
+	]]
+	local skrepl_defect_cnt = 0
 	local fasteners = load_near_marks(join_mark, fastener_guids, CHECK_SLEEPER_COUNT, SEARCH_DIST)
 
+	local fastener_type2sleeper_type = {
+		[0] = 1, -- ЖБШ КБ-65
+		[1] = 1, -- ЖБШ Аpc'
+		[2] = 2, -- ДШ  ДО скрепление на деревянной шпале на костылях
+		[3] = 2, -- ДШ  КД скрепление на деревянной шпале как КБ-65 но на двух шурупах
+	}
+
+	local sleeper_types = {}
 	for i = 1, #fasteners do
 		local f = fasteners[i]
 		local prm = mark_helper.GetFastenetParams(f)
 		if prm and prm.FastenerFault and prm.FastenerFault > 0 then
-			skrepl = skrepl + 1
+			skrepl_defect_cnt = skrepl_defect_cnt + 1
+		end
+
+		local fastener_type = prm['FastenerType']
+		local sleeper_type = fastener_type2sleeper_type[fastener_type]
+		if sleeper_type then
+			sleeper_types[sleeper_type] = true
 		end
 	end
-	skrepl = math.min(skrepl, 12)
-
-	return skrepl
+	skrepl_defect_cnt = math.min(skrepl_defect_cnt, 12)
+	local diffelasticity = sleeper_types[1] and sleeper_types[2] -- если присутствуют оба типа, то true
+	return skrepl_defect_cnt, diffelasticity
 end
 
 local function get_nakl(mark)
@@ -473,14 +498,14 @@ local function make_gap_description(mark)
 	local km, m, mm = Driver:GetPathCoord(center)
 	local gap_step = mark_helper.GetRailGapStep(mark)
 	local epur, sleeper_defects, sleeper_material = get_sleepers_params(mark)
-	local skrepl = get_skrepl_params(mark)
+	local skrepl_defect_count, diffelasticity = get_skrepl_params(mark)
 
 	local values =
 	{
 		epur = epur,
-		skrepl = skrepl,
+		skrepl = skrepl_defect_count,
 		sneg = 0, -- Нода есть всегда. 0, если не определяется
-		diffelasticity = 0 -- 2021.05.24 ТребованияРУБКИ.docx 2. Исключение из п.1 для параметров, имеющих логический тип данных: 
+		diffelasticity = diffelasticity and 1 or 0, -- 2021.05.24 ТребованияРУБКИ.docx 2. Исключение из п.1 для параметров, имеющих логический тип данных: 
 	}
 
 	values.shpal_material = sleeper_material
