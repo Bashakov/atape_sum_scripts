@@ -708,6 +708,7 @@ local recorn_guids =
 	["{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}"] = {ProcessMarkRawXml}, -- Поверх.(Видео)
 	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"] = {ProcessMarkRawXml}, -- Шпалы
 	["{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}"] = {ProcessMarkRawXml}, -- Дефекты шпал
+	["{53987511-8176-470D-BE43-A39C1B6D12A3}"] = {ProcessMarkRawXml}, -- SleeperTop
 	["{DE548D8F-4E0C-4644-8DB3-B28AE8B17431}"] = {ProcessMarkRawXml}, -- UIC_227
 	["{BB144C42-8D1A-4FE1-9E84-E37E0A47B074}"] = {ProcessMarkRawXml}, -- BELGROSPI
 	["{EBAB47A8-0CDC-4102-B21F-B4A90F9D873A}"] = {ProcessMarkRawXml}, -- UIC_2251
