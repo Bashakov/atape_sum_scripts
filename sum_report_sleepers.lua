@@ -26,6 +26,8 @@ local guigs_sleepers =
 {
 	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",	-- Шпалы
 	"{3601038C-A561-46BB-8B0F-F896C2130002}",	-- Шпалы(Пользователь)
+	"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
+	"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",   -- SleeperDefect
 }
 
 
@@ -59,7 +61,7 @@ local function MakeSleeperMarkRow(mark)
 end
 
 local function GetMarks()
-	local marks = Driver:GetMarks{GUIDS=guigs_sleepers}
+	local marks = Driver:GetMarks{GUIDS=guigs_sleepers, ListType="all"}
 	marks = mark_helper.sort_mark_by_coord(marks)
 	return marks
 end
@@ -427,7 +429,7 @@ return {
 	AppendReports = AppendReports,
 	videogram = videogram,
 	all_generators = {
-		{generate_rows_sleeper_dist, 	"соблюдения эпюры шпал"},
+		{generate_rows_sleeper_dist, 	"Соблюдения эпюры шпал"},
 		{generate_rows_sleeper_angle, 	"Перпендикулярность шпалы"},
 		{generate_rows_sleeper_user, 	"Установленые пользователем"},
 		{generate_rows_sleeper_defects, "Дефекты"}

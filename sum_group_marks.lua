@@ -40,6 +40,12 @@ local funcional = require 'functional'
 local printf  = function(fmt, ...)	print(string.format(fmt, ...)) end
 local sprintf = function(fmt, ...) return string.format(fmt, ...)  end
 
+
+local prev_atape = ATAPE
+ATAPE = true -- disable debug code while load scripts
+local sum_report_sleepers = require "sum_report_sleepers"
+ATAPE = prev_atape
+
 -- =============================================
 
 local function format_sys_coord(coord)
@@ -317,81 +323,128 @@ local SleeperGroups = OOP.class
     NAME = 'Шпалы',
     GUID = '{B6BAB49E-4CEC-4401-A106-355BFB2E0011}',
 
-    ctor = function (self, sleeper_count, MEK)
-        self.ref_dist = 1000000 / sleeper_count
-        self.MEK = MEK
-        self.marks = {}
+    load_joints = function (_)
+        local video_joints_juids =
+        {
+            "{CBD41D28-9308-4FEC-A330-35EAED9FC801}",	-- Стык(Видео)
+            "{CBD41D28-9308-4FEC-A330-35EAED9FC802}",	-- Стык(Видео)
+            "{CBD41D28-9308-4FEC-A330-35EAED9FC803}",	-- СтыкЗазор(Пользователь)
+            "{CBD41D28-9308-4FEC-A330-35EAED9FC804}",	-- АТСтык(Видео)
+            "{3601038C-A561-46BB-8B0F-F896C2130003}",	-- Рельсовые стыки(Пользователь)
+            "{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}",   -- ИзоСтык(Видео)
+        }
+        local joints = loadMarks(video_joints_juids)
+        local coords = {}
+        for _, mark in ipairs(joints) do
+            table.insert(coords, mark.prop.SysCoord)
+        end
+        table.sort(coords)
+        return coords
     end,
 
-    LoadMarks = function (self)
-        local guigs_sleepers =
-        {
-            "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",	-- Шпалы
-            "{3601038C-A561-46BB-8B0F-F896C2130002}",	-- Шпалы(Пользователь)
-        }
-        return loadMarks(guigs_sleepers)
+    ctor = function (self)
+        self.epur = 1000000 / 1840
+        self.joints = self:load_joints()
+        self.sleepers = {}
+        self.marks = {} -- result
+    end,
+
+    LoadMarks = function (self, param, dlg)
+        local pov_filter = sumPOV.MakeReportFilter(false)
+		if not pov_filter then return {} end
+        local marks = sum_report_sleepers.get_marks(pov_filter)
+        -- iup.Message('Info', sprintf("найдено %d шпал", #marks))
+
+        local coord2defects = {}
+        for _, mark in ipairs(marks) do
+            --coord2defects[mark.prop.SysCoord] = {}
+            self.sleepers[mark.prop.SysCoord] = mark
+        end
+
+        for _, scanner in ipairs(sum_report_sleepers.all_generators) do
+            local cur_rows = scanner[1](marks, dlg, pov_filter)
+            if not cur_rows then
+                return {}
+            end
+            for _, row in ipairs(cur_rows) do
+                local d = coord2defects[row.SYS] or {}
+                table.insert(d, row.DEFECT_CODE)
+                coord2defects[row.SYS] = d
+            end
+        end
+
+        local order_by_coord = {}
+        for c, d in pairs(coord2defects) do table.insert(order_by_coord, {c, d}) end
+        table.sort(order_by_coord, function (lh, rh) return lh[1] < rh[1] end)
+        -- order_by_coord = self:add_good_sleepers(order_by_coord)
+        return order_by_coord
+    end,
+
+    -- add_good_sleepers = function (self, items)
+    --     local res = {}
+    --     local prev  = nil
+    --     for _, cd in ipairs(items) do
+    --         if prev then
+    --             local dist = cd[1] - prev
+    --             local cnt = math.floor(dist / self.epur + 0.3)
+    --             if cnt > 1 then
+    --                 local step = dist / cnt
+    --                 for i = 1, cnt do
+    --                     local c = prev + step*i
+    --                     table.insert(res, {c, {}})
+    --                 end
+    --             end
+    --         end
+    --         table.insert(res, cd)
+    --         prev = cd[1]
+    --     end
+    --     return res
+    -- end,
+
+    check_joint = function (self, c1, c2)
+        local i1 = mark_helper.lower_bound(self.joints, c1)
+        local i2 = mark_helper.lower_bound(self.joints, c2)
+        return i1 < i2
     end,
 
     Check = function (self, get_near_mark)
-        local mark = get_near_mark(0)
-        if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130002}" then
-            if mark.ext.CODE_EKASUI == DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1] or
-			   mark.ext.CODE_EKASUI == DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[1] then
-                return CHECK.ACCEPT
-            else
-                return CHECK.REFUTE
-            end
-        else
-            local material_diffs = {
-                [1] = 2*40, -- "бетон",
-                [2] = 2*80, -- "дерево",
-            }
-            local function check_distance_normal(max_diff, cur_dist)
-                if cur_dist < 200 then
-                    return true
-                end
-                for i = 1, self.MEK do
-                    if math.abs(cur_dist/i - self.ref_dist) <= max_diff then
-                        return true
-                    end
-                end
-                return false
-            end
+        local prev = get_near_mark(-1)
+        local cur = get_near_mark(0)
 
-            local cur_material = mark_helper.GetSleeperMeterial(mark)
-            local max_diff = material_diffs[cur_material] or 80
-
-            local near = get_near_mark(1) or get_near_mark(-1) -- возьмем следующую или предыдущую
-            if near then
-                local near_dist = math.abs(near.prop.SysCoord - mark.prop.SysCoord)
-                if check_distance_normal(max_diff, near_dist)  then
-                    return CHECK.REFUTE
-                else
-                    return CHECK.ACCEPT
-                end
+        if prev then
+            local dist = cur[1] - prev[1]
+            if dist > self.epur * 1.5 then
+                return CHECK.CLOSE_ACCEPT
             end
         end
+
+        return CHECK.ACCEPT
     end,
 
     OnGroup = function (self, group)
-        if #group > 1 then
-            -- print('Sleepers', #group, table.unpack(map(function (mark) return mark.prop.SysCoord end, group)))
-            local mark = makeMark(
+        if
+            (#group >= 4) or
+            (#group >= 2 and self:check_joint(group[1][1] - self.epur, group[#group][1] + self.epur))
+        then
+            local new_mark = makeMark(
                 self.GUID,
-                group[1].prop.SysCoord,
-                group[#group].prop.SysCoord - group[1].prop.SysCoord,
+                group[1][1],
+                group[#group][1] - group[1][1],
                 3,
                 #group
             )
-            local cur_material = mark_helper.GetSleeperMeterial(mark)
+            local sleeper_mark = self.sleepers[group[1][1]]
+            if sleeper_mark then
+                local cur_material = mark_helper.GetSleeperMeterial(sleeper_mark)
 
-            if cur_material == 1 then -- "бетон",
-                mark.ext.CODE_EKASUI = DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1]
-            else -- "дерево"
-                mark.ext.CODE_EKASUI = DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[1]
+                if cur_material == 1 then -- "бетон",
+                    new_mark.ext.CODE_EKASUI = DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1]
+                else -- "дерево"
+                    new_mark.ext.CODE_EKASUI = DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[1]
+                end
+
+                table.insert(self.marks, new_mark)
             end
-
-            table.insert(self.marks, mark)
         end
     end,
 }
@@ -553,7 +606,7 @@ local function SearchGroupAutoDefects(guids)
         local defect_types =
         {
             GapGroups(5),
-            SleeperGroups(1840, 4),
+            SleeperGroups(),
             FastenerGroups()
         }
         local message = 'Найдено:\n'
@@ -587,15 +640,15 @@ end
 
 if not ATAPE then
     local test_report  = require('test_report')
-    local data = 'D:\\d-drive\\ATapeXP\\Main\\494\\video_recog\\2019_05_17\\Avikon-03M\\30346\\[494]_2019_03_15_01.xml'
-    --local data = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-    test_report(data)
+    -- local data = 'D:\\d-drive\\ATapeXP\\Main\\494\\video_recog\\2019_05_17\\Avikon-03M\\30346\\[494]_2019_03_15_01.xml'
+    local data = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+    test_report(data, nil, {0, 1000000})
 
     local t = os.clock()
     local save_count = SearchGroupAutoDefects({
         --'{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
-        --'{B6BAB49E-4CEC-4401-A106-355BFB2E0011}',
-        '{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
+        '{B6BAB49E-4CEC-4401-A106-355BFB2E0011}',
+        --'{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
     })
     printf("work %f sec, found %d mark", os.clock() - t, save_count or 0)
 end

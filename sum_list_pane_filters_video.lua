@@ -308,7 +308,24 @@ local filters =
 		end,
 	},
 	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
+		name = 'Шпалы Все',
+		--videogram_defect_codes = {'090004000370', '090004000375'},
+		columns = {
+			column_num,
+			column_path_coord,
+			column_rail,
+			column_mark_type_name,
+			},
+		GUIDS = {
+			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",	-- Шпалы
+			"{3601038C-A561-46BB-8B0F-F896C2130002}",	-- Шпалы(Пользователь)
+			"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
+			"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",   -- SleeperDefect
+		},
+	},
+	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
 		name = 'Шпалы(дефекты)',
 		--videogram_defect_codes = {'090004000370', '090004000375'},
 		columns = {
@@ -321,7 +338,9 @@ local filters =
 			column_pov_common,
 			},
 		GUIDS = {
-			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
+			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}", -- Шпалы
+			"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}", -- SleeperDefect
+		},
 		filter = function (mark)
 			local params = mark_helper.GetSleeperFault(mark)
 			return params and params.FaultType and params.FaultType > 0
@@ -329,7 +348,7 @@ local filters =
 	},
 	--!!!добавлен новый элемент в фильтр - шпалы с разворотом более условного порога
 	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
 		name = 'Шпалы с разворотом',
 		columns = {
 			column_num,
