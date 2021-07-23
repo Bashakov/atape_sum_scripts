@@ -273,7 +273,7 @@ local filters =
 		end,
 	},
 	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
 		name = 'Шпалы(эпюра,перпедикулярность)',
 		--videogram_defect_codes = {'090004000370', '090004000375'},
 		columns = {
@@ -316,12 +316,30 @@ local filters =
 			column_path_coord,
 			column_rail,
 			column_mark_type_name,
+			column_recogn_video_channel,
+			column_pov_common,
 			},
 		GUIDS = {
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",	-- Шпалы
 			"{3601038C-A561-46BB-8B0F-F896C2130002}",	-- Шпалы(Пользователь)
 			"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
 			"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",   -- SleeperDefect
+		},
+	},
+	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
+		name = 'Шпалы сверху',
+		--videogram_defect_codes = {'090004000370', '090004000375'},
+		columns = {
+			column_num,
+			column_path_coord,
+			column_rail,
+			column_sleeper_meterial,
+			column_recogn_video_channel,
+			column_pov_common,
+			},
+		GUIDS = {
+			"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
 		},
 	},
 	{

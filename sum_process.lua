@@ -233,7 +233,6 @@ end
 
 -- ================================ GUIDS ================================= --
 
-local guidSleeper = "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"	
 
 local Img_DA_guids = {
 
@@ -255,7 +254,9 @@ local Img_DA_guids = {
 		
 		["{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}"]=18, --"П.Деф."
 		
-		[guidSleeper]                             =19, --"Шпалы"
+		["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"] =19, --"Шпалы"
+		["{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}"] = 17, -- "Дефекты шпал"
+		["{53987511-8176-470D-BE43-A39C1B6D12A3}"] = 19, -- "Шпалы(сверху)"
 			
 		["{DE548D8F-4E0C-4644-8DB3-B28AE8B17431}"]= 20, --INTERNAL_NAME="SQUAT"		       VALUE="UIC_227"	
 		["{BB144C42-8D1A-4FE1-9E84-E37E0A47B074}"]= 21, --INTERNAL_NAME="BELGROSPI"	       VALUE="BELGROSPI" 
@@ -397,7 +398,7 @@ local desc_vguids = {
 	
 	["{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}"] = _get_beacon_mark,			-- beacon  (user)
 	["{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"] = _get_beacon_mark,			-- beacon
-	[guidSleeper]   						   = _get_sleeper_mark,	
+	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"] = _get_sleeper_mark,			-- Шпалы
 }
 
 
