@@ -61,7 +61,7 @@ local function MakeSleeperMarkRow(mark)
 end
 
 local function GetMarks()
-	local marks = Driver:GetMarks{GUIDS=guigs_sleepers, ListType="all"}
+	local marks = Driver:GetMarks{GUIDS=guigs_sleepers, ListType="list"}
 	marks = mark_helper.sort_mark_by_coord(marks)
 	return marks
 end
