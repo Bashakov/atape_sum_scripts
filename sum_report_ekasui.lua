@@ -10,6 +10,7 @@ require "ExitScope"
 
 local printf = mark_helper.printf
 local sprintf = mark_helper.sprintf
+local errorf = mark_helper.errorf
 
 -- ========================================
 
@@ -171,8 +172,10 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg, path
 	end
 
 	local path_dst = sprintf("%s\\video_%s_%s_%d.xml", EKASUI_PARAMS.ExportFolder, Passport.SOURCE, export_id, PackageNUM)
-	--dom:save(path_dst)
-	local f = io.open(path_dst, 'w+')
+	local f, msg = io.open(path_dst, 'w+')
+	if not f then
+		errorf("Can not open file: %s. %s", path_dst, msg)
+	end
 	f:write('<?xml version="1.0" encoding="utf-8"?>')
 	f:write(node_OutFile.xml)
 	f:close()
