@@ -380,7 +380,7 @@ end
 local function bolt2defect_limit(mark)
 	local valid_on_half, broken_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
 	local join_type = mark_helper.GetGapType(mark) -- АТС - болты - не выводить неисправность по отсутствию болтов https://bt.abisoft.spb.ru/view.php?id=773#c3792
-	if broken_on_half and join_type ~= 2 then
+	if broken_on_half and broken_on_half ~= 0 and join_type ~= 2 then
 		if valid_on_half == 1 then
 			return DEFECT_CODES.JOINT_MISSING_BOLT_ONE_GOOD[1], '25'
 		elseif valid_on_half == 0 then

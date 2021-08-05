@@ -7,15 +7,14 @@ if iup then
 	iup.SetGlobal('UTF8MODE', 1)
 end
 
-local stuff = require 'stuff'
 local excel_helper = require 'excel_helper'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 
-local table_find = stuff.table_find
-local sprintf = stuff.sprintf
-local printf = stuff.printf
-local errorf = stuff.errorf
+local table_find = mark_helper.table_find
+local sprintf = mark_helper.sprintf
+local printf = mark_helper.printf
+local errorf = mark_helper.errorf
 
 -- =============================================================================
 
@@ -434,7 +433,7 @@ if not ATAPE then
 	local savedGetMarks = Driver.GetMarks
 	-- тестовая функция обертка: возвращает только одну отметку, для videogram_mark
 	Driver.GetMarks = function(self, filter)
-		return savedGetMarks(self, {mark_id=100})
+		return savedGetMarks(self, {mark_id=40})
 	end
 
 	videogram_mark()
