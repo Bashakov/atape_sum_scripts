@@ -2,8 +2,6 @@ if not ATAPE then
 	require "iuplua"
 end
 
-if false then iup = nil; luacom = nil end -- suppress lua diagnostic (undefined global)
-
 if iup then
 	iup.SetGlobal('UTF8MODE', 1)
 end
@@ -17,6 +15,7 @@ local DEFECT_CODES = require 'report_defect_codes'
 local EKASUI_REPORT = require 'sum_report_ekasui'
 local AVIS_REPORT = require 'sum_report_avis'
 local sumPOV = require "sumPOV"
+local EKASUI = require "sum_report_ekasui"
 require 'ExitScope'
 
 local printf = mark_helper.printf
@@ -29,7 +28,6 @@ local guigs_sleepers =
 	"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
 	"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",   -- SleeperDefect
 }
-
 
 -- ===================================================================
 
@@ -64,6 +62,16 @@ local function GetMarks()
 	local marks = Driver:GetMarks{GUIDS=guigs_sleepers, ListType="list"}
 	marks = mark_helper.sort_mark_by_coord(marks)
 	return marks
+end
+
+local function add_node(parent, name, attrib)
+	local dom = parent.ownerDocument or parent
+	local node = dom:createElement(name)
+	parent:appendChild(node)
+	for n, v in pairs(attrib or {}) do
+		node:setAttribute(n, v)
+	end
+	return node
 end
 
 -- ==========================================================================
@@ -304,6 +312,63 @@ local function sleepers_report_plot()
     chart:Axes(2).MaximumScale = 1000
 end
 
+
+local function sleeper_SDMI()
+	EnterScope(function(defer)
+		local fromKM = Passport.FromKm or string.match(Passport.START_CHOORD, '^(-?%d+):') or ''
+		local toKM = Passport.ToKm or string.match(Passport.END_CHOORD, '^(-?%d+):') or ''
+
+		local proezd_params = EKASUI.AskEkasuiParam()
+		if not proezd_params then return end
+
+		local dlg = luaiup_helper.ProgressDlg('Отчет ЕКАСУИ')
+		defer(dlg.Destroy, dlg)
+
+		local marks = GetMarks()
+		if #marks == 0 then
+			iup.Message('Info', "Подходящих отметок не найдено")
+			return
+		end
+
+		local dom = luacom.CreateObject('Msxml2.DOMDocument.6.0')
+		assert(dom)
+
+		local node_sleepers = add_node(dom, 'sleepers')
+		local node_proezd = add_node(node_sleepers, 'proezd', {
+			proezd=proezd_params.proezd,
+			proverka=proezd_params.proverka,
+			road=proezd_params.road,
+			vagon=proezd_params.vagon,
+			assetnum=proezd_params.assetnum,
+			km_begin=fromKM,
+			m_begin="0",
+			km_end=toKM,
+			m_end="0",
+		})
+		local node_floors = add_node(node_proezd, 'floors')
+		for i, mark in ipairs(marks) do
+			local center = mark.prop.SysCoord + mark.prop.Len / 2
+			center = mark_helper.round(center, 0)
+			local km, m, mm = Driver:GetPathCoord(center)
+
+			local node_floor = add_node(node_floors, 'floor', {km=km, m=m, sm=mm, syskoor=center})
+			if i%100 == 0 and not dlg:step(i / #marks, sprintf('Сохранение шпал %d / %d', i, #marks)) then
+				return
+			end
+		end
+
+		local path_dst = sprintf("%s\\sdmisleep_%s_%s.xml", EKASUI_PARAMS.ExportFolder, Passport.SOURCE, proezd_params.proezd)
+		local f = io.open(path_dst, 'w+b')
+		f:write(mark_helper.msxml_node_to_string(node_sleepers.ownerDocument))
+		f:close()
+
+		local anwser = iup.Alarm("ATape", sprintf("Сохранен файл: %s", path_dst), "Показать", "Закрыть")
+		if 1 == anwser then
+			os.execute(path_dst)
+		end
+	end)
+end
+
 -- =============================================================================
 
 -- вместо функций генераторов, вставляем функции обертки вызывающие генераторы с доп параметрами
@@ -361,6 +426,7 @@ local function make_report_videogram(...)
 	return gen
 end
 
+
 -- =============================================================================
 
 local report_sleeper_dist = make_report_generator(generate_rows_sleeper_dist)
@@ -407,6 +473,8 @@ local function AppendReports(reports)
 		{name = name_pref..'ЕКАСУИ Отслеживание соблюдения эпюры шпал',    							fn=ekasui_sleeper_dist, 	},
 		{name = name_pref..'ЕКАСУИ Перпендикулярность шпалы относительно оси пути, рад',			fn=ekasui_sleeper_angle,	},
 		{name = name_pref..'ЕКАСУИ Дефекты',														fn=ekasui_sleeper_defects,	},
+
+		{name = name_pref..'шпалы для СДМИ',														fn=sleeper_SDMI,	},	-- https://bt.abisoft.spb.ru/view.php?id=793
 	}
 
 	for _, report in ipairs(sleppers_reports) do
@@ -421,7 +489,8 @@ if not ATAPE then
 	local test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 1000000})
 
-	ekasui_sleeper_defects()
+	--ekasui_sleeper_defects()
+	sleeper_SDMI()
 	-- report_ALL()
 end
 

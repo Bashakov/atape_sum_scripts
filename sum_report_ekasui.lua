@@ -272,9 +272,33 @@ local function make_ekasui_generator(getMarks, ...)
 	return gen
 end
 
+local function AskEkasuiParam()
+	if not EKASUI_PARAMS then
+		iup.Message("Генерация отчета", "Конфигурация ЕКАСУИ не обнаружена")
+	else
+		local psp_date = Passport.DATE --2017:06:08:12:44
+		psp_date = string.gsub(psp_date, ":", "")
+		psp_date = string.sub(psp_date, 1, 8) .. "_" .. string.sub(psp_date, 9) .. "00"
+
+		local ok, road, vagon, proezd, proverka, assetnum = iup.GetParam("Параметры проезда", nil,
+				"идентификатор дороги (ID БД ЕК АСУИ): %s\n\z
+				идентификатор средства диагностики (ID БД ЕК АСУИ): %s\n\z
+				дата (ГГГГММДД_ЧЧММСС): %s\n\z
+				вид проверки: %o|рабочая|контрольная|дополнительная|\n\z
+				ID пути БД ЕК АСУИ: %s\n\z",
+				EKASUI_PARAMS.SITEID, EKASUI_PARAMS.carID, psp_date, 0, Passport.TRACK_CODE
+			)
+		if ok then
+			return {road=road, vagon=vagon, proezd=proezd, proverka=proverka, assetnum=assetnum}
+		end
+	end
+	return nil
+end
+
 -- =================== ЭКСПОРТ ===================
 
 
 return {
 	make_ekasui_generator = make_ekasui_generator,
+	AskEkasuiParam = AskEkasuiParam,
 }

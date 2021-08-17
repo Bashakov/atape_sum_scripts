@@ -4,6 +4,7 @@ local excel_helper = require 'excel_helper'
 require "ExitScope"
 local resty = require "resty.template"
 local OOP = require 'OOP'
+local EKASUI = require "sum_report_ekasui"
 
 if iup then
 	iup.SetGlobal('UTF8MODE', 1)
@@ -167,35 +168,6 @@ local function get_marks(dlg)
 	return marks
 end
 
-local function dormate_date()
-	local psp_date = Passport.DATE --2017:06:08:12:44
-	psp_date = string.gsub(psp_date, ":", "")
-	psp_date = string.sub(psp_date, 1, 8) .. "_" .. string.sub(psp_date, 9) .. "00"
-	return psp_date
-end
-
-local function save_msxml_node(node)
-	local oWriter = luacom.CreateObject("Msxml2.MXXMLWriter")
-	local oReader =  luacom.CreateObject("Msxml2.SAXXMLReader")
-	assert(oWriter)
-	assert(oReader)
-
-	oWriter.standalone = 0
-    oWriter.omitXMLDeclaration = 1
-    oWriter.indent = 1
-	oWriter.encoding = 'utf-8'
-
-	oReader:setContentHandler(oWriter)
-	oReader:putProperty("http://xml.org/sax/properties/lexical-handler", oWriter)
-	oReader:putProperty("http://xml.org/sax/properties/declaration-handler", oWriter)
-
-	local unk1 = luacom.GetIUnknown(node)
-    oReader:parse(unk1)
-
-	local res = oWriter.output
-	return res
-end
-
 local function save_res_xml(dst_dir, node)
 	local fromKM = Passport.FromKm or string.match(Passport.START_CHOORD, '^(-?%d+):') or ''
 	local toKM = Passport.ToKm or string.match(Passport.END_CHOORD, '^(-?%d+):') or ''
@@ -203,7 +175,7 @@ local function save_res_xml(dst_dir, node)
 	if true then
 		-- with formation
 		local f = io.open(path_dst, 'w+b')
-		f:write(save_msxml_node(node.ownerDocument))
+		f:write(mark_helper.msxml_node_to_string(node.ownerDocument))
 		f:close()
 	elseif true then
 		-- no format (one line)
@@ -594,21 +566,9 @@ end
 
 local function report_short_rails_ekasui()
 	EnterScope(function(defer)
-		if not EKASUI_PARAMS then
-			iup.Message("Генерация отчета", "Конфигурация ЕКАСУИ не обнаружена")
-			return
-		end
 
-		local ok, road, vagon, proezd, proverka, assetnum =
-			iup.GetParam("Параметры проезда", nil,
-				"идентификатор дороги (ID БД ЕК АСУИ): %s\n\z
-				идентификатор средства диагностики (ID БД ЕК АСУИ): %s\n\z
-				дата (ГГГГММДД_ЧЧММСС): %s\n\z
-				вид проверки: %o|рабочая|контрольная|дополнительная|\n\z
-				ID пути БД ЕК АСУИ: %s\n\z",
-				EKASUI_PARAMS.SITEID, EKASUI_PARAMS.carID, dormate_date(), 0, Passport.TRACK_CODE
-			)
-		if not ok then return end
+		local proezd_params = EKASUI.AskEkasuiParam()
+		if not proezd_params then return end
 
 		local min_length, show_only_rubki = askUpperRailLen()
 		if not min_length then return end
@@ -627,8 +587,13 @@ local function report_short_rails_ekasui()
 		assert(dom)
 
 		local node_videocontrol = add_node(dom, 'videocontrol')
-		local node_proezd = add_node(node_videocontrol, 'proezd', {road=road, vagon=vagon, proezd=proezd, proverka=proverka})
-		local node_way = add_node(node_proezd, 'way', {assetnum=assetnum})
+		local node_proezd = add_node(node_videocontrol, 'proezd', {
+			road=proezd_params.road,
+			vagon=proezd_params.vagon,
+			proezd=proezd_params.proezd,
+			proverka=proezd_params.proverka
+		})
+		local node_way = add_node(node_proezd, 'way', {assetnum=proezd_params.assetnum})
 		local node_relset = add_node(node_way, 'relset')
 
 		for i, mark_pair in ipairs(short_rails) do

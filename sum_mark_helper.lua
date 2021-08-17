@@ -25,8 +25,30 @@ local function SelectNodes(xml, xpath)
 	end, xml:SelectNodes(xpath)
 end
 
+-- конвертировать MSXML ноду в строку с форматированием
+local function msxml_node_to_string(node)
+	local oWriter = luacom.CreateObject("Msxml2.MXXMLWriter")
+	local oReader =  luacom.CreateObject("Msxml2.SAXXMLReader")
+	assert(oWriter)
+	assert(oReader)
 
-function math.round(num, idp)
+	oWriter.standalone = 0
+    oWriter.omitXMLDeclaration = 1
+    oWriter.indent = 1
+	oWriter.encoding = 'utf-8'
+
+	oReader:setContentHandler(oWriter)
+	oReader:putProperty("http://xml.org/sax/properties/lexical-handler", oWriter)
+	oReader:putProperty("http://xml.org/sax/properties/declaration-handler", oWriter)
+
+	local unk1 = luacom.GetIUnknown(node)
+    oReader:parse(unk1)
+
+	local res = oWriter.output
+	return res
+end
+
+local function round(num, idp)
 	local mult = 10^(idp or 0)
 	return math.floor(num * mult + 0.5) / mult
 end
@@ -342,7 +364,7 @@ local function GetRailGapStep(mark)
 		/PARAM[@name="FrameNumber" and @value and @coord]\z
 		/PARAM[@name="Result" and @value="main"]\z
 		/PARAM[@name="RailGapStepWidth" and @value]/@value')
-	return node and math.round(tonumber(node.nodeValue)/1000, 0)
+	return node and round(tonumber(node.nodeValue)/1000, 0)
 end
 
 
@@ -1147,6 +1169,7 @@ return{
 	sort_stable = sort_stable,
 	filter_marks = filter_marks,
 	SelectNodes = SelectNodes,
+	msxml_node_to_string=msxml_node_to_string,
 	GetSelectedBits = GetSelectedBits,
 	filter_user_accept = filter_user_accept,
 	reverse_array = reverse_array,
@@ -1160,7 +1183,8 @@ return{
 	lower_bound = lower_bound,
 	upper_bound = upper_bound,
 	equal_range = equal_range,
-	
+	round = round,
+
 	sort_mark_by_coord = sort_mark_by_coord,
 	format_path_coord = format_path_coord,
 	GetMarkRailPos = GetMarkRailPos,
