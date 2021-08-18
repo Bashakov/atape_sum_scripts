@@ -351,7 +351,7 @@ local function sleeper_SDMI()
 			center = mark_helper.round(center, 0)
 			local km, m, mm = Driver:GetPathCoord(center)
 
-			local node_floor = add_node(node_floors, 'floor', {km=km, m=m, sm=mm, syskoor=center})
+			local node_floor = add_node(node_floors, 'floor', {km=km, m=m, sm=mark_helper.round(mm / 10, 0), syskoor=center})
 			if i%100 == 0 and not dlg:step(i / #marks, sprintf('Сохранение шпал %d / %d', i, #marks)) then
 				return
 			end
