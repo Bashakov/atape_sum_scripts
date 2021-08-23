@@ -29,6 +29,8 @@ Dmitry Alexeyev	(участник)
 Формирование картинки для нулевых либо все, но при такой логике можно слить только кадры нулевых (без рельсов межу ними)
 ]]
 
+--require("mobdebug").start()
+
 local OOP = require 'OOP'
 local mark_helper = require 'sum_mark_helper'
 local DEFECT_CODES = require 'report_defect_codes'
@@ -85,9 +87,12 @@ end
 
 -- =============================================
 
-local function loadMarks(guids)
+local function loadMarks(guids, pov_filter, dlg)
     local marks = Driver:GetMarks{GUIDS=guids, ListType='all'}
     marks = mark_helper.sort_mark_by_coord(marks)
+	if pov_filter then
+		marks = pov_filter(marks, dlg)
+    end
     return marks
 end
 
@@ -127,11 +132,11 @@ local CHECK = {
 - Check: проверить отметку на дефектность, должна вернуть CHECK
 - OnGroup: обработать полученную группу
 ]]
-local function scanGroupDefect(defect_type, dlg)
+local function scanGroupDefect(defect_type, dlg, pov_filter)
     local params = defect_type.PARAMETERS or {1}
     local search_group_progress = make_progress_cb(dlg, sprintf('%s: обработка', defect_type.NAME), 23)
     for _, param in ipairs(params) do
-        local marks = defect_type:LoadMarks(param, dlg)
+        local marks = defect_type:LoadMarks(param, dlg, pov_filter)
 
         local group = {}
         for i, mark in ipairs(marks) do
@@ -323,7 +328,7 @@ local SleeperGroups = OOP.class
     NAME = 'Шпалы',
     GUID = '{B6BAB49E-4CEC-4401-A106-355BFB2E0011}',
 
-    load_joints = function (_)
+    load_joints = function (dlg)
         local video_joints_juids =
         {
             "{CBD41D28-9308-4FEC-A330-35EAED9FC801}",	-- Стык(Видео)
@@ -333,7 +338,7 @@ local SleeperGroups = OOP.class
             "{3601038C-A561-46BB-8B0F-F896C2130003}",	-- Рельсовые стыки(Пользователь)
             "{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}",   -- ИзоСтык(Видео)
         }
-        local joints = loadMarks(video_joints_juids)
+        local joints = loadMarks(video_joints_juids, nil, dlg)
         local coords = {}
         for _, mark in ipairs(joints) do
             table.insert(coords, mark.prop.SysCoord)
@@ -344,15 +349,23 @@ local SleeperGroups = OOP.class
 
     ctor = function (self)
         self.epur = 1000000 / 1840
-        self.joints = self:load_joints()
+        self.joints = {}
         self.sleepers = {}
         self.marks = {} -- result
     end,
 
-    LoadMarks = function (self, param, dlg)
-        local pov_filter = sumPOV.MakeReportFilter(false)
-		if not pov_filter then return {} end
-        local marks = sum_report_sleepers.get_marks(pov_filter)
+    LoadMarks = function (self, param, dlg, pov_filter)
+        self.joints = self:load_joints(dlg)
+
+		local guigs_sleepers =
+		{
+			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",	-- Шпалы
+			"{3601038C-A561-46BB-8B0F-F896C2130002}",	-- Шпалы(Пользователь)
+			"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
+			"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",   -- SleeperDefect
+		}
+
+        local marks = loadMarks(guigs_sleepers, pov_filter, dlg)
         -- iup.Message('Info', sprintf("найдено %d шпал", #marks))
 
         local coord2defects = {}
@@ -379,27 +392,6 @@ local SleeperGroups = OOP.class
         -- order_by_coord = self:add_good_sleepers(order_by_coord)
         return order_by_coord
     end,
-
-    -- add_good_sleepers = function (self, items)
-    --     local res = {}
-    --     local prev  = nil
-    --     for _, cd in ipairs(items) do
-    --         if prev then
-    --             local dist = cd[1] - prev
-    --             local cnt = math.floor(dist / self.epur + 0.3)
-    --             if cnt > 1 then
-    --                 local step = dist / cnt
-    --                 for i = 1, cnt do
-    --                     local c = prev + step*i
-    --                     table.insert(res, {c, {}})
-    --                 end
-    --             end
-    --         end
-    --         table.insert(res, cd)
-    --         prev = cd[1]
-    --     end
-    --     return res
-    -- end,
 
     check_joint = function (self, c1, c2)
         local i1 = mark_helper.lower_bound(self.joints, c1)
@@ -449,7 +441,8 @@ local SleeperGroups = OOP.class
     end,
 }
 
-local FastenerGroups = OOP.class{
+local FastenerGroups = OOP.class
+{
     NAME = 'Скрепления',
     GUID = '{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
     FastenerMaxDinstanceToSleeperJoin = 100,
@@ -600,6 +593,9 @@ local FastenerGroups = OOP.class{
 
 local function SearchGroupAutoDefects(guids)
     return EnterScope(function (defer)
+		local pov_filter = sumPOV.MakeReportFilter(false)
+		if not pov_filter then return {} end
+
         local dlg = luaiup_helper.ProgressDlg('Поиск групповых дефектов')
         defer(dlg.Destroy, dlg)
 
@@ -614,7 +610,7 @@ local function SearchGroupAutoDefects(guids)
         local guids_to_delete = {}
         for _, defect_type in ipairs(defect_types) do
             if not guids or mark_helper.table_find(guids, defect_type.GUID) then
-                scanGroupDefect(defect_type, dlg)
+                scanGroupDefect(defect_type, dlg, pov_filter)
                 message = message .. string.format('    %s: %d отметок\n', defect_type.NAME, #defect_type.marks)
                 for _, mark in ipairs(defect_type.marks) do
                     table.insert(marks, mark)
@@ -642,7 +638,7 @@ if not ATAPE then
     local test_report  = require('test_report')
     -- local data = 'D:\\d-drive\\ATapeXP\\Main\\494\\video_recog\\2019_05_17\\Avikon-03M\\30346\\[494]_2019_03_15_01.xml'
     local data = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-    test_report(data, nil, {0, 1000000})
+    test_report(data, nil, {0, 10000000})
 
     local t = os.clock()
     local save_count = SearchGroupAutoDefects({
