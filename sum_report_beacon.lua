@@ -75,7 +75,7 @@ local function generate_row_beacon(marks, dlgProgress)
 		else
 			local offset = mark_helper.GetBeaconOffset(mark)
 			local abs_offset = offset and math.abs(offset)
-			if offset and abs_offset > max_offset then
+			if offset and abs_offset >= max_offset then
 				local row = MakeBeaconMarkRow(mark)
 				row.BEACON_OFFSET = offset
 				row.OUT_PARAM = offset
