@@ -50,12 +50,6 @@ ATAPE = prev_atape
 
 -- =============================================
 
-local function format_sys_coord(coord)
-    local s = string.format("%9d", coord)
-    s = s:reverse():gsub('(%d%d%d)','%1.'):reverse()
-    return s
-end
-
 local function filter_rail(marks, rail)
     assert(rail == 1 or rail == 2)
     local function f(mark)

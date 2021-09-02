@@ -919,6 +919,12 @@ local function format_path_coord(mark)
 	return res
 end
 
+local function format_sys_coord(coord)
+    local s = string.format("%d", coord)
+    s = s:reverse():gsub('(%d%d%d)','%1.'):reverse()
+    return s
+end
+
 -- отсортировать отметки по системной координате
 local function sort_mark_by_coord(marks)
 	return sort_stable(marks, function(mark) 
@@ -1187,6 +1193,7 @@ return{
 
 	sort_mark_by_coord = sort_mark_by_coord,
 	format_path_coord = format_path_coord,
+	format_sys_coord = format_sys_coord,
 	GetMarkRailPos = GetMarkRailPos,
 	GetRailName = GetRailName,
 	MakeCommonMarkTemaple = MakeCommonMarkTemplate,

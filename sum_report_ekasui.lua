@@ -238,7 +238,6 @@ local function make_ekasui_generator(getMarks, ...)
 		end)
 
 		local export_id = os.date('%Y%m%d%H%M%S')
-		local str_msg = 'Сохренено'
 		local pghlp = make_export_prgs_dlg(dlgProgress, #report_rows)
 
         -- РЕДАКТИРОВАНИЕ  атрибутов проезда
@@ -260,12 +259,21 @@ local function make_ekasui_generator(getMarks, ...)
             Passport.TRACK_NUM   = _pathText
         end
 
+		local first_file
+		local str_msg = 'Сохренено'
         for n, group in mark_helper.split_chunks_iter(100, report_rows) do
 			--print(#group)
-			local path = export_ekasui_xml(n, group, export_id, pghlp, pathType )
+			local path = export_ekasui_xml(n, group, export_id, pghlp, pathType)
 			str_msg = str_msg .. sprintf('\n%d отметок в файл: %s', #group, path)
+			if not first_file then
+				first_file = path
+			end
 		end
-		iup.Message(title, str_msg)
+		local anwser = iup.Alarm("ATape", str_msg, "Показать первый", "Закрыть")
+		if 1 == anwser and first_file then
+			local cmd = sprintf('%%SystemRoot%%\\explorer.exe /select,"%s"', first_file)
+			os.execute(cmd)
+		end
 		end)
 	end
 

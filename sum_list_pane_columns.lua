@@ -17,6 +17,7 @@ shallowcopy = mark_helper.shallowcopy
 deepcopy = mark_helper.deepcopy
 
 local DEFECT_CODES = require 'report_defect_codes'
+local sumPOV = require "sumPOV"
 
 -- =====================================================================  
 
@@ -70,6 +71,10 @@ column_num =
 	text = function(row)
 		return row
 	end,
+	get_tooltip = function (row)
+		local mark = work_marks_list[row]
+		return sprintf('mark ID = %d', mark.prop.ID)
+	end,
 }
 
 column_mark_id = 
@@ -100,7 +105,12 @@ column_path_coord =
 	end,
 	sorter = function(mark)
 		return mark.prop.SysCoord
-	end
+	end,
+	get_tooltip = function (row)
+		local mark = work_marks_list[row]
+		local prop = mark.prop
+		return sprintf('сист. коорд. = %s мм', mark_helper.format_sys_coord(prop.SysCoord))
+	end,
 }
 
 column_path_coord_begin_end =
@@ -128,9 +138,7 @@ column_sys_coord =
 	text = function(row)
 		local mark = work_marks_list[row]
 		local prop = mark.prop
-		local s = string.format("%d", prop.SysCoord)
-		s = s:reverse():gsub('(%d%d%d)','%1.'):reverse()
-		return s
+		return mark_helper.format_sys_coord(prop.SysCoord)
 	end,
 	sorter = function(mark)
 		return mark.prop.SysCoord
@@ -881,7 +889,11 @@ column_pov_common =
 	end,
 	sorter = function(mark)
 		return 0
-	end
+	end,
+	get_tooltip = function (row)
+		local mark = work_marks_list[row]
+		return sumPOV.GetMarkDescription(mark, '\n')
+	end,
 }
 
 column_group_defect_count = 
