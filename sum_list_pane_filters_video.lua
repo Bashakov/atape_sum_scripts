@@ -208,15 +208,11 @@ local filters =
 			column_rail,
 			column_rail_lr,
 			column_connections_all,
-			column_connections_defect,
+			--column_connections_defect,
 			column_recogn_video_channel,
 			column_pov_common,
 			}, 
 		GUIDS = recognition_guids,
-		filter = function(mark)
-			local all, fault = mark_helper.GetConnectorsCount(mark)
-			return all 
-		end,
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
@@ -232,10 +228,6 @@ local filters =
 			column_pov_common,
 		}, 
 		GUIDS = recognition_guids,
-		filter = function(mark)
-			local status = mark_helper.GetWeldedBondStatus(mark)
-			return status 
-		end,
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},

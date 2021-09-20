@@ -568,7 +568,7 @@ column_connections_all =
 	text = function(row)
 		local mark = work_marks_list[row]
 		local all, fault = mark_helper.GetConnectorsCount(mark)
-		return all or ''
+		return all or '0'
 	end,
 	sorter = function(mark)
 		local all, fault = mark_helper.GetConnectorsCount(mark)
@@ -752,8 +752,7 @@ column_weldedbond_status = {
 	text = function(row)
 		local mark = work_marks_list[row]
 		local status = mark_helper.GetWeldedBondStatus(mark)
-		if not status then return '' end
-		return status == 0 and '  исправен' or 'НЕИСПРАВЕН'
+		return status and status == 0 and '  исправен' or 'НЕИСПРАВЕН'
 	end,
 	sorter = function(mark)
 		local status = mark_helper.GetWeldedBondStatus(mark)
