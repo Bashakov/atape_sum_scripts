@@ -744,6 +744,22 @@ column_sleeper_dist_next =
 		return dist or 0
 	end
 }
+column_sleeper_epure_defect_user = 
+{
+	name = 'Код', 
+	width = 100, 
+	align = 'r', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local dist = mark.user.defect_code
+		return dist or ''
+		
+	end,
+	sorter = function(mark)
+		local dist = mark.user.defect_code
+		return dist or 0
+	end
+}
 
 column_weldedbond_status = {
 	name = 'Статус.', 

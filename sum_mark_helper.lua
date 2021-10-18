@@ -1,4 +1,5 @@
 require "luacom"
+local DEFECT_CODES = require 'report_defect_codes'
 
 local function printf (s,...) return print(s:format(...)) end
 local function sprintf (s, ...)
@@ -730,6 +731,46 @@ local function GetSleeperMeterial(mark)
 		return node and tonumber(node.nodeValue)
 	end
 end
+
+local SLEEPER_MATERIAL_TO_MAX_DIFFS =
+{
+	[1] = 2*40, -- "бетон",
+	[2] = 2*80, -- "дерево",
+}
+
+-- проверить эпюру шпалы
+local function CheckSleeperEpure(mark, sleeper_count, MEK, dist_to_next)
+	local ref_dist = 1000000 / sleeper_count
+
+	local cur_material = GetSleeperMeterial(mark)
+	local max_diff = SLEEPER_MATERIAL_TO_MAX_DIFFS[cur_material] or 80
+
+	local function check()
+		if dist_to_next < 200 then
+			return true
+		end
+		for i = 1, MEK do
+			if math.abs(dist_to_next/i - ref_dist) <= max_diff then
+				return true
+			end
+		end
+		return false
+	end
+	
+	local defect_code = ""
+	local dist_ok = check()
+
+	if not dist_ok then
+		if cur_material == 1 then -- "бетон",
+			defect_code = DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1]
+		elseif cur_material == 2 then -- "дерево",
+			defect_code = DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[1]
+		end
+	end
+
+	return dist_ok, defect_code
+end
+
 -- =================== Вспомогательные ===================
 
 -- фильтрация отметок
@@ -1225,11 +1266,12 @@ return{
 	GetCrewJointArray = GetCrewJointArray,
 	GetCrewJointCount = GetCrewJointCount,
 	CalcValidCrewJointOnHalf = CalcValidCrewJointOnHalf,
-	
+
 	GetSleeperParam = GetSleeperParam,
 	GetSleeperAngle = GetSleeperAngle,
 	GetSleeperMeterial = GetSleeperMeterial,
 	GetSleeperFault = GetSleeperFault,
+	CheckSleeperEpure = CheckSleeperEpure,
 
 	MakeMarkImage = MakeMarkImage,
 	MakeMarkUri = MakeMarkUri,

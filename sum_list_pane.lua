@@ -534,7 +534,7 @@ if not ATAPE then
 	if HUN then
 		name  = 'Surface Defects'
 	else
-		name  = 'Отсутствующие болты (вне норматива)'
+		name  = 'Шпалы нарушенная эпюра'
 	end
 
 	local columns = GetColumnDescription(name)

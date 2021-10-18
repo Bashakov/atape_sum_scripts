@@ -300,6 +300,42 @@ local filters =
 		end,
 	},
 	{
+		-- https://bt.abisoft.spb.ru/view.php?id=815
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
+		name = 'Шпалы нарушенная эпюра',
+		--videogram_defect_codes = {'090004000370', '090004000375'},
+		columns = {
+			column_num,
+			column_path_coord,
+			column_sleeper_meterial,
+			column_sleeper_dist_next,
+			column_sleeper_epure_defect_user,
+			--column_sys_coord,
+			column_pov_common,
+			},
+		GUIDS = {
+			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
+		post_load = function(marks)
+			marks = mark_helper.sort_mark_by_coord(marks)
+			local res = {}
+			for cur, right in mark_helper.enum_group(marks, 2) do
+				local cp, np = cur.prop.SysCoord, right.prop.SysCoord
+				cur.user.dist_next = np - cp
+				local dist_ok, defect_code = mark_helper.CheckSleeperEpure(cur, 1840, 4, cur.user.dist_next)
+				if not dist_ok then
+					cur.user.defect_code = defect_code
+					table.insert(res, cur)
+				end
+			end
+			return res
+		end,
+		-- filter = function(mark)
+		-- 	-- local maskChannel = mark.prop.ChannelMask
+		-- 	-- local mask21_22 = bit32.bor(bit32.lshift(1, 21), bit32.lshift(1, 22))
+		-- 	-- return not bit32.btest(maskChannel, mask21_22)
+		-- end,
+	},
+	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
 		name = 'Шпалы Все',
 		--videogram_defect_codes = {'090004000370', '090004000375'},

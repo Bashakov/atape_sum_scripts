@@ -32,19 +32,6 @@ local guigs_sleepers =
 -- ===================================================================
 
 
-local function check_distance(ref_dist, MEK, max_diff, cur_dist)
-	if cur_dist < 200 then
-		return true
-	end
-	for i = 1, MEK do
-		if math.abs(cur_dist/i - ref_dist) <= max_diff then
-			return true
-		end
-	end
-	return false
-end
-
-
 -- сделать из отметки таблицу и подставновками
 local function MakeSleeperMarkRow(mark)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
@@ -100,17 +87,9 @@ local function generate_rows_sleeper_dist(marks, dlgProgress, pov_filter)
 		return
 	end
 
-	local ref_dist = 1000000 / sleeper_count
-
-	local material_diffs =
-	{
-		[1] = 2*40, -- "бетон",
-		[2] = 2*80, -- "дерево",
-	}
-
 	local report_rows = {}
 	local i = 0
-	for left, cur, right in mark_helper.enum_group(marks, 3) do
+	for _, cur, right in mark_helper.enum_group(marks, 3) do
 		i = i + 1
 
 		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
@@ -129,28 +108,16 @@ local function generate_rows_sleeper_dist(marks, dlgProgress, pov_filter)
 
 				table.insert(report_rows, row)
 			else
-				local cur_material = mark_helper.GetSleeperMeterial(cur)
-				local max_diff = material_diffs[cur_material] or 80
-
-				local dist_prev = cur.prop.SysCoord - left.prop.SysCoord
 				local dist_next = right.prop.SysCoord - cur.prop.SysCoord
-
-				local dist_ok = check_distance(ref_dist, MEK, max_diff, dist_next)
+				local dist_ok, defect_code = mark_helper.CheckSleeperEpure(cur, sleeper_count, MEK, dist_next)
 
 				--printf("%s | %9d %3d | %+8.1f\n", dist_ok and '    ' or '!!!!', cur.prop.SysCoord, max_diff,  dist_next-ref_dist)
 
 				if not dist_ok then
 					local row = MakeSleeperMarkRow(cur)
 					row.SLEEPER_DIST = dist_next
-
-					if cur_material == 1 then -- "бетон",
-						row.DEFECT_CODE = DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1]
-						row.DEFECT_DESC = DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[2]
-					elseif cur_material == 2 then -- "дерево",
-						row.DEFECT_CODE = DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[1]
-						row.DEFECT_DESC = DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[2]
-					end
-
+					row.DEFECT_CODE = defect_code
+					row.DEFECT_DESC = DEFECT_CODES.code2desc(defect_code)
 					table.insert(report_rows, row)
 				end
 			end
