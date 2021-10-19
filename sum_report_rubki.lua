@@ -254,7 +254,7 @@ local function get_sleepers_params(join_mark)
 	-- 2. относительно зазора отсчитываются 3 шпалы влево и вправо и для них заполняются epur и skrepl
 
 	-- проверим эпюру и дефекты шпал
-	local epur = 0
+	local epur_errors = 0
 
 	local sleepers = load_near_marks(join_mark, sleeper_guids, CHECK_SLEEPER_COUNT, SEARCH_DIST)
 	for i = 1, #sleepers-1 do
@@ -263,7 +263,7 @@ local function get_sleepers_params(join_mark)
 		local dist = r.prop.SysCoord - l.prop.SysCoord
 		local dist_error = math.abs(dist - SLEEPER_DIST_REF)
 		if dist_error > 80 then
-			epur = epur + 1
+			epur_errors = epur_errors + 1
 		end
 	end
 
@@ -283,6 +283,12 @@ local function get_sleepers_params(join_mark)
 		if sleeper_material then
 			break
 		end
+	end
+
+	-- https://bt.abisoft.spb.ru/view.php?id=813#c4122 0 - нормальная эпюра на 6 шпалах, 1 - хотя бы одно нарушение эпюры
+	local epur = 0
+	if epur_errors ~= 0 then
+		epur = 1
 	end
 
 	return epur, sleeper_defects, sleeper_material
@@ -413,6 +419,9 @@ local TmpFiles = OOP.class{
 	https://bt.abisoft.spb.ru/view.php?id=752#c3727]]
 local function make_joint_image(mark)
 	return EnterScope(function (defer)
+		if ShowVideo ~= 1 then -- https://bt.abisoft.spb.ru/view.php?id=809
+			return ''
+		end
 		local tmp_files = TmpFiles()
 		defer(tmp_files.close, tmp_files)
 		local center = mark.prop.SysCoord + mark.prop.Len / 2
