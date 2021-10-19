@@ -679,14 +679,14 @@ local function GetSleeperParam(mark)
 	return res
 end
 
--- получить разворот шпалы
+-- получить разворот шпалы (возвращает значение в радианах * 1000)
 local function GetSleeperAngle(mark)
 	local ext = mark.ext
-	
+
 	if ext.SLEEPERS_ANGLE then
 		return ext.SLEEPERS_ANGLE
 	end
-	
+
 	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
 		local req = '\z
 			/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Sleepers"]\z

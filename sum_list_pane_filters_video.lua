@@ -7,6 +7,33 @@ ATAPE = true -- disable debug code while load scripts
 	local sum_report_joints = require "sum_report_joints"
 ATAPE = prev_atape
 
+
+local SLEEPER_ANGLE_TRESHOLD_RAD = 0.0
+
+local function filter_sleeper_mark_by_angle(mark, treshold)
+	local angle = mark_helper.GetSleeperAngle(mark)
+	if not angle then
+		return false
+	end
+	angle = math.abs(angle) / 1000
+	return angle >= treshold
+end
+
+local function filter_sleepers_by_angle(marks, treshold)
+	local res = {}
+	if not treshold or treshold == 0 then
+		return marks
+	end
+	for _, mark in ipairs(marks) do
+		if filter_sleeper_mark_by_angle(mark, treshold) then
+			table.insert(res, mark)
+		end
+	end
+	return res
+end
+
+
+
 local filters = 
 {
 	--!!! вывод всех объектов с ограничением скорости или дефектами // https://bt.abisoft.spb.ru/view.php?id=779
@@ -290,6 +317,7 @@ local filters =
 				cur.user.dist_prev = cp - pp
 				cur.user.dist_next = np - cp
 			end
+			marks = filter_sleepers_by_angle(marks)
 			return marks
 		end,
 		filter = function(mark)
@@ -316,24 +344,22 @@ local filters =
 		GUIDS = {
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
 		post_load = function(marks)
+			local sleeper_count = 1840
+			local MEK = 4
 			marks = mark_helper.sort_mark_by_coord(marks)
 			local res = {}
 			for cur, right in mark_helper.enum_group(marks, 2) do
 				local cp, np = cur.prop.SysCoord, right.prop.SysCoord
 				cur.user.dist_next = np - cp
-				local dist_ok, defect_code = mark_helper.CheckSleeperEpure(cur, 1840, 4, cur.user.dist_next)
+				local dist_ok, defect_code = mark_helper.CheckSleeperEpure(cur, sleeper_count, MEK, cur.user.dist_next)
 				if not dist_ok then
 					cur.user.defect_code = defect_code
 					table.insert(res, cur)
 				end
 			end
+			res = filter_sleepers_by_angle(res, SLEEPER_ANGLE_TRESHOLD_RAD)
 			return res
 		end,
-		-- filter = function(mark)
-		-- 	-- local maskChannel = mark.prop.ChannelMask
-		-- 	-- local mask21_22 = bit32.bor(bit32.lshift(1, 21), bit32.lshift(1, 22))
-		-- 	-- return not bit32.btest(maskChannel, mask21_22)
-		-- end,
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
@@ -392,7 +418,6 @@ local filters =
 			return params and params.FaultType and params.FaultType > 0
 		end
 	},
-	--!!!добавлен новый элемент в фильтр - шпалы с разворотом более условного порога
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
 		name = 'Шпалы с разворотом',
@@ -405,8 +430,7 @@ local filters =
 			},
 		GUIDS = {'{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}'},
 		filter = function(mark)
-			local sl_angle = mark_helper.GetSleeperAngle(mark)
-			return sl_angle and sl_angle > 20 -- !!!установка порога
+			return filter_sleeper_mark_by_angle(mark, SLEEPER_ANGLE_TRESHOLD_RAD)
 		end,
 	},
 	{	
@@ -424,7 +448,7 @@ local filters =
 		},
 		GUIDS = {"{1D5095ED-AF51-43C2-AA13-6F6C86302FB0}"},
 	},
-	
+
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
 		name = 'Слепые зазоры', 
