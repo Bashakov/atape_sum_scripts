@@ -172,20 +172,30 @@ local excel_helper = OOP.class
 
 	-- проити по всему диаппазону и заменить подстановки
 	-- sources_values - массив таблиц со значениями
-	ReplaceTemplates = function(self, dst_range, sources_values)
+	ReplaceTemplates = function(self, dst_range, sources_values, template_values)
 		assert(type(sources_values[1]) == 'table')
 
 		for n = 1, dst_range.Cells.count do						-- пройдем по всем ячейкам
-			local cell = dst_range.Cells(n);
-			local val = cell.Value2
+			local cell = nil
+			local val = nil
+			if template_values then
+				val = template_values[n] or ''
+			else
+				cell = dst_range.Cells(n)
+				val = cell.Value2 or ''
+			end
+
 			-- print(n, val, cell.HasFormula, cell.Formula)
-			if val and not cell.HasFormula then
+			if val ~= '' and not (cell and cell.HasFormula) then
 				local orig = val
 				for _, src in ipairs(sources_values) do
 					val, _ = string.gsub(val, '%$([%w_]+)%$', src) -- и заменим шаблон
 				end
 				--print(n, cell.Value2, val)
 				if val ~= orig then
+					if not cell then
+						cell = dst_range.Cells(n)
+					end
 					cell.Value2 = val
 				end
 			end
@@ -204,6 +214,12 @@ local excel_helper = OOP.class
 		local template_row_num, marker = FindTemplateRowNum(user_range)		-- номер шаблона строки с данными
 		assert(template_row_num, 'Can not find table marker in tempalate')
 		template_row_num = template_row_num + correction
+
+		local template_values = {}
+		for c = 1, user_range.Columns.count do
+			local value = user_range.Cells(template_row_num, c).value2 or ''
+			template_values[c] = value
+		end
 
 		if marker == '%$table_old%$' then
 			for i = 1, row_count-1 do
@@ -244,7 +260,7 @@ local excel_helper = OOP.class
 			end
 		end
 
-		return self._data_range, user_range
+		return self._data_range, user_range, template_values
 	end,
 
 	InsertLink = function (self, cell, url, text)					-- вставка ссылки в ячейку
@@ -329,11 +345,6 @@ local excel_helper = OOP.class
 
 	-- генератор, для использования в цикле for, возвращает номер и диапазон, куда следует вставлять данные
 	EnumDstTable = function(self, count, progress_callback)
-		local const = {
-			xlDown = -4121,
-			xlShiftToRight = -4161
-		}
-
 		local worksheet = self._worksheet
 		local c1, c2 = self:ScanTemplateTableRange(worksheet) -- ищем шаблонную таблицу
 
@@ -341,7 +352,7 @@ local excel_helper = OOP.class
 		if count > 1 then
 			local a = worksheet.Cells(c2.row+1, c1.column)
 			local dst_range = a:Resize(src_table.Rows.count * (count-1), src_table.Columns.count)
-			dst_range:Insert(const.xlDown)
+			dst_range:Insert(XlInsertShiftDirection.xlShiftDown)
 		end
 
 		local function get_table(i) -- функция возвращает диапазон относящийся к требуемой записи (1 <= i <= count)
@@ -373,7 +384,7 @@ local excel_helper = OOP.class
 	-- клонируем шаблонную строку нужное число раз, и вставляем данные
 	ApplyRows = function (self, marks, fn_get_templates_data, dlgProgress)
 		local dst_row_count = #marks
-		local data_range, user_range = self:CloneTemplateRow(dst_row_count, 0, dlgProgress)
+		local data_range, user_range, template_values = self:CloneTemplateRow(dst_row_count, 0, dlgProgress)
 		for line = 1, dst_row_count do
 			local mark = marks[line]
 
@@ -384,7 +395,7 @@ local excel_helper = OOP.class
 			local cell_RB = data_range.Cells(line, data_range.Columns.count)
 			local row_range = user_range:Range(cell_LT, cell_RB)
 
-			self:ReplaceTemplates(row_range, {row_data})
+			self:ReplaceTemplates(row_range, {row_data}, template_values)
 			if dlgProgress and not dlgProgress:step(line / dst_row_count, sprintf('Сохранение %d / %d', line, dst_row_count)) then
 				break
 			end
