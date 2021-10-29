@@ -635,7 +635,7 @@ local function ProcessUnspecifiedObject(mark)
 	local cur_frame_coord = Frame.coord.raw
 	local prop, ext = mark.prop, mark.ext
 
-	if ext.VIDEOFRAMECOORD and ext.VIDEOIDENTCHANNEL and ext.UNSPCOBJPOINTS and math.abs(ext.VIDEOFRAMECOORD - cur_frame_coord) < 1500 then
+	if ext.VIDEOFRAMECOORD and ext.UNSPCOBJPOINTS and math.abs(ext.VIDEOFRAMECOORD - cur_frame_coord) < 1500 then
 		local points = parse_polygon(ext.UNSPCOBJPOINTS, cur_frame_coord, ext.VIDEOFRAMECOORD)
 
 		if #points == 8 then
