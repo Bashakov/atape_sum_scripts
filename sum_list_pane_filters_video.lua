@@ -353,8 +353,11 @@ local filters =
 				cur.user.dist_next = np - cp
 				local dist_ok, defect_code = mark_helper.CheckSleeperEpure(cur, sleeper_count, MEK, cur.user.dist_next)
 				if not dist_ok then
-					cur.user.defect_code = defect_code
-					table.insert(res, cur)
+					-- hide sleeper with unknown material (without defect code) https://bt.abisoft.spb.ru/view.php?id=833
+					if defect_code and defect_code ~= '' then
+						cur.user.defect_code = defect_code
+						table.insert(res, cur)
+					end
 				end
 			end
 			res = filter_sleepers_by_angle(res, SLEEPER_ANGLE_TRESHOLD_RAD)
