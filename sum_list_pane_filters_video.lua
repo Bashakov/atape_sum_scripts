@@ -253,8 +253,14 @@ local filters =
 			column_weldedbond_status,
 			--column_mark_id, для проверки
 			column_pov_common,
-		}, 
+		},
 		GUIDS = recognition_guids,
+		filter = function(mark)
+			-- https://bt.abisoft.spb.ru/view.php?id=834
+			-- В списке приварные соединители соединителях нужны только неисправные. исправные не нужно отображать
+			local status = mark_helper.GetWeldedBondStatus(mark)
+			return status and status ~= 0
+		end,
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
