@@ -61,6 +61,10 @@ local filters =
 			}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
+			local gap_type = mark_helper.GetGapType(mark)
+			if not gap_type or gap_type == 2 then -- https://bt.abisoft.spb.ru/view.php?id=839 hide ATS
+				return false
+			end
 			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
 			return valid_on_half and valid_on_half < 2
 		end,
