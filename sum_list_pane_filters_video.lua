@@ -8,7 +8,8 @@ ATAPE = true -- disable debug code while load scripts
 ATAPE = prev_atape
 
 
-local SLEEPER_ANGLE_TRESHOLD_RAD = 0.0
+-- https://bt.abisoft.spb.ru/view.php?id=816#c4204
+local SLEEPER_ANGLE_TRESHOLD_RAD = 0.1
 
 local function filter_sleeper_mark_by_angle(mark, treshold)
 	local angle = mark_helper.GetSleeperAngle(mark)
