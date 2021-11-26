@@ -573,7 +573,7 @@ local function report_short_rails_excel(params)
 	end)
 end
 
-local function save_single_short_rail_ekasui(dlg, node_relset, i, short_rails_cnt, mark_pair)
+local function save_single_short_rail_ekasui(dlg, node_relset, i, mark_pair)
 	local mark1, mark2 = table.unpack(mark_pair)
 	local km1, m1, mm1 = Driver:GetPathCoord(mark1.prop.SysCoord)
 	local km2, m2, mm2 = Driver:GetPathCoord(mark2.prop.SysCoord)
@@ -608,9 +608,6 @@ local function save_single_short_rail_ekasui(dlg, node_relset, i, short_rails_cn
 			add_text_node(node_marking, 'error', img_data)
 		end
 	end
-	if not dlg:step(i / short_rails_cnt, sprintf('Сохранение рельсов %d / %d', i, short_rails_cnt)) then
-		return
-	end
 end
 
 local GAP_PARAM_ORDER = {
@@ -638,7 +635,7 @@ local GAP_PARAM_ORDER = {
 	"diffelasticity"
 }
 
-local function save_singe_gap_short_rail_ekasui(dlg, node_railgapset, i, marks_cnt, mark)
+local function save_singe_gap_short_rail_ekasui(dlg, node_railgapset, mark)
 	local gap_params = make_gap_description(mark)
 
 	local node_railgap = add_node(node_railgapset, 'railgap', {gapid=mark.prop.ID})
@@ -653,36 +650,40 @@ local function save_singe_gap_short_rail_ekasui(dlg, node_railgapset, i, marks_c
 	if gap_params.img_error then
 		add_text_node(node_picset, 'error', gap_params.img_error)
 	end
-
-	if not dlg:step(i / marks_cnt, sprintf('Сохранение стыков %d / %d', i, marks_cnt)) then
-		return
-	end
 end
 
 local function save_short_rails_ekasui(proezd_params, dlg, marks, short_rails)
 	local dom = luacom.CreateObject('Msxml2.DOMDocument.6.0')
-		assert(dom)
+	assert(dom)
 
-		local node_videocontrol = add_node(dom, 'videocontrol')
-		local node_proezd = add_node(node_videocontrol, 'proezd', {
-			road=proezd_params.road,
-			vagon=proezd_params.vagon,
-			proezd=proezd_params.proezd,
-			proverka=proezd_params.proverka
-		})
-		local node_way = add_node(node_proezd, 'way', {assetnum=proezd_params.assetnum})
-		local node_relset = add_node(node_way, 'relset')
+	local node_videocontrol = add_node(dom, 'videocontrol')
+	local node_proezd = add_node(node_videocontrol, 'proezd', {
+		road=proezd_params.road,
+		vagon=proezd_params.vagon,
+		proezd=proezd_params.proezd,
+		proverka=proezd_params.proverka
+	})
+	local node_way = add_node(node_proezd, 'way', {assetnum=proezd_params.assetnum})
+	local node_relset = add_node(node_way, 'relset')
+	local node_railgapset = add_node(node_way, 'railgapset')
 
-		for i, mark_pair in ipairs(short_rails) do
-			save_single_short_rail_ekasui(dlg, node_relset, i, #short_rails, mark_pair)
+	local saved_gaps = {}
+	for i, mark_pair in ipairs(short_rails) do
+		save_single_short_rail_ekasui(dlg, node_relset, i, mark_pair)
+		for _, mark in ipairs(mark_pair) do
+			if not saved_gaps[mark.prop.ID] then
+				saved_gaps[mark.prop.ID] = true
+				save_singe_gap_short_rail_ekasui(dlg, node_railgapset, mark)
+			end
 		end
 
-		local node_railgapset = add_node(node_way, 'railgapset')
-		for i, mark in ipairs(marks) do
-			save_singe_gap_short_rail_ekasui(dlg, node_railgapset, i, #marks, mark)
+		if not dlg:step(i / #short_rails, sprintf('Сохранение рельсов %d / %d', i, #short_rails)) then
+			return
 		end
-		local path_dst = save_res_xml(EKASUI_PARAMS.ExportFolder, node_videocontrol)
-		return path_dst
+	end
+
+	local path_dst = save_res_xml(EKASUI_PARAMS.ExportFolder, node_videocontrol)
+	return path_dst
 end
 
 local function report_short_rails_ekasui()
