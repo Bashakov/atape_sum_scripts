@@ -573,43 +573,6 @@ local function report_short_rails_excel(params)
 	end)
 end
 
-local function save_single_short_rail_ekasui(dlg, node_relset, i, mark_pair)
-	local mark1, mark2 = table.unpack(mark_pair)
-	local km1, m1, mm1 = Driver:GetPathCoord(mark1.prop.SysCoord)
-	local km2, m2, mm2 = Driver:GetPathCoord(mark2.prop.SysCoord)
-
-	local node_rels = add_node(node_relset, 'rels', {relsid=i})
-	add_text_node(node_rels, 'bgapid', mark1.prop.ID)
-	add_text_node(node_rels, 'egapid', mark2.prop.ID)
-	add_text_node(node_rels, 'left', get_left(mark1))
-	add_text_node(node_rels, 'bkm', km1)
-	add_text_node(node_rels, 'bm', string.format('%.3f', m1 + mm1/1000))
-	add_text_node(node_rels, 'ekm', km2)
-	add_text_node(node_rels, 'em', string.format('%.3f', m2 + mm2/1000))
-
-	add_text_node(node_rels, 'length', string.format('%.3f', (mark2.prop.SysCoord - mark1.prop.SysCoord)/1000))
-
-	if false then
-		--[[ https://bt.abisoft.spb.ru/view.php?id=722#c3401
-		5. для рубок в ноде relset указываются якобы маркировки, но мы их не определяем.
-		Поэтому ноды
-		<marking>
-			<mark/>
-			<pic> ... </pic>
-		</marking>
-		- Удаляем.
-		]]
-		local node_marking = add_node(node_rels, 'marking')
-		add_text_node(node_marking, 'mark', '')
-
-		local ok, img_data = make_rail_image(mark1, mark2)
-		add_text_node(node_marking, 'pic', ok and img_data or '')
-		if not ok then
-			add_text_node(node_marking, 'error', img_data)
-		end
-	end
-end
-
 local GAP_PARAM_ORDER = {
 	"gaptype",
 	"nakltype",
@@ -635,55 +598,86 @@ local GAP_PARAM_ORDER = {
 	"diffelasticity"
 }
 
-local function save_singe_gap_short_rail_ekasui(dlg, node_railgapset, mark)
-	local gap_params = make_gap_description(mark)
+local SaverEkasui = OOP.class
+{
+	ctor = function (self, proezd_params)
+		self.dom = luacom.CreateObject('Msxml2.DOMDocument.6.0')
+		assert(self.dom)
 
-	local node_railgap = add_node(node_railgapset, 'railgap', {gapid=mark.prop.ID})
-	for _, param_name in ipairs(GAP_PARAM_ORDER) do
-		if gap_params.values[param_name] then
-			add_text_node(node_railgap, param_name, gap_params.values[param_name])
-		end
-	end
+		self.node_videocontrol = add_node(self.dom, 'videocontrol')
+		local node_proezd = add_node(self.node_videocontrol, 'proezd', {
+			road=proezd_params.road,
+			vagon=proezd_params.vagon,
+			proezd=proezd_params.proezd,
+			proverka=proezd_params.proverka
+		})
+		local node_way = add_node(node_proezd, 'way', {assetnum=proezd_params.assetnum})
+		self.node_relset = add_node(node_way, 'relset')
+		self.node_railgapset = add_node(node_way, 'railgapset')
+		self.saved_gaps = {}
+	end,
 
-	local node_picset = add_node(node_railgap, 'picset')
-	add_text_node(node_picset, 'pic', gap_params.img_data)
-	if gap_params.img_error then
-		add_text_node(node_picset, 'error', gap_params.img_error)
-	end
-end
+	write = function (self)
+		return save_res_xml(EKASUI_PARAMS.ExportFolder, self.node_videocontrol)
+	end,
 
-local function save_short_rails_ekasui(proezd_params, dlg, marks, short_rails)
-	local dom = luacom.CreateObject('Msxml2.DOMDocument.6.0')
-	assert(dom)
-
-	local node_videocontrol = add_node(dom, 'videocontrol')
-	local node_proezd = add_node(node_videocontrol, 'proezd', {
-		road=proezd_params.road,
-		vagon=proezd_params.vagon,
-		proezd=proezd_params.proezd,
-		proverka=proezd_params.proverka
-	})
-	local node_way = add_node(node_proezd, 'way', {assetnum=proezd_params.assetnum})
-	local node_relset = add_node(node_way, 'relset')
-	local node_railgapset = add_node(node_way, 'railgapset')
-
-	local saved_gaps = {}
-	for i, mark_pair in ipairs(short_rails) do
-		save_single_short_rail_ekasui(dlg, node_relset, i, mark_pair)
+	add_rail = function(self, i, mark_pair)
+		self:_rail2xml(i, mark_pair)
 		for _, mark in ipairs(mark_pair) do
-			if not saved_gaps[mark.prop.ID] then
-				saved_gaps[mark.prop.ID] = true
-				save_singe_gap_short_rail_ekasui(dlg, node_railgapset, mark)
+			self:_gap2xml(mark)
+		end
+	end,
+
+	_rail2xml = function (self, i, mark_pair)
+		local mark1, mark2 = table.unpack(mark_pair)
+		local km1, m1, mm1 = Driver:GetPathCoord(mark1.prop.SysCoord)
+		local km2, m2, mm2 = Driver:GetPathCoord(mark2.prop.SysCoord)
+
+		local node_rels = add_node(self.node_relset, 'rels', {relsid=i})
+		add_text_node(node_rels, 'bgapid', mark1.prop.ID)
+		add_text_node(node_rels, 'egapid', mark2.prop.ID)
+		add_text_node(node_rels, 'left', get_left(mark1))
+		add_text_node(node_rels, 'bkm', km1)
+		add_text_node(node_rels, 'bm', string.format('%.3f', m1 + mm1/1000))
+		add_text_node(node_rels, 'ekm', km2)
+		add_text_node(node_rels, 'em', string.format('%.3f', m2 + mm2/1000))
+		add_text_node(node_rels, 'length', string.format('%.3f', (mark2.prop.SysCoord - mark1.prop.SysCoord)/1000))
+	end,
+
+	_gap2xml = function (self, mark)
+		if self.saved_gaps[mark.prop.ID] then
+			return
+		end
+		self.saved_gaps[mark.prop.ID] = true
+
+		local gap_params = make_gap_description(mark)
+
+		local node_railgap = add_node(self.node_railgapset, 'railgap', {gapid=mark.prop.ID})
+		for _, param_name in ipairs(GAP_PARAM_ORDER) do
+			if gap_params.values[param_name] then
+				add_text_node(node_railgap, param_name, gap_params.values[param_name])
 			end
 		end
 
+		local node_picset = add_node(node_railgap, 'picset')
+		add_text_node(node_picset, 'pic', gap_params.img_data)
+		if gap_params.img_error then
+			add_text_node(node_picset, 'error', gap_params.img_error)
+		end
+	end
+}
+
+local function save_short_rails_ekasui(proezd_params, dlg, short_rails)
+	local saver = SaverEkasui(proezd_params)
+
+	for i, mark_pair in ipairs(short_rails) do
+		saver:add_rail(i, mark_pair)
 		if not dlg:step(i / #short_rails, sprintf('Сохранение рельсов %d / %d', i, #short_rails)) then
 			return
 		end
 	end
 
-	local path_dst = save_res_xml(EKASUI_PARAMS.ExportFolder, node_videocontrol)
-	return path_dst
+	return saver:write()
 end
 
 local function report_short_rails_ekasui()
@@ -703,7 +697,7 @@ local function report_short_rails_ekasui()
 			iup.Message('Info', "Подходящих отметок не найдено")
 			return
 		end
-		local path_dst = save_short_rails_ekasui(proezd_params, dlg, marks, short_rails)
+		local path_dst = save_short_rails_ekasui(proezd_params, dlg, short_rails)
 		local anwser = iup.Alarm("ATape", sprintf("Сохранен файл: %s", path_dst), "Показать", "Конвертировать в HTML", "Закрыть")
 		if 1 == anwser then
 			os.execute(path_dst)
