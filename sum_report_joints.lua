@@ -386,7 +386,7 @@ local function bolt2defect_limit(mark)
 		elseif valid_on_half == 0 then
 			return DEFECT_CODES.JOINT_MISSING_BOLT_NO_GOOD[1], 'Закрытие движения'
 		else
-			return DEFECT_CODES.JOINT_MISSING_BOLT_TWO_GOOD[1], '??'
+			return DEFECT_CODES.JOINT_MISSING_BOLT_TWO_GOOD[1], ''	-- в столбце 14 вместо ?? нужно ""/пусто/ничего. https://bt.abisoft.spb.ru/view.php?id=867
 		end
 	end
 end
@@ -616,10 +616,12 @@ if not ATAPE then
 	-- print(report.name)
 	-- report.fn()
 
+	--report_missing_bolt()
+	ekasui_missing_bolt()
 	-- report_joint_width()
 	--report_neigh_blind_joint()
 	-- report_ALL()
-	ekasui_ALL()
+	-- ekasui_ALL()
 end
 
 
