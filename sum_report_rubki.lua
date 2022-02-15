@@ -670,7 +670,9 @@ local SaverEkasui = OOP.class
 
 		local gap_params = make_gap_description(mark)
 
-		local node_railgap = add_node(self.node_railgapset, 'railgap', {gapid=mark.prop.ID})
+		local node_railgap = add_node(self.node_railgapset, 'railgap', {
+			gapid=mark.prop.ID,
+			avikon_system_coord=mark.prop.SysCoord})
 		for _, param_name in ipairs(GAP_PARAM_ORDER) do
 			if gap_params.values[param_name] then
 				add_text_node(node_railgap, param_name, gap_params.values[param_name])

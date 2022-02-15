@@ -165,6 +165,7 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg, path
 		node_incident:setAttribute("lon", mark.LON)
 		node_incident:setAttribute("lat", mark.LAT)
 		node_incident:setAttribute("Pic", img)
+		node_incident:setAttribute("avikon_system_coord", mark.SYS)
 
 		if progres_dlg and not progres_dlg() then
 			break
