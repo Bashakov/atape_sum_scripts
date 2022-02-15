@@ -175,8 +175,9 @@ local function generate_missing_beacon_mark(marks, dlgProgress)
 
 	searcher:prepare()
 
-	-- проходим по всем елкам и ищем для них соответствующие отметка с рисками
 	local MAX_DISTANCE_TO_BEACON_TO_MISS = 300 -- интервал в котором относительно елки ищется маячная метка
+
+	-- проходим по всем елкам и ищем для них соответствующие отметка с рисками
 	for i, mark in ipairs(marks) do
 		if mark.prop.Guid == GUID_BEACON_FIRTREE then
 			local rail_mask = bit32.band(mark.prop.RailMask, 0x03)
@@ -190,15 +191,33 @@ local function generate_missing_beacon_mark(marks, dlgProgress)
 		end
 
 		if i % 300 == 0 then collectgarbage("collect") end
-		if i % 34 == 0 and not dlgProgress:step(i / #marks, sprintf('Поиск %d / %d отметок, дефектов %d', i, #marks, #report_rows)) then
+		if i % 34 == 0 and not dlgProgress:step(i / #marks, sprintf('проверка отметок типа елка %d / %d отметок, дефектов %d', i, #marks, #report_rows)) then
+			return
+		end
+	end
+
+	-- проходим по маячным отметкам и ищем пару на другом рельсе
+	-- https://bt.abisoft.spb.ru/view.php?id=869
+	for i, mark in ipairs(marks) do
+		if mark.prop.Guid == GUID_BEACON_SPALA or
+		   mark.prop.Guid == GUID_BEACON then
+			local rail_mask = bit32.band(mark.prop.RailMask, 0x03)
+			rail_mask = (rail_mask == 1) and 2 or 1	-- ищем на другом рельсе
+			local found = searcher:get_beacon(mark.prop.SysCoord, rail_mask, MAX_DISTANCE_TO_BEACON_TO_MISS)
+			if not found then
+				local row = MakeBeaconMarkRow(mark)
+				row.DEFECT_CODE = DEFECT_CODES.BEACON_MISSING_LINE[1]
+				row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
+				table.insert(report_rows, row)
+			end
+		end
+
+		if i % 300 == 0 then collectgarbage("collect") end
+		if i % 34 == 0 and not dlgProgress:step(i / #marks, sprintf('Поиск парных маячных %d / %d отметок, дефектов %d', i, #marks, #report_rows)) then
 			return
 		end
 	end
 	return report_rows
-end
-
-local function report_not_implement()
-	iup.Message('Error', "Отчет не реализован")
 end
 
 -- =========================================================================
@@ -275,14 +294,14 @@ if not ATAPE then
 	local test_report  = require('test_report')
 	--test_report('D:\\ATapeXP\\Main\\494\\Москва Курская - Подольск\\Москва Курская - Подольск\\2019_05_16\\Avikon-03M\\4240\\[494]_2019_03_15_01.xml')
 	--test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
-	--test_report('D:/d-drive/ATapeXP/Main/494/video_recog/2020_08_24/Avikon-03M/4858/[494]_2019_09_03_01.xml')
-	test_report('D:\\Downloads\\722\\2021.03.23\\[492]_2021_01_26_02.xml', nil, {0, 10000})
+	test_report('D:/d-drive/ATapeXP/Main/494/video_recog/2020_08_24/Avikon-03M/4858/[494]_2019_09_03_01.xml')
+	-- test_report('D:\\Downloads\\722\\2021.03.23\\[492]_2021_01_26_02.xml', nil, {0, 10000})
 
 	-- report_beacon_user()
 	--generate_row_beacon_user()
-	report_beacon()
+	-- report_beacon()
 	--ekasui_beacon()
-	-- ekasui_missing_beacon_mark()
+	ekasui_missing_beacon_mark()
 end
 
 return {
