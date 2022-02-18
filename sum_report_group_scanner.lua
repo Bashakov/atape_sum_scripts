@@ -5,12 +5,13 @@ local OOP = require "OOP"
 -- построение распределения групповых отметок и потом поиск по нему
 local GroupMarkSearch = OOP.class
 {
-	ctor = function(self, guids_group)
+	ctor = function(self, guids_group, check_defect_code)
 		self._groups = {}
 		self._guids_group = {}
         for _, g in ipairs(guids_group) do
             self._guids_group[g] = true
         end
+        self._check_defect_code = check_defect_code
 	end,
 
 	add_groups = function (self, rows)
@@ -30,7 +31,7 @@ local GroupMarkSearch = OOP.class
         if not self:_is_group_mark(row) then
             for _, group in ipairs(self._groups) do
                 local row_desc = self._get_row_param(row)
-                if self._is_include(row_desc, group) then
+                if self:_is_include(row_desc, group) then
                     return true
                 end
             end
@@ -38,9 +39,9 @@ local GroupMarkSearch = OOP.class
 		return false
 	end,
 
-    _is_include = function (row_desc, group)
+    _is_include = function (self, row_desc, group)
         return
-            row_desc.code == group.code and
+            (not self._check_defect_code or row_desc.code == group.code) and
             bit32.btest(row_desc.rail, group.rail) and
             row_desc.to >= group.from and
             row_desc.from <= group.to
@@ -60,8 +61,8 @@ local GroupMarkSearch = OOP.class
 	end,
 }
 
-local function remove_grouped_marks(rows, guids_group)
-    local searcher = GroupMarkSearch(guids_group)
+local function remove_grouped_marks(rows, guids_group, check_defect_code)
+    local searcher = GroupMarkSearch(guids_group, check_defect_code)
     if searcher:add_groups(rows) then
         local res = {}
         for _, row in ipairs(rows) do

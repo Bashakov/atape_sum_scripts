@@ -15,17 +15,24 @@ local EKASUI_REPORT = require 'sum_report_ekasui'
 local AVIS_REPORT = require 'sum_report_avis'
 local sumPOV = require "sumPOV"
 local functional = require "functional"
-require "UserAborted"
+local remove_grouped_marks = require "sum_report_group_scanner"
+local ErrorUserAborted = require "UserAborted"
 
 local printf = mark_helper.printf
 local sprintf = mark_helper.sprintf
 
 -- =========================================================================
 
-local guids_fasteners = 
+local guids_fasteners =
 {
 	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",	-- Скрепление
 	"{3601038C-A561-46BB-8B0F-F896C2130001}",	-- Скрепления(Пользователь)
+}
+
+local guids_fasteners_groups =
+{
+	"{B6BAB49E-4CEC-4401-A106-355BFB2E0021}",   -- GROUP_FSTR_AUTO
+	"{B6BAB49E-4CEC-4401-A106-355BFB2E0022}", 	-- GROUP_FSTR_USER
 }
 
 local function GetMarks(ekasui, pov_filter)
@@ -33,22 +40,28 @@ local function GetMarks(ekasui, pov_filter)
 		pov_filter = sumPOV.MakeReportFilter(ekasui)
 	end
 	if not pov_filter then return {} end
-	local marks = Driver:GetMarks{GUIDS=guids_fasteners}
+	local gg = mark_helper.table_merge(guids_fasteners, guids_fasteners_groups)
+	local marks = Driver:GetMarks{GUIDS=gg}
 	marks = pov_filter(marks)
 	marks = mark_helper.sort_mark_by_coord(marks)
 	return marks
 end
 
-local function MakeFastenerMarkRow(mark)
+local function MakeFastenerMarkRow(mark, defect_code)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
 	row.FASTENER_TYPE = ''
+
+	row.DEFECT_CODE = defect_code or ''
+	row.DEFECT_DESC = DEFECT_CODES.code2desc(defect_code) or string.match(mark.prop.Description, '([^\n]+)\n') or ''
+
 	return row
 end
 
 local function get_user_options(mark)
 	local text = mark.ext.DEFECT_OPTIONS
 	local res = {}
-	string.gsub(text or '', '([^\n]+)', function(s)
+	local _ = string.gsub(text or '', '([^\n]+)',
+		function(s)
 			local n, v = string.match(s, '([^:]+):(.*)')
 			-- print(s, n, v)
 			if n then res[n] = v end
@@ -68,23 +81,22 @@ local function igenerate_rows_fastener(marks, dlgProgress)
 		[3] = 'КД', -- скрепление на деревянной шпале как КБ-65 но на двух шурупах
 	}
 
-
-	--local fastener_fault_names = {
-	--	[0] = 'норм.',
-	--	[1] = 'От.ЗБ',  -- отсутствие закладного болта kb65
-	--	[2] = 'От.Кл',	-- отсутствие клеммы apc
-	--}
+	local defect_codes =
+	{
+		DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1],
+		DEFECT_CODES.FASTENER_MISSING_CLAMP[1],
+		DEFECT_CODES.FASTENER_MISSING_BOLT[1],
+	}
 
 	local accepted = 0
 	for i, mark in ipairs(marks) do
-		if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130001}" and
-		 (mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1] or
-		  mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP[1] or
-		  mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_BOLT[1]) then
-			local row = MakeFastenerMarkRow(mark)
-			row.DEFECT_CODE = mark.ext.CODE_EKASUI
-			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI) or string.match(mark.prop.Description, '([^\n]+)\n')
+		if ("{3601038C-A561-46BB-8B0F-F896C2130001}" == mark.prop.Guid and
+		    mark_helper.table_find(defect_codes, mark.ext.CODE_EKASUI)) or
+			mark_helper.table_find(guids_fasteners_groups, mark.prop.Guid)
+		then
+			local row = MakeFastenerMarkRow(mark, mark.ext.CODE_EKASUI)
 			row.FASTENER_TYPE = get_user_options(mark).connector_type or ''
+
 			coroutine.yield(row)
 			accepted = accepted + 1
 		else
@@ -93,22 +105,20 @@ local function igenerate_rows_fastener(marks, dlgProgress)
 			local FastenerFault = prm and prm.FastenerFault
 
 			if FastenerFault and FastenerFault > 0 then
-				local row = MakeFastenerMarkRow(mark)
+				local defect_code
 
-				row.FASTENER_TYPE = fastener_type_names[FastenerType] or ''
 				if prm.FastenerFault == 1 then -- отсутствие клеммного болта kb65
-					row.DEFECT_CODE = DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1]
-					row.DEFECT_DESC = DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[2]
+					defect_code = DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1]
 				elseif prm.FastenerFault == 2 then -- отсутствие клеммы apc
-					row.DEFECT_CODE = DEFECT_CODES.FASTENER_MISSING_CLAMP[1]
-					row.DEFECT_DESC = DEFECT_CODES.FASTENER_MISSING_CLAMP[2]
+					defect_code = DEFECT_CODES.FASTENER_MISSING_CLAMP[1]
 				elseif prm.FastenerFault == 10 then -- отсутствие закладного болта kb65
-					row.DEFECT_CODE = DEFECT_CODES.FASTENER_MISSING_BOLT[1]
-					row.DEFECT_DESC = DEFECT_CODES.FASTENER_MISSING_BOLT[2]
+					defect_code = DEFECT_CODES.FASTENER_MISSING_BOLT[1]
 				elseif prm.FastenerFault == 11 then -- отсутствие клеммного и закладного болта kb65 - имитируем закладной
-					row.DEFECT_CODE = DEFECT_CODES.FASTENER_MISSING_BOLT[1]
-					row.DEFECT_DESC = DEFECT_CODES.FASTENER_MISSING_BOLT[2]
+					defect_code = DEFECT_CODES.FASTENER_MISSING_BOLT[1]
 				end
+
+				local row = MakeFastenerMarkRow(mark, defect_code)
+				row.FASTENER_TYPE = fastener_type_names[FastenerType] or ''
 
 				coroutine.yield(row)
 				accepted = accepted + 1
@@ -131,9 +141,7 @@ local function igenerate_rows_fastener_user(marks, dlgProgress)
 	local accepted = 0
 	for i, mark in ipairs(marks) do
 		if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130001}" and mark.ext.CODE_EKASUI then
-			local row = MakeFastenerMarkRow(mark)
-			row.DEFECT_CODE = mark.ext.CODE_EKASUI
-			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI) or string.match(mark.prop.Description, '([^\n]+)\n')
+			local row = MakeFastenerMarkRow(mark, mark.ext.CODE_EKASUI)
 			row.FASTENER_TYPE = get_user_options(mark).connector_type or ''
 
 			coroutine.yield(row)
@@ -153,7 +161,9 @@ local function igen_adapter(fn)
 		local args = {...}
 		return ErrorUserAborted.skip(function ()
 			local g = fn(table.unpack(args))
-			return functional.list(g)
+			local rows = functional.list(g)
+			rows = remove_grouped_marks(rows, guids_fasteners_groups, false)
+			return rows
 		end)
 	end
 end
@@ -230,10 +240,10 @@ end
 -- тестирование
 if not ATAPE then
 	local test_report  = require('test_report')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 1000000})
 
-	report_fastener()
-	-- ekasui_fastener()
+	--report_fastener()
+	ekasui_fastener()
 	-- report_fastener_user()
 end
 

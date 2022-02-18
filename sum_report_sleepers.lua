@@ -144,7 +144,7 @@ local function generate_rows_sleeper_dist(marks, dlgProgress, pov_filter)
 		end
 	end
 
-	report_rows = remove_grouped_marks(report_rows, guigs_sleepers_group)
+	report_rows = remove_grouped_marks(report_rows, guigs_sleepers_group, true)
 	return report_rows
 end
 
@@ -185,7 +185,7 @@ local function generate_rows_sleeper_angle(marks, dlgProgress, pov_filter)
 			end
 		end
 	end
-	report_rows = remove_grouped_marks(report_rows, guigs_sleepers_group)
+	report_rows = remove_grouped_marks(report_rows, guigs_sleepers_group, true)
 	return report_rows
 end
 
@@ -234,7 +234,7 @@ local function generate_rows_sleeper_defects(marks, dlgProgress, pov_filter)
 		end
 	end
 
-	report_rows = remove_grouped_marks(report_rows, guigs_sleepers_group)
+	report_rows = remove_grouped_marks(report_rows, guigs_sleepers_group, true)
 	return report_rows
 end
 

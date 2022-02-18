@@ -1,10 +1,10 @@
 
-ErrorUserAborted =
+local ErrorUserAborted =
 {
 	cause='UserAborted',
 }
 
-function SkipUserAborted(fn, ...)
+ErrorUserAborted.skip = function(fn, ...)
 	local res = {pcall(fn, ...)}
 	local status = res[1]
 	table.remove(res, 1)
@@ -17,10 +17,10 @@ function SkipUserAborted(fn, ...)
 end
 
 
-ErrorUserAborted.skip = SkipUserAborted
-
 setmetatable(ErrorUserAborted, {
 	__call = function ()
 		error(ErrorUserAborted)
 	end
 })
+
+return ErrorUserAborted
