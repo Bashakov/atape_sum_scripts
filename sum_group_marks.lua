@@ -422,6 +422,7 @@ local SleeperGroups = OOP.class
             local sleeper_mark = self.sleepers[group[1][1]]
             if sleeper_mark then
                 local cur_material = mark_helper.GetSleeperMeterial(sleeper_mark)
+                new_mark.ext.SLEEPERS_METERIAL = cur_material
 
                 if cur_material == 1 then -- "бетон",
                     new_mark.ext.CODE_EKASUI = DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1]

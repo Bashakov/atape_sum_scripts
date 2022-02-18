@@ -8,7 +8,6 @@ end
 
 require "luacom"
 
-local excel_helper = require 'excel_helper'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 local DEFECT_CODES = require 'report_defect_codes'
@@ -16,6 +15,7 @@ local EKASUI_REPORT = require 'sum_report_ekasui'
 local AVIS_REPORT = require 'sum_report_avis'
 local sumPOV = require "sumPOV"
 local EKASUI = require "sum_report_ekasui"
+local remove_grouped_marks = require "sum_report_group_scanner"
 require 'ExitScope'
 
 local printf = mark_helper.printf
@@ -29,24 +29,43 @@ local guigs_sleepers =
 	"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",   -- SleeperDefect
 }
 
+local guigs_sleepers_group =
+{
+	"{B6BAB49E-4CEC-4401-A106-355BFB2E0011}",   -- GROUP_SPR_AUTO
+	"{B6BAB49E-4CEC-4401-A106-355BFB2E0012}",   -- GROUP_SPR_USER
+}
+
+
 -- ===================================================================
 
+local SLEEPER_MATERIAL_TBL =
+{
+	[1] = "ЖБШ",
+	[2] = "ДШ",
+}
 
 -- сделать из отметки таблицу и подставновками
-local function MakeSleeperMarkRow(mark)
+local function MakeSleeperMarkRow(mark, defect_code)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
 	local material = mark_helper.GetSleeperMeterial(mark)
 
-	row.SLEEPER_MATERIAL = material and (material == 1 and "ЖБШ" or "ДШ") or ''
+	row.SLEEPER_MATERIAL = material and SLEEPER_MATERIAL_TBL[material] or ''
 	row.SLEEPER_ANGLE = ''
 	row.SLEEPER_DIST = ''
 	row.SPEED_LIMIT = ''
+
+	if defect_code then
+		row.DEFECT_CODE = defect_code
+	end
+	
+	row.DEFECT_DESC = DEFECT_CODES.code2desc(defect_code) or string.match(mark.prop.Description, '([^\n]+)\n')
 
 	return row
 end
 
 local function GetMarks()
-	local marks = Driver:GetMarks{GUIDS=guigs_sleepers, ListType="list"}
+	local guids = mark_helper.table_merge(guigs_sleepers, guigs_sleepers_group)
+	local marks = Driver:GetMarks{GUIDS=guids, ListType="list"}
 	marks = mark_helper.sort_mark_by_coord(marks)
 	return marks
 end
@@ -64,6 +83,12 @@ end
 -- ==========================================================================
 
 local function generate_rows_sleeper_dist(marks, dlgProgress, pov_filter)
+	local dist_defect_codes =
+	{
+		DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1],
+		DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[1],
+	}
+
 	if #marks == 1 and marks[1].user and marks[1].user.dist_prev and marks[1].user.dist_next then
 		-- вызов видеограммы из панели отметок, добавим файковые отметки по карям, чтобы алгоритм отработал поис
 		local cm = marks[1]
@@ -89,6 +114,9 @@ local function generate_rows_sleeper_dist(marks, dlgProgress, pov_filter)
 
 	local report_rows = {}
 	local i = 0
+
+	local user_and_groups = mark_helper.table_merge({"{3601038C-A561-46BB-8B0F-F896C2130002}"}, guigs_sleepers_group)
+
 	for _, cur, right in mark_helper.enum_group(marks, 3) do
 		i = i + 1
 
@@ -96,16 +124,10 @@ local function generate_rows_sleeper_dist(marks, dlgProgress, pov_filter)
 			return
 		end
 		if pov_filter(cur) then
-
-			if cur.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130002}" and
-			 (cur.ext.CODE_EKASUI == DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1] or
-			  cur.ext.CODE_EKASUI == DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[1]) then -- установлена пользователем
-				local row = MakeSleeperMarkRow(cur)
-				row.SLEEPER_DIST = ''
-
-				row.DEFECT_CODE = cur.ext.CODE_EKASUI
-				row.DEFECT_DESC = DEFECT_CODES.code2desc(cur.ext.CODE_EKASUI)
-
+			if mark_helper.table_find(user_and_groups, cur.prop.Guid) and
+			   mark_helper.table_find(dist_defect_codes, cur.ext.CODE_EKASUI) then
+				-- установлена пользователем или групповая
+				local row = MakeSleeperMarkRow(cur, cur.ext.CODE_EKASUI)
 				table.insert(report_rows, row)
 			else
 				local dist_next = right.prop.SysCoord - cur.prop.SysCoord
@@ -114,18 +136,18 @@ local function generate_rows_sleeper_dist(marks, dlgProgress, pov_filter)
 				--printf("%s | %9d %3d | %+8.1f\n", dist_ok and '    ' or '!!!!', cur.prop.SysCoord, max_diff,  dist_next-ref_dist)
 
 				if not dist_ok then
-					local row = MakeSleeperMarkRow(cur)
+					local row = MakeSleeperMarkRow(cur, defect_code)
 					row.SLEEPER_DIST = dist_next
-					row.DEFECT_CODE = defect_code
-					row.DEFECT_DESC = DEFECT_CODES.code2desc(defect_code)
 					table.insert(report_rows, row)
 				end
 			end
 		end
 	end
 
+	report_rows = remove_grouped_marks(report_rows, guigs_sleepers_group)
 	return report_rows
 end
+
 
 local function generate_rows_sleeper_angle(marks, dlgProgress, pov_filter)
 
@@ -150,18 +172,20 @@ local function generate_rows_sleeper_angle(marks, dlgProgress, pov_filter)
 				local material = mark_helper.GetSleeperMeterial(mark)
 
 				-- printf("%9d  %+8.1f\n", mark.prop.SysCoord, cur_angle)
-				local row = MakeSleeperMarkRow(mark)
-				row.SLEEPER_ANGLE = cur_angle
+				local defect_code
 				if material == 1 then -- "бетон"
-					row.DEFECT_CODE = DEFECT_CODES.SLEEPER_ANGLE_CONCRETE[1]
+					defect_code = DEFECT_CODES.SLEEPER_ANGLE_CONCRETE[1]
 				else -- дерево
-					row.DEFECT_CODE = DEFECT_CODES.SLEEPER_ANGLE_WOOD[1]
+					defect_code = DEFECT_CODES.SLEEPER_ANGLE_WOOD[1]
 				end
-				row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
+
+				local row = MakeSleeperMarkRow(mark, defect_code)
+				row.SLEEPER_ANGLE = cur_angle
 				table.insert(report_rows, row)
 			end
 		end
 	end
+	report_rows = remove_grouped_marks(report_rows, guigs_sleepers_group)
 	return report_rows
 end
 
@@ -171,9 +195,7 @@ local function generate_rows_sleeper_user(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		if pov_filter(mark) and mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130002}" and mark.ext.CODE_EKASUI then
-			local row = MakeSleeperMarkRow(mark)
-			row.DEFECT_CODE = mark.ext.CODE_EKASUI
-			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI) or string.match(mark.prop.Description, '([^\n]+)\n')
+			local row = MakeSleeperMarkRow(mark, mark.ext.CODE_EKASUI)
 			table.insert(report_rows, row)
 		end
 
@@ -189,10 +211,10 @@ local function generate_rows_sleeper_defects(marks, dlgProgress, pov_filter)
 	local code2ekasui =
 	{
 		-- [0] = "undef",
-		[1] = DEFECT_CODES.SLEEPER_FRACTURE_FERROCONCRETE, -- "fracture(ferroconcrete)",
-		[2] = DEFECT_CODES.SLEEPER_CHIP_FERROCONCRETE, -- "chip(ferroconcrete)",
-		[3] = DEFECT_CODES.SLEEPER_CRACK_WOOD,  -- "crack(wood)",
-		[4] = DEFECT_CODES.SLEEPER_ROTTENNESS_WOOD, -- "rottenness(wood)",
+		[1] = DEFECT_CODES.SLEEPER_FRACTURE_FERROCONCRETE, 	-- "fracture(ferroconcrete)",
+		[2] = DEFECT_CODES.SLEEPER_CHIP_FERROCONCRETE, 		-- "chip(ferroconcrete)",
+		[3] = DEFECT_CODES.SLEEPER_CRACK_WOOD,  			-- "crack(wood)",
+		[4] = DEFECT_CODES.SLEEPER_ROTTENNESS_WOOD, 		-- "rottenness(wood)",
 	}
 
 	if #marks == 0 then return end
@@ -202,10 +224,7 @@ local function generate_rows_sleeper_defects(marks, dlgProgress, pov_filter)
 		if pov_filter(mark) then
 			local params = mark_helper.GetSleeperFault(mark)
 			if params and params.FaultType and code2ekasui[params.FaultType] then
-				local code = code2ekasui[params.FaultType]
-				local row = MakeSleeperMarkRow(mark)
-				row.DEFECT_CODE = code[1]
-				row.DEFECT_DESC = code[1]
+				local row = MakeSleeperMarkRow(mark, code2ekasui[params.FaultType])
 				table.insert(report_rows, row)
 			end
 		end
@@ -215,70 +234,9 @@ local function generate_rows_sleeper_defects(marks, dlgProgress, pov_filter)
 		end
 	end
 
+	report_rows = remove_grouped_marks(report_rows, guigs_sleepers_group)
 	return report_rows
 end
-
-local function report_not_implement()
-	iup.Message('Error', "Отчет не реализован")
-end
-
-local function sleepers_report_plot()
-	local marks = Driver:GetMarks{GUIDS=guigs_sleepers}
-	marks = mark_helper.sort_mark_by_coord(marks)
-
-	local excel = luacom.CreateObject("Excel.Application")
-	assert(excel, "Error! Could not run EXCEL object!")
-
-	-- excel.visible = true
-
-	local worksheet = nil
-
-
-	local fn = sprintf("%s\\sleepers_%s.csv", os.getenv("TEMP"), os.date('%y%m%d%H%M%S'))
-	local fo = io.open(fn, 'w+')
-	local prev = nil
-	for i = 1, #marks do
-		local mark = marks[i]
-		local prop = mark.prop
-
-		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-		local path = sprintf('%d km %5.1f m', km, m + mm/1000)
-
-		local angle = mark_helper.GetSleeperAngle(mark) or 0
-		--angle = angle * 180/3.14/1000
-
-		local row = {
-			i,
-			prop.SysCoord,
-			path,
-			angle,
-			prev and prop.SysCoord-prev or 0
-		}
-		fo:write(table.concat(row, ';') .. '\n')
-
-		prev = prop.SysCoord
-	end
-	fo:close()
-
-	local workbook = excel.Workbooks:Open(fn)
-	worksheet = workbook.Sheets(1)
-
-	excel.visible = true
-
-	local shape = worksheet.Shapes:AddChart2(1, 4, 250, 10, 800, 250)
-	local chart = shape.Chart
-	chart.ChartTitle.Text = 'Разворот'
-    chart:SetSourceData(worksheet:Range("D:D"))
-	chart:SeriesCollection(1).XValues = worksheet:Range("C:C")
-
-	shape = worksheet.Shapes:AddChart2(1, 4, 250, 260, 800, 250)
-	chart = shape.Chart
-	chart.ChartTitle.Text = "Расстояние"
-    chart:SetSourceData(worksheet:Range("E:E"))
-	chart:SeriesCollection(1).XValues = worksheet:Range("C:C")
-    chart:Axes(2).MaximumScale = 1000
-end
-
 
 local function sleeper_SDMI()
 	EnterScope(function(defer)
@@ -433,9 +391,6 @@ local function AppendReports(reports)
 		{name = name_pref..'Отслеживание соблюдения эпюры шпал',    								fn=report_sleeper_dist, 	},
 		{name = name_pref..'Перпендикулярность шпалы относительно оси пути, рад',					fn=report_sleeper_angle,	},
 		{name = name_pref..'Дефекты',																fn=report_sleeper_defects,	},
-		-- {name = name_pref..'*Параметры и размеры дефектов шпал, мостовых и переводных брусьев, мм',	fn=report_not_implement,	},
-		-- {name = name_pref..'*Определение кустовой негодности шпал',									fn=report_not_implement,	},
-		-- {name = name_pref..'*Фиксация шпал с разворотом относительно своей оси',					fn=report_not_implement,	},
 		{name = name_pref..'ЕКАСУИ ВСЕ',    														fn=ekasui_ALL, 			},
 		{name = name_pref..'ЕКАСУИ Отслеживание соблюдения эпюры шпал',    							fn=ekasui_sleeper_dist, 	},
 		{name = name_pref..'ЕКАСУИ Перпендикулярность шпалы относительно оси пути, рад',			fn=ekasui_sleeper_angle,	},
@@ -456,8 +411,9 @@ if not ATAPE then
 	local test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 1000000})
 
-	--ekasui_sleeper_defects()
-	sleeper_SDMI()
+	report_sleeper_dist()
+	--ekasui_sleeper_dist()
+	-- sleeper_SDMI()
 	-- report_ALL()
 end
 
