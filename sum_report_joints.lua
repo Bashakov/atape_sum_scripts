@@ -14,6 +14,7 @@ local DEFECT_CODES = require 'report_defect_codes'
 local EKASUI_REPORT = require 'sum_report_ekasui'
 local AVIS_REPORT = require 'sum_report_avis'
 local sumPOV = require "sumPOV"
+local remove_grouped_marks = require "sum_report_group_scanner"
 
 local printf = mark_helper.printf
 local sprintf = mark_helper.sprintf
@@ -31,11 +32,18 @@ local video_joints_juids =
 	"{3601038C-A561-46BB-8B0F-F896C2130003}",	-- Рельсовые стыки(Пользователь)
 }
 
+local joints_group_defects =
+{
+	"{B6BAB49E-4CEC-4401-A106-355BFB2E0001}",	-- GROUP_GAP_AUTO
+	"{B6BAB49E-4CEC-4401-A106-355BFB2E0002}",	-- GROUP_GAP_USER
+}
+
 -- =============================================================================
 
 
 local function GetMarks()
-	local marks = Driver:GetMarks{GUIDS=video_joints_juids}
+	local gg = mark_helper.table_merge(video_joints_juids, joints_group_defects)
+	local marks = Driver:GetMarks{GUIDS=gg}
 	marks = mark_helper.sort_mark_by_coord(marks)
 	return marks
 end
@@ -187,13 +195,19 @@ end
 local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 
+	local blind_defect_codes =
+	{
+		DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1],
+		DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_TWO[1],
+		DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1],
+		DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1],
+	}
+
 	for _, mark in ipairs(marks) do
-		if pov_filter(mark) and mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
-			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1] or
-			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_TWO[1] or
-			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1] or
-			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1]
-		) then
+		if pov_filter(mark) and
+			(mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" or mark_helper.table_find(joints_group_defects, mark.prop.Guid)) and
+			mark_helper.table_find(blind_defect_codes, mark.ext.CODE_EKASUI)
+		then
 			local row = MakeJointMarkRow(mark)
 			row.DEFECT_CODE = mark.ext.CODE_EKASUI
 			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
@@ -274,6 +288,7 @@ local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
 		end
 	end
 
+	report_rows = remove_grouped_marks(report_rows, joints_group_defects, false)
 	return report_rows
 end
 
@@ -606,7 +621,7 @@ end
 -- тестирование
 if not ATAPE then
 	local test_report  = require('test_report')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 100000})
+	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 1000000000})
     --test_report('D:/ATapeXP/Main/TEST/ZeroGap/2019_06_13/Avikon-03M/6284/[494]_2017_06_14_03.xml')
 
 	local reports = {}
@@ -616,8 +631,9 @@ if not ATAPE then
 	-- print(report.name)
 	-- report.fn()
 
+	ekasui_neigh_blind_joint()
 	--report_missing_bolt()
-	ekasui_missing_bolt()
+	-- ekasui_missing_bolt()
 	-- report_joint_width()
 	--report_neigh_blind_joint()
 	-- report_ALL()
