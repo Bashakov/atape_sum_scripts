@@ -313,23 +313,29 @@ local filters =
 			column_sleeper_angle,
 			column_sleeper_meterial,
 			column_recogn_video_channel,
-			column_sleeper_dist_prev,
 			column_sleeper_dist_next,
-			column_sys_coord,
+			--column_sys_coord,
 			column_pov_common,
 			},
 		GUIDS = {
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
 		post_load = function(marks)
-			local prev_pos = nil
-			marks = sort_stable(marks, column_sys_coord.sorter, true)
-			for left, cur, right in mark_helper.enum_group(marks, 3) do
-				local pp, cp, np = left.prop.SysCoord, cur.prop.SysCoord, right.prop.SysCoord
-				cur.user.dist_prev = cp - pp
+			-- https://bt.abisoft.spb.ru/view.php?id=863
+			local sleeper_count = 1840
+			local MEK = 4
+			marks = mark_helper.sort_mark_by_coord(marks)
+			local res = {}
+			for cur, right in mark_helper.enum_group(marks, 2) do
+				local cp, np = cur.prop.SysCoord, right.prop.SysCoord
 				cur.user.dist_next = np - cp
+				local max_diff = 80 -- чтобы быстрее показать результат не будем определять материал каждой шпалы а положим 80 как у ЖБ
+				local dist_ok, _ = mark_helper.CheckSleeperEpure(cur, sleeper_count, MEK, cur.user.dist_next, max_diff)
+				if not dist_ok then
+					table.insert(res, cur)
+				end
 			end
-			marks = filter_sleepers_by_angle(marks)
-			return marks
+			res = filter_sleepers_by_angle(res, SLEEPER_ANGLE_TRESHOLD_RAD)
+			return res
 		end,
 		filter = function(mark)
 			local maskChannel = mark.prop.ChannelMask

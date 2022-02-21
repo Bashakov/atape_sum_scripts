@@ -739,11 +739,13 @@ local SLEEPER_MATERIAL_TO_MAX_DIFFS =
 }
 
 -- проверить эпюру шпалы
-local function CheckSleeperEpure(mark, sleeper_count, MEK, dist_to_next)
+local function CheckSleeperEpure(mark, sleeper_count, MEK, dist_to_next, max_diff)
 	local ref_dist = 1000000 / sleeper_count
 
-	local cur_material = GetSleeperMeterial(mark)
-	local max_diff = SLEEPER_MATERIAL_TO_MAX_DIFFS[cur_material] or 80
+	if not max_diff then
+		local cur_material = GetSleeperMeterial(mark)
+		max_diff = SLEEPER_MATERIAL_TO_MAX_DIFFS[cur_material] or 80
+	end
 
 	local function check()
 		if dist_to_next < 200 then
@@ -756,11 +758,11 @@ local function CheckSleeperEpure(mark, sleeper_count, MEK, dist_to_next)
 		end
 		return false
 	end
-	
+
 	local defect_code = ""
 	local dist_ok = check()
 
-	if not dist_ok then
+	if not dist_ok and cur_material then
 		if cur_material == 1 then -- "бетон",
 			defect_code = DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1]
 		elseif cur_material == 2 then -- "дерево",
