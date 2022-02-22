@@ -8,8 +8,11 @@ ATAPE = true -- disable debug code while load scripts
 ATAPE = prev_atape
 
 
+local SHOW_SLEEPER_UNKNOWN_MATERIAL = true
+
 -- https://bt.abisoft.spb.ru/view.php?id=816#c4204
 local SLEEPER_ANGLE_TRESHOLD_RAD = 0.1
+
 
 local function filter_sleeper_mark_by_angle(mark, treshold)
 	local angle = mark_helper.GetSleeperAngle(mark)
@@ -26,9 +29,6 @@ local function get_sleeper_angle_defect(mark, treshold, material)
 	end
 
 	if filter_sleeper_mark_by_angle(mark, treshold) then
-		if not material then
-			material = mark_helper.GetSleeperMeterial(mark)
-		end
 		if material == 1 then -- "бетон",
 			return defect_codes.SLEEPER_ANGLE_CONCRETE[1]
 		elseif material == 2 then -- "дерево",
@@ -329,13 +329,19 @@ local filters =
 			local MEK = 4
 			marks = mark_helper.sort_mark_by_coord(marks)
 			local res = {}
-			for cur, right in mark_helper.enum_group(marks, 2) do
-				local cp, np = cur.prop.SysCoord, right.prop.SysCoord
-				cur.user.dist_next = np - cp
-				local dist_ok, defect_code = mark_helper.CheckSleeperEpure(cur, sleeper_count, MEK, cur.user.dist_next)
-				if not dist_ok then
-					cur.user.defect_code = defect_code or ''
-					table.insert(res, cur)
+			for mark, right in mark_helper.enum_group(marks, 2) do
+				local cp, np = mark.prop.SysCoord, right.prop.SysCoord
+				mark.user.dist_next = np - cp
+				local material = mark_helper.GetSleeperMeterial(mark)
+				if not material and SHOW_SLEEPER_UNKNOWN_MATERIAL then
+					material = 1 -- https://bt.abisoft.spb.ru/view.php?id=863#c4393 В случае "не скрывать" - считать все шнапля ЖБ 
+				end
+				if material == 1 or material == 2 then
+					local dist_ok, defect_code = mark_helper.CheckSleeperEpure(mark, sleeper_count, MEK, mark.user.dist_next, material)
+					if not dist_ok then
+						mark.user.defect_code = defect_code or ''
+						table.insert(res, mark)
+					end
 				end
 			end
 			return res
@@ -380,23 +386,26 @@ local filters =
 			local sleeper_count = 1840
 			local MEK = 4
 			sleepers = mark_helper.sort_mark_by_coord(sleepers)
-			for cur, right in mark_helper.enum_group(sleepers, 2) do
-				local material = mark_helper.GetSleeperMeterial(cur)
-				if material then
+			for mark, right in mark_helper.enum_group(sleepers, 2) do
+				local material = mark_helper.GetSleeperMeterial(mark)
+				if not material and SHOW_SLEEPER_UNKNOWN_MATERIAL then
+					material = 1 -- https://bt.abisoft.spb.ru/view.php?id=863#c4393 В случае "не скрывать" - считать все шнапля ЖБ 
+				end
+				if material == 1 or material == 2 then
 					local cur_defects = {}
-					local cp, np = cur.prop.SysCoord, right.prop.SysCoord
-					cur.user.dist_next = np - cp
-					local dist_ok, defect_code = mark_helper.CheckSleeperEpure(cur, sleeper_count, MEK, cur.user.dist_next, material)
+					local cp, np = mark.prop.SysCoord, right.prop.SysCoord
+					mark.user.dist_next = np - cp
+					local dist_ok, defect_code = mark_helper.CheckSleeperEpure(mark, sleeper_count, MEK, mark.user.dist_next, material)
 					if not dist_ok and (defect_code and defect_code ~= '') then
 						table.insert(cur_defects, defect_code)
 					end
-					local angle_defect = get_sleeper_angle_defect(cur, SLEEPER_ANGLE_TRESHOLD_RAD, material)
+					local angle_defect = get_sleeper_angle_defect(mark, SLEEPER_ANGLE_TRESHOLD_RAD, material)
 					if angle_defect and angle_defect ~= '' then
 						table.insert(cur_defects, angle_defect)
 					end
 					if #cur_defects > 0 then
-						cur.user.defect_code = table.concat(cur_defects, ", ")
-						table.insert(defect_marks, cur)
+						mark.user.defect_code = table.concat(cur_defects, ", ")
+						table.insert(defect_marks, mark)
 					end
 				end
 			end
@@ -428,71 +437,20 @@ local filters =
 			end
 
 			local material = mark_helper.GetSleeperMeterial(mark)
-			local angle_defect = get_sleeper_angle_defect(mark, SLEEPER_ANGLE_TRESHOLD_RAD, material)
-			if angle_defect then
-				mark.user.defect_code = angle_defect
-				return true
+			if not material and SHOW_SLEEPER_UNKNOWN_MATERIAL then
+				material = 1 -- https://bt.abisoft.spb.ru/view.php?id=863#c4393 В случае "не скрывать" - считать все шнапля ЖБ 
+			end
+			if material == 1 or material == 2 then
+				local angle_defect = get_sleeper_angle_defect(mark, SLEEPER_ANGLE_TRESHOLD_RAD, material)
+				if angle_defect then
+					mark.user.defect_code = angle_defect
+					return true
+				end
 			end
 			return false
 		end,
 	},
-	-- {
-	-- 	group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
-	-- 	name = 'Шпалы Все',
-	-- 	--videogram_defect_codes = {'090004000370', '090004000375'},
-	-- 	columns = {
-	-- 		column_num,
-	-- 		column_path_coord,
-	-- 		column_rail,
-	-- 		column_mark_type_name,
-	-- 		column_recogn_video_channel,
-	-- 		column_pov_common,
-	-- 		},
-	-- 	GUIDS = {
-	-- 		"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",	-- Шпалы
-	-- 		"{3601038C-A561-46BB-8B0F-F896C2130002}",	-- Шпалы(Пользователь)
-	-- 		"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
-	-- 		"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",   -- SleeperDefect
-	-- 	},
-	-- },
-	-- {
-	-- 	group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
-	-- 	name = 'Шпалы сверху',
-	-- 	--videogram_defect_codes = {'090004000370', '090004000375'},
-	-- 	columns = {
-	-- 		column_num,
-	-- 		column_path_coord,
-	-- 		column_rail,
-	-- 		column_sleeper_meterial,
-	-- 		column_recogn_video_channel,
-	-- 		column_pov_common,
-	-- 		},
-	-- 	GUIDS = {
-	-- 		"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
-	-- 	},
-	-- },
-	-- {
-	-- 	group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
-	-- 	name = 'Шпалы(дефекты)',
-	-- 	--videogram_defect_codes = {'090004000370', '090004000375'},
-	-- 	columns = {
-	-- 		column_num,
-	-- 		column_path_coord,
-	-- 		column_rail,
-	-- 		column_sleeper_fault,
-	-- 		column_sleeper_meterial,
-	-- 		column_recogn_video_channel,
-	-- 		column_pov_common,
-	-- 		},
-	-- 	GUIDS = {
-	-- 		"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}", -- Шпалы
-	-- 		"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}", -- SleeperDefect
-	-- 	},
-	-- 	filter = function (mark)
-	-- 		local params = mark_helper.GetSleeperFault(mark)
-	-- 		return params and params.FaultType and params.FaultType > 0
-	-- 	end
-	-- },
+	
 	{	
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Запуски распознавания',
