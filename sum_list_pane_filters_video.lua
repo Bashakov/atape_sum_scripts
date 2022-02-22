@@ -20,19 +20,25 @@ local function filter_sleeper_mark_by_angle(mark, treshold)
 	return angle >= treshold
 end
 
-local function filter_sleepers_by_angle(marks, treshold)
-	local res = {}
-	if not treshold or treshold == 0 then
-		return marks
+local function get_sleeper_angle_defect(mark, treshold, material)
+	if treshold == 0 then
+		return ''
 	end
-	for _, mark in ipairs(marks) do
-		if filter_sleeper_mark_by_angle(mark, treshold) then
-			table.insert(res, mark)
-		end
-	end
-	return res
-end
 
+	if filter_sleeper_mark_by_angle(mark, treshold) then
+		if not material then
+			material = mark_helper.GetSleeperMeterial(mark)
+		end
+		if material == 1 then -- "бетон",
+			return defect_codes.SLEEPER_ANGLE_CONCRETE[1]
+		elseif material == 2 then -- "дерево",
+			return defect_codes.SLEEPER_ANGLE_WOOD[1]
+		end
+		return ''
+	end
+
+	return false
+end
 
 
 local filters = 
@@ -303,52 +309,10 @@ local filters =
 		end,
 	},
 	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
-		name = 'Шпалы(эпюра,перпедикулярность)',
-		--videogram_defect_codes = {'090004000370', '090004000375'},
-		columns = {
-			column_num,
-			column_path_coord, 
-			column_rail, 
-			column_sleeper_angle,
-			column_sleeper_meterial,
-			column_recogn_video_channel,
-			column_sleeper_dist_next,
-			--column_sys_coord,
-			column_pov_common,
-			},
-		GUIDS = {
-			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
-		post_load = function(marks)
-			-- https://bt.abisoft.spb.ru/view.php?id=863
-			local sleeper_count = 1840
-			local MEK = 4
-			marks = mark_helper.sort_mark_by_coord(marks)
-			local res = {}
-			for cur, right in mark_helper.enum_group(marks, 2) do
-				local cp, np = cur.prop.SysCoord, right.prop.SysCoord
-				cur.user.dist_next = np - cp
-				local max_diff = 80 -- чтобы быстрее показать результат не будем определять материал каждой шпалы а положим 80 как у ЖБ
-				local dist_ok, _ = mark_helper.CheckSleeperEpure(cur, sleeper_count, MEK, cur.user.dist_next, max_diff)
-				if not dist_ok then
-					table.insert(res, cur)
-				end
-			end
-			res = filter_sleepers_by_angle(res, SLEEPER_ANGLE_TRESHOLD_RAD)
-			return res
-		end,
-		filter = function(mark)
-			local maskChannel = mark.prop.ChannelMask
-			local mask21 = bit32.lshift(1, 21)
-			local mask22 = bit32.lshift(1, 22)
-			return not(bit32.btest(maskChannel, mask21) or bit32.btest(maskChannel, mask22))
-		end,
-	},
-	{
 		-- https://bt.abisoft.spb.ru/view.php?id=815
+		-- https://bt.abisoft.spb.ru/view.php?id=863
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
-		name = 'Шпалы нарушенная эпюра',
-		--videogram_defect_codes = {'090004000370', '090004000375'},
+		name = 'III Шпалы: эпюра',
 		columns = {
 			column_num,
 			column_path_coord,
@@ -370,89 +334,165 @@ local filters =
 				cur.user.dist_next = np - cp
 				local dist_ok, defect_code = mark_helper.CheckSleeperEpure(cur, sleeper_count, MEK, cur.user.dist_next)
 				if not dist_ok then
-					-- hide sleeper with unknown material (without defect code) https://bt.abisoft.spb.ru/view.php?id=833
-					if defect_code and defect_code ~= '' then
-						cur.user.defect_code = defect_code
-						table.insert(res, cur)
-					end
+					cur.user.defect_code = defect_code or ''
+					table.insert(res, cur)
 				end
 			end
-			res = filter_sleepers_by_angle(res, SLEEPER_ANGLE_TRESHOLD_RAD)
 			return res
 		end,
 	},
 	{
+		-- https://bt.abisoft.spb.ru/view.php?id=863
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
-		name = 'Шпалы Все',
-		--videogram_defect_codes = {'090004000370', '090004000375'},
+		name = 'III Шпалы: дефекты',
 		columns = {
 			column_num,
 			column_path_coord,
-			column_rail,
-			column_mark_type_name,
-			column_recogn_video_channel,
+			column_sleeper_meterial,
+			--column_sleeper_dist_next,
+			column_sleeper_epure_defect_user,
+			--column_sys_coord,
 			column_pov_common,
 			},
 		GUIDS = {
-			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",	-- Шпалы
-			"{3601038C-A561-46BB-8B0F-F896C2130002}",	-- Шпалы(Пользователь)
-			"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
-			"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",   -- SleeperDefect
+			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",  -- Шпалы
+			"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",  -- Дефекты шпал
 		},
-	},
-	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
-		name = 'Шпалы сверху',
-		--videogram_defect_codes = {'090004000370', '090004000375'},
-		columns = {
-			column_num,
-			column_path_coord,
-			column_rail,
-			column_sleeper_meterial,
-			column_recogn_video_channel,
-			column_pov_common,
-			},
-		GUIDS = {
-			"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
-		},
-	},
-	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
-		name = 'Шпалы(дефекты)',
-		--videogram_defect_codes = {'090004000370', '090004000375'},
-		columns = {
-			column_num,
-			column_path_coord,
-			column_rail,
-			column_sleeper_fault,
-			column_sleeper_meterial,
-			column_recogn_video_channel,
-			column_pov_common,
-			},
-		GUIDS = {
-			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}", -- Шпалы
-			"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}", -- SleeperDefect
-		},
-		filter = function (mark)
-			local params = mark_helper.GetSleeperFault(mark)
-			return params and params.FaultType and params.FaultType > 0
-		end
-	},
-	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
-		name = 'Шпалы с разворотом',
-		columns = {
-			column_num,
-			column_path_coord, 
-			column_sleeper_angle,
-			column_sleeper_meterial,
-			column_pov_common,
-			},
-		GUIDS = {'{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}'},
-		filter = function(mark)
-			return filter_sleeper_mark_by_angle(mark, SLEEPER_ANGLE_TRESHOLD_RAD)
+		post_load = function(marks)
+			-- разделим шпалы на нормальные (для определения угла и эпюры) и дефектные
+			local defect_marks = {}
+			local sleepers = {}
+			for _, mark in ipairs(marks) do
+				local g = mark.prop.Guid
+				if g == "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}" then
+					table.insert(sleepers, mark)
+				elseif g == "{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}" then
+					local params = mark_helper.GetSleeperFault(mark)
+					if params and params.FaultType then
+						mark.user.defect_code = sleeperfault2text[params.FaultType] or params.FaultType
+						table.insert(defect_marks, mark)
+					end
+				else
+					assert(0, "unknown guid: " .. g)
+				end
+			end
+
+			local sleeper_count = 1840
+			local MEK = 4
+			sleepers = mark_helper.sort_mark_by_coord(sleepers)
+			for cur, right in mark_helper.enum_group(sleepers, 2) do
+				local material = mark_helper.GetSleeperMeterial(cur)
+				if material then
+					local cur_defects = {}
+					local cp, np = cur.prop.SysCoord, right.prop.SysCoord
+					cur.user.dist_next = np - cp
+					local dist_ok, defect_code = mark_helper.CheckSleeperEpure(cur, sleeper_count, MEK, cur.user.dist_next, material)
+					if not dist_ok and (defect_code and defect_code ~= '') then
+						table.insert(cur_defects, defect_code)
+					end
+					local angle_defect = get_sleeper_angle_defect(cur, SLEEPER_ANGLE_TRESHOLD_RAD, material)
+					if angle_defect and angle_defect ~= '' then
+						table.insert(cur_defects, angle_defect)
+					end
+					if #cur_defects > 0 then
+						cur.user.defect_code = table.concat(cur_defects, ", ")
+						table.insert(defect_marks, cur)
+					end
+				end
+			end
+			defect_marks = mark_helper.sort_mark_by_coord(defect_marks)
+			return defect_marks
 		end,
 	},
+	{
+		-- https://bt.abisoft.spb.ru/view.php?id=863
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
+		name = 'III Шпалы: разворот',
+		columns = {
+			column_num,
+			column_path_coord,
+			column_rail,
+			column_sleeper_angle,
+			column_sleeper_meterial,
+			column_recogn_video_channel,
+			column_sleeper_epure_defect_user,
+			--column_sys_coord,
+			column_pov_common,
+			},
+		GUIDS = {
+			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
+		filter = function (mark)
+			local maskChannel = mark.prop.ChannelMask
+			if not bit32.btest(maskChannel, 0x1e0000) then -- 17, 18 ,19, 20
+				return false
+			end
+
+			local material = mark_helper.GetSleeperMeterial(mark)
+			local angle_defect = get_sleeper_angle_defect(mark, SLEEPER_ANGLE_TRESHOLD_RAD, material)
+			if angle_defect then
+				mark.user.defect_code = angle_defect
+				return true
+			end
+			return false
+		end,
+	},
+	-- {
+	-- 	group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
+	-- 	name = 'Шпалы Все',
+	-- 	--videogram_defect_codes = {'090004000370', '090004000375'},
+	-- 	columns = {
+	-- 		column_num,
+	-- 		column_path_coord,
+	-- 		column_rail,
+	-- 		column_mark_type_name,
+	-- 		column_recogn_video_channel,
+	-- 		column_pov_common,
+	-- 		},
+	-- 	GUIDS = {
+	-- 		"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",	-- Шпалы
+	-- 		"{3601038C-A561-46BB-8B0F-F896C2130002}",	-- Шпалы(Пользователь)
+	-- 		"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
+	-- 		"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",   -- SleeperDefect
+	-- 	},
+	-- },
+	-- {
+	-- 	group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
+	-- 	name = 'Шпалы сверху',
+	-- 	--videogram_defect_codes = {'090004000370', '090004000375'},
+	-- 	columns = {
+	-- 		column_num,
+	-- 		column_path_coord,
+	-- 		column_rail,
+	-- 		column_sleeper_meterial,
+	-- 		column_recogn_video_channel,
+	-- 		column_pov_common,
+	-- 		},
+	-- 	GUIDS = {
+	-- 		"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
+	-- 	},
+	-- },
+	-- {
+	-- 	group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
+	-- 	name = 'Шпалы(дефекты)',
+	-- 	--videogram_defect_codes = {'090004000370', '090004000375'},
+	-- 	columns = {
+	-- 		column_num,
+	-- 		column_path_coord,
+	-- 		column_rail,
+	-- 		column_sleeper_fault,
+	-- 		column_sleeper_meterial,
+	-- 		column_recogn_video_channel,
+	-- 		column_pov_common,
+	-- 		},
+	-- 	GUIDS = {
+	-- 		"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}", -- Шпалы
+	-- 		"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}", -- SleeperDefect
+	-- 	},
+	-- 	filter = function (mark)
+	-- 		local params = mark_helper.GetSleeperFault(mark)
+	-- 		return params and params.FaultType and params.FaultType > 0
+	-- 	end
+	-- },
 	{	
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Запуски распознавания',

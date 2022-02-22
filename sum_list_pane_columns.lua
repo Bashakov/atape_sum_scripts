@@ -654,7 +654,7 @@ column_sleeper_angle =
 	end,
 }
 
-local sleeperfault2text =
+sleeperfault2text =
 {
 	[0] = "undef",
 	[1] = "fracture(ferroconcrete)",

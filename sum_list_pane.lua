@@ -275,7 +275,7 @@ function InitMark(name)
 				ListType = filter.visible and 'visible' or 'all'}
 			local fn_filter = filter.filter		-- берем функцию фильтрации по отметкам
 			for i = 1, #marks do				-- проходим по отметкам, полученым из драйвера
-				local mark = marks[i]			
+				local mark = marks[i]
 				if not fn_filter or fn_filter(mark) then 	-- если функция фильтрации, то проверяем отметку
 					table.insert(work_marks_list, mark)		-- сохраняем отметку в рабочий список
 				end
@@ -357,7 +357,7 @@ function SortMarks(col, inc)
 	work_sort_param[1] = inc
 end
 
--- функция вызывается из программы, для запроса текста в ячейке
+-- функция вызывается из программы, для запроса цвета в ячейке
 function GetItemColor(row, col)
 	if selected_row == row  then
 		return {0xffffff, 0x0000ff}
@@ -377,20 +377,20 @@ end
 
 function OnMouse(act, flags, cell, pos_client, pos_screen)
 	-- print(act, flags, cell.row, cell.col, pos_client.x, pos_client.y, pos_screen.x, pos_screen.y)
-	
+
 	if act == 'left_click' or act == 'right_click' then
 		set_selected_row(cell.row)
 	end
-	
+
 	if act == 'left_dbl_click' then
 		set_selected_row(cell.row)
-		
+
 		local mark = work_marks_list[cell.row]
-		if mark and mark.prop and mark.prop.ID then 
-			Driver:JumpMark(mark.prop.ID)	
+		if mark and mark.prop and mark.prop.ID then
+			Driver:JumpMark(mark.prop.ID)
 		end
 	end
-	
+
 	if act == 'right_click' then
 		if cell.row > 0 and cell.row <= #work_marks_list and work_filter and cell.col > 0 and cell.col <= #(work_filter.columns) then
 			local fn_context_menu = work_filter.on_context_menu or work_filter.columns[cell.col].on_context_menu
@@ -406,11 +406,11 @@ end
 
 function OnKey(key, down, flags)
 	print(key, down, flags)
-	
+
 	if down then
 		local step_page = MarkTable:GetRowPerPage() - 1
 		local new_selected_row = -1
-		
+
 		if key == "Up"   		then new_selected_row = selected_row - 1 			end
 		if key == "Down" 		then new_selected_row = selected_row + 1 			end
 		if key == "Home" 		then new_selected_row = 1 							end
@@ -429,7 +429,7 @@ function OnKey(key, down, flags)
 			end
 		end
 	end
-	
+
 	if down and selected_row > 0 then
 		-- спрятать отметку
 		if key == 'H' then	
@@ -439,7 +439,7 @@ function OnKey(key, down, flags)
 			MarkTable:SetItemCount(#work_marks_list)
 			selected_row = 0
 		end
-		
+
 		-- удалить
 		if (key == 'D' or key == 'Delete') then
 			if bit32.btest(flags, MK_SHIFT) or 1 == iup.Alarm("ATape", "Подтвердите удаление отметки", "Да", "Нет") then
@@ -447,7 +447,7 @@ function OnKey(key, down, flags)
 				jump_mark(selected_row)
 			end
 		end
-		
+
 		-- ПОВ
 		if (key == 'A') then -- accept
 			local mark = work_marks_list[selected_row]
@@ -457,7 +457,7 @@ function OnKey(key, down, flags)
 				MarkTable:Invalidate(selected_row)
 			end
 		end
-		
+
 		if (key == 'R') then -- reject
 			local mark = work_marks_list[selected_row]
 			if mark and mark.prop and mark.ext then -- проверим что объект является именно специальной пользовательской отметкой
@@ -465,7 +465,7 @@ function OnKey(key, down, flags)
 				MarkTable:Invalidate(selected_row)
 			end
 		end
-		
+
 	end
 end
 
@@ -526,15 +526,13 @@ if not ATAPE then
 
 	test_report  = require('test_report')
 	local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-	-- local psp_path = 'D:/ATapeXP/Main/494/multimagnetic/2018_01_25/Avikon-03M/12216/[494]_2018_01_03_01.xml'
-	-- local psp_path = 'D:/d-drive/ATapeXP/Main/494/video_recog/2020_08_24/Avikon-03M/4858/[494]_2019_09_03_01.xml'
-	test_report(psp_path)
+	test_report(psp_path, nul, {0, 10000000})
 
 	local name
 	if HUN then
 		name  = 'Surface Defects'
 	else
-		name  = 'Шпалы нарушенная эпюра'
+		name  = 'III Шпалы: дефекты'
 	end
 
 	local columns = GetColumnDescription(name)

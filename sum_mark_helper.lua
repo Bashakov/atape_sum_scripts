@@ -92,6 +92,7 @@ local function enum_group(arr, len)
 end
 
 -- итератор разбивающий входной массив на массив массивов заданной длинны, последний может быть короче
+-- split_chunks_iter(3, {1,2,3,4,5,6,6,7}) -> 1, {1,2,3}; 2, {4,5,6}; 3, {7}
 local function split_chunks_iter(chunk_len, arr)
 	assert(chunk_len > 0)
 	local i = 0
@@ -100,7 +101,7 @@ local function split_chunks_iter(chunk_len, arr)
 		if i > #arr - 1 then
 			return nil
 		end
-		
+
 		local t = {}
 		for j = 1, chunk_len do
 			t[j] = arr[j+i]
@@ -108,7 +109,7 @@ local function split_chunks_iter(chunk_len, arr)
 		i = i + chunk_len
 		n = n + 1
 		return n, t
-	end	
+	end
 end
 
  -- разбивает входной массив на массив массивов заданной длинны, последний может быть короче
@@ -739,13 +740,13 @@ local SLEEPER_MATERIAL_TO_MAX_DIFFS =
 }
 
 -- проверить эпюру шпалы
-local function CheckSleeperEpure(mark, sleeper_count, MEK, dist_to_next, max_diff)
+local function CheckSleeperEpure(mark, sleeper_count, MEK, dist_to_next, cur_material)
 	local ref_dist = 1000000 / sleeper_count
 
-	if not max_diff then
-		local cur_material = GetSleeperMeterial(mark)
-		max_diff = SLEEPER_MATERIAL_TO_MAX_DIFFS[cur_material] or 80
+	if not cur_material then
+		cur_material = GetSleeperMeterial(mark)
 	end
+	local max_diff = SLEEPER_MATERIAL_TO_MAX_DIFFS[cur_material] or 80
 
 	local function check()
 		if dist_to_next < 200 then
