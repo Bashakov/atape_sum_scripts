@@ -211,10 +211,10 @@ local function generate_rows_sleeper_defects(marks, dlgProgress, pov_filter)
 	local code2ekasui =
 	{
 		-- [0] = "undef",
-		[1] = DEFECT_CODES.SLEEPER_FRACTURE_FERROCONCRETE, 	-- "fracture(ferroconcrete)",
-		[2] = DEFECT_CODES.SLEEPER_CHIP_FERROCONCRETE, 		-- "chip(ferroconcrete)",
-		[3] = DEFECT_CODES.SLEEPER_CRACK_WOOD,  			-- "crack(wood)",
-		[4] = DEFECT_CODES.SLEEPER_ROTTENNESS_WOOD, 		-- "rottenness(wood)",
+		[1] = DEFECT_CODES.SLEEPER_FRACTURE_FERROCONCRETE[1], 	-- "fracture(ferroconcrete)",
+		[2] = DEFECT_CODES.SLEEPER_CHIP_FERROCONCRETE[1], 		-- "chip(ferroconcrete)",
+		[3] = DEFECT_CODES.SLEEPER_CRACK_WOOD[1],  				-- "crack(wood)",
+		[4] = DEFECT_CODES.SLEEPER_ROTTENNESS_WOOD[1], 			-- "rottenness(wood)",
 	}
 
 	if #marks == 0 then return end
@@ -411,7 +411,9 @@ if not ATAPE then
 	local test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 1000000})
 
-	report_sleeper_dist()
+	-- report_sleeper_dist()
+	--ekasui_sleeper_defects()
+	report_sleeper_defects()
 	--ekasui_sleeper_dist()
 	-- sleeper_SDMI()
 	-- report_ALL()
