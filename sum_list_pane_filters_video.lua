@@ -356,62 +356,13 @@ local filters =
 			column_path_coord,
 			column_sleeper_meterial,
 			--column_sleeper_dist_next,
-			column_sleeper_epure_defect_user,
+			column_sleeper_fault,
 			--column_sys_coord,
 			column_pov_common,
 			},
 		GUIDS = {
-			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",  -- Шпалы
 			"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",  -- Дефекты шпал
 		},
-		post_load = function(marks)
-			-- разделим шпалы на нормальные (для определения угла и эпюры) и дефектные
-			local defect_marks = {}
-			local sleepers = {}
-			for _, mark in ipairs(marks) do
-				local g = mark.prop.Guid
-				if g == "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}" then
-					table.insert(sleepers, mark)
-				elseif g == "{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}" then
-					local params = mark_helper.GetSleeperFault(mark)
-					if params and params.FaultType then
-						mark.user.defect_code = sleeperfault2text[params.FaultType] or params.FaultType
-						table.insert(defect_marks, mark)
-					end
-				else
-					assert(0, "unknown guid: " .. g)
-				end
-			end
-
-			local sleeper_count = 1840
-			local MEK = 4
-			sleepers = mark_helper.sort_mark_by_coord(sleepers)
-			for mark, right in mark_helper.enum_group(sleepers, 2) do
-				local material = mark_helper.GetSleeperMeterial(mark)
-				if not material and SHOW_SLEEPER_UNKNOWN_MATERIAL then
-					material = 1 -- https://bt.abisoft.spb.ru/view.php?id=863#c4393 В случае "не скрывать" - считать все шнапля ЖБ 
-				end
-				if material == 1 or material == 2 then
-					local cur_defects = {}
-					local cp, np = mark.prop.SysCoord, right.prop.SysCoord
-					mark.user.dist_next = np - cp
-					local dist_ok, defect_code = mark_helper.CheckSleeperEpure(mark, sleeper_count, MEK, mark.user.dist_next, material)
-					if not dist_ok and (defect_code and defect_code ~= '') then
-						table.insert(cur_defects, defect_code)
-					end
-					local angle_defect = get_sleeper_angle_defect(mark, SLEEPER_ANGLE_TRESHOLD_RAD, material)
-					if angle_defect and angle_defect ~= '' then
-						table.insert(cur_defects, angle_defect)
-					end
-					if #cur_defects > 0 then
-						mark.user.defect_code = table.concat(cur_defects, ", ")
-						table.insert(defect_marks, mark)
-					end
-				end
-			end
-			defect_marks = mark_helper.sort_mark_by_coord(defect_marks)
-			return defect_marks
-		end,
 	},
 	{
 		-- https://bt.abisoft.spb.ru/view.php?id=863
