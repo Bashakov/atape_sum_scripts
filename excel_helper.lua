@@ -115,22 +115,106 @@ local function FindWorkSheet(workbook, sheet_name)
 	return worksheet
 end
 
+-- проход по всем ячейкам, возвращает номер ячейки и саму ячейку
+local function cells(range)
+	local n = 0
+	local cnt = range.Cells.count
+	return function ()
+		if n < cnt then
+			n = n + 1
+			return n, range.Cells(n)
+		end
+	end
+end
+
+-- поиск маркера таблицы
 local function FindTemplateRowNum(user_range)
-	for r = 1, user_range.Rows.count do						-- по всем строкам
-		for c = 1, user_range.Columns.count do
-			local val = user_range.Cells(r, c).Value2			-- проверяем ячейку
-			-- print(r, c, val)
-			for _, table_marker in ipairs{'%%table%%', '%$table%$', '%$table_old%$'} do
-				local replaced, found = string.gsub(val or '', table_marker, '')
-				if found ~= 0 then
-					user_range.Cells(r, 1).Value2 = replaced		-- если нашли, то уберем маркер
-					return r, table_marker
-				end
+	local markers = {
+		'%%table%%',
+		'%$table%$',
+		'%$table_old%$',
+		'%$table_rs%$',
+	}
+
+	for _, cell in cells(user_range) do
+		local val = cell.Value2			-- проверяем ячейку
+		-- print(r, c, val)
+		for _, table_marker in ipairs(markers) do
+			local replaced, found = string.gsub(val or '', table_marker, '')
+			if found ~= 0 then
+				cell.Value2 = replaced		-- если нашли, то уберем маркер
+				return cell.row, table_marker
 			end
 		end
 	end
 end
 
+-- применить подстановки в соответствии с переданной таблицей
+-- values набор таблиц со значениями
+local function apply_values(text, values)
+	assert(type(values[1]) == 'table')
+	local text_type = type(text)
+	if text_type == 'number' then
+		return text, false
+	elseif text_type == 'string' then -- обычная строка
+		if text == '' then
+			return text, false
+		end
+		local orig = text
+		for _, val in ipairs(values) do
+			text, _ = string.gsub(text, '%$([%w_]+)%$', val) -- и заменим шаблон
+		end
+		return text, text ~= orig
+	elseif text_type == 'table' then -- если передали таблицу, то обработаем каждый элемент
+		local change = false
+		local res = {}
+		for k, v in pairs(text) do
+			local vv, c = apply_values(v, values)
+			res[k] = vv
+			change = change or c
+		end
+		return res, change
+	else
+		error('apply_values, unknown src type: ' .. text_type)
+	end
+end
+
+-- создать recordset с заданным количеством колонок и строками получаемыми из функции
+local function generate_recordset_iter(col_count, fn)
+	-- https://docs.microsoft.com/en-us/previous-versions/visualstudio/visual-studio-6.0/aa260348(v=vs.60)?redirectedfrom=MSDN
+	-- https://docs.microsoft.com/en-us/previous-versions/office/troubleshoot/office-developer/transfer-excel-data-from-ado-recordset
+	-- https://powerspreadsheets.com/excel-vba-insert-row/
+
+	local records = luacom.CreateObject("ADODB.Recordset")
+	--records.ActiveConnection =  --  = {} -- Nothing
+	records.CursorLocation = 3 -- CursorLocationEnum.adUseClient
+	records.LockType = 4 -- LockTypeEnum.adLockBatchOptimistic
+
+	local fields = records.Fields
+	local columns = {}
+	for i = 1, col_count do
+		local name = string.format('col_%d', i)
+		fields:Append(name, 8) -- DataTypeEnum.adBSTR
+		columns[#columns+1] = name
+	end
+
+	records:Open()
+	local row_num = 1
+	while true do
+		local data = fn(row_num)
+		if not data then
+			break
+		end
+		assert(#data == col_count)
+		records:AddNew(columns, data)
+		row_num = row_num + 1
+	end
+
+	-- print(records.Fields.Count, records.RecordCount)
+	-- records:Save("c:/1.xml", 1) -- PersistFormatEnum.adPersistXML
+
+	return records
+end
 
 -- ======================  EXCEL  ============================= --
 
@@ -148,6 +232,11 @@ local XlInsertShiftDirection =
     xlShiftToRight				= -4161
 }
 
+local XlInsertFormatOrigin =
+{
+    xlFormatFromLeftOrAbove = 0,
+    xlFormatFromRightOrBelow = 1
+};
 
 local excel_helper = OOP.class
 {
@@ -170,7 +259,7 @@ local excel_helper = OOP.class
 		self._excel.Calculation = XlCalculation.xlCalculationManual
 	end,
 
-	-- проити по всему диаппазону и заменить подстановки
+	-- пройти по всему диапазону и заменить подстановки
 	-- sources_values - массив таблиц со значениями
 	ReplaceTemplates = function(self, dst_range, sources_values, template_values)
 		assert(type(sources_values[1]) == 'table')
@@ -187,16 +276,12 @@ local excel_helper = OOP.class
 
 			-- print(n, val, cell.HasFormula, cell.Formula)
 			if val ~= '' and not (cell and cell.HasFormula) then
-				local orig = val
-				for _, src in ipairs(sources_values) do
-					val, _ = string.gsub(val, '%$([%w_]+)%$', src) -- и заменим шаблон
-				end
-				--print(n, cell.Value2, val)
-				if val ~= orig then
+				local res, changed = apply_values(val, sources_values)
+				if changed then
 					if not cell then
 						cell = dst_range.Cells(n)
 					end
-					cell.Value2 = val
+					cell.Value2 = res
 				end
 			end
 		end
@@ -221,6 +306,9 @@ local excel_helper = OOP.class
 			template_values[c] = value
 		end
 
+		-- self._excel.Visible = true
+		-- self._excel.UserControl = true
+
 		if marker == '%$table_old%$' then
 			for i = 1, row_count-1 do
 				local row = user_range.Rows(template_row_num + i - 1)
@@ -239,6 +327,17 @@ local excel_helper = OOP.class
 				self._data_range = self._worksheet:Range(					-- сделаем из них новый диаппазон
 					user_range.Cells(template_row_num, 1),
 					user_range.Cells(template_row_num + 1, user_range.Columns.count-1))
+			end
+		elseif marker == '%$table_rs%$' then
+			if row_count > 0 then
+				local row = user_range.Rows(template_row_num)
+				row:Copy()
+				row:Insert(XlInsertShiftDirection.xlShiftDown)
+				local dst = row:Resize(row_count-1)
+				dst:Insert(XlInsertShiftDirection.xlShiftDown, XlInsertFormatOrigin.xlFormatFromLeftOrAbove)
+				self._data_range = user_range:Range(
+					user_range.Rows(template_row_num+1),
+					user_range.Rows(template_row_num+row_count))
 			end
 		else
 			if row_count == 0 then
@@ -260,7 +359,7 @@ local excel_helper = OOP.class
 			end
 		end
 
-		return self._data_range, user_range, template_values
+		return self._data_range, user_range, template_values, marker
 	end,
 
 	InsertLink = function (self, cell, url, text)					-- вставка ссылки в ячейку
@@ -384,20 +483,50 @@ local excel_helper = OOP.class
 	-- клонируем шаблонную строку нужное число раз, и вставляем данные
 	ApplyRows = function (self, marks, fn_get_templates_data, dlgProgress)
 		local dst_row_count = #marks
-		local data_range, user_range, template_values = self:CloneTemplateRow(dst_row_count, 0, dlgProgress)
-		for line = 1, dst_row_count do
-			local mark = marks[line]
+		local data_range, user_range, template_values, marker = self:CloneTemplateRow(dst_row_count, 0, dlgProgress)
+		if marker == '%$table_rs%$' then
+			local row_template = data_range.row - user_range.row
+			local col_count = #template_values
+			local recordset = generate_recordset_iter(col_count, function (row_num)
+				local mark = marks[row_num]
+				if mark then
+					local row_data = fn_get_templates_data and fn_get_templates_data(mark) or mark
+					row_data.N = row_num
+					local res_row = apply_values(template_values, {row_data})
+					if dlgProgress and
+					   row_num % 23 == 1 and
+					   not dlgProgress:step(row_num / #marks, sprintf('Сохранение %d / %d', row_num, dst_row_count)) then
+							return
+					end
+					return res_row
+				end
+			end)
+			data_range:CopyFromRecordset(recordset)
+			-- восстановим и заполним формулы
+			for c = 1, user_range.Columns.count do
+				local cell = user_range.Cells(row_template, c)
+				-- print(c, cell.Value2)
+				if cell.HasFormula then
+					local rng = user_range:Range(cell, cell:Offset(#marks, 0))
+					rng:FillDown()
+				end
+			end
+			user_range.Rows(row_template):Delete()
+		else
+			for line = 1, dst_row_count do
+				local mark = marks[line]
 
-			local row_data = fn_get_templates_data and fn_get_templates_data(mark) or mark
-			row_data.N = line
+				local row_data = fn_get_templates_data and fn_get_templates_data(mark) or mark
+				row_data.N = line
 
-			local cell_LT = data_range.Cells(line, 1)
-			local cell_RB = data_range.Cells(line, data_range.Columns.count)
-			local row_range = user_range:Range(cell_LT, cell_RB)
+				local cell_LT = data_range.Cells(line, 1)
+				local cell_RB = data_range.Cells(line, data_range.Columns.count)
+				local row_range = user_range:Range(cell_LT, cell_RB)
 
-			self:ReplaceTemplates(row_range, {row_data}, template_values)
-			if dlgProgress and not dlgProgress:step(line / dst_row_count, sprintf('Сохранение %d / %d', line, dst_row_count)) then
-				break
+				self:ReplaceTemplates(row_range, {row_data}, template_values)
+				if dlgProgress and not dlgProgress:step(line / dst_row_count, sprintf('Сохранение %d / %d', line, dst_row_count)) then
+					break
+				end
 			end
 		end
 	end,
