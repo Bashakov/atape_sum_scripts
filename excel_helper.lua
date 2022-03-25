@@ -238,6 +238,34 @@ local XlInsertFormatOrigin =
     xlFormatFromRightOrBelow = 1
 };
 
+-- Размножить указанную строку нужное число раз
+local function cloneRowCpPs(rng, row_num, req_cnt)
+	local cur_cnt = 1
+	if req_cnt == 0 then
+		rng.Rows(row_num):Delete()
+		return
+	end
+
+	req_cnt = req_cnt - 1 -- одна строка уже есть
+	while req_cnt > 0 do
+		local sel_num = math.min(req_cnt, cur_cnt)
+		local c1 = rng.Rows(row_num)
+		local c2 = rng.Rows(row_num + sel_num - 1)
+		local r = rng:Range(c1, c2)
+		r:Select()
+		r:Copy()
+		r:Insert(XlInsertShiftDirection.xlShiftDown)
+
+		req_cnt = req_cnt - cur_cnt
+		cur_cnt = cur_cnt * 2
+	end
+
+	-- выделим одну строку, чтобы сбросить буфер
+	local c = rng.Cells(1, 1)
+	c:Copy()
+	c:Select()
+end
+
 local excel_helper = OOP.class
 {
 	ctor = function(self, template_path, sheet_name, visible, dest_name)
@@ -330,11 +358,7 @@ local excel_helper = OOP.class
 			end
 		elseif marker == '%$table_rs%$' then
 			if row_count > 0 then
-				local row = user_range.Rows(template_row_num)
-				row:Copy()
-				row:Insert(XlInsertShiftDirection.xlShiftDown)
-				local dst = row:Resize(row_count-1)
-				dst:Insert(XlInsertShiftDirection.xlShiftDown, XlInsertFormatOrigin.xlFormatFromLeftOrAbove)
+				cloneRowCpPs(user_range, template_row_num, row_count+1)
 				self._data_range = user_range:Range(
 					user_range.Rows(template_row_num+1),
 					user_range.Rows(template_row_num+row_count))
