@@ -30,19 +30,7 @@ local function report_NPU(params)
     local dlg = luaiup_helper.ProgressDlg('Построение отчета НПУ')
     defer(dlg.Destroy, dlg)
 
-	local marks = Driver:GetMarks{ListType='list'}
-
-	marks = mark_helper.filter_marks(
-		marks,
-		function(mark)
-			return table_find(params.guids, mark.prop.Guid)
-		end,
-		function(all, checked, accepted)
-			if checked % 20 == 0 then
-				dlg:step(checked / all, string.format('Check %d / %d mark, accept %d', checked, all, accepted))
-			end
-		end
-	)
+	local marks = Driver:GetMarks{ListType='list', GUIDS=params.guids}
 
 	marks = mark_helper.sort_mark_by_coord(marks)
 
@@ -63,13 +51,9 @@ local function report_NPU(params)
 	local ext_psp = mark_helper.GetExtPassport(Passport)
 
 	ext_psp.SUM_LENGTH = sum_length
-	excel:ApplyPassportValues(ext_psp)
+	excel:ApplyPassportValues(ext_psp, dlg)
 	excel:ApplyRows(report_rows, nil, dlg)
 	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
-
-
-
-
 
 	excel:SaveAndShow()
 	end)
@@ -95,7 +79,7 @@ if not ATAPE then
 
 	test_report  = require('test_report')
 	--test_report('D:\\ATapeXP\\Main\\480\\[480]_2013_11_09_14.xml')
-	test_report('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2020_11_06_24.xml')
+	test_report('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2022_02_04_01.xml', nil, {0, 1000000}) --
 
 	report_NPU(cur_reports[1].params)
 	--ekasui_rails()
