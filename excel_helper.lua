@@ -289,10 +289,11 @@ local excel_helper = OOP.class
 
 	-- пройти по всему диапазону и заменить подстановки
 	-- sources_values - массив таблиц со значениями
-	ReplaceTemplates = function(self, dst_range, sources_values, template_values)
+	ReplaceTemplates = function(self, dst_range, sources_values, template_values, fnProgress)
 		assert(type(sources_values[1]) == 'table')
 
-		for n = 1, dst_range.Cells.count do						-- пройдем по всем ячейкам
+		local cell_cnt = dst_range.Cells.count
+		for n = 1, cell_cnt do						-- пройдем по всем ячейкам
 			local cell = nil
 			local val = nil
 			if template_values then
@@ -312,12 +313,24 @@ local excel_helper = OOP.class
 					cell.Value2 = res
 				end
 			end
+			if fnProgress and not fnProgress(n, cell_cnt) then
+				break
+			end
 		end
 	end,
 
-	ApplyPassportValues = function(self, psp)						-- заменить строки вида $START_KM$ на значения из паспорта
+	ApplyPassportValues = function(self, psp, dlg)						-- заменить строки вида $START_KM$ на значения из паспорта
 		local user_range = self._worksheet.UsedRange
-		self:ReplaceTemplates(user_range, {psp})
+		local fnProgress = nil
+		if dlg then
+			fnProgress = function (n, all)
+				return
+					n % 23 ~= 0 or
+					not dlg or
+					dlg:step(n / all, sprintf('Применение глобальных значений %d / %d', n, all))
+			end
+		end
+		self:ReplaceTemplates(user_range, {psp}, nil, fnProgress)
 	end,
 
 	CloneTemplateRow = function(self, row_count, correction, dlg)
