@@ -254,11 +254,11 @@ local filters =
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
-		name = 'Приварные соединители', 
+		name = 'III Соединитель',  -- Приварные соединители https://bt.abisoft.spb.ru/view.php?id=834#c4240
 		--videogram_defect_codes = {'000000000001'},
 		columns = {
-			column_num, 
-			column_path_coord, 
+			column_num,
+			column_path_coord,
 			column_rail,
 			column_rail_lr,
 			column_weldedbond_status,
