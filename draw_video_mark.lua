@@ -69,6 +69,33 @@ local function drawPolygon(points, lineWidth, line_color, fill_color)
 	Drawer.fig:polygon(points)
 end
 
+local function drawPolyline(points, lineWidth, line_color, fill_color)
+	if points and #points ~= 0 and #points % 2 == 0 then
+		if not fill_color then fill_color = line_color end
+
+		Drawer.prop:lineWidth(lineWidth)
+		Drawer.prop:fillColor(fill_color.r, fill_color.g, fill_color.b, fill_color.a or   0)
+		Drawer.prop:lineColor(line_color.r, line_color.g, line_color.b, line_color.a or 200)
+		Drawer.fig:polyline(points)
+	end
+end
+
+local function drawLines(points, lineWidth, line_color, fill_color)
+	-- print("drawLines", #points / 4)
+	if points and #points ~= 0 and #points % 4 == 0 then
+		if not fill_color then fill_color = line_color end
+
+		Drawer.prop:lineWidth(lineWidth)
+		Drawer.prop:fillColor(fill_color.r, fill_color.g, fill_color.b, fill_color.a or   0)
+		Drawer.prop:lineColor(line_color.r, line_color.g, line_color.b, line_color.a or 200)
+		for i = 1, #points, 4 do
+			local x1, y1, x2, y2 = table.unpack(points, i, i+3)
+			-- print("line: ", x1, y1, x2, y2)
+			Drawer.fig:line(x1, y1, x2, y2)
+		end
+	end
+end
+
 local function drawMultiline(x, y, text, lineWidth, color)
 	Drawer.prop:lineWidth(lineWidth)
 	Drawer.prop:fillColor{r=color.r, g=color.g, b=color.b, a=color.a or 225}
@@ -88,7 +115,8 @@ local function OutlineTextOut(x, y, text, params)
 	drawer.text:alignment("AlignLeft", "AlignBottom")
 
 	local tw, th = drawer.text:calcSize(text)
-	tw = -5  -- https://bt.abisoft.spb.ru/view.php?id=642
+	-- tw = tw - 5  -- https://bt.abisoft.spb.ru/view.php?id=642
+	-- print(tw, th)
 	x = x - tw/2 + ox
 	y = y - th/2 + oy
 
@@ -681,6 +709,50 @@ local function ProcessGroupDefectObject(mark)
 	end
 end
 
+local function ProcessSleeper(mark)
+	if mark.prop.ChannelMask ~= 0 and mark.ext.RAWXMLDATA then
+		ProcessMarkRawXml(mark)
+	end
+	if true then
+	
+		local org_size = Frame.size.current -- текущий размер кадра
+		
+		local h = org_size.y / 4  -- условный размер шпалы по Y
+		
+		local sys_coord = mark.prop.SysCoord	-- системная координата объекта (шпалы)
+		local sleeper_width_mm = 200			-- ширина шпалы
+		local x1, _ = Convertor:SysCoordToOffset(Frame.coord.raw, sys_coord-sleeper_width_mm/2) -- левый край шпалы на кадре
+		local x2, _ = Convertor:SysCoordToOffset(Frame.coord.raw, sys_coord+sleeper_width_mm/2) -- правый край шпалы на кадре
+		--x2 = x1+100
+		local xc = (x1+x2) / 2
+		--print(Frame.coord.raw, mark.prop.ID, sys_coord, x1)
+		
+		local points = {
+			x1, h, x2, h,	 	-- горизонтальная линия
+			xc, 0, xc, h,		-- вертикальная линия
+		}
+		local dist_next = mark.ext.SLEEPERS_NEXT or 0
+		local defect_code = mark.ext.DEFECT_CODES or ''
+		--OutlineTextOut(xc, h-20, string.format("id=%d\nc=%d\ndn=%d", mark.prop.ID, sys_coord, dist_next))
+		--print(xc, mark.prop.ID, sys_coord, defect_code)
+		
+		local color = {r=50, g=200, b=50, a=200}
+		if #defect_code > 0 then
+			color = {r=250, g=0, b=0, a=255}
+		end
+		drawLines(points, 1, color, color)
+		
+		if #defect_code > 0 then
+			local ml = string.gsub(defect_code, ",", "\n")
+			--print(xc, mark.prop.ID, defect_code, ml)
+			OutlineTextOut(xc, h+10, ml, {line_color=color})
+			
+		end
+		
+		-- print('ProcessSleeper', x1, x2)
+	end
+end
+
 -- ==================== MARK TYPES ====================
 
 local recorn_guids =
@@ -706,7 +778,7 @@ local recorn_guids =
 	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"] = {ProcessMarkRawXml}, -- Скрепление
 	["{28C82406-2773-48CB-8E7D-61089EEB86ED}"] = {ProcessMarkRawXml}, -- Болты(Пользователь)
 	["{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}"] = {ProcessMarkRawXml}, -- Поверх.(Видео)
-	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"] = {ProcessMarkRawXml}, -- Шпалы
+	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"] = {ProcessSleeper},    -- Шпалы
 	["{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}"] = {ProcessMarkRawXml}, -- Дефекты шпал
 	["{53987511-8176-470D-BE43-A39C1B6D12A3}"] = {ProcessMarkRawXml}, -- SleeperTop
 	["{DE548D8F-4E0C-4644-8DB3-B28AE8B17431}"] = {ProcessMarkRawXml}, -- UIC_227
@@ -735,7 +807,7 @@ function Draw(drawer, frame, marks)
 
 	-- print('Draw ', #marks)
 	for _, mark in ipairs(marks) do
-		print('Draw mark', mark.prop.Guid)
+		-- print('Draw mark', mark.prop.Guid)
 		local fns = recorn_guids[mark.prop.Guid] or {}
 		for _, fn in ipairs(fns) do
 			fn(mark)

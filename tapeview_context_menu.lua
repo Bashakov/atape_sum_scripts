@@ -1,4 +1,5 @@
 local sum_group_marks = require 'sum_group_marks'
+local spleper_reports = require 'sum_report_sleepers'
 
 
 local function add_scan_gruop_defects_menu(menu_items)
@@ -33,10 +34,16 @@ local function add_scan_gruop_defects_menu(menu_items)
      end})
 end
 
+local function add_prepare_report(menu_items)
+    local prefix = 'Подготовить отметки для отчета|'
+    table.insert(menu_items, {name=prefix .. "Шпалы", fn=spleper_reports.PrepareSleepers})
+end
+
 -- =============== EXPORT ===============
 
 function GetMenuItems()
     local menu_items = {}
     add_scan_gruop_defects_menu(menu_items)
+    add_prepare_report(menu_items)
     return menu_items
 end

@@ -207,15 +207,18 @@ local function generate_rows_sleeper_user(marks, dlgProgress, pov_filter)
 	return report_rows
 end
 
+local defectcode2ekasui =
+{
+	-- [0] = "undef",
+	[1] = DEFECT_CODES.SLEEPER_FRACTURE_FERROCONCRETE[1], 	-- "fracture(ferroconcrete)",
+	[2] = DEFECT_CODES.SLEEPER_CHIP_FERROCONCRETE[1], 		-- "chip(ferroconcrete)",
+	[3] = DEFECT_CODES.SLEEPER_CRACK_WOOD[1],  				-- "crack(wood)",
+	[4] = DEFECT_CODES.SLEEPER_ROTTENNESS_WOOD[1], 			-- "rottenness(wood)",
+}
+
+
 local function generate_rows_sleeper_defects(marks, dlgProgress, pov_filter)
-	local code2ekasui =
-	{
-		-- [0] = "undef",
-		[1] = DEFECT_CODES.SLEEPER_FRACTURE_FERROCONCRETE[1], 	-- "fracture(ferroconcrete)",
-		[2] = DEFECT_CODES.SLEEPER_CHIP_FERROCONCRETE[1], 		-- "chip(ferroconcrete)",
-		[3] = DEFECT_CODES.SLEEPER_CRACK_WOOD[1],  				-- "crack(wood)",
-		[4] = DEFECT_CODES.SLEEPER_ROTTENNESS_WOOD[1], 			-- "rottenness(wood)",
-	}
+
 
 	if #marks == 0 then return end
 
@@ -223,8 +226,8 @@ local function generate_rows_sleeper_defects(marks, dlgProgress, pov_filter)
 	for i, mark in ipairs(marks) do
 		if pov_filter(mark) then
 			local params = mark_helper.GetSleeperFault(mark)
-			if params and params.FaultType and code2ekasui[params.FaultType] then
-				local row = MakeSleeperMarkRow(mark, code2ekasui[params.FaultType])
+			if params and params.FaultType and defectcode2ekasui[params.FaultType] then
+				local row = MakeSleeperMarkRow(mark, defectcode2ekasui[params.FaultType])
 				table.insert(report_rows, row)
 			end
 		end
@@ -381,6 +384,87 @@ local videogram = make_report_videogram(
 
 -- =============================================================================
 
+local function PrepareSleepers()
+	return EnterScope(function (defer)
+		local dlg = luaiup_helper.ProgressDlg('Обработка шпал')
+        defer(dlg.Destroy, dlg)
+		local gg = {
+			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",	-- Шпалы
+		}
+
+		local sleeper_count, MEK = 1840, 4
+		local angle_threshold = 5.7
+		local marks_to_save = {}
+
+		local marks = Driver:GetMarks{GUIDS=gg, ListType="all"}
+		marks = mark_helper.sort_mark_by_coord(marks)
+		local i = 0
+		for cur, right in mark_helper.enum_group(marks, 2) do
+			i = i + 1
+			if i % 43 == 0 and not dlg:step(i / #marks, sprintf('Обработка %d / %d', i, #marks)) then
+				return
+			end
+			--if i > 1000 then break end
+			local mark_defects = {}
+
+			-- сохраним материал
+			local material = mark_helper.GetSleeperMeterial(cur)
+			if not material and SHOW_SLEEPER_UNKNOWN_MATERIAL then
+				material = 1 -- https://bt.abisoft.spb.ru/view.php?id=863#c4393 В случае "не скрывать" - считать все шнапля ЖБ 
+			end
+			cur.ext.SLEEPERS_METERIAL = material
+
+			-- сохраним эпюру
+			local dist_next = right.prop.SysCoord - cur.prop.SysCoord
+			cur.ext.SLEEPERS_NEXT = dist_next
+
+			local disk_ok, defect_code = mark_helper.CheckSleeperEpure(cur, sleeper_count, MEK, dist_next)
+			if not disk_ok and defect_code ~= '' then
+				table.insert(mark_defects, defect_code)
+			end
+
+			-- сохраним разворот
+			local angle = mark_helper.GetSleeperAngle(cur)
+			if not angle then
+				angle = 0
+			end
+			cur.ext.SLEEPERS_ANGLE = angle
+			angle = angle * 180/3.14/1000
+
+			if math.abs(angle) > angle_threshold then
+				if material == 1 then -- "бетон"
+					table.insert(mark_defects, DEFECT_CODES.SLEEPER_ANGLE_CONCRETE[1])
+				else -- дерево
+					table.insert(mark_defects, DEFECT_CODES.SLEEPER_ANGLE_WOOD[1])
+				end
+			end
+
+			-- дефектность
+			local params_fault = mark_helper.GetSleeperFault(cur)
+			if params_fault and params_fault.FaultType and defectcode2ekasui[params_fault.FaultType] then
+				table.insert(mark_defects, defectcode2ekasui[params_fault.FaultType])
+			end
+
+			-- запишем все найденные коды дефектов в отметку
+			if #mark_defects > 0 then
+				mark_defects = table.concat(mark_defects, ",")
+				cur.ext.DEFECT_CODES = mark_defects
+			end
+			table.insert(marks_to_save, cur);
+
+			print(cur.prop.ID, cur.prop.SysCoord, cur.ext.SLEEPERS_NEXT, cur.ext.SLEEPERS_ANGLE, cur.ext.DEFECT_CODES)
+			if #marks_to_save > 1000 then
+				Driver:SaveMarks(marks_to_save)
+				marks_to_save = {}
+			end
+		end
+
+		if #marks_to_save > 0 then
+			Driver:SaveMarks(marks_to_save)
+		end
+	end);
+end
+
 local function AppendReports(reports)
 	local name_pref = 'Ведомость отступлений в содержании шпал|'
 
@@ -409,14 +493,16 @@ end
 -- тестирование
 if not ATAPE then
 	local test_report  = require('test_report')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 1000000})
+	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {395000, 405000})
 
 	-- report_sleeper_dist()
 	--ekasui_sleeper_defects()
-	report_sleeper_defects()
+	--report_sleeper_defects()
+
 	--ekasui_sleeper_dist()
 	-- sleeper_SDMI()
 	-- report_ALL()
+	PrepareSleepers()
 end
 
 return {
@@ -431,4 +517,5 @@ return {
 	get_marks = function (pov_filter)
 		return GetMarks()
 	end,
+	PrepareSleepers = PrepareSleepers
 }

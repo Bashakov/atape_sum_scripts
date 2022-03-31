@@ -526,6 +526,12 @@ local Driver = OOP.class
 	NewSumMark = function (self)
 		return _make_new_mark()
 	end,
+
+	SaveMarks = function (self, marks)
+		for _, mark in ipairs(marks) do
+			mark:Save()
+		end
+	end
 }
 
 Driver.GUID = GUID
