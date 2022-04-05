@@ -18,6 +18,8 @@ if not xmlDom then
 	error("no Msxml2.DOMDocument: " .. luacom.config.last_error)
 end
 
+local GetGapType -- definition
+
 -- итератор по нодам xml
 local function SelectNodes(xml, xpath)
 	return function(nodes)
@@ -661,10 +663,8 @@ local function GetWeldedBondDefectCode(mark)
 	-- на которых оборван приварной соединитель https://bt.abisoft.spb.ru/view.php?id=765#c3706
 	if not gap_type or gap_type == 0 then
 		local status = GetWeldedBondStatus(mark) -- <PARAM name='ConnectorFault' value='1' value_='0-исправен, 1-неисправен'/>
-		if not status then
-			return DEFECT_CODES.JOINT_WELDED_BOND_DEFECT[1]
-		elseif status == 1 then
-			return DEFECT_CODES.JOINT_WELDED_BOND_MISSING[1]
+		if not status or status == 1 then
+			return DEFECT_CODES.JOINT_WELDED_BOND_FAULT[1]
 		end
 	end
 end

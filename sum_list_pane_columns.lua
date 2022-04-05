@@ -788,7 +788,12 @@ column_weldedbond_defect_code = {
 	sorter = function(mark)
 		local code = mark_helper.GetWeldedBondDefectCode(mark)
 		return code or ''
-	end
+	end,
+	get_tooltip = function (row)
+		local mark = work_marks_list[row]
+		local code = mark_helper.GetWeldedBondDefectCode(mark)
+		return DEFECT_CODES.code2desc(code)
+	end,
 }
 
 column_mark_desc = 
