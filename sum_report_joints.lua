@@ -49,11 +49,18 @@ local function GetMarks()
 end
 
 
-local function MakeJointMarkRow(mark)
+local function MakeJointMarkRow(mark, code)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
 	row.SPEED_LIMIT = ''
 	row.GAP_WIDTH = mark_helper.GetGapWidth(mark)
 	row.BLINK_GAP_COUNT = ''
+
+	if code then
+		if type(code) == 'table' then code = code[1] end
+		assert(type(code) == 'string')
+		row.DEFECT_CODE = code
+		row.DEFECT_DESC = DEFECT_CODES.code2desc(code)
+	end
 	return row
 end
 
@@ -208,9 +215,7 @@ local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
 			(mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" or mark_helper.table_find(joints_group_defects, mark.prop.Guid)) and
 			mark_helper.table_find(blind_defect_codes, mark.ext.CODE_EKASUI)
 		then
-			local row = MakeJointMarkRow(mark)
-			row.DEFECT_CODE = mark.ext.CODE_EKASUI
-			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
+			local row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)
 			table.insert(report_rows, row)
 		end
 	end
@@ -301,17 +306,13 @@ local function generate_rows_joint_step(marks, dlgProgress, pov_filter)
 			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_HOR_STEP[1] or
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_STEP_VH_LT25[1]) then
-				local row = MakeJointMarkRow(mark)
-				row.DEFECT_CODE = mark.ext.CODE_EKASUI
-				row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
+				local row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)
 				table.insert(report_rows, row)
 			else
 				local step_vert = mark_helper.GetRailGapStep(mark) or 0
 				step_vert = math.abs(step_vert)
 				if step_vert > 1 then
-					local row = MakeJointMarkRow(mark)
-					row.DEFECT_CODE = DEFECT_CODES.JOINT_STEP_VH_LT25[1]
-					row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
+					local row = MakeJointMarkRow(mark, DEFECT_CODES.JOINT_STEP_VH_LT25[1])
 					row.GAP_WIDTH = mark_helper.GetGapWidth(mark) or ''
 					local temperature = mark_helper.GetTemperature(mark) or 0
 
@@ -355,9 +356,7 @@ local function generate_rows_fishplate(marks, dlgProgress, pov_filter)
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_FISHPLATE_DEFECT_ONE[1] or
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_FISHPLATE_DEFECT_BOTH[1]
 			) then
-				local row = MakeJointMarkRow(mark)
-				row.DEFECT_CODE = mark.ext.CODE_EKASUI
-				row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
+				local row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)
 				table.insert(report_rows, row)
 			else
 				local fishpalte_fault, fishpalte_fault_cnt = mark_helper.GetFishplateState(mark)
@@ -417,17 +416,13 @@ local function generate_rows_missing_bolt(marks, dlgProgress, pov_filter)
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT_TWO_GOOD[1]
 			)
 			then
-				local row = MakeJointMarkRow(mark)
-				row.DEFECT_CODE = mark.ext.CODE_EKASUI
-				row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
+				local row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)
 				table.insert(report_rows, row)
 			else
 				local code, limit = bolt2defect_limit(mark)
 				if code then
-					local row = MakeJointMarkRow(mark)
+					local row = MakeJointMarkRow(mark, code)
 					row.SPEED_LIMIT = limit
-					row.DEFECT_CODE = code
-					row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
 					table.insert(report_rows, row)
 				end
 			end
@@ -444,14 +439,10 @@ end
 local function generate_rows_WeldedBond(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
-		if pov_filter(mark) then
-			local status = mark_helper.GetWeldedBondStatus(mark) -- <PARAM name='ConnectorFault' value='1' value_='0-исправен, 1-неисправен'/>
-			local gap_type = mark_helper.GetGapType(mark) -- 0 - болтовой, 1 - изолированный, 2 - сварной
-			if status == 1 and not (gap_type or gap_type == 0) then -- дефект необходимо выдавать на болтовых стыках (кроме АТС и изостыков) на которых нет приварного соединителя, на которых оборван приварной соединитель https://bt.abisoft.spb.ru/view.php?id=765#c3706
-				local row = MakeJointMarkRow(mark)
-				row.DEFECT_CODE = DEFECT_CODES.JOINT_WELDED_BOND_FAULT[1]
-				row.DEFECT_DESC = DEFECT_CODES.JOINT_WELDED_BOND_FAULT[2]
-				table.insert(report_rows, row)
+		if pov_filter(mark) and mark_helper.table_find(video_joints_juids, mark.prop.Guid) then
+			local code = mark_helper.GetWeldedBondDefectCode(mark)
+			if code then
+				table.insert(report_rows, MakeJointMarkRow(mark, code))
 			end
 		end
 
@@ -470,9 +461,7 @@ local function generate_rows_user(marks, dlgProgress, pov_filter)
 		if pov_filter(mark) and mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and mark.ext.CODE_EKASUI then
 			local row = make_mark_gap_width_exceed(mark)
 			if not row then
-				row = MakeJointMarkRow(mark)
-				row.DEFECT_CODE = mark.ext.CODE_EKASUI
-				row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
+				row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)
 			end
 			table.insert(report_rows, row)
 		end
@@ -621,7 +610,7 @@ end
 -- тестирование
 if not ATAPE then
 	local test_report  = require('test_report')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 1000000000})
+	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 10000000})
     --test_report('D:/ATapeXP/Main/TEST/ZeroGap/2019_06_13/Avikon-03M/6284/[494]_2017_06_14_03.xml')
 
 	local reports = {}
@@ -631,7 +620,9 @@ if not ATAPE then
 	-- print(report.name)
 	-- report.fn()
 
-	ekasui_neigh_blind_joint()
+	-- report_WeldedBond()
+	ekasui_WeldedBond()
+	-- ekasui_neigh_blind_joint()
 	--report_missing_bolt()
 	-- ekasui_missing_bolt()
 	-- report_joint_width()

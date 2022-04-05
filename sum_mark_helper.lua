@@ -18,7 +18,6 @@ if not xmlDom then
 	error("no Msxml2.DOMDocument: " .. luacom.config.last_error)
 end
 
-
 -- итератор по нодам xml
 local function SelectNodes(xml, xpath)
 	return function(nodes)
@@ -655,6 +654,21 @@ local function GetWeldedBondStatus(mark)
 	end
 end
 
+-- получить Код дефекта конектора (WeldedBond) из описания стыка
+local function GetWeldedBondDefectCode(mark)
+	local gap_type = GetGapType(mark) -- 0 - болтовой, 1 - изолированный, 2 - сварной
+	-- дефект необходимо выдавать на болтовых стыках (кроме АТС и изостыков) на которых нет приварного соединителя,
+	-- на которых оборван приварной соединитель https://bt.abisoft.spb.ru/view.php?id=765#c3706
+	if not gap_type or gap_type == 0 then
+		local status = GetWeldedBondStatus(mark) -- <PARAM name='ConnectorFault' value='1' value_='0-исправен, 1-неисправен'/>
+		if not status then
+			return DEFECT_CODES.JOINT_WELDED_BOND_DEFECT[1]
+		elseif status == 1 then
+			return DEFECT_CODES.JOINT_WELDED_BOND_MISSING[1]
+		end
+	end
+end
+
 -- =================== Шпалы ===================
 
 -- получить параметры шпалы
@@ -1192,7 +1206,7 @@ local table_gap_types = {
 
 --[[ получить тип стыка
 (0 - болтовой, 1 - изолированный, 2 - сварной)]]
-local function GetGapType(mark)
+GetGapType = function (mark)
 	-- 	https://bt.abisoft.spb.ru/view.php?id=743
 	local dom = assert(luacom.CreateObject("Msxml2.DOMDocument.6.0"))
 	if mark and mark.ext and mark.ext.RAWXMLDATA and dom:loadXML(mark.ext.RAWXMLDATA)	then
@@ -1210,9 +1224,7 @@ end
 
 -- =================== ЭКПОРТ ===================
 
-
-
-return{
+return {
 	errorf = errorf,
 	printf = printf,
 	sprintf = sprintf,
@@ -1264,9 +1276,10 @@ return{
 	
 	GetConnectorsArray = GetConnectorsArray,
 	GetConnectorsCount = GetConnectorsCount,
-	
+
 	GetWeldedBondStatus = GetWeldedBondStatus,
-	
+	GetWeldedBondDefectCode = GetWeldedBondDefectCode,
+
 	GetCrewJointArray = GetCrewJointArray,
 	GetCrewJointCount = GetCrewJointCount,
 	CalcValidCrewJointOnHalf = CalcValidCrewJointOnHalf,

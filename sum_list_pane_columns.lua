@@ -776,10 +776,24 @@ column_weldedbond_status = {
 	end
 }
 
+column_weldedbond_defect_code = {
+	name = 'Код.', 
+	width = 90, 
+	align = 'r', 
+	text = function(row)
+		local mark = work_marks_list[row]
+		local code = mark_helper.GetWeldedBondDefectCode(mark)
+		return code or ''
+	end,
+	sorter = function(mark)
+		local code = mark_helper.GetWeldedBondDefectCode(mark)
+		return code or ''
+	end
+}
+
 column_mark_desc = 
 {
 	name = 'Описание', 
-	---name = 'Description', 
 	width = 80, 
 	align = 'r',
 	text = function(row)

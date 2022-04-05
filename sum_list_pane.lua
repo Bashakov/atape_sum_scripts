@@ -532,7 +532,7 @@ if not ATAPE then
 	if HUN then
 		name  = 'Surface Defects'
 	else
-		name  = 'III Шпалы: дефекты'
+		name  = 'III Соединитель'
 	end
 
 	local columns = GetColumnDescription(name)
