@@ -620,8 +620,8 @@ if not ATAPE then
 	-- print(report.name)
 	-- report.fn()
 
-	-- report_WeldedBond()
-	ekasui_WeldedBond()
+	report_WeldedBond()
+	--- ekasui_WeldedBond()
 	-- ekasui_neigh_blind_joint()
 	--report_missing_bolt()
 	-- ekasui_missing_bolt()

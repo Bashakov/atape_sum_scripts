@@ -14,6 +14,13 @@ local errorf = mark_helper.errorf
 
 -- ========================================
 
+local function format_gps(val)
+	if not val or val == '' then
+		return ''
+	end
+	return string.format("%.8f", val)
+end
+
 math.randomseed(os.time())
 
 local function uuid()
@@ -69,6 +76,9 @@ local function merge_images(images)
 end
 
 local function GetBase64EncodedFrame(row)
+	if ShowVideo == 0 then
+		return ""
+	end
 	local p, e = pcall(function()
 		local rail = bit32.band(row.RAIL_RAW_MASK, 0x03)
 		local video_channels = rail==1 and {17, 19, 21} or {18, 20, 22}
@@ -106,7 +116,6 @@ local function GetBase64EncodedFrame(row)
 end
 
 -- ========================================
-
 
 local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg, pathType )
 	local PackageID = uuid() -- Passport.SOURCE +
@@ -162,8 +171,8 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg, path
 		node_incident:setAttribute("speedLimitID", mark.SPEED_LIMIT)
 		node_incident:setAttribute("jpads", "null")
 		node_incident:setAttribute("comment", "null")
-		node_incident:setAttribute("lon", mark.LON)
-		node_incident:setAttribute("lat", mark.LAT)
+		node_incident:setAttribute("lon", format_gps(mark.LON))
+		node_incident:setAttribute("lat", format_gps(mark.LAT))
 		node_incident:setAttribute("Pic", img)
 		node_incident:setAttribute("avikon_system_coord", mark.SYS)
 
@@ -172,7 +181,8 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg, path
 		end
 	end
 
-	local path_dst = sprintf("%s\\video_%s_%s_%d.xml", EKASUI_PARAMS.ExportFolder, Passport.SOURCE, export_id, PackageNUM)
+	local path_prefix = TEST_EKASUI_OUT_PREFIX or string.format("%s\\video_%s_%s", EKASUI_PARAMS.ExportFolder, Passport.SOURCE, export_id)
+	local path_dst = string.format("%s_%d.xml", path_prefix, PackageNUM)
 	local f, msg = io.open(path_dst, 'w+')
 	if not f then
 		errorf("Can not open file: %s. %s", path_dst, msg)
@@ -270,7 +280,7 @@ local function make_ekasui_generator(getMarks, ...)
 				first_file = path
 			end
 		end
-		local anwser = iup.Alarm("ATape", str_msg, "Показать первый", "Закрыть")
+		local anwser = iup.Alarm("Построение отчета закончено", str_msg, "Показать первый", "Закрыть")
 		if 1 == anwser and first_file then
 			local cmd = sprintf('%%SystemRoot%%\\explorer.exe /select,"%s"', first_file)
 			os.execute(cmd)

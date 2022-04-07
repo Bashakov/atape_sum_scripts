@@ -58,6 +58,14 @@ local function CopyFile(src, dst)
 	return fso:FileExists(dst)
 end
 
+local function GetFileName(path)
+	return path:match("^.+/(.+)$")
+end
+
+local function GetFileExtension(path)
+	return path:match("^.+(%..+)$")
+end
+
 local function CopyTemplate(template_path, sheet_name, dest_name)		-- скопировать файл шаблона в папку отчетов
 	local file_name
 	if dest_name then
@@ -71,7 +79,10 @@ local function CopyTemplate(template_path, sheet_name, dest_name)		-- скопи
 
 	local user_dir = os.getenv('USERPROFILE') -- возвращает путь кодированный в cp1251, что вызывает ошибку при копировании, тк ожидается utf-8
 	user_dir = codecs.cp1251_utf8(user_dir)
-	local new_name = user_dir .. '\\ATapeReport\\' .. file_name .. '.xls'
+	local new_name = user_dir .. '\\ATapeReport\\' .. file_name .. GetFileExtension(template_path)
+	if TEST_EXCEL_DST_PATH then
+		new_name = TEST_EXCEL_DST_PATH .. GetFileExtension(template_path)
+	end
 	if not CopyFile(template_path, new_name) then
 		errorf('copy file %s -> %s failed', template_path, new_name)
 	end
@@ -434,13 +445,13 @@ local excel_helper = OOP.class
 	SaveAndShow = function(self)
 		local run_in_another_process = false
 		self._excel.Calculation = self._calc_state
-		if(not run_in_another_process) then
+		if(not run_in_another_process) and not TEST_EXCEL_DST_PATH then
 			self._excel.visible = true
 		end
 		self._workbook:Save()
 		self._worksheet = nil
 		self._workbook = nil
-		if(run_in_another_process) then
+		if run_in_another_process or TEST_EXCEL_DST_PATH then
 			self._excel:Quit()
 		end
 		self._excel = nil

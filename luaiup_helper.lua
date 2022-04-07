@@ -80,6 +80,30 @@ ProgressDlg = OOP.class
 	end,
 }
 
+if HIDE_PROGRESS_DLG then
+	ProgressDlg = OOP.class
+	{
+		ctor = function()
+		end,
+
+		setTitle = function ()
+		end,
+
+		step = function(_, value, text)
+			print(string.format("progress: %.5f: %s", value, text))
+			return true
+		end,
+
+		Destroy = function()
+		end,
+
+		Hide = function()
+		end,
+
+		Show = function()
+		end,
+	}
+end
 
 function ShowRadioBtn(title, values, def)
 	iup.SetGlobal('UTF8MODE', 1)
@@ -125,7 +149,6 @@ function ShowRadioBtn(title, values, def)
 	dialog:popup()
 	return not abort and rr[radio.value.title]
 end
-
 
 return {
 	ProgressDlg = ProgressDlg,
