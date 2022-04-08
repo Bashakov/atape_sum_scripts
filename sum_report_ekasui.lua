@@ -197,7 +197,7 @@ local function make_export_prgs_dlg(dlgProgress, all)
 	local cur = 0
 	return function()
 		cur = cur + 1
-		return dlgProgress:step(cur / all, sprintf('Выгрузка %d / %d', cur, all))
+		return dlgProgress:step(cur / all+1, sprintf('Выгрузка %d / %d', cur, all))
 	end
 end
 
@@ -238,8 +238,7 @@ local function make_ekasui_generator(getMarks, ...)
 			--print(#cur_rows, #report_rows)
 		end
 
-		if #report_rows == 0 then
-			iup.Message(title, "Подходящих отметок не найдено")
+		if #report_rows == 0 and 2 == iup.Alarm(title, "Подходящих отметок не найдено", "Построить пустой отчет", "Выход") then
 			return
 		end
 
@@ -279,6 +278,10 @@ local function make_ekasui_generator(getMarks, ...)
 			if not first_file then
 				first_file = path
 			end
+		end
+		if #report_rows == 0 then
+			first_file = export_ekasui_xml(1, {}, export_id, pghlp, pathType)
+			str_msg = sprintf('\n0 отметок в файл: %s', first_file)
 		end
 		local anwser = iup.Alarm("Построение отчета закончено", str_msg, "Показать первый", "Закрыть")
 		if 1 == anwser and first_file then

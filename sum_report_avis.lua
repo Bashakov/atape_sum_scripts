@@ -16,8 +16,7 @@ require 'ExitScope'
 -- ============================================================
 
 local function SaveAndShow(report_rows, dlgProgress, report_template_name, sheet_name)
-	if #report_rows == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
+	if #report_rows == 0 and 2 == iup.Alarm('Построение отчета', "Подходящих отметок не найдено", "Построить пустой отчет", "Выход") then
 		return
 	end
 
