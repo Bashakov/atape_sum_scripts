@@ -42,7 +42,7 @@ local joints_group_defects =
 
 
 local function GetMarks()
-	local gg = mark_helper.table_merge(video_joints_juids, joints_group_defects)
+ 	local gg = mark_helper.table_merge(video_joints_juids, joints_group_defects)
 	local marks = Driver:GetMarks{GUIDS=gg}
 	marks = mark_helper.sort_mark_by_coord(marks)
 	return marks
@@ -611,7 +611,7 @@ end
 if not ATAPE then
 	_G.ShowVideo = 0
 	local test_report  = require('test_report')
-	--test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 1000000})
+	--test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 10000000000})
 	test_report('C:\\Avikon\\CheckAvikonReports\\data\\data_27_short.xml')
     --test_report('D:/ATapeXP/Main/TEST/ZeroGap/2019_06_13/Avikon-03M/6284/[494]_2017_06_14_03.xml')
 
@@ -619,7 +619,7 @@ if not ATAPE then
 	-- print(report.name)
 	-- report.fn()
 
-	ekasui_neigh_blind_joint()
+	ekasui_missing_bolt()
 	--report_neigh_blind_joint()
 end
 

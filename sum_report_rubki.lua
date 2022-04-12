@@ -607,6 +607,9 @@ local SaverEkasui = OOP.class
 		local path_dst = sprintf("%s\\%s_%03d_%03d_%06d_%06d.xml",
 			EKASUI_PARAMS.ExportFolder, Passport.SOURCE,
 			self._min_km, self._max_km, self._min_id, self._max_id)
+		if TEST_EKASUI_OUT_PREFIX then
+			path_dst = TEST_EKASUI_OUT_PREFIX .. "_1.xml"
+		end
 		if true then
 			-- with formation
 			local f = io.open(path_dst, 'w+b')

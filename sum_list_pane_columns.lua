@@ -322,7 +322,8 @@ column_recogn_bolt =
 	end,
 	sorter = function(mark)
 		local all, defect = mark_helper.GetCrewJointCount(mark)
-		defect = (all and all ~= 0) and -1 or defect or 0
+		-- defect = (all and all ~= 0) and -1 or defect or 0
+		defect = defect or -1
 		return defect
 	end
 }

@@ -286,11 +286,14 @@ local function sleeper_SDMI()
 		end
 
 		local path_dst = sprintf("%s\\sdmisleep_%s_%s.xml", EKASUI_PARAMS.ExportFolder, Passport.SOURCE, proezd_params.proezd)
+		if TEST_EKASUI_OUT_PREFIX then
+			path_dst = TEST_EKASUI_OUT_PREFIX .. "_1.xml"
+		end
 		local f = io.open(path_dst, 'w+b')
 		f:write(mark_helper.msxml_node_to_string(node_sleepers.ownerDocument))
 		f:close()
 
-		local anwser = iup.Alarm("ATape", sprintf("Сохранен файл: %s", path_dst), "Показать", "Закрыть")
+		local anwser = iup.Alarm("SDMI", sprintf("Сохранен файл: %s", path_dst), "Показать", "Закрыть")
 		if 1 == anwser then
 			os.execute(path_dst)
 		end
@@ -493,16 +496,10 @@ end
 -- тестирование
 if not ATAPE then
 	local test_report  = require('test_report')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {395000, 405000})
+	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {256627, 256627})
 
-	-- report_sleeper_dist()
-	--ekasui_sleeper_defects()
-	--report_sleeper_defects()
-
-	--ekasui_sleeper_dist()
-	-- sleeper_SDMI()
-	-- report_ALL()
-	PrepareSleepers()
+	ekasui_sleeper_angle()
+	-- PrepareSleepers()
 end
 
 return {
