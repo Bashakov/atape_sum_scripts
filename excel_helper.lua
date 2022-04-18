@@ -448,9 +448,11 @@ local excel_helper = OOP.class
 		if(not run_in_another_process) and not TEST_EXCEL_DST_PATH then
 			self._excel.visible = true
 		end
+		self._data_range = nil
 		self._workbook:Save()
-		self._worksheet = nil
 		self._workbook = nil
+		self._worksheet = nil
+		collectgarbage("collect")
 		if run_in_another_process or TEST_EXCEL_DST_PATH then
 			self._excel:Quit()
 		end
@@ -659,8 +661,9 @@ local excel_helper = OOP.class
 -- ======================TEST ============================= --
 
 if false and not ATAPE then
-	local excel = excel_helper('C:\\Users\\abashak\\ATapeReport\\191223-110926_.xls', nil, true)
-	--excel:ApplyPassportValues({})
+	_G.TEST_EXCEL_DST_PATH = "c:\\1"
+	local excel = excel_helper('C:\\Users\\abashak\\ATapeReport\\220413-113905_.xls', nil, true)
+	excel:ApplyPassportValues({})
 
 	excel:SaveAndShow()
 	print('Bye')
