@@ -1035,13 +1035,15 @@ end
 	
 local function prepare_row_path(row, prefix, coord)
 	local km, m, mm = Driver:GetPathCoord(coord)
-	row[prefix .. 'KM'] = km
-	row[prefix .. 'M'] = m
-	row[prefix .. 'MM'] = mm
-	row[prefix .. 'M_MM1'] = sprintf('%.1f', m + mm/1000)
-	row[prefix .. 'M_MM2'] = sprintf('%.2f', m + mm/1000)
-	row[prefix .. 'PK'] = sprintf('%d', m/100+1) 
-	row[prefix .. 'PATH'] = sprintf('%d км %.1f м', km, m + mm/1000)
+	if km then
+		row[prefix .. 'KM'] = km
+		row[prefix .. 'M'] = m
+		row[prefix .. 'MM'] = mm
+		row[prefix .. 'M_MM1'] = sprintf('%.1f', m + mm/1000)
+		row[prefix .. 'M_MM2'] = sprintf('%.2f', m + mm/1000)
+		row[prefix .. 'PK'] = sprintf('%d', m/100+1) 
+		row[prefix .. 'PATH'] = sprintf('%d км %.1f м', km, m + mm/1000)
+	end
 end
 
 -- создание таблицы подстановок с общими параметрами отметки

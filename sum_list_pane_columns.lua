@@ -101,7 +101,10 @@ column_path_coord =
 		local mark = work_marks_list[row]
 		local prop = mark.prop
 		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-		return string.format('%3d км %05.1f', km, m + mm/1000.0)
+		if km then
+			return string.format('%3d км %05.1f', km, m + mm/1000.0)
+		end
+		return '<*****>'
 	end,
 	sorter = function(mark)
 		return mark.prop.SysCoord
@@ -799,8 +802,8 @@ column_weldedbond_defect_code = {
 column_mark_desc = 
 {
 	name = 'Описание', 
-	width = 80, 
-	align = 'r',
+	width = 120, 
+	align = 'l',
 	text = function(row)
 		local mark = work_marks_list[row]
 		return mark.prop.Description
