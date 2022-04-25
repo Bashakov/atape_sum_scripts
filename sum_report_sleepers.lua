@@ -241,6 +241,33 @@ local function generate_rows_sleeper_defects(marks, dlgProgress, pov_filter)
 	return report_rows
 end
 
+local SdmiWriter = OOP.class
+{
+	ctor = function(self, path_dst, proezd)
+		self.file = io.open(path_dst, 'w+b')
+		self.file:write("<?xml version='1.0' encoding='utf-8'?>\n<sleepers>\n\t<proezd ")
+		self.file:write(self:_attr2str(proezd))
+		self.file:write(">\n\t\t<floors>\n")
+	end,
+
+	add_floor = function (self, values)
+		self.file:write('\t\t\t<floor ' .. self:_attr2str(values) .. ' />\n')
+	end,
+
+	close = function (self)
+		self.file:write("\t\t</floors>\n\t</proezd>\n</sleepers>\n")
+		self.file:close()
+	end,
+
+	_attr2str = function(self, values)
+		local r = {}
+		for n, v in pairs(values) do
+			r[#r+1] = string.format('%s="%s"', n, v or '')
+		end
+		return table.concat(r, ' ')
+	end
+}
+
 local function sleeper_SDMI()
 	EnterScope(function(defer)
 		local fromKM = Passport.FromKm or string.match(Passport.START_CHOORD, '^(-?%d+):') or ''
@@ -258,11 +285,12 @@ local function sleeper_SDMI()
 			return
 		end
 
-		local dom = luacom.CreateObject('Msxml2.DOMDocument.6.0')
-		assert(dom)
+		local path_dst = sprintf("%s\\sdmisleep_%s_%s.xml", EKASUI_PARAMS.ExportFolder, Passport.SOURCE, proezd_params.proezd)
+		if TEST_EKASUI_OUT_PREFIX then
+			path_dst = TEST_EKASUI_OUT_PREFIX .. "_1.xml"
+		end
 
-		local node_sleepers = add_node(dom, 'sleepers')
-		local node_proezd = add_node(node_sleepers, 'proezd', {
+		local writer = SdmiWriter(path_dst, {
 			proezd=proezd_params.proezd,
 			proverka=proezd_params.proverka,
 			road=proezd_params.road,
@@ -273,25 +301,19 @@ local function sleeper_SDMI()
 			km_end=toKM,
 			m_end="0",
 		})
-		local node_floors = add_node(node_proezd, 'floors')
+
 		for i, mark in ipairs(marks) do
 			local center = mark.prop.SysCoord + mark.prop.Len / 2
 			center = mark_helper.round(center, 0)
 			local km, m, mm = Driver:GetPathCoord(center)
 
-			local node_floor = add_node(node_floors, 'floor', {km=km, m=m, sm=mark_helper.round(mm / 10, 0), syskoor=center})
+			writer:add_floor({km=km, m=m, sm=mark_helper.round(mm / 10, 0), syskoor=center})
 			if i%100 == 0 and not dlg:step(i / #marks, sprintf('Сохранение шпал %d / %d', i, #marks)) then
 				return
 			end
 		end
 
-		local path_dst = sprintf("%s\\sdmisleep_%s_%s.xml", EKASUI_PARAMS.ExportFolder, Passport.SOURCE, proezd_params.proezd)
-		if TEST_EKASUI_OUT_PREFIX then
-			path_dst = TEST_EKASUI_OUT_PREFIX .. "_1.xml"
-		end
-		local f = io.open(path_dst, 'w+b')
-		f:write(mark_helper.msxml_node_to_string(node_sleepers.ownerDocument))
-		f:close()
+		writer:close()
 
 		local anwser = iup.Alarm("SDMI", sprintf("Сохранен файл: %s", path_dst), "Показать", "Закрыть")
 		if 1 == anwser then
@@ -498,7 +520,7 @@ if not ATAPE then
 	local test_report  = require('test_report')
 	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {256627, 256627})
 
-	ekasui_sleeper_angle()
+	sleeper_SDMI()
 	-- PrepareSleepers()
 end
 
