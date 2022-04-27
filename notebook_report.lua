@@ -481,7 +481,7 @@ local function excel_defectogram(records, params)
 			-- InsertVideoFrame(excel, dst_tbl.Cells(12, 1), record)
 			insertVideoScreen(excel, dst_tbl.Cells(12, 1), record, 700)
 			-- https://bt.abisoft.spb.ru/view.php?id=727
-			local second_scale = read_pref_cfg_param('DEFECTOGRAM_VIDEO_SECOND_SCALE')
+			local second_scale = read_pref_cfg_param_num('DEFECTOGRAM_VIDEO_SECOND_SCALE')
 			if second_scale and second_scale > 10 then
 				insertVideoScreen(excel, dst_tbl.Cells(13, 1), record, second_scale)
 			end
