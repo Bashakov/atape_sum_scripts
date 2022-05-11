@@ -381,11 +381,6 @@ local function report_crew_join(params)
 	print('accept mark count = ', #marks)
 	
 	local mark_pairs = BuildMarkPairs(marks, 500)
-	if #mark_pairs == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-
 	if params.filename then
 		local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
 		excel:ApplyPassportValues(Passport)
@@ -543,12 +538,6 @@ local function report_gaps(params)
 	end
 
 	local mark_pairs = BuildMarkPairs(marks, 500)
-	if #mark_pairs == 0 then
-		dlg:Destroy()
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-
 	if params.filename then
 		local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
 		excel:ApplyPassportValues(Passport)
@@ -720,10 +709,6 @@ local function report_welding(params)
 		function(val, desc) dlg:step(val, desc) end)
 
 	local mark_pairs = BuildMarkPairs(marks, 500)
-	if #mark_pairs == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
 
 	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
 	excel:ApplyPassportValues(Passport)
@@ -804,61 +789,6 @@ local unspec_obj_filter_guids =
 	"{0860481C-8363-42DD-BBDE-8A2366EFAC90}",
 }
 
--- отчет по неспецифицированным объектам
-local function report_unspec_obj(params)
-	
-	local dlg = luaiup_helper.ProgressDlg()
-	local marks = Driver:GetMarks()
-	local guids = {}
-	for _, g in ipairs(unspec_obj_filter_guids) do guids[g] = true end 
-	
-	marks = FilterSort(marks, 
-		function(mark) return guids[mark.prop.Guid] and mark.ext.VIDEOFRAMECOORD  and mark.ext.UNSPCOBJPOINTS end,
-		get_sys_coord_key,
-		function(val, desc) dlg:step(val, desc) end)
-
-	if #marks == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-
-	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
-	excel:ApplyPassportValues(Passport)
-	local data_range = excel:CloneTemplateRow(#marks)
-
-	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
-
-	for line, mark in ipairs(marks) do
-		
-		local prop = mark.prop
-		local ext = mark.ext
-		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-		local vch = bit32.btest(prop.RailMask, 1) and 17 or 18
-		
-		local img_path = ShowVideo ~= 0 and Driver:GetFrame( vch, prop.SysCoord, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
-		local uri = make_mark_uri(prop.ID)
-		
-		data_range.Cells(line, 1).Value2 = get_rail_name(mark)
-		data_range.Cells(line, 2).Value2 = km
-		excel:InsertLink(data_range.Cells(line, 3), uri, sprintf("%.02f", m + mm/1000))
-		data_range.Cells(line, 4).Value2 = prop.Description 
-		
-		if img_path and #img_path then
-			excel:InsertImage(data_range.Cells(line, 5), img_path)
-		end
-			
-		if not dlg:step(line / #marks, sprintf(' Process %d / %d mark', line, #marks)) then 
-			break
-		end
-	end 
-
-	if ShowVideo == 0 then 
-		excel:AutoFitDataRows()
-		data_range.Cells(5).ColumnWidth = 0
-	end
-	excel:SaveAndShow()
-end
-
 
 local joint_filter_guids = 
 {
@@ -870,60 +800,6 @@ local ats_joint_filter_guids =
 {
 	"{19253263-2C0B-41EE-8EAA-000000000080}",
 }
-
-local function report_coord(params)
-	local dlg = luaiup_helper.ProgressDlg()
-	local marks = Driver:GetMarks()
-	local guids = {}
-	for _, g in ipairs(params.guids or joint_filter_guids) do guids[g] = true end 
-	
-	marks = FilterSort(marks, 
-		function(mark) return guids[mark.prop.Guid] end,
-		get_sys_coord_key,
-		function(val, desc) dlg:step(val, desc) end)
-
-	if #marks == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-
-	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
-	excel:ApplyPassportValues(Passport)
-	local data_range = excel:CloneTemplateRow(#marks)
-	local vdCh = params.ch
-
-	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
-
-	for line, mark in ipairs(marks) do
-		local prop, ext = mark.prop, mark.ext
-		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-		
-		local coord = prop.SysCoord + prop.Len / 2, 0
-		local offsetVideo = Driver:GetVideoCurrentOffset(vdCh)
-		local offsetMagn = Driver:GetChannelOffset(11)
-		local frcoord = coord + offsetVideo + offsetMagn
-		print( vdCh, coord, offsetVideo, offsetMagn, frcoord )
-
-		data_range.Cells(line, 1).Value2 = sprintf("%d km %d m %d mm", km, m, mm)
-		data_range.Cells(line, 2).Value2 = coord
-		data_range.Cells(line, 3).Value2 = coord + offsetMagn
-		data_range.Cells(line, 4).Value2 = coord + offsetMagn + offsetVideo
-		data_range.Cells(line, 5).Value2 = vdCh
-		data_range.Cells(line, 6).Value2 = frcoord
-		
-		local img_path = Driver:GetFrame( vdCh, coord + offsetMagn, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
-		if img_path and #img_path then
-			excel:InsertImage(data_range.Cells(line, 7), img_path)
-		end
-		
-		if not dlg:step(line / #marks, sprintf(' Process %d / %d mark', line, #marks)) then 
-			break
-		end
-	end 
-
-	excel:SaveAndShow()
-end
-
 
 -- отчет по скреплениям 
 local function report_fasteners(params)
@@ -949,12 +825,6 @@ local function report_fasteners(params)
 	marks = mark_helper.filter_marks(marks, filter_fn, make_filter_progress_fn(dlg))
 	marks = sort_mark_by_coord(marks)
 
-	if #marks == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-
-	
 	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
 	excel:ApplyPassportValues(Passport)
 	local data_range = excel:CloneTemplateRow(#marks)
@@ -1026,11 +896,6 @@ local function report_recog_joint_step(params)
 	
 	marks = mark_helper.filter_marks(marks, filter_fn, make_filter_progress_fn(dlg))
 	marks = sort_mark_by_coord(marks)
-	
-	if #marks == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
 	
 	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
 	excel:ApplyPassportValues(Passport)
@@ -1108,15 +973,6 @@ local function report_surface_defects(params)
 	marks = mark_helper.filter_marks(marks, filter_fn, make_filter_progress_fn(dlg))
 	marks = sort_mark_by_coord(marks)
 
-	if #marks == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-	
-	if true then
-		-- return 
-	end
-	
 	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
 	excel:ApplyPassportValues(Passport)
 	local data_range = excel:CloneTemplateRow(#marks)
@@ -1172,16 +1028,10 @@ local cur_file_reports = {
 	--{name="Ведомость Стыковых зазоров"       , fn=report_gaps            , params={ filename=ProcessSumFile, sheetname="Ведомость Зазоров"       }, guids=gap_rep_filter_guids   },
 	--{name="Ведомость Болтовых стыков"        , fn=report_crew_join       , params={ filename=ProcessSumFile, sheetname="Ведомость Болтов"        }, guids=gap_rep_filter_guids   },	
 	------------------------------------------
-	--{name="Короткие рубки"         , fn=report_short_rails     , params={ filename=ProcessSumFile, sheetname="Рубки"                   }, guids=gap_rep_filter_guids   },	
 	{name="Скрепления"             , fn=report_fasteners       , params={ filename=ProcessSumFile, sheetname="Ведомость Скреплений"    }, guids=fastener_guids         },
 	{name="Горизонтальные уступы" , fn=report_recog_joint_step, params={ filename=ProcessSumFile, sheetname="Горизонтальные ступеньки"}, guids=gap_rep_filter_guids   },
 	{name="Поверхностные дефекты" , fn=report_surface_defects , params={ filename=ProcessSumFile, sheetname="Поверхн. дефекты"        }, guids=surface_defects_guids  }, 
 	{name="Маячные метки"          , fn=report_welding         , params={ filename=ProcessSumFile, sheetname="Ведомость сварной плети" }, guids=beacon_rep_filter_guids},
---	{name="Ненормативные объекты" , fn=report_unspec_obj      , params={ filename=ProcessSumFile, sheetname="Ненормативные объекты"   }, guids=unspec_obj_filter_guids},	
-	
-
-	--{name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
-	--{name="TEST",			fn=report_test,		params={} },
 }
 
 

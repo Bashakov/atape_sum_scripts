@@ -500,10 +500,6 @@ local function report_short_rails_excel(params)
 
 		local marks = get_marks(dlg)
 		local short_rails = scan_for_short_rail(marks, min_length*1000, show_only_rubki)
-		if #short_rails == 0 then
-			iup.Message('Info', "Подходящих отметок не найдено")
-			return
-		end
 		local rr_switchs = scan_for_rr_switch()
 
 		local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
@@ -724,10 +720,6 @@ local function report_short_rails_ekasui()
 
 		local marks = get_marks(dlg)
 		local short_rails = scan_for_short_rail(marks, min_length*1000, show_only_rubki)
-		if #short_rails == 0 then
-			iup.Message('Info', "Подходящих отметок не найдено")
-			return
-		end
 		local paths_dst = save_short_rails_ekasui(proezd_params, dlg, short_rails)
 		local msg = "Сохранены файлы:\n  " .. table.concat(paths_dst, "\n  ")
 		local anwser = iup.Alarm("ATape", msg, "Показать", "Конвертировать в HTML", "Закрыть")

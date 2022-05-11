@@ -16,11 +16,6 @@ require 'ExitScope'
 -- ============================================================
 
 local function SaveAndShow(report_rows, dlgProgress, report_template_name, sheet_name)
-	if #report_rows == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-
 	if #report_rows > 1000 then
 		local msg = string.format('Найдено %d отметок, построение отчета может занять большое время, продолжить?', #report_rows)
 		local cont = iup.Alarm("Warning", msg, "Yes", "No")

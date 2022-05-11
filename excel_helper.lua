@@ -375,6 +375,8 @@ local excel_helper = OOP.class
 				self._data_range = user_range:Range(
 					user_range.Rows(template_row_num+1),
 					user_range.Rows(template_row_num+row_count))
+			else
+				user_range.Rows(template_row_num).EntireRow:Delete()
 			end
 		else
 			if row_count == 0 then

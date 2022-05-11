@@ -253,11 +253,6 @@ local function sleeper_SDMI()
 		defer(dlg.Destroy, dlg)
 
 		local marks = GetMarks()
-		if #marks == 0 then
-			iup.Message('Info', "Подходящих отметок не найдено")
-			return
-		end
-
 		local dom = luacom.CreateObject('Msxml2.DOMDocument.6.0')
 		assert(dom)
 
