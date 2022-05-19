@@ -121,8 +121,38 @@ end
 
 local SearchMissingBeacons = OOP.class
 {
+	MAX_DISTANCE_TO_BEACON_TO_MISS = 300, -- интервал в котором ищется маячная метка
+
 	ctor = function (self)
 		self.beacons = {{}, {}}
+	end,
+
+	load_marks = function (self, marks, dlg)
+		for i, mark in ipairs(marks) do
+			if self.is_beacon(mark) then
+				self:add_beacons(mark.prop.SysCoord, mark.prop.RailMask)
+			end
+
+			if i % 300 == 0 then collectgarbage("collect") end
+			if dlg and i % 53 == 0 and not dlg:step(i / #marks, sprintf('поиск маячных отметок %d / %d', i, #marks)) then
+				return
+			end
+		end
+		self:prepare()
+	end,
+
+	is_miss_mark = function(self, mark)
+		local rail_mask
+		if self.is_firtree(mark) then
+			rail_mask = mark.prop.RailMask -- ищем маячную на этом же рельсе
+		end
+		if self.is_beacon(mark) then
+			rail_mask = bit32.bxor(mark.prop.RailMask, 0x03) -- ищем маячную на другом рельсе
+		end
+		if rail_mask and rail_mask ~= 0 then
+			local found = self:get_beacon(mark.prop.SysCoord, rail_mask, self.MAX_DISTANCE_TO_BEACON_TO_MISS)
+			return not found
+		end
 	end,
 
 	add_beacons = function (self, sys, rail)
@@ -150,73 +180,41 @@ local SearchMissingBeacons = OOP.class
 			end
 		end
 		return false
-	end
+	end,
+
+	is_beacon = function (mark)
+		return mark.prop.Guid == GUID_BEACON_SPALA or mark.prop.Guid == GUID_BEACON
+	end,
+
+	is_firtree = function (mark)
+		return mark.prop.Guid == GUID_BEACON_FIRTREE
+	end,
 }
 
 local function generate_missing_beacon_mark(marks, dlgProgress)
 	-- local beacons = {} -- список маячных отметок с рисками по рельсам
 	local searcher = SearchMissingBeacons()
+	searcher:load_marks(marks, dlgProgress)
+
 	local report_rows = {}
 
-	local beacons = 0
-	for i, mark in ipairs(marks) do
-		if mark.prop.Guid == GUID_BEACON_SPALA or
-		   mark.prop.Guid == GUID_BEACON then
-			local rail_mask = bit32.band(mark.prop.RailMask, 0x03)
-			searcher:add_beacons(mark.prop.SysCoord, rail_mask)
-			beacons = beacons+1
-		end
-
-		if i % 300 == 0 then collectgarbage("collect") end
-		if i % 34 == 0 and not dlgProgress:step(i / #marks, sprintf('поиск маячных отметок %d / %d, найдено %d', i, #marks, beacons)) then
-			return
-		end
-	end
-
-	searcher:prepare()
-
-	local MAX_DISTANCE_TO_BEACON_TO_MISS = 300 -- интервал в котором относительно елки ищется маячная метка
-
 	-- проходим по всем елкам и ищем для них соответствующие отметка с рисками
+	-- проходим по маячным отметкам и ищем пару на другом рельсе https://bt.abisoft.spb.ru/view.php?id=869
 	for i, mark in ipairs(marks) do
-		if mark.prop.Guid == GUID_BEACON_FIRTREE then
-			local rail_mask = bit32.band(mark.prop.RailMask, 0x03)
-			local found = searcher:get_beacon(mark.prop.SysCoord, rail_mask, MAX_DISTANCE_TO_BEACON_TO_MISS)
-			if not found then
-				local row = MakeBeaconMarkRow(mark)
-				row.DEFECT_CODE = DEFECT_CODES.BEACON_MISSING_LINE[1]
-				row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
-				table.insert(report_rows, row)
-			end
+		local miss = searcher:is_miss_mark(mark)
+		if miss then
+			local row = MakeBeaconMarkRow(mark)
+			row.DEFECT_CODE = DEFECT_CODES.BEACON_MISSING_LINE[1]
+			row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
+			table.insert(report_rows, row)
 		end
 
 		if i % 300 == 0 then collectgarbage("collect") end
-		if i % 34 == 0 and not dlgProgress:step(i / #marks, sprintf('проверка отметок типа елка %d / %d отметок, дефектов %d', i, #marks, #report_rows)) then
+		if i % 54 == 0 and not dlgProgress:step(i / #marks, sprintf('проверка %d / %d отметок, дефектов %d', i, #marks, #report_rows)) then
 			return
 		end
 	end
 
-	-- проходим по маячным отметкам и ищем пару на другом рельсе
-	-- https://bt.abisoft.spb.ru/view.php?id=869
-	for i, mark in ipairs(marks) do
-		if mark.prop.Guid == GUID_BEACON_SPALA or
-		   mark.prop.Guid == GUID_BEACON then
-			local rail_mask = bit32.band(mark.prop.RailMask, 0x03)
-			rail_mask = (rail_mask == 1) and 2 or 1	-- ищем на другом рельсе
-			local found = searcher:get_beacon(mark.prop.SysCoord, rail_mask, MAX_DISTANCE_TO_BEACON_TO_MISS)
-			if not found then
-				local row = MakeBeaconMarkRow(mark)
-				row.DEFECT_CODE = DEFECT_CODES.BEACON_MISSING_LINE[1]
-				row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
-				table.insert(report_rows, row)
-			end
-		end
-
-		if i % 300 == 0 then collectgarbage("collect") end
-		if i % 34 == 0 and not dlgProgress:step(i / #marks, sprintf('Поиск парных маячных %d / %d отметок, дефектов %d', i, #marks, #report_rows)) then
-			return
-		end
-	end
 	return report_rows
 end
 
@@ -315,4 +313,5 @@ return {
 	get_marks = function (pov_filter)
 		return GetMarks(false, pov_filter)
 	end,
+	SearchMissingBeacons = SearchMissingBeacons,
 }
