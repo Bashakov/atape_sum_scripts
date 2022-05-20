@@ -396,14 +396,14 @@ column_firtree_beacon =
 	text = function(row)
 		local mark = work_marks_list[row]
 		if mark.prop.Guid == "{D3736670-0C32-46F8-9AAF-3816DE00B755}" then
-			local found = mark.user.beacon_id
+			local found = mark.user.correspond_beacon_found
 			return found and 'Да' or 'нет'
 		end
 		return ''
 	end,
 	sorter = function(mark)
 		if mark.prop.Guid == "{D3736670-0C32-46F8-9AAF-3816DE00B755}" then
-			local found = mark.user.beacon_id
+			local found = mark.user.correspond_beacon_found
 			return found and 1 or 0
 		end
 		return -1
@@ -411,13 +411,42 @@ column_firtree_beacon =
 	get_color = function(row)
 		local mark = work_marks_list[row]
 		if mark.prop.Guid == "{D3736670-0C32-46F8-9AAF-3816DE00B755}" then
-			local found = mark.user.beacon_id
+			local found = mark.user.correspond_beacon_found
 			--return found and {0x00FF00, 0xFFFFFF} or {0xFF0000, 0xFFFFFF}
 			return found and {0x000000, 0xCCFFCC} or {0x000000, 0xFFCCCC}
 		end
 	end,
 }
 
+-- найдена парная маячная отметка
+column_pair_beacon =
+{
+	name = 'Парная',
+	width = 50,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		if mark.prop.Guid == "{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}" or
+	       mark.prop.Guid == "{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}" then
+			return mark.user.pair_beacon_found and 'Да' or 'нет'
+		end
+		return ''
+	end,
+	sorter = function(mark)
+		if mark.prop.Guid == "{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}" or
+	       mark.prop.Guid == "{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}" then
+			return mark.user.pair_beacon_found and 1 or 0
+		end
+		return -1
+	end,
+	get_color = function(row)
+		local mark = work_marks_list[row]
+		if mark.prop.Guid == "{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}" or
+	       mark.prop.Guid == "{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}" then
+			return mark.user.pair_beacon_found and {0x000000, 0xCCFFCC} or {0x000000, 0xFFCCCC}
+		end
+	end,
+}
 
 local fastener_type_names = {
 	[0] = 'КБ-65', 
