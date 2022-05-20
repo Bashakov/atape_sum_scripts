@@ -78,7 +78,7 @@ local codes = {
 	SLEEPER_DISTANCE_CONCRETE 	=	{ "090004000375", "Нарушение эпюры: ЖБШ"},  --!!! изменено название
 
 	-- 1.11		Перпендикулярность шпалы относительно оси пути, рад
-	-- https://bt.abisoft.spb.ru/view.php?id=765 2 новых кода взамен старого
+	-- https://bt.abisoft.spb.ru/view.php?id=765 2 новых кода взамен старого 090004000999
 	SLEEPER_ANGLE_WOOD         	=	{ "090004012308", "Разворот ДШ"},
 	SLEEPER_ANGLE_CONCRETE    	=	{ "090004000373", "Разворот ЖБШ"},
 

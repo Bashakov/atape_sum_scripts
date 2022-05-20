@@ -25,12 +25,44 @@ local NPU_guids_uzk = {
 
 -- =============================================================================
 
+local function _check_marks_path_coord(marks, dlg)
+	local accept = {}
+	local reject = {}
+	for i, mark in ipairs(marks) do
+		local cc = { -- проверим левый край, центр и правый край
+			mark.prop.SysCoord,
+			mark.prop.SysCoord + mark.prop.Len / 2,
+			mark.prop.SysCoord + mark.prop.Len,
+		}
+		local skip = false
+		for _, coord in ipairs(cc) do
+			local km = Driver:GetPathCoord(coord)
+			if not km then
+				skip = true
+				break
+			end
+		end
+
+		if skip then
+			table.insert(reject, mark)
+		else
+			table.insert(accept, mark)
+		end
+
+		if i % 100 == 0 and dlg and not dlg:step(i / #marks, sprintf('Проверка координаты отметок %d / %d', i, #marks)) then
+			return {}, {}
+		end
+	end
+	return accept, reject
+end
+
 local function report_NPU(params)
 	return EnterScope(function (defer)
     local dlg = luaiup_helper.ProgressDlg('Построение отчета НПУ')
     defer(dlg.Destroy, dlg)
 
-	local marks = Driver:GetMarks{ListType='list', GUIDS=params.guids}
+	local marks_drv = Driver:GetMarks{ListType='list', GUIDS=params.guids}
+	local marks, reject = _check_marks_path_coord(marks_drv, dlg)
 
 	marks = mark_helper.sort_mark_by_coord(marks)
 
@@ -56,6 +88,10 @@ local function report_NPU(params)
 	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
 
 	excel:SaveAndShow()
+	if #reject > 0 then
+		local msg = string.format('Из отчета были исключены %d отметок на неопределенной координате', #reject)
+		iup.Message('Info', msg)
+	end
 	end)
 end
 

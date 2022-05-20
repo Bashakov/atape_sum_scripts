@@ -184,10 +184,7 @@ local ekasui_rails_all = make_report_ekasui(generate_rows_rails_user, generate_r
 
 local function AppendReports(reports)
 	local name_pref = 'Ведомость отступлений в содержании рельсов|'
-
-	local name_surf = '\
-Определение и вычисление размеров поверхностных дефектов рельсов, \
-седловин, в том числе в местах сварки, пробуксовок (длина, ширина и площадь)'
+	local name_surf = 'Определение и вычисление размеров поверхностных дефектов рельсов, седловин, в том числе в местах сварки, пробуксовок (длина, ширина и площадь)'
 
 	local sleppers_reports =
 	{

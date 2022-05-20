@@ -47,12 +47,12 @@ local function GetMarks(ekasui, pov_filter)
 	return marks
 end
 
-local function MakeFastenerMarkRow(mark, defect_code)
+local function MakeFastenerMarkRow(mark, defect_code, defect_desc)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
 	row.FASTENER_TYPE = ''
 
 	row.DEFECT_CODE = defect_code or ''
-	row.DEFECT_DESC = DEFECT_CODES.code2desc(defect_code) or string.match(mark.prop.Description, '([^\n]+)\n') or ''
+	row.DEFECT_DESC = defect_desc or DEFECT_CODES.code2desc(defect_code) or string.match(mark.prop.Description, '([^\n]+)\n') or ''
 
 	return row
 end
@@ -108,16 +108,16 @@ local function igenerate_rows_fastener(marks, dlgProgress)
 				local defect_code
 
 				if prm.FastenerFault == 1 then -- отсутствие клеммного болта kb65
-					defect_code = DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1]
+					defect_code = DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT
 				elseif prm.FastenerFault == 2 then -- отсутствие клеммы apc
-					defect_code = DEFECT_CODES.FASTENER_MISSING_CLAMP[1]
+					defect_code = DEFECT_CODES.FASTENER_MISSING_CLAMP
 				elseif prm.FastenerFault == 10 then -- отсутствие закладного болта kb65
-					defect_code = DEFECT_CODES.FASTENER_MISSING_BOLT[1]
+					defect_code = DEFECT_CODES.FASTENER_MISSING_BOLT
 				elseif prm.FastenerFault == 11 then -- отсутствие клеммного и закладного болта kb65 - имитируем закладной
-					defect_code = DEFECT_CODES.FASTENER_MISSING_BOLT[1]
+					defect_code = DEFECT_CODES.FASTENER_MISSING_BOLT
 				end
 
-				local row = MakeFastenerMarkRow(mark, defect_code)
+				local row = MakeFastenerMarkRow(mark, defect_code[1], defect_code[2])
 				row.FASTENER_TYPE = fastener_type_names[FastenerType] or ''
 
 				coroutine.yield(row)
@@ -218,10 +218,7 @@ local ekasui_fastener_all = make_report_ekasui(generate_rows_fastener_user, gene
 
 local function AppendReports(reports)
 	local name_pref = 'Ведомость отступлений в содержании скреплений|'
-	local name_fastener = '\
-Определение параметров и состояния рельсовых скреплений \
-(наличие визуально фиксируемых ослабленных скреплений, сломанных подкладок, \
-отсутствие болтов, негодные прокладки, закладные и клеммные болты, шурупы, клеммы, анкеры)'
+	local name_fastener = 'Определение параметров и состояния рельсовых скреплений (наличие визуально фиксируемых ослабленных скреплений, сломанных подкладок, отсутствие болтов, негодные прокладки, закладные и клеммные болты, шурупы, клеммы, анкеры)'
 
 	local sleppers_reports =
 	{
