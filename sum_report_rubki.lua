@@ -396,7 +396,7 @@ local TmpFiles = OOP.class{
 
 --[[ построить изображение стыка для рубок (вид с боковых камер обоих рельсов)
 	https://bt.abisoft.spb.ru/view.php?id=752#c3727]]
-local function make_joint_image(mark)
+local function make_joint_image_ext(mark)
 	return EnterScope(function (defer)
 		if ShowVideo ~= 1 then -- https://bt.abisoft.spb.ru/view.php?id=809
 			return ''
@@ -451,6 +451,38 @@ local function make_joint_image(mark)
 		data = data:sub(#jpg_hdr+1)
 		return data
 	end)
+end
+
+--[[ построить изображение стыка для рубок (вид с боковых камер обоих рельсов)
+	https://bt.abisoft.spb.ru/view.php?id=752#c3727]]
+local function make_joint_image_inner(mark)
+	return EnterScope(function (defer)
+		if ShowVideo ~= 1 then -- https://bt.abisoft.spb.ru/view.php?id=809
+			return ''
+		end
+		local center = mark.prop.SysCoord + mark.prop.Len / 2
+
+		local img_prop = {
+			mark_id = mark.prop.ID,
+			width = 600,
+			height = 300,
+			base64 = true,
+			show_marks = 0,
+		}
+
+		local _, img_data = pcall(function ()
+			return Driver:GetVideoComponentImage("КОС", center, 3, img_prop)
+		end)
+		return img_data
+	end)
+end
+
+local function make_joint_image(mark)
+	if true then
+		return make_joint_image_inner(mark)
+	else
+		return make_joint_image_ext(mark)
+	end
 end
 
 local function make_gap_description(mark)
