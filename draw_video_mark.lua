@@ -714,11 +714,13 @@ local function ProcessSleeper(mark)
 		ProcessMarkRawXml(mark)
 	end
 	if true then
-	
+		local defect_code = mark.ext.DEFECT_CODES or ''
+		if #defect_code <= 0 then
+			return
+		end
+
 		local org_size = Frame.size.current -- текущий размер кадра
-		
 		local h = org_size.y / 4  -- условный размер шпалы по Y
-		
 		local sys_coord = mark.prop.SysCoord	-- системная координата объекта (шпалы)
 		local sleeper_width_mm = 200			-- ширина шпалы
 		local x1, _ = Convertor:SysCoordToOffset(Frame.coord.raw, sys_coord-sleeper_width_mm/2) -- левый край шпалы на кадре
@@ -726,30 +728,20 @@ local function ProcessSleeper(mark)
 		--x2 = x1+100
 		local xc = (x1+x2) / 2
 		--print(Frame.coord.raw, mark.prop.ID, sys_coord, x1)
-		
 		local points = {
 			x1, h, x2, h,	 	-- горизонтальная линия
 			xc, 0, xc, h,		-- вертикальная линия
 		}
 		local dist_next = mark.ext.SLEEPERS_NEXT or 0
-		local defect_code = mark.ext.DEFECT_CODES or ''
+
 		--OutlineTextOut(xc, h-20, string.format("id=%d\nc=%d\ndn=%d", mark.prop.ID, sys_coord, dist_next))
 		--print(xc, mark.prop.ID, sys_coord, defect_code)
-		
-		local color = {r=50, g=200, b=50, a=200}
-		if #defect_code > 0 then
-			color = {r=250, g=0, b=0, a=255}
-		end
+
+		local color = {r=250, g=0, b=0, a=255}
 		drawLines(points, 1, color, color)
-		
-		if #defect_code > 0 then
-			local ml = string.gsub(defect_code, ",", "\n")
-			--print(xc, mark.prop.ID, defect_code, ml)
-			OutlineTextOut(xc, h+10, ml, {line_color=color})
-			
-		end
-		
-		-- print('ProcessSleeper', x1, x2)
+
+		local ml = string.gsub(defect_code, ",", "\n")
+		OutlineTextOut(xc, h+10, ml, {line_color=color})
 	end
 end
 
