@@ -85,16 +85,7 @@ local filters =
 			column_pov_common,
 			column_mark_type_name,
 			column_joint_speed_limit,
-
-			--column_sys_coord, 
-			--column_rail,
-			--column_recogn_width_inactive,
-			--column_recogn_width_active,
-			--column_recogn_width_tread,
-			--column_recogn_width_user,
-			--column_recogn_bolt,
-			--column_recogn_video_channel,
-			}, 
+		}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
 			local gap_type = mark_helper.GetGapType(mark)
