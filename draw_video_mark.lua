@@ -347,7 +347,14 @@ local function drawSimpleResult(resultType, points, params, mark)
 					local tcx = (c1[1] + c1[3] + c2[1] + c2[3]) / 4
 					local tcy = (c1[4] + c2[2]) / 2
 
-					local text = sprintf('%.1f mm', beacon_shifts.Beacon_Web.shift)
+					local text = "Требуется обновление атейпа"
+					if Passport then
+						local show_shift = beacon_shifts.Beacon_Web.shift
+						if show_shift and Passport.INCREASE == '1' then
+							show_shift = -show_shift  -- https://bt.abisoft.spb.ru/view.php?id=908
+						end
+					text = sprintf('%.1f mm', show_shift)
+				end
 					textOut({tcx, tcy}, text)
 					beacon_shifts = {} -- сбросим нарисованное
 				end

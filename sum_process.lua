@@ -155,6 +155,9 @@ end
 
 
 local function  _get_beacon_mark(mark, desc)
+	if not Passport then
+		return "Требуется обновление Атейпа" -- https://bt.abisoft.spb.ru/view.php?id=908
+	end
 	local prop = mark:GetProperties()                                -- get mark property
 	if prop then
 		local shift = prop.RAWXMLDATA and GetBeaconShift(prop.RAWXMLDATA, "Beacon_Web")
@@ -164,6 +167,9 @@ local function  _get_beacon_mark(mark, desc)
 			suf = " (автом.)";
 		end
 		if shift then
+			if Passport.INCREASE == '1' then
+				shift = -shift  -- https://bt.abisoft.spb.ru/view.php?id=908
+			end
 			desc = desc .. sprintf('\n  Смещение%s: %s мм', suf, format_int(shift))
 		end
 	end

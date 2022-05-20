@@ -382,7 +382,11 @@ local function GetBeaconOffset(mark)
 		/PARAM[@name="FrameNumber" and @value and @coord]\z
 		/PARAM[@name="Result" and @value="main"]\z
 		/PARAM[@name="Shift_mkm" and @value]/@value')
-	return node and tonumber(node.nodeValue)/1000
+	local offset = node and tonumber(node.nodeValue)/1000
+	if offset and Passport.INCREASE == '1' then
+		offset = -offset  -- https://bt.abisoft.spb.ru/view.php?id=908
+	end
+	return offset
 end
 
 -- ================================= БОЛТЫ ====================================
