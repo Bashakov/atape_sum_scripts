@@ -46,7 +46,7 @@ local filters =
 	--!!! вывод всех объектов с ограничением скорости или дефектами // https://bt.abisoft.spb.ru/view.php?id=779
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
-		name = 'Все замечания', 
+		name = 'Все замечания',
 		--!!! добавлены коды из report_defect_codes: "Превышение конструктивной величины стыкового зазора левой рельсовой нити"	"090004016149", "Превышение конструктивной величины стыкового зазора правой рельсовой нити"	"090004016150"
 		videogram_defect_codes = {
 			-- устаревшие
@@ -347,11 +347,12 @@ local filters =
 			},
 		GUIDS = {
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
-		post_load = function(marks)
+		post_load = function(marks, fnContinueCalc)
 			local sleeper_count = 1840
 			local MEK = 4
 			marks = mark_helper.sort_mark_by_coord(marks)
 			local res = {}
+			local i = 1
 			for mark, right in mark_helper.enum_group(marks, 2) do
 				local cp, np = mark.prop.SysCoord, right.prop.SysCoord
 				mark.user.dist_next = np - cp
@@ -366,6 +367,10 @@ local filters =
 						table.insert(res, mark)
 					end
 				end
+				if fnContinueCalc and not fnContinueCalc(i / #marks) then
+					return {}
+				end
+				i = i + 1
 			end
 			return res
 		end,
@@ -471,10 +476,10 @@ local filters =
 			end
 			return false
 		end,
-		post_load = function(marks)
+		post_load = function(marks, fnContinueCalc)
 			local prev_pos = {} -- координата пред стыка (по рельсам)
 			marks = sort_stable(marks, column_sys_coord.sorter, true)	-- сортируем отметки от драйвера по координате
-			for _, mark in ipairs(marks) do	-- проходим по отметкам
+			for i, mark in ipairs(marks) do	-- проходим по отметкам
 				local r = bit32.band(mark.prop.RailMask, 3)	-- получаем номер рельса
 				if prev_pos[r] then	-- если есть коордиана предыдущей
 					local delta = mark.prop.SysCoord - prev_pos[r]	        -- в пользовательские данные отметки заносим растойние до нее
@@ -484,6 +489,9 @@ local filters =
 					mark.user.dist_prev = delta --tostring(delta) 
 				end
 				prev_pos[r] = mark.prop.SysCoord	-- и сохраняем положение этой отметки
+			end
+			if fnContinueCalc and not fnContinueCalc(i / #marks) then
+				return {}
 			end
 			return marks	-- возвращаем список для отображения
 		end,
