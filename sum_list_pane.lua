@@ -310,7 +310,9 @@ function InitMark(name, fnContinueCalc)
 		work_marks_list = mark_helper.sort_mark_by_coord(work_marks_list)
 	end
 
-	MarkTable:SetItemCount(#work_marks_list)
+	if MarkTable then
+		MarkTable:SetItemCount(#work_marks_list)
+	end
 	return #work_marks_list						-- возвращаем длину списка, чтобы атейп зарезервировал таблицу
 end
 

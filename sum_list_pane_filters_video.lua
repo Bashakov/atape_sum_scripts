@@ -82,7 +82,7 @@ local filters =
 			"090004012008", -- RAIL_DEFECT_HEAD
 		},
 		columns = {
-			column_num, 
+			column_num,
 			column_path_coord,
 			column_pov_common,
 			column_mark_type_name,
@@ -479,9 +479,9 @@ local filters =
 					mark.user.dist_prev = delta --tostring(delta) 
 				end
 				prev_pos[r] = mark.prop.SysCoord	-- и сохраняем положение этой отметки
-			end
-			if fnContinueCalc and not fnContinueCalc(i / #marks) then
-				return {}
+				if fnContinueCalc and not fnContinueCalc(i / #marks) then
+					return {}
+				end
 			end
 			return marks	-- возвращаем список для отображения
 		end,
