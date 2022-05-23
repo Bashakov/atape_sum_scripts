@@ -21,10 +21,6 @@ local sumPOV = require "sumPOV"
 
 -- =====================================================================  
 
--- dofile 'Scripts/sum_list_pane_guids.lua'
-
--- =====================================================================  
-
 -- получить параметр скрепления по имени (разбор xml)
 local function GetFastenerParamName(mark, name)
 	

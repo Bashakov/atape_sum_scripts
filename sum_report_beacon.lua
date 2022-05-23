@@ -15,21 +15,17 @@ local EKASUI_REPORT = require 'sum_report_ekasui'
 local AVIS_REPORT = require 'sum_report_avis'
 local sumPOV = require "sumPOV"
 local OOP = require 'OOP'
+local TYPES = require 'sum_types'
 
 local printf = mark_helper.printf
 local sprintf = mark_helper.sprintf
 
-local GUID_BEACON 					= "{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"	-- Маячная
-local GUID_BEACON_SPALA 			= "{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}" 	-- Маячная(Пользователь)
-local GUID_USER_JOINTLESS_DEFECT 	= "{3601038C-A561-46BB-8B0F-F896C2130006}"	-- Бесстыковой путь(Пользователь)
-local GUID_BEACON_FIRTREE 			= "{D3736670-0C32-46F8-9AAF-3816DE00B755}"	-- Маячная Ёлка
-
 local juids_beacon =
 {
-	GUID_BEACON,
-	GUID_BEACON_SPALA,
-	GUID_USER_JOINTLESS_DEFECT,
-	GUID_BEACON_FIRTREE,
+	TYPES.VID_BEACON_INDT,
+	TYPES.M_SPALA,
+	TYPES.USER_JOINTLESS_DEFECT,
+	TYPES.VID_BEACON_FIRTREE_MARK,
 }
 
 
@@ -63,7 +59,7 @@ local function generate_row_beacon(marks, dlgProgress)
 
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
-		if mark.prop.Guid == GUID_USER_JOINTLESS_DEFECT and (
+		if mark.prop.Guid == TYPES.USER_JOINTLESS_DEFECT and (
 			mark.ext.CODE_EKASUI == DEFECT_CODES.BEACON_UBNORMAL_MOVED_LE_5[1] or
 			mark.ext.CODE_EKASUI == DEFECT_CODES.BEACON_UBNORMAL_MOVED_LE_10[1] or
 			mark.ext.CODE_EKASUI == DEFECT_CODES.BEACON_UBNORMAL_MOVED_GT_10[1]
@@ -103,7 +99,7 @@ end
 local function generate_row_beacon_user(marks, dlgProgress)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
-		if mark.prop.Guid == GUID_USER_JOINTLESS_DEFECT and mark.ext.CODE_EKASUI then
+		if mark.prop.Guid == TYPES.USER_JOINTLESS_DEFECT and mark.ext.CODE_EKASUI then
 			local row = MakeBeaconMarkRow(mark)
 			row.DEFECT_CODE = mark.ext.CODE_EKASUI
 			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI) or string.match(mark.prop.Description, '([^\n]+)\n')
@@ -183,11 +179,11 @@ local SearchMissingBeacons = OOP.class
 	end,
 
 	is_beacon = function (mark)
-		return mark.prop.Guid == GUID_BEACON_SPALA or mark.prop.Guid == GUID_BEACON
+		return mark.prop.Guid == TYPES.M_SPALA or mark.prop.Guid == TYPES.VID_BEACON_INDT
 	end,
 
 	is_firtree = function (mark)
-		return mark.prop.Guid == GUID_BEACON_FIRTREE
+		return mark.prop.Guid == TYPES.VID_BEACON_FIRTREE_MARK
 	end,
 }
 

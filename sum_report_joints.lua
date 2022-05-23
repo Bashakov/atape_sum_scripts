@@ -15,6 +15,7 @@ local EKASUI_REPORT = require 'sum_report_ekasui'
 local AVIS_REPORT = require 'sum_report_avis'
 local sumPOV = require "sumPOV"
 local remove_grouped_marks = require "sum_report_group_scanner"
+local TYPES = require 'sum_types'
 
 local printf = mark_helper.printf
 local sprintf = mark_helper.sprintf
@@ -22,14 +23,14 @@ local sprintf = mark_helper.sprintf
 
 local video_joints_juids =
 {
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC801}",	-- Стык(Видео)
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",	-- Стык(Видео)
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",	-- СтыкЗазор(Пользователь)
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",	-- АТСтык(Видео)
+	TYPES.VID_INDT_1,	-- Стык(Видео)
+	TYPES.VID_INDT_2,	-- Стык(Видео)
+	TYPES.VID_INDT_3,	-- СтыкЗазор(Пользователь)
+	TYPES.VID_INDT_ATS,	-- АТСтык(Видео)
 
-	"{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}", 	-- ИзоСтык(Видео)
+	TYPES.VID_ISO, 	-- ИзоСтык(Видео)
 
-	"{3601038C-A561-46BB-8B0F-F896C2130003}",	-- Рельсовые стыки(Пользователь)
+	TYPES.RAIL_JOINT_USER,	-- Рельсовые стыки(Пользователь)
 }
 
 local joints_group_defects =
@@ -160,7 +161,7 @@ local function make_mark_gap_width_exceed(mark)
 		row.DEFECT_DESC = DEFECT_CODES.code2desc(defect_code)
 	end
 
-	if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
+	if mark.prop.Guid == TYPES.RAIL_JOINT_USER and (
 			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[1] or
 			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH_LEFT[1] or
 			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH_RIGHT[1]
@@ -212,7 +213,7 @@ local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
 
 	for _, mark in ipairs(marks) do
 		if pov_filter(mark) and
-			(mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" or mark_helper.table_find(joints_group_defects, mark.prop.Guid)) and
+			(mark.prop.Guid == TYPES.RAIL_JOINT_USER or mark_helper.table_find(joints_group_defects, mark.prop.Guid)) and
 			mark_helper.table_find(blind_defect_codes, mark.ext.CODE_EKASUI)
 		then
 			local row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)
@@ -303,7 +304,7 @@ local function generate_rows_joint_step(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		if pov_filter(mark) then
-			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
+			if mark.prop.Guid == TYPES.RAIL_JOINT_USER and (
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_HOR_STEP[1] or
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_STEP_VH_LT25[1]) then
 				local row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)
@@ -351,7 +352,7 @@ local function generate_rows_fishplate(marks, dlgProgress, pov_filter)
 	40 км/ч при трещине двух накладок.
 ]]
 		if pov_filter(mark) then
-			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
+			if mark.prop.Guid == TYPES.RAIL_JOINT_USER and (
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_FISHPLATE_DEFECT[1] or
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_FISHPLATE_DEFECT_ONE[1] or
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_FISHPLATE_DEFECT_BOTH[1]
@@ -409,7 +410,7 @@ local function generate_rows_missing_bolt(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		if not pov_filter or pov_filter(mark) then
-			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
+			if mark.prop.Guid == TYPES.RAIL_JOINT_USER and (
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT[1] or
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT_NO_GOOD[1] or
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT_ONE_GOOD[1] or
@@ -458,7 +459,7 @@ local function generate_rows_user(marks, dlgProgress, pov_filter)
 
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
-		if pov_filter(mark) and mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and mark.ext.CODE_EKASUI then
+		if pov_filter(mark) and mark.prop.Guid == TYPES.RAIL_JOINT_USER and mark.ext.CODE_EKASUI then
 			local row = make_mark_gap_width_exceed(mark)
 			if not row then
 				row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)

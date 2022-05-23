@@ -5,6 +5,7 @@ require "ExitScope"
 local resty = require "resty.template"
 local OOP = require 'OOP'
 local EKASUI = require "sum_report_ekasui"
+local TYPES = require 'sum_types'
 
 if iup then
 	iup.SetGlobal('UTF8MODE', 1)
@@ -18,11 +19,11 @@ local table_find = mark_helper.table_find
 
 local joints_guids =
 {
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC801}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
-	"{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}", 	-- ИзоСтык(Видео)
+	TYPES.VID_INDT_1,
+	TYPES.VID_INDT_2,
+	TYPES.VID_INDT_3,
+	TYPES.VID_INDT_ATS,
+	TYPES.VID_ISO, 	-- ИзоСтык(Видео)
 }
 
 local switch_guids = {

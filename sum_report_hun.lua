@@ -4,6 +4,7 @@ local OOP = require 'OOP'
 local mark_helper = require 'sum_mark_helper'
 local excel_helper = require 'excel_helper'
 local luaiup_helper = require 'luaiup_helper'
+local TYPES = require 'sum_types'
 
 make_mark_uri = mark_helper.MakeMarkUri
 
@@ -11,17 +12,17 @@ make_mark_uri = mark_helper.MakeMarkUri
 
 local video_hun_juids = 
 {
-	["{DE548D8F-4E0C-4644-8DB3-B28AE8B17431}"] = false,	-- UIC_227
-	["{BB144C42-8D1A-4FE1-9E84-E37E0A47B074}"] = false,	-- BELGROSPI
-	["{EBAB47A8-0CDC-4102-B21F-B4A90F9D873A}"] = false,	-- UIC_2251
-	["{54188BA4-E88A-4B6E-956F-29E8035684E9}"] = false,	-- UIC_2252
-	["{7EF92845-226D-4D07-AC50-F23DD8D53A19}"] = false,	-- HC
+	[TYPES.SQUAT] = false,	-- UIC_227
+	[TYPES.BELGROSPI] = false,	-- BELGROSPI
+	[TYPES.SLEEPAGE_SKID_1] = false,	-- UIC_2251
+	[TYPES.SLEEPAGE_SKID_2] = false,	-- UIC_2252
+	[TYPES.HC] = false,	-- HC
 
-	["{13A7906C-BBFB-4EB3-86FA-FA74B77F5F35}"] = true,	-- UIC_227(User)
-	["{981F7780-500C-47CD-978A-B9F3A91C37FE}"] = true,	-- BELGROSPI(User)
-	["{41486CAC-EBE9-46FF-ACCA-041AFAFFC531}"] = true,	-- UIC_2251(User)
-	["{3401C5E7-7E98-4B4F-A364-701C959AFE99}"] = true,	-- UIC_2252(User)
-	["{515FA798-3893-41CA-B4C3-6E1FEAC8E12F}"] = true,	-- HC(User)
+	[TYPES.SQUAT_USER] = true,	-- UIC_227(User)
+	[TYPES.BELGROSPI_USER] = true,	-- BELGROSPI(User)
+	[TYPES.SLEEPAGE_SKID_1_USER] = true,	-- UIC_2251(User)
+	[TYPES.SLEEPAGE_SKID_2_USER] = true,	-- UIC_2252(User)
+	[TYPES.HC_USER] = true,	-- HC(User)
 }
 
 	local NAME_UIC_227   =	"UIC_227"

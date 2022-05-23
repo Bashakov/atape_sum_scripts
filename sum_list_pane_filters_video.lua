@@ -2,6 +2,7 @@ local mark_helper = require 'sum_mark_helper'
 local defect_codes = require 'report_defect_codes'
 
 local table_merge = mark_helper.table_merge
+local TYPES = require 'sum_types'
 
 local prev_atape = ATAPE
 ATAPE = true -- disable debug code while load scripts
@@ -202,8 +203,10 @@ local filters =
 			column_rail,
 			column_mark_desc,
 			column_recogn_video_channel,
-			}, 
-		GUIDS = recognition_NonNormal_defects,
+			},
+		GUIDS = {
+			TYPES.UNSPC_OBJ
+		},
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},

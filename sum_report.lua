@@ -17,6 +17,7 @@ end
 mark_helper = require 'sum_mark_helper'
 luaiup_helper = require 'luaiup_helper'
 excel_helper = require 'excel_helper'
+local TYPES = require 'sum_types'
 
 local table_find = mark_helper.table_find
 local sprintf = mark_helper.sprintf
@@ -35,11 +36,11 @@ local SelectNodes = mark_helper.SelectNodes
 
 local gap_rep_filter_guids = 
 {
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC801}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
-	"{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}", 	-- ИзоСтык(Видео)
+	TYPES.VID_INDT_1,
+	TYPES.VID_INDT_2,
+	TYPES.VID_INDT_3,
+	TYPES.VID_INDT_ATS,
+	TYPES.VID_ISO, 	-- ИзоСтык(Видео)
 }
 
 local fastener_guids = {
@@ -54,7 +55,7 @@ local beacon_rep_filter_guids =
 
 local surface_defects_guids = 
 {
-	"{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}",
+	TYPES.VID_SURF,
 }
 
 
@@ -797,134 +798,6 @@ local function report_welding(params)
 	excel:SaveAndShow()
 end
 
-
-
-local unspec_obj_filter_guids = 
-{
-	"{0860481C-8363-42DD-BBDE-8A2366EFAC90}",
-}
-
--- отчет по неспецифицированным объектам
-local function report_unspec_obj(params)
-	
-	local dlg = luaiup_helper.ProgressDlg()
-	local marks = Driver:GetMarks()
-	local guids = {}
-	for _, g in ipairs(unspec_obj_filter_guids) do guids[g] = true end 
-	
-	marks = FilterSort(marks, 
-		function(mark) return guids[mark.prop.Guid] and mark.ext.VIDEOFRAMECOORD  and mark.ext.UNSPCOBJPOINTS end,
-		get_sys_coord_key,
-		function(val, desc) dlg:step(val, desc) end)
-
-	if #marks == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-
-	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
-	excel:ApplyPassportValues(Passport)
-	local data_range = excel:CloneTemplateRow(#marks)
-
-	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
-
-	for line, mark in ipairs(marks) do
-		
-		local prop = mark.prop
-		local ext = mark.ext
-		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-		local vch = bit32.btest(prop.RailMask, 1) and 17 or 18
-		
-		local img_path = ShowVideo ~= 0 and Driver:GetFrame( vch, prop.SysCoord, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
-		local uri = make_mark_uri(prop.ID)
-		
-		data_range.Cells(line, 1).Value2 = get_rail_name(mark)
-		data_range.Cells(line, 2).Value2 = km
-		excel:InsertLink(data_range.Cells(line, 3), uri, sprintf("%.02f", m + mm/1000))
-		data_range.Cells(line, 4).Value2 = prop.Description 
-		
-		if img_path and #img_path then
-			excel:InsertImage(data_range.Cells(line, 5), img_path)
-		end
-			
-		if not dlg:step(line / #marks, sprintf(' Process %d / %d mark', line, #marks)) then 
-			break
-		end
-	end 
-
-	if ShowVideo == 0 then 
-		excel:AutoFitDataRows()
-		data_range.Cells(5).ColumnWidth = 0
-	end
-	excel:SaveAndShow()
-end
-
-
-local joint_filter_guids = 
-{
-	"{19253263-2C0B-41EE-8EAA-000000000010}",
-	"{19253263-2C0B-41EE-8EAA-000000000040}",
-}
-
-local ats_joint_filter_guids = 
-{
-	"{19253263-2C0B-41EE-8EAA-000000000080}",
-}
-
-local function report_coord(params)
-	local dlg = luaiup_helper.ProgressDlg()
-	local marks = Driver:GetMarks()
-	local guids = {}
-	for _, g in ipairs(params.guids or joint_filter_guids) do guids[g] = true end 
-	
-	marks = FilterSort(marks, 
-		function(mark) return guids[mark.prop.Guid] end,
-		get_sys_coord_key,
-		function(val, desc) dlg:step(val, desc) end)
-
-	if #marks == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-
-	local excel = excel_helper(Driver:GetAppPath() .. params.filename, params.sheetname, false)
-	excel:ApplyPassportValues(Passport)
-	local data_range = excel:CloneTemplateRow(#marks)
-	local vdCh = params.ch
-
-	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
-
-	for line, mark in ipairs(marks) do
-		local prop, ext = mark.prop, mark.ext
-		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-		
-		local coord = prop.SysCoord + prop.Len / 2, 0
-		local offsetVideo = Driver:GetVideoCurrentOffset(vdCh)
-		local offsetMagn = Driver:GetChannelOffset(11)
-		local frcoord = coord + offsetVideo + offsetMagn
-		print( vdCh, coord, offsetVideo, offsetMagn, frcoord )
-
-		data_range.Cells(line, 1).Value2 = sprintf("%d km %d m %d mm", km, m, mm)
-		data_range.Cells(line, 2).Value2 = coord
-		data_range.Cells(line, 3).Value2 = coord + offsetMagn
-		data_range.Cells(line, 4).Value2 = coord + offsetMagn + offsetVideo
-		data_range.Cells(line, 5).Value2 = vdCh
-		data_range.Cells(line, 6).Value2 = frcoord
-		
-		local img_path = Driver:GetFrame( vdCh, coord + offsetMagn, {mode=3, panoram_width=1500, frame_count=3, width=400, height=300} )
-		if img_path and #img_path then
-			excel:InsertImage(data_range.Cells(line, 7), img_path)
-		end
-		
-		if not dlg:step(line / #marks, sprintf(' Process %d / %d mark', line, #marks)) then 
-			break
-		end
-	end 
-
-	excel:SaveAndShow()
-end
-
-
 -- отчет по скреплениям 
 local function report_fasteners(params)
 	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Показать все", "Дефектные", "Нормальные"}, 2)
@@ -1177,7 +1050,6 @@ local cur_file_reports = {
 	{name="Горизонтальные уступы" , fn=report_recog_joint_step, params={ filename=ProcessSumFile, sheetname="Горизонтальные ступеньки"}, guids=gap_rep_filter_guids   },
 	{name="Поверхностные дефекты" , fn=report_surface_defects , params={ filename=ProcessSumFile, sheetname="Поверхн. дефекты"        }, guids=surface_defects_guids  }, 
 	{name="Маячные метки"          , fn=report_welding         , params={ filename=ProcessSumFile, sheetname="Ведомость сварной плети" }, guids=beacon_rep_filter_guids},
---	{name="Ненормативные объекты" , fn=report_unspec_obj      , params={ filename=ProcessSumFile, sheetname="Ненормативные объекты"   }, guids=unspec_obj_filter_guids},	
 	
 
 	--{name="Сделать дамп отметок",			fn=dump_mark_list,		params={} },
