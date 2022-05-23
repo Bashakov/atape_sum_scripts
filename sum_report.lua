@@ -18,7 +18,6 @@ mark_helper = require 'sum_mark_helper'
 luaiup_helper = require 'luaiup_helper'
 excel_helper = require 'excel_helper'
 
-
 local table_find = mark_helper.table_find
 local sprintf = mark_helper.sprintf
 local printf = mark_helper.printf
@@ -1282,6 +1281,12 @@ function GetFilterGuids(reportName)
 	for k,_ in pairs(guids) do table.insert(res, k) end
 	print('GetFilterGuids:', table.concat(res, ','))
 	return res
+end
+
+-- https://bt.abisoft.spb.ru/view.php?id=895
+function MakeVideogram(name, params)
+	local sum_videogram = require 'sum_videogram'
+	sum_videogram.MakeVideogram(name, params)
 end
 
 -- =======================================================================

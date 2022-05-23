@@ -10,6 +10,7 @@ end
 local excel_helper = require 'excel_helper'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
+require "ExitScope"
 
 local table_find = mark_helper.table_find
 local sprintf = mark_helper.sprintf
@@ -289,6 +290,7 @@ end
 
 
 local function videogram_view_packet(params)
+	return EnterScope(function (defer)
 	local param_names = {'width_show_mm', 'left_coord'}
 	for _, name in ipairs(param_names) do
 		if not params[name] then
@@ -298,6 +300,7 @@ local function videogram_view_packet(params)
 	end
 
 	local dlg = luaiup_helper.ProgressDlg()
+	defer(dlg.Destroy, dlg)
 	dlg:step(0, 'preparing ... ')
 	local function progress_callback(cur, all)
 		dlg:step(cur / all, 'processing ...')
@@ -375,6 +378,7 @@ local function videogram_view_packet(params)
 
 	excel:AppendTemplateSheet(Passport, {}, nil, 0)
 	excel:SaveAndShow()
+	end)
 end
 
 

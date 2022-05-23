@@ -1,10 +1,12 @@
 local mark_helper = require 'sum_mark_helper'
 local defect_codes = require 'report_defect_codes'
+
 local table_merge = mark_helper.table_merge
 
 local prev_atape = ATAPE
 ATAPE = true -- disable debug code while load scripts
 	local sum_report_joints = require "sum_report_joints"
+	local sum_report_beacon = require 'sum_report_beacon'
 ATAPE = prev_atape
 
 
@@ -164,6 +166,7 @@ local filters =
 			column_rail,
 			column_beacon_offset,
 			column_firtree_beacon,
+			column_pair_beacon,
 			column_pov_common,
 			column_mark_type_name
 			}, 
@@ -174,29 +177,17 @@ local filters =
 			"{D3736670-0C32-46F8-9AAF-3816DE00B755}",	-- Маячная Ёлка
 		},
 		post_load = function(marks)
-			-- строим список отметок с рисками по рельсам, для поиска
-			local beacons = {} -- список маячных отметок с рисками по рельсам
+			local beacons = sum_report_beacon.SearchMissingBeacons()
+			beacons:load_marks(marks, nil)
+
+			-- поиск меток не имеющих парных отметок
 			for _, mark in ipairs(marks) do
-				if mark.prop.Guid == "{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}" or
-				   mark.prop.Guid == "{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}" then
-					local rail_mask = bit32.band(mark.prop.RailMask, 0x03)
-					if not beacons[rail_mask] then beacons[rail_mask] = {} end
-					table.insert(beacons[rail_mask], mark)
+				local found = not beacons:is_miss_mark(mark)
+				if beacons.is_firtree(mark) then
+					mark.user.correspond_beacon_found = found
 				end
-			end
-			-- проходим по всем елкам и ищем для них соответствующие отметка с рисками
-			local MAX_DISTANCE_TO_BEACON_TO_MISS = 300 -- интервал в котором относительно елки ищется маячная метка  
-			for _, mark in ipairs(marks) do
-				if mark.prop.Guid == "{D3736670-0C32-46F8-9AAF-3816DE00B755}" then
-					local rail_mask = bit32.band(mark.prop.RailMask, 0x03)
-					if beacons[rail_mask] then
-						for _, bm in ipairs(beacons[rail_mask]) do
-							local dist = math.abs(mark.prop.SysCoord - bm.prop.SysCoord)
-							if dist < MAX_DISTANCE_TO_BEACON_TO_MISS then
-								mark.user.beacon_id = bm.prop.ID
-							end
-						end
-					end
+				if beacons.is_beacon(mark) then
+					mark.user.pair_beacon_found = found
 				end
 			end
 			return marks
@@ -312,7 +303,7 @@ local filters =
 			column_pov_common,
 			}, 
 		GUIDS = recognition_surface_defects,
-	},	
+	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ',},
 		name = 'Дефекты накладок', 
@@ -429,8 +420,7 @@ local filters =
 			return false
 		end,
 	},
-	
-	{	
+	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Запуски распознавания',
 		columns = {

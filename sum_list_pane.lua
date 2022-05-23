@@ -543,13 +543,7 @@ if not ATAPE then
 	local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
 	test_report(psp_path, nul, {0, 10000000})
 
-	local name
-	if HUN then
-		name  = 'Surface Defects'
-	else
-		name  = 'III Соединитель'
-	end
-
+	local name = 'Маячные отметки'
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}
 	local col_names = {}
@@ -564,7 +558,7 @@ if not ATAPE then
 	print(string.rep('=', #str_header))
 
 	local cnt_row = InitMark(name)
-	SortMarks(6, True)
+	--SortMarks(6, True)
 	for row = 1, cnt_row do
 		local values = {}
 		for col = 1, #columns do

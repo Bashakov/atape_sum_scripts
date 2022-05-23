@@ -10,6 +10,7 @@ local filters =
 			--column_rail,
 			column_rail_lr,
 			column_npu_type,
+			column_mark_desc,
 			}, 
 		GUIDS = NPU_guids,
 	},
