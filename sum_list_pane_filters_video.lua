@@ -43,13 +43,26 @@ local function get_sleeper_angle_defect(mark, treshold, material)
 	return false
 end
 
+local function parse_velocity(val)
+	local t = type(val)
+	if t == "number" or t == "nil" then
+		return val
+	end
+	assert(t == 'string')
+	if val == '' then
+		return nil
+	end
+	local n = tonumber(val)
+	return n or 0
+end
+
 
 local filters =
 {
 	--!!! вывод всех объектов с ограничением скорости или дефектами // https://bt.abisoft.spb.ru/view.php?id=779
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
-		name = 'Все замечания',
+		name = 'Все замечания с ограничением скорости',
 		--!!! добавлены коды из report_defect_codes: "Превышение конструктивной величины стыкового зазора левой рельсовой нити"	"090004016149", "Превышение конструктивной величины стыкового зазора правой рельсовой нити"	"090004016150"
 		videogram_defect_codes = {
 			-- устаревшие
@@ -57,7 +70,7 @@ local filters =
 			"090004000999", -- SLEEPER_ANGLE !!! код удален из классификатора
 
 			-- тестированы
-			'090004012062', '090004016149', '090004016150', -- JOINT_EXCEED_GAP_WIDTH
+			'090004012062', '090004016149', '090004016150', -- JOINT_EXCEED_GAP_WIDTH, JOINT_EXCEED_GAP_WIDTH_LEFT, JOINT_EXCEED_GAP_WIDTH_RIGHT
 			'090004000466', -- JOINT_MISSING_BOLT_TWO_GOOD
 			'090004000471', -- JOINT_MISSING_BOLT_ONE_GOOD
 			"090004000521", -- JOINT_WELDED_BOND_FAULT
@@ -86,17 +99,62 @@ local filters =
 			column_num,
 			column_path_coord,
 			column_pov_common,
-			column_mark_type_name,
-			column_joint_speed_limit,
+			column_defect_code_list,
+			column_speed_limit_list,
 		}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
-			local gap_type = mark_helper.GetGapType(mark)
-			if not gap_type or gap_type == 2 then -- https://bt.abisoft.spb.ru/view.php?id=839 hide ATS
-				return false
+			local codes, limits = {}, {}
+
+			if true then
+				-- JOINT_EXCEED_GAP_WIDTH_LEFT, JOINT_EXCEED_GAP_WIDTH_RIGHT
+				-- '100', '60', '25', 'Движение закрывается'
+				local defect_code, speed_limit = sum_report_joints.get_mark_gap_width_defect_code(mark)
+				speed_limit = parse_velocity(speed_limit)
+				if speed_limit then
+					table.insert(codes, defect_code)
+					table.insert(limits, speed_limit)
+				end
 			end
-			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
-			return valid_on_half and valid_on_half < 2
+
+			if true then
+				-- JOINT_MISSING_BOLT_ONE_GOOD[1], '25',
+				-- JOINT_MISSING_BOLT_NO_GOOD[1], 'Закрытие движения'
+				local defect_code, speed_limit = sum_report_joints.bolt2defect_limit(mark)
+				speed_limit = parse_velocity(speed_limit)
+				if speed_limit then
+					table.insert(codes, defect_code)
+					table.insert(limits, speed_limit)
+				end
+			end
+
+			if true then
+				-- DEFECT_CODES.JOINT_HOR_STEP, JOINT_STEP_VH_LT25
+				-- '80', '50', '40', '25',	'15', 'Движение закрывается'
+				local defect_code, speed_limit = sum_report_joints.get_joint_step_defect_code(mark)
+				speed_limit = parse_velocity(speed_limit)
+				if speed_limit then
+					table.insert(codes, defect_code)
+					table.insert(limits, speed_limit)
+				end
+			end
+
+			if true then
+				-- JOINT_FISHPLATE_DEFECT, JOINT_FISHPLATE_DEFECT_ONE, JOINT_FISHPLATE_DEFECT_BOTH, JOINT_FISHPLATE_DEFECT_SINGLE
+				-- 'Движение закрывается', '40','Замечание'
+				local defect_code, speed_limit = sum_report_joints.get_fishplate_defect_code(mark)
+				speed_limit = parse_velocity(speed_limit)
+				if speed_limit then
+					table.insert(codes, defect_code)
+					table.insert(limits, speed_limit)
+				end
+			end
+
+			if #limits > 0 then
+				mark.user.defect_codes = codes
+				mark.user.speed_limits = limits
+				return true
+			end
 		end,
 	},
 
@@ -141,21 +199,6 @@ local filters =
 			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
 			return valid_on_half and valid_on_half < 2 and join_type ~= 2
 		end,
-		-- get_color = function(row, col)
-		-- 	if col == 1 then
-		-- 		return
-		-- 	end
-		-- 	local mark = work_marks_list[row]
-		-- 	if not mark.user.color then
-		-- 		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
-		-- 		if valid_on_half and valid_on_half == 0 then
-		-- 			mark.user.color = {0xff0000, 0xffffff}
-		-- 		else
-		-- 			mark.user.color = {0x000000, 0xffffff}
-		-- 		end
-		-- 	end
-		-- 	return mark.user.color
-		-- end
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
