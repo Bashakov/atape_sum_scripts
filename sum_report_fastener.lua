@@ -25,14 +25,14 @@ local sprintf = mark_helper.sprintf
 
 local guids_fasteners =
 {
-	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",	-- Скрепление
-	"{3601038C-A561-46BB-8B0F-F896C2130001}",	-- Скрепления(Пользователь)
+	TYPES.FASTENER,	-- Скрепление
+	TYPES.FASTENER_USER,	-- Скрепления(Пользователь)
 }
 
 local guids_fasteners_groups =
 {
-	"{B6BAB49E-4CEC-4401-A106-355BFB2E0021}",   -- GROUP_FSTR_AUTO
-	"{B6BAB49E-4CEC-4401-A106-355BFB2E0022}", 	-- GROUP_FSTR_USER
+	TYPES.GROUP_FSTR_AUTO,   -- GROUP_FSTR_AUTO
+	TYPES.GROUP_FSTR_USER, 	-- GROUP_FSTR_USER
 }
 
 local function GetMarks(ekasui, pov_filter)
@@ -90,7 +90,7 @@ local function igenerate_rows_fastener(marks, dlgProgress)
 
 	local accepted = 0
 	for i, mark in ipairs(marks) do
-		if ("{3601038C-A561-46BB-8B0F-F896C2130001}" == mark.prop.Guid and
+		if (TYPES.FASTENER_USER == mark.prop.Guid and
 		    mark_helper.table_find(defect_codes, mark.ext.CODE_EKASUI)) or
 			mark_helper.table_find(guids_fasteners_groups, mark.prop.Guid)
 		then
@@ -140,7 +140,7 @@ local function igenerate_rows_fastener_user(marks, dlgProgress)
 	--local report_rows = {}
 	local accepted = 0
 	for i, mark in ipairs(marks) do
-		if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130001}" and mark.ext.CODE_EKASUI then
+		if mark.prop.Guid == TYPES.FASTENER_USER and mark.ext.CODE_EKASUI then
 			local row = MakeFastenerMarkRow(mark, mark.ext.CODE_EKASUI)
 			row.FASTENER_TYPE = get_user_options(mark).connector_type or ''
 

@@ -38,7 +38,7 @@ local sleeper_guids = {
 }
 
 local fastener_guids = {
-	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",
+	TYPES.FASTENER,
 }
 
 local SLEEPER_DIST_REF = 1000000 / 1840

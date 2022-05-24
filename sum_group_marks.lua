@@ -458,7 +458,7 @@ local FastenerGroups = OOP.class
     _is_fastener_defect = function (self, mark)
         local defect = self._defect_mark_ids[mark.prop.ID]
         if defect == nil then
-            if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130001}" then
+            if mark.prop.Guid == TYPES.FASTENER_USER then
                 defect =
                     mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1] or
                     mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP[1] or
@@ -478,8 +478,8 @@ local FastenerGroups = OOP.class
         assert(param and param.rail)
         local guids_fasteners =
         {
-            "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",	-- Скрепление
-            "{3601038C-A561-46BB-8B0F-F896C2130001}",	-- Скрепления(Пользователь)
+            TYPES.FASTENER,	-- Скрепление
+            TYPES.FASTENER_USER,	-- Скрепления(Пользователь)
         }
         local progress = make_progress_cb(dlg, sprintf('загрузка скреплений рельс %d', param.rail), 123)
         local marks = loadMarks(guids_fasteners)
