@@ -1,7 +1,7 @@
 local TYPES = require 'sum_types'
 
 NPU_guids = {
-	TYPES.TYPES.PRE_NPU, -- НПУ auto
+	TYPES.PRE_NPU, -- НПУ auto
 	TYPES.NPU, -- НПУ
 	TYPES.NPU2, -- НПУ БС
 }

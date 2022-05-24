@@ -460,7 +460,7 @@ local filters =
 				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP[1] or
 				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP_TWO[1] or
 				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1] or
-				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1]
+				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGHT[1]
 			) then
 				return true
 			elseif mark.ext.RAWXMLDATA then

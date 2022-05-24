@@ -265,7 +265,7 @@ local GapGroups = OOP.class
             if  mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1] or
                 mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_TWO[1] or
                 mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1] or
-                mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1]
+                mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGHT[1]
             then
                 return CHECK.ACCEPT
             else
@@ -302,7 +302,7 @@ local GapGroups = OOP.class
                 if mark_helper.GetMarkRailPos(mark) == -1 then
                     mark.ext.CODE_EKASUI = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1] -- Три и более слепых (нулевых) зазоров подряд по левой нити
                 else
-                    mark.ext.CODE_EKASUI = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1] -- Три и более слепых (нулевых) зазоров подряд по правой нити
+                    mark.ext.CODE_EKASUI = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGHT[1] -- Три и более слепых (нулевых) зазоров подряд по правой нити
                 end
             end
 

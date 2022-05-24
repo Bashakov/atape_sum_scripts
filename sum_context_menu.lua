@@ -244,7 +244,7 @@ end
 local function add_npu_tune(menu_items, mark)
 	local name_type =
 	{
-		{name='Возможн. НПУ', guid=TYPES.TYPES.PRE_NPU},
+		{name='Возможн. НПУ', guid=TYPES.PRE_NPU},
 		{name='Подтвр. НПУ',  guid=TYPES.NPU},
 		{name='БС. НПУ',      guid=TYPES.NPU2},
 	}

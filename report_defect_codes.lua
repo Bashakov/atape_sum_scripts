@@ -22,7 +22,7 @@ local codes = {
 	-- https://bt.abisoft.spb.ru/view.php?id=765
 	JOINT_NEIGHBO_BLIND_GAP_TWO		=	{ "090004012061", "Слепой зазор: два подряд"},
 	JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT	=	{ "090004015838", "Слепой зазор: три и более подряд: левая нить"},
-	JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH	=	{ "090004015839", "Слепой зазор: три и более подряд: правая нить"},
+	JOINT_NEIGHBO_BLIND_GAP_MORE_RIGHT	=	{ "090004015839", "Слепой зазор: три и более подряд: правая нить"},
 
 
 	-- 1.4 Горизонтальные ступеньки в стыках, мм

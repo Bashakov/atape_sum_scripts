@@ -17,6 +17,7 @@ local sumPOV = require "sumPOV"
 local functional = require "functional"
 local remove_grouped_marks = require "sum_report_group_scanner"
 local ErrorUserAborted = require "UserAborted"
+local TYPES = require 'sum_types'
 
 local printf = mark_helper.printf
 local sprintf = mark_helper.sprintf

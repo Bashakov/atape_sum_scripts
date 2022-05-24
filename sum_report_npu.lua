@@ -13,7 +13,7 @@ local table_find = mark_helper.table_find
 
 local NPU_guids = {
 	TYPES.NPU, -- НПУ
-	TYPES.TYPES.PRE_NPU, -- Возможно НПУ
+	TYPES.PRE_NPU, -- Возможно НПУ
 }
 
 local NPU_guids_2 = {
@@ -114,7 +114,7 @@ end
 -- тестирование
 if not ATAPE then
 
-	test_report  = require('test_report')
+	local test_report  = require('test_report')
 	--test_report('D:\\ATapeXP\\Main\\480\\[480]_2013_11_09_14.xml')
 	test_report('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2022_02_04_01.xml', nil, {0, 1000000}) --
 

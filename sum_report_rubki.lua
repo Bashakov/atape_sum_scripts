@@ -211,16 +211,16 @@ local function load_near_marks(join_mark, mark_types, mark_count, search_dist)
 		end
 	end
 
-	local rigth = {}
+	local right = {}
 	for i = 1, #marks, 1 do
 		local mark = marks[i]
-		if mark.prop.SysCoord >= join_mark.prop.SysCoord and #rigth < mark_count then
-			table.insert(rigth, mark)
+		if mark.prop.SysCoord >= join_mark.prop.SysCoord and #right < mark_count then
+			table.insert(right, mark)
 		end
 	end
 
 	-- объединим 2 списка
-	for _, m in ipairs(rigth) do
+	for _, m in ipairs(right) do
 		table.insert(left, m)
 	end
 	return left

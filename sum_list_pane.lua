@@ -543,9 +543,9 @@ if not ATAPE then
 
 	test_report  = require('test_report')
 	local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-	test_report(psp_path, nul, {0, 10000000})
+	test_report(psp_path, nul, {0, 1000000}) -- , 
 
-	local name = 'Маячные отметки'
+	local name = 'Все замечания с ограничением скорости'
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}
 	local col_names = {}
