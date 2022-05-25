@@ -1115,6 +1115,7 @@ function MakeReport(name) -- exported
 			end
 			name = nil
 			n.fn(n.params)
+			break
 --			ok, msg = pcall(n.fn, n.params)
 --			if not ok then 
 --				error(msg)
@@ -1151,7 +1152,7 @@ function GetFilterGuids(reportName)
 
 	local res = {}
 	for k,_ in pairs(guids) do table.insert(res, k) end
-	print('GetFilterGuids:', table.concat(res, ','))
+	-- print('GetFilterGuids:', table.concat(res, ','))
 	return res
 end
 

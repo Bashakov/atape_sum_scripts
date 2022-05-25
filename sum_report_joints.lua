@@ -139,11 +139,11 @@ end
 -- -------------------------------------------- --
 
 -- поиск групп слепых зазоров по одному рельсу
-local function scan_for_neigh_blind_joint(marks, dlg)
+local function scan_for_neigh_blind_joint(marks, fnProgress)
 
 	local WIDTH_THRESHOLD = 3
-	local groups = {}	-- хранение найденных групп
-	local rail_group = {[1]={}, [2]={}}		-- текущая обрабатываемая группа, найденные слепые зазоры
+	local groups = {}
+	local rail_group = {[1]={}, [2]={}}
 
 	marks = mark_helper.sort_mark_by_coord(marks)
 	for i, mark in ipairs(marks) do
@@ -162,8 +162,8 @@ local function scan_for_neigh_blind_joint(marks, dlg)
 			end
 		end
 
-		if dlg and i % 20 == 0 then
-			dlg:step(i / #marks, string.format('Поиск %d / %d', i, #marks))
+		if i % 20 == 0 and not fnProgress(i / #marks, string.format('Поиск %d / %d', i, #marks)) then
+			break
 		end
 	end
 
@@ -177,15 +177,6 @@ local function scan_for_neigh_blind_joint(marks, dlg)
 		local c = group[1].prop.SysCoord
 		return c
 	end)
-
-	-- for n, g in ipairs(groups) do
-	-- 	print(n)
-	-- 	local s = g[1].prop.SysCoord
-	-- 	for _, m in ipairs(g) do
-	-- 		print('\t', m.prop.ID, m.prop.SysCoord, m.prop.SysCoord - s, m.prop.RailMask)
-	-- 		s = m.prop.SysCoord
-	-- 	end
-	-- end
 
 	return groups
 end
@@ -204,7 +195,7 @@ local function get_blind_defect_code(mark)
 	end
 end
 
-local function iter_blind_group_defect_code(marks, pov_filter, dlg)
+local function iter_blind_group_defect_code(marks, pov_filter, fnProgress)
 	pov_filter = pov_filter or function () return {1} end
 
 	local function group2defectcode(group)
@@ -274,7 +265,7 @@ local function iter_blind_group_defect_code(marks, pov_filter, dlg)
 		end
 	end
 
-	local groups = scan_for_neigh_blind_joint(marks, dlg)
+	local groups = scan_for_neigh_blind_joint(marks, fnProgress)
 	return coroutine.wrap(function()
 		for i, group in ipairs(groups) do
 			local defect_code = group2defectcode(group)
@@ -285,15 +276,14 @@ local function iter_blind_group_defect_code(marks, pov_filter, dlg)
 					coroutine.yield(group, defect_code, speed_limit)
 				end
 			end
-
-			if i % 10 == 0 and not dlg:step(i / #marks, sprintf('Отработка %d / %d отметок', i, #groups)) then
-				return
-			end
 		end
 	end)
 end
 
 local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
+	local function fnProgress(f, text)
+		return not dlgProgress or dlgProgress:step(f, text)
+	end
 	local report_rows = {}
 
 	for _, mark in ipairs(marks) do
@@ -305,7 +295,7 @@ local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
 		end
 	end
 
-	for group, defect_code, speed_limit in iter_blind_group_defect_code(marks, pov_filter, dlgProgress) do
+	for group, defect_code, speed_limit in iter_blind_group_defect_code(marks, pov_filter, fnProgress) do
 		local row = MakeJointMarkRow(group[1], defect_code)
 		row.BLINK_GAP_COUNT = #group
 		if speed_limit then
@@ -417,7 +407,7 @@ local function generate_rows_fishplate(marks, dlgProgress, pov_filter)
 		if pov_filter(mark) then
 			local defect_code, speed_limit = get_fishplate_defect_code(mark)
 			if defect_code then
-				local row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)
+				local row = MakeJointMarkRow(mark, defect_code)
 				if speed_limit then
 					row.SPEED_LIMIT = speed_limit
 				end
@@ -661,7 +651,7 @@ if not ATAPE then
 	-- print(report.name)
 	-- report.fn()
 
-	ekasui_neigh_blind_joint()
+	ekasui_fishplate()
 end
 
 
@@ -683,4 +673,5 @@ return {
 	get_mark_gap_width_defect_code = get_mark_gap_width_defect_code,
 	get_joint_step_defect_code = get_joint_step_defect_code,
 	get_fishplate_defect_code = get_fishplate_defect_code,
+	iter_blind_group_defect_code = iter_blind_group_defect_code,
 }

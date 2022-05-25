@@ -1,3 +1,5 @@
+-- require('mobdebug').start()
+
 if not ATAPE then
 	require "iuplua"
 end
