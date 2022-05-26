@@ -96,10 +96,10 @@ else
 end
 
 
--- =====================================================================  
+-- =====================================================================
 
 work_marks_list = {}
-work_filter = None
+work_filter = nil
 work_sort_param = {0, 0}
 selected_row = 0
 work_mark_ids = {}
@@ -293,7 +293,7 @@ function InitMark(name, fnContinueCalc)
 				accept = fn_filter(mark)
 				if not fnContinueCalc(i / #driver_marks) then
 					clear_lists()
-					break;
+					return 0
 				end
 			end
 			if accept then
@@ -304,14 +304,11 @@ function InitMark(name, fnContinueCalc)
 		if filter.post_load then			-- если объявлена функция пост обработки
 			work_marks_list = filter.post_load(work_marks_list, fnContinueCalc)	-- то запускаем ее
 		end
+
 		for _, mark in ipairs(work_marks_list) do
 			work_mark_ids[mark.prop.ID] = true
 		end
 		work_marks_list = mark_helper.sort_mark_by_coord(work_marks_list)
-	end
-
-	if MarkTable then
-		MarkTable:SetItemCount(#work_marks_list)
 	end
 	return #work_marks_list						-- возвращаем длину списка, чтобы атейп зарезервировал таблицу
 end

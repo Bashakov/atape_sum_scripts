@@ -101,7 +101,7 @@ local filters =
 			column_pov_common,
 			column_defect_code_list,
 			column_speed_limit_list,
-		}, 
+		},
 		GUIDS = recognition_guids,
 		post_load = function(marks, fnContinueCalc)
 			local id2defects = {}
@@ -177,7 +177,7 @@ local filters =
 					table.insert(res, mark)
 
 					if not fnContinueCalc(i / #marks) then
-						 return
+						break
 					end
 				end
 			end
