@@ -238,10 +238,6 @@ local function make_ekasui_generator(getMarks, ...)
 			--print(#cur_rows, #report_rows)
 		end
 
-		if #report_rows == 0 and 2 == iup.Alarm(title, "Подходящих отметок не найдено", "Построить пустой отчет", "Выход") then
-			return
-		end
-
 		report_rows = mark_helper.sort_stable(report_rows, function(row)
 			local c = row.SYS
 			return c

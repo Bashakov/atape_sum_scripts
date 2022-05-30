@@ -280,11 +280,6 @@ local function sleeper_SDMI()
 		defer(dlg.Destroy, dlg)
 
 		local marks = GetMarks()
-		if #marks == 0 then
-			iup.Message('Info', "Подходящих отметок не найдено")
-			return
-		end
-
 		local path_dst = sprintf("%s\\sdmisleep_%s_%s.xml", EKASUI_PARAMS.ExportFolder, Passport.SOURCE, proezd_params.proezd)
 		if TEST_EKASUI_OUT_PREFIX then
 			path_dst = TEST_EKASUI_OUT_PREFIX .. "_1.xml"

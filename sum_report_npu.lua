@@ -66,11 +66,6 @@ local function report_NPU(params)
 
 	marks = mark_helper.sort_mark_by_coord(marks)
 
-	if #marks == 0 then
-		iup.Message('Info', "Подходящих отметок не найдено")
-		return
-	end
-
 	local sum_length = 0
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
