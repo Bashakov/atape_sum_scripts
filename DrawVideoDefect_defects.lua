@@ -103,7 +103,6 @@ local DEFECTS =
 		action_result = 'Surface_SQUAT_UIC_227_USER',          
 		guid = '{13A7906C-BBFB-4EB3-86FA-FA74B77F5F35}'
 	},
-	
 	{
 		group = "Видео", 
 		name = "АТС",  
@@ -117,6 +116,14 @@ local DEFECTS =
 		tools = {DRAW_TOOL.gape, DRAW_TOOL.joint_ok, DRAW_TOOL.joint_fl, DRAW_TOOL.fishplate, DRAW_TOOL.fishplate_fault}, 
 		fn = make_recog_mark, 
 		guid = '{CBD41D28-9308-4FEC-A330-35EAED9FC803}',
+		action_result = 'CalcRailGap_User',
+	},
+	{
+		group = "Видео", 
+		name = "ИзоСтык",  
+		tools = {DRAW_TOOL.gape, DRAW_TOOL.joint_ok, DRAW_TOOL.joint_fl, DRAW_TOOL.fishplate, DRAW_TOOL.fishplate_fault}, 
+		fn = make_recog_mark, 
+		guid = '{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}',
 		action_result = 'CalcRailGap_User',
 	},
 	{
