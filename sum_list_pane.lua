@@ -116,7 +116,7 @@ local function get_filter_by_name(name)
 	end
 end
 
--- усатановка выделения на строку (снимает выделенеи с предыдущей)
+-- установка выделения на строку (снимает выделение с предыдущей)
 local function set_selected_row(row)
 	local prev_sel = selected_row
 	selected_row = row

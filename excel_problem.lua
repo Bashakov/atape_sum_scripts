@@ -78,7 +78,7 @@ local function fff()
 		local path, name = SplitPath(dst)
 		path = CreatePath(path)
 		assert(dst == path .. name)
-		fso:CopyFile(src, dst, True)
+		fso:CopyFile(src, dst, true)
 		return fso:FileExists(dst)
 	end
 

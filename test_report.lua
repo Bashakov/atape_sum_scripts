@@ -413,6 +413,69 @@ local SumMarks = OOP.class
 	end,
 }
 
+local NoteRec = OOP.class
+{
+	ctor = function (self, node_rec)
+		self._node = node_rec
+	end,
+
+	_get_header_val = function (self, name)
+		local xpath = string.format("@%s", name)
+		local res = self._node:SelectSingleNode(xpath)
+		return res and res.nodeValue
+	end,
+
+	_get_header_int = function (self, name)
+		return tonumber(self:_get_header_val(name))
+	end,
+
+	_get_field_val = function (self, inner_name)
+		local xpath = string.format("FIELD[@INNER_NAME='%s']/@VALUE", inner_name)
+		local res = self._node:SelectSingleNode(xpath)
+		return res and res.nodeValue
+	end,
+
+	_get_field_int = function (self, inner_name)
+		return tonumber(self:_get_field_val(inner_name))
+	end,
+
+	GetPath = function (self)
+		return self:_get_field_int('KM'), self:_get_field_int('M'), self:_get_field_int('MM')
+	end,
+
+	GetIncluded = function (self)
+		local v = self:_get_header_val('INCLUDED')
+		return v ~= 'FALSE'
+	end,
+
+	GetPlacment = function (self)
+		return self:_get_field_val("PLACEMENT") or ''
+	end,
+
+	GetAction= function (self)
+		return self:_get_field_val("ACTION") or ''
+	end,
+
+	GetDescription = function (self)
+		return self:_get_field_val("DESCRIPTION") or ''
+	end,
+}
+
+local _load_notebook = function (path_psp)
+	local path_ntb = string.gsub(path_psp, '%.xml$', '.ntb')
+	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
+	assert(xmlDom, 'can not create MSXML object')
+	assert(xmlDom:load(path_ntb), "can not open xml file: " .. path_ntb)
+	local nodes_record = xmlDom:SelectNodes('NOTEBOOK/RECORD')
+	local res = {}
+	while true do
+		local node_rec = nodes_record:nextNode()
+		if not node_rec then break end
+		local r = NoteRec(node_rec)
+		res[#res+1] = r
+	end
+	return res
+end
 
 local Driver = OOP.class
 {
@@ -432,6 +495,7 @@ local Driver = OOP.class
 		_G.Passport = self._passport
 		_G.EKASUI_PARAMS = read_EKASUI_cfg()
 		self._guids = read_guids()
+		self._notebook = _load_notebook(psp_path)
 	end,
 
 	GetMarks = function(self, filter)
@@ -531,7 +595,11 @@ local Driver = OOP.class
 		for _, mark in ipairs(marks) do
 			mark:Save()
 		end
-	end
+	end,
+
+	GetNoteRecords = function(self)
+		return self._notebook
+	end,
 }
 
 Driver.GUID = GUID
