@@ -6,6 +6,7 @@ local OOP = require 'OOP'
 
 local notebook = require "list_ext_obj_notebook"
 local kriv = require "list_ext_obj_KRIV"
+local iso = require "list_ext_obj_ISO"
 
 local Empty = OOP.class
 {
@@ -25,7 +26,7 @@ local Filters =
 	Empty,
 }
 
-for _, lst in ipairs{notebook.filters, kriv.filters} do
+for _, lst in ipairs{notebook.filters, kriv.filters, iso.filters} do
 	for _, fltr in ipairs(lst) do
 		table.insert(Filters, fltr)
 	end

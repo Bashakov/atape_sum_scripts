@@ -11,13 +11,20 @@ local function _sql_assert(db, val, msg)
 end
 
 
-local function _load_kriv_db(fnContinueCalc)
+local function _load_iso(fnContinueCalc)
 	local db = sqlite3.open('C:\\ApBAZE.db')
 	local sql = [[
-		SELECT *
-		FROM CURVES
-		WHERE ASSETNUM = :ASSETNUM
-		ORDER BY CAST(BEGIN_KM AS REAL), CAST(BEGIN_M AS REAL)]]
+		SELECT
+			i.KM, i.M, i.ID
+		FROM
+			ISO as i
+		JOIN
+			WAY AS w ON i.UP_NOM = w.UP_NOM
+		WHERE
+			w.ASSETNUM = :ASSETNUM
+		ORDER BY
+			CAST(i.KM AS REAL), CAST(i.M AS REAL)
+	]]
 	local stmt = _sql_assert(db, db:prepare(sql))
 	_sql_assert(db, stmt:bind_names({ASSETNUM=Passport.TRACK_CODE}))
 	local res = {}
@@ -35,7 +42,7 @@ local function _jump_path(km, m)
 	end
 end
 
-local COL_KRIV_N =
+local COL_ISO_N =
 {
 	name = "N",
 	align = 'r',
@@ -45,71 +52,36 @@ local COL_KRIV_N =
 	end,
 }
 
-local COL_KRIV_PATH_START =
+local COL_ISO_PATH =
 {
-	name = "Начало",
+	name = "Положение",
 	align = 'r',
-	width = 60,
+	width = 100,
 	get_text = function(row_n, obj)
-		return string.format("%d.%03d", obj.BEGIN_KM, obj.BEGIN_M)
+		return string.format("%d.%03d", obj.KM, obj.M)
 	end,
 	on_dbl_click = function(row_n, obj)
-		_jump_path(obj.BEGIN_KM, obj.BEGIN_M)
+		_jump_path(obj.KM, obj.M)
 	end,
 }
 
-local COL_KRIV_PATH_END =
-{
-	name = "Конец",
-	align = 'r',
-	width = 60,
-	get_text = function(row_n, obj)
-		return string.format("%d.%03d", obj.END_KM, obj.END_M)
-	end,
-	on_dbl_click = function(row_n, obj)
-		_jump_path(obj.END_KM, obj.END_M)
-	end,
-}
 
-local COL_KRIV_DIRECTION =
+local ISO = OOP.class
 {
-	name = "Напр",
-	align = 'r',
-	width = 60,
-	get_text = function(row_n, obj)
-		return obj.NAPR
-	end,
-}
-
-local COL_KRIV_LEN =
-{
-	name = "Протяж",
-	align = 'r',
-	width = 60,
-	get_text = function(row_n, obj)
-		return obj.LEN
-	end,
-}
-
-local KRIV = OOP.class
-{
-	name = "Кривые",
+	name = "Изостыки",
 	columns =
 	{
-		COL_KRIV_N,
-		COL_KRIV_PATH_START,
-		COL_KRIV_PATH_END,
-		COL_KRIV_DIRECTION,
-		COL_KRIV_LEN,
+		COL_ISO_N,
+		COL_ISO_PATH,
 	},
 	ctor = function (self, fnContinueCalc)
-		self.objects = _load_kriv_db(fnContinueCalc)
+		self.objects = _load_iso(fnContinueCalc)
 		return #self.objects
 	end,
 	get_object = function (self, row)
 		return self.objects[row]
 	end,
-    OnMouse = function(self, act, flags, cell, pos_client, pos_screen)
+	OnMouse = function(self, act, flags, cell, pos_client, pos_screen)
         local object = self:get_object(cell.row)
 		local column = self.columns[cell.col]
         if act == 'left_dbl_click' and object then
@@ -123,6 +95,6 @@ local KRIV = OOP.class
 return
 {
     filters = {
-        KRIV,
+        ISO,
     }
 }
