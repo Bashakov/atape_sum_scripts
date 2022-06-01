@@ -448,7 +448,7 @@ local NoteRec = OOP.class
 		return v ~= 'FALSE'
 	end,
 
-	GetPlacment = function (self)
+	GetPlacement = function (self)
 		return self:_get_field_val("PLACEMENT") or ''
 	end,
 

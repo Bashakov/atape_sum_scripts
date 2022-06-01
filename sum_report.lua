@@ -10,7 +10,7 @@ local sumPOV = require "sumPOV"
 local resty = require "resty.template"
 
 if iup then
- iup.SetGlobal('UTF8MODE', 1)
+ 	iup.SetGlobal('UTF8MODE', 1)
 end
 
 

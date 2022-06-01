@@ -1,11 +1,15 @@
+if iup then
+	iup.SetGlobal('UTF8MODE', 1)
+end
 
 local OOP = require 'OOP'
 
 local notebook = require "list_ext_obj_notebook"
+local kriv = require "list_ext_obj_KRIV"
 
 local Empty = OOP.class
 {
-	name = "Пусто",
+	name = "-----",
 	columns =
 	{
 	},
@@ -21,7 +25,7 @@ local Filters =
 	Empty,
 }
 
-for _, lst in ipairs{notebook.filters,} do
+for _, lst in ipairs{notebook.filters, kriv.filters} do
 	for _, fltr in ipairs(lst) do
 		table.insert(Filters, fltr)
 	end
@@ -96,7 +100,11 @@ function GetItemText(row, col)
 	local object = currect_filter:get_object(row)
 	local column = currect_filter.columns[col]
 	if column and object then
-		return column.get_text(row, object)
+		local text = column.get_text(row, object)
+		if type(text) == "nil" then 
+			text = ''
+		end
+		return tostring(text)
 	end
 end
 
@@ -136,7 +144,7 @@ function GetItemColor(row, col)
 			return currect_filter.get_color(row, col)
 		end
 		if column.get_color then
-			return column.get_color(row)
+			return column.get_color(row, object)
 		end
 	end
 end

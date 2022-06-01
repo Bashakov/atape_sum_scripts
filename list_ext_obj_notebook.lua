@@ -1,6 +1,5 @@
 local OOP = require 'OOP'
 
-
 COL_NUM =
 {
 	name = "N",
@@ -33,6 +32,10 @@ local COL_NOTE_INCLUDED =
 		local incl = obj:GetIncluded()
 		return incl and "да" or "нет"
 	end,
+    get_color = function(row_n, obj)
+        local incl = obj:GetIncluded()
+        return incl and {0xff0000, 0xffffff} or {0xaaaaaa, 0xffffff}
+    end
 }
 
 local COL_NOTE_PATH_M =
@@ -54,7 +57,7 @@ local COL_NOTE_PLACMENT =
 	align = 'r',
 	width = 60,
 	get_text = function(row_n, obj)
-		return obj:GetPlacment()
+		return obj:GetPlacement()
 	end,
 }
 

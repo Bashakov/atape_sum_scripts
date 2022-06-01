@@ -37,7 +37,7 @@ local function _print_data(name, psp_path)
 		local values = {}
 		for col = 1, #columns do
 			local text = GetItemText(row, col)
-			table.insert(values, text)
+			table.insert(values, tostring(text))
 		end
 		local text_row = sprintf(col_fmt, table.unpack(values))
 		print(text_row)
@@ -53,7 +53,8 @@ end
 
 -- =============================================== --
 
-local name = "Записная книжка"
+--local name = "Записная книжка"
+local name = 'Кривые'
 local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
 
 _print_header(name)
