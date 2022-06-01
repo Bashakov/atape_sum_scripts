@@ -1,24 +1,29 @@
+local sqlite3 = require "lsqlite3"
 local OOP = require 'OOP'
 local csv = require 'read_csv'
 local mark_helper = require 'sum_mark_helper'
 
 
-local function _load_kriv(fnContinueCalc)
+local function _sql_assert(db, val, msg)
+	if val then return val end
+	local msg = string.format('%s(%s) %s', db:errcode(), db:errmsg(), msg or '')
+	error(msg)
+end
+
+
+local function _load_kriv_db(fnContinueCalc)
+	local db = sqlite3.open('C:\\ApBAZE.db')
+	local sql = [[
+	SELECT *
+	FROM CURVES
+	WHERE ASSETNUM = :ASSETNUM
+	ORDER BY CAST(BEGIN_KM AS REAL), CAST(BEGIN_M AS REAL)]]
+	local stmt = _sql_assert(db, db:prepare(sql))
+	_sql_assert(db, stmt:bind_names({ASSETNUM=Passport.TRACK_CODE}))
 	local res = {}
-	local way_code = Passport.TRACK_CODE
-	local path_csv = 'KRIV.csv'
-	local expect_line = 50000
-	for num, row in csv.iter_csv(path_csv, ';', true) do
-		if row.SOURCEASSETNUM == way_code then
-			table.insert(res, row)
-		end
-		if num % 100 == 0 and not fnContinueCalc(math.fmod(num / expect_line, 1.0)) then
-			return {}
-		end
+	for row in stmt:nrows() do
+		table.insert(res, row)
 	end
-	res = mark_helper.sort_marks(res, function (row)
-		return {tonumber(row.S_KM), tonumber(row.S_M)}
-	end)
 	return res
 end
 
@@ -36,10 +41,10 @@ local COL_KRIV_PATH_START =
 	align = 'r',
 	width = 60,
 	get_text = function(row_n, obj)
-		return string.format("%d.%03d", obj.S_KM, obj.S_M)
+		return string.format("%d.%03d", obj.BEGIN_KM, obj.BEGIN_M)
 	end,
 	on_dbl_click = function(row_n, obj)
-		_jump_path(obj.S_KM, obj.S_M)
+		_jump_path(obj.BEGIN_KM, obj.BEGIN_M)
 	end,
 }
 
@@ -49,10 +54,10 @@ local COL_KRIV_PATH_END =
 	align = 'r',
 	width = 60,
 	get_text = function(row_n, obj)
-		return string.format("%d.%03d", obj.E_KM, obj.E_M)
+		return string.format("%d.%03d", obj.END_KM, obj.END_M)
 	end,
 	on_dbl_click = function(row_n, obj)
-		_jump_path(obj.E_KM, obj.E_M)
+		_jump_path(obj.END_KM, obj.END_M)
 	end,
 }
 
@@ -62,7 +67,7 @@ local COL_KRIV_DIRECTION =
 	align = 'r',
 	width = 60,
 	get_text = function(row_n, obj)
-		return obj.RNAPRKRIV
+		return obj.NAPR
 	end,
 }
 
@@ -72,7 +77,7 @@ local COL_KRIV_LEN =
 	align = 'r',
 	width = 60,
 	get_text = function(row_n, obj)
-		return obj.KLENGTH
+		return obj.LEN
 	end,
 }
 
@@ -87,7 +92,7 @@ local KRIV = OOP.class
 		COL_KRIV_LEN,
 	},
 	ctor = function (self, fnContinueCalc)
-		self.objects = _load_kriv(fnContinueCalc)
+		self.objects = _load_kriv_db(fnContinueCalc)
 		return #self.objects
 	end,
 	get_object = function (self, row)
