@@ -54,7 +54,7 @@ end
 -- =============================================== --
 
 --local name = "Записная книжка"
-local name = 'Изостыки'
+local name = 'Кривые'
 local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
 
 _print_header(name)

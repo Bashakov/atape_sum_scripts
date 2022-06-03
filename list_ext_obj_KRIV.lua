@@ -1,8 +1,6 @@
 local sqlite3 = require "lsqlite3"
 local OOP = require 'OOP'
-local csv = require 'read_csv'
-local mark_helper = require 'sum_mark_helper'
-
+local ext_obj_utils = require 'list_ext_obj_utils'
 
 local function _sql_assert(db, val, msg)
 	if val then return val end
@@ -10,8 +8,7 @@ local function _sql_assert(db, val, msg)
 	error(msg)
 end
 
-
-local function _load_kriv_db(fnContinueCalc)
+local function _load_kriv_db(fnContinueCalc, kms)
 	local db = sqlite3.open('C:\\ApBAZE.db')
 	local sql = [[
 		SELECT *
@@ -22,7 +19,9 @@ local function _load_kriv_db(fnContinueCalc)
 	_sql_assert(db, stmt:bind_names({ASSETNUM=Passport.TRACK_CODE}))
 	local res = {}
 	for row in stmt:nrows() do
-		table.insert(res, row)
+		if not kms or kms[row.BEGIN_KM] or kms[row.END_KM] then
+			table.insert(res, row)
+		end
 	end
 	return res
 end
@@ -103,7 +102,8 @@ local KRIV = OOP.class
 		COL_KRIV_LEN,
 	},
 	ctor = function (self, fnContinueCalc)
-		self.objects = _load_kriv_db(fnContinueCalc)
+		local kms = ext_obj_utils.get_data_kms(fnContinueCalc)
+		self.objects = _load_kriv_db(fnContinueCalc, kms)
 		return #self.objects
 	end,
 	get_object = function (self, row)

@@ -187,9 +187,11 @@ local function read_XmlC(file_path)
 			h.name = idx2names[h.idx]
 			h.type = nil
 			h.idx = nil
-			values[#values + 1] = h
+			if #values == 0 or values[#values].coord <= h.coord then
+				values[#values + 1] = h
+			end
 		else
-			assert()
+			assert(0, 'unknown h.type')
 		end
 	end
 	return values
@@ -600,6 +602,14 @@ local Driver = OOP.class
 	GetNoteRecords = function(self)
 		return self._notebook
 	end,
+
+	GetSysCoordRange = function (self)
+		-- тк данные еще не умею смотреть, возьму из gps
+		if #self._gps > 1 then
+			return self._gps[1].coord, self._gps[#self._gps].coord
+		end
+		return 0, 0
+	end
 }
 
 Driver.GUID = GUID

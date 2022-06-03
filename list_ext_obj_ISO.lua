@@ -1,7 +1,6 @@
 local sqlite3 = require "lsqlite3"
 local OOP = require 'OOP'
-local csv = require 'read_csv'
-local mark_helper = require 'sum_mark_helper'
+local ext_obj_utils = require 'list_ext_obj_utils'
 
 
 local function _sql_assert(db, val, msg)
@@ -11,7 +10,7 @@ local function _sql_assert(db, val, msg)
 end
 
 
-local function _load_iso(fnContinueCalc)
+local function _load_iso(fnContinueCalc, kms)
 	local db = sqlite3.open('C:\\ApBAZE.db')
 	local sql = [[
 		SELECT
@@ -29,7 +28,9 @@ local function _load_iso(fnContinueCalc)
 	_sql_assert(db, stmt:bind_names({ASSETNUM=Passport.TRACK_CODE}))
 	local res = {}
 	for row in stmt:nrows() do
-		table.insert(res, row)
+		if not kms or kms[row.KM] then
+			table.insert(res, row)
+		end
 	end
 	return res
 end
@@ -75,7 +76,8 @@ local ISO = OOP.class
 		COL_ISO_PATH,
 	},
 	ctor = function (self, fnContinueCalc)
-		self.objects = _load_iso(fnContinueCalc)
+		local kms = ext_obj_utils.get_data_kms(fnContinueCalc)
+		self.objects = _load_iso(fnContinueCalc, kms)
 		return #self.objects
 	end,
 	get_object = function (self, row)

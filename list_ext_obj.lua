@@ -36,7 +36,7 @@ end
 
 
 local currect_filter = nil
-local selected_row = 0
+local selected_row = -1
 
 
 -- внутренняя функция, находит фильтр по его имени
@@ -87,6 +87,7 @@ function InitMark(name, fnContinueCalc)
 	local cnt = 0
 	if not currect_filter or currect_filter.name ~= name then
 		currect_filter = {}
+		selected_row = -1
 		local f = get_filter_by_name(name)
 		if f then
 			currect_filter, cnt = f(fnContinueCalc)
