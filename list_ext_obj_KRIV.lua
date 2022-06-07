@@ -27,13 +27,6 @@ local function _load_kriv_db(fnContinueCalc, kms)
 end
 
 
-local function _jump_path(km, m)
-	if not Driver:JumpPath(km, m, 0) then
-		local msg = string.format("Не удалось перейти на координату %d km %d m", km, m)
-		iup.Message("ATape", msg)
-	end
-end
-
 local COL_KRIV_N =
 {
 	name = "N",
@@ -44,6 +37,21 @@ local COL_KRIV_N =
 	end,
 }
 
+local function jump_kriv(obj, begin)
+	local path = begin and {obj.BEGIN_KM, obj.BEGIN_M, 0} or {obj.END_KM, obj.END_M, 0} 
+	local mark = {
+		description = begin and "Начало кривой" or "Конец кривой",
+		vert_line = 1,
+		filename = 'Images/SUM.bmp',
+		src_rect = {(begin and 6 or 7) * 16, 32, 16, 16}
+	}
+	local ok, err = Driver:JumpPath(path, {mark=mark})
+	if not ok then
+		local msg = string.format("Не удалось перейти на координату %d km %d m\n%s", path[1], path[2], err)
+		iup.Message("ATape", msg)
+	end
+end
+
 local COL_KRIV_PATH_START =
 {
 	name = "Начало",
@@ -53,7 +61,7 @@ local COL_KRIV_PATH_START =
 		return string.format("%d.%03d", obj.BEGIN_KM, obj.BEGIN_M)
 	end,
 	on_dbl_click = function(row_n, obj)
-		_jump_path(obj.BEGIN_KM, obj.BEGIN_M)
+		jump_kriv(obj, true)
 	end,
 }
 
@@ -66,7 +74,7 @@ local COL_KRIV_PATH_END =
 		return string.format("%d.%03d", obj.END_KM, obj.END_M)
 	end,
 	on_dbl_click = function(row_n, obj)
-		_jump_path(obj.END_KM, obj.END_M)
+		jump_kriv(obj, false)
 	end,
 }
 

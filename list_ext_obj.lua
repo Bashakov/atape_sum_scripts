@@ -165,16 +165,4 @@ function OnMouse(act, flags, cell, pos_client, pos_screen)
 	if currect_filter and currect_filter.OnMouse then
 		currect_filter:OnMouse(act, flags, cell, pos_client, pos_screen)
 	end
-
-	-- if act == 'right_click' then
-	-- 	if cell.row > 0 and cell.row <= #work_marks_list and work_filter and cell.col > 0 and cell.col <= #(work_filter.columns) then
-	-- 		local fn_context_menu = work_filter.on_context_menu or work_filter.columns[cell.col].on_context_menu
-	-- 		if fn_context_menu then
-	-- 			fn_context_menu(cell.row, cell.col)
-	-- 		else
-	-- 			-- если не нащли обработчик в фильтре или в колонке, то применяем дефолтный с удалением
-	-- 			default_mark_contextmenu(cell.row, cell.col)
-	-- 		end
-	-- 	end
-	-- end
 end

@@ -31,6 +31,15 @@ local function get_data_kms(fnContinueCalc)
 	return kms
 end
 
-return {
-    get_data_kms = get_data_kms
+local function jump_path(km, m)
+	if not Driver:JumpPath({km, m, 0}) then
+		local msg = string.format("Не удалось перейти на координату %d km %d m", km, m)
+		iup.Message("ATape", msg)
+	end
+end
+
+return 
+{
+    get_data_kms = get_data_kms,
+	jump_path = jump_path,
 }

@@ -16,14 +16,12 @@ local function _load_iso(fnContinueCalc, kms)
 		SELECT
 			i.KM, i.M, i.ID
 		FROM
-			ISO as i
-		JOIN
-			WAY AS w ON i.UP_NOM = w.UP_NOM
+			ISO as i, WAY AS w
 		WHERE
-			w.ASSETNUM = :ASSETNUM
+			i.UP_NOM = w.UP_NOM and i.PUT_NOM = w.NOM and w.ASSETNUM = :ASSETNUM
 		ORDER BY
 			CAST(i.KM AS REAL), CAST(i.M AS REAL)
-	]]
+		]]
 	local stmt = _sql_assert(db, db:prepare(sql))
 	_sql_assert(db, stmt:bind_names({ASSETNUM=Passport.TRACK_CODE}))
 	local res = {}
@@ -33,14 +31,6 @@ local function _load_iso(fnContinueCalc, kms)
 		end
 	end
 	return res
-end
-
-
-local function _jump_path(km, m)
-	if not Driver:JumpPath(km, m, 0) then
-		local msg = string.format("Не удалось перейти на координату %d km %d m", km, m)
-		iup.Message("ATape", msg)
-	end
 end
 
 local COL_ISO_N =
@@ -60,9 +50,6 @@ local COL_ISO_PATH =
 	width = 100,
 	get_text = function(row_n, obj)
 		return string.format("%d.%03d", obj.KM, obj.M)
-	end,
-	on_dbl_click = function(row_n, obj)
-		_jump_path(obj.KM, obj.M)
 	end,
 }
 
@@ -85,13 +72,23 @@ local ISO = OOP.class
 	end,
 	OnMouse = function(self, act, flags, cell, pos_client, pos_screen)
         local object = self:get_object(cell.row)
-		local column = self.columns[cell.col]
         if act == 'left_dbl_click' and object then
-			if column and column.on_dbl_click then
-				column.on_dbl_click(cell.row, object)
-			end
+			self:JumpIso(object)
         end
-    end
+    end,
+	JumpIso = function(self, obj)
+		local mark = {
+			description = string.format("ИзоСтык (%d)\n%d км %d м", obj.ID, obj.KM, obj.M),
+			vert_line = 1,
+			filename = 'Images/SUM.bmp',
+			src_rect = {16, 32, 16, 16}
+		}
+		local ok, err = Driver:JumpPath({obj.KM, obj.M, 0}, {mark=mark})
+		if not ok then
+			local msg = string.format("Не удалось перейти на координату %d km %d m\n%s", obj.KM, obj.M, err)
+			iup.Message("ATape", msg)
+		end
+	end,
 }
 
 return
