@@ -1,6 +1,7 @@
 local OOP = require 'OOP'
+local ntb = require 'notebook_xml_utils'
 
-COL_NUM =
+local COL_NUM =
 {
 	name = "N",
 	align = 'r',
@@ -95,7 +96,8 @@ local Notebook = OOP.class
         COL_NOTE_DESCRIPTION
 	},
 	ctor = function (self)
-		self.records = Driver:GetNoteRecords()
+		local rawNtb = Driver:GetRawNotebook()
+		self.records = ntb.load_str(rawNtb)
 		return #self.records
 	end,
 	get_object = function (self, row)
@@ -104,7 +106,16 @@ local Notebook = OOP.class
     OnMouse = function(self, act, flags, cell, pos_client, pos_screen)
         local object = self:get_object(cell.row)
         if act == 'left_dbl_click' and object then
-            Driver:JumpNoteRec(object:GetNoteID())
+			local incuded = object:GetIncluded()
+			local mark = {
+				description = string.format("%s\n%s\n%s", object:GetPlacement(), object:GetAction(), object:GetDescription()),
+				vert_line = 1,
+				filename = 'Images/SUM.bmp',
+				src_rect = {(incuded and 1 or 7) * 16, 32, 16, 16},
+				sys_coord=object:GetMarkCoord(),
+			}
+			Driver:JumpSysCoord(object:GetLeftCoord(), {mark=mark, scale=object:GetScale()})
+            --Driver:JumpNoteRec(object:GetNoteID())
         end
     end
 
