@@ -11,6 +11,9 @@ end
 
 
 local function _load_iso(fnContinueCalc, kms)
+	if Passport.TRACK_CODE == '' then
+		return {}
+	end
 	local db = sqlite3.open('C:\\ApBAZE.db')
 	local sql = [[
 		SELECT

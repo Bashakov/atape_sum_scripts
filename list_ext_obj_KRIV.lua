@@ -9,6 +9,9 @@ local function _sql_assert(db, val, msg)
 end
 
 local function _load_kriv_db(fnContinueCalc, kms)
+	if Passport.TRACK_CODE == '' then
+		return {}
+	end
 	local db = sqlite3.open('C:\\ApBAZE.db')
 	local sql = [[
 		SELECT *
@@ -95,6 +98,16 @@ local COL_KRIV_LEN =
 	width = 60,
 	get_text = function(row_n, obj)
 		return obj.LEN
+	end,
+}
+
+local COL_KRIV_LEN =
+{
+	name = "Радиус",
+	align = 'r',
+	width = 60,
+	get_text = function(row_n, obj)
+		return obj.RAD
 	end,
 }
 
