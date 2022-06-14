@@ -66,6 +66,9 @@ local COL_KRIV_PATH_START =
 	on_dbl_click = function(row_n, obj)
 		jump_kriv(obj, true)
 	end,
+	get_color = function(row_n, obj)
+        return {0x000000, 0xfffff0}
+    end
 }
 
 local COL_KRIV_PATH_END =
@@ -79,6 +82,9 @@ local COL_KRIV_PATH_END =
 	on_dbl_click = function(row_n, obj)
 		jump_kriv(obj, false)
 	end,
+	get_color = function(row_n, obj)
+        return {0x000000, 0xf0fff0}
+    end
 }
 
 local COL_KRIV_DIRECTION =

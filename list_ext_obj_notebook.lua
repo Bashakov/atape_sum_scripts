@@ -114,7 +114,7 @@ local Notebook = OOP.class
 				src_rect = {(incuded and 1 or 7) * 16, 32, 16, 16},
 				sys_coord=object:GetMarkCoord(),
 			}
-			Driver:JumpSysCoord(object:GetLeftCoord(), {mark=mark, scale=object:GetScale()})
+			Driver:JumpSysCoord(object:GetLeftCoord(), {mark=mark, scale=object:GetScale(), border='l'})
             --Driver:JumpNoteRec(object:GetNoteID())
         end
     end
