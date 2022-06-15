@@ -106,18 +106,24 @@ local Notebook = OOP.class
     OnMouse = function(self, act, flags, cell, pos_client, pos_screen)
         local object = self:get_object(cell.row)
         if act == 'left_dbl_click' and object then
-			local incuded = object:GetIncluded()
-			local mark = {
-				description = string.format("%s\n%s\n%s", object:GetPlacement(), object:GetAction(), object:GetDescription()),
-				vert_line = 1,
-				filename = 'Images/SUM.bmp',
-				src_rect = {(incuded and 1 or 7) * 16, 32, 16, 16},
-				sys_coord=object:GetMarkCoord(),
-			}
-			Driver:JumpSysCoord(object:GetLeftCoord(), {mark=mark, scale=object:GetScale(), border='l'})
-            --Driver:JumpNoteRec(object:GetNoteID())
+			Driver:JumpSysCoord(object:GetLeftCoord(), {scale=object:GetScale(), border='l'})
         end
-    end
+    end,
+	GetExtObjMarks = function (self)
+		local res = {}
+		for i, obj in ipairs(self.records) do
+			local incuded = obj:GetIncluded()
+			res[i] = {
+				sys_coord=obj:GetMarkCoord(),
+				description = string.format("%s\n%s\n%s", obj:GetPlacement(), obj:GetAction(), obj:GetDescription()),
+				vert_line = 1,
+				icon_file = 'Images/SUM.bmp',
+				icon_rect = {(incuded and 1 or 7) * 16, 32, 16, 16},
+				id = i,
+			}
+		end
+		return res
+	end,
 
 }
 

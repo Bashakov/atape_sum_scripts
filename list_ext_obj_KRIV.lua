@@ -41,14 +41,8 @@ local COL_KRIV_N =
 }
 
 local function jump_kriv(obj, begin)
-	local path = begin and {obj.BEGIN_KM, obj.BEGIN_M, 0} or {obj.END_KM, obj.END_M, 0} 
-	local mark = {
-		description = begin and "Начало кривой" or "Конец кривой",
-		vert_line = 1,
-		filename = 'Images/SUM.bmp',
-		src_rect = {(begin and 6 or 7) * 16, 32, 16, 16}
-	}
-	local ok, err = Driver:JumpPath(path, {mark=mark})
+	local path = begin and {obj.BEGIN_KM, obj.BEGIN_M, 0} or {obj.END_KM, obj.END_M, 0}
+	local ok, err = Driver:JumpPath(path)
 	if not ok then
 		local msg = string.format("Не удалось перейти на координату %d km %d m\n%s", path[1], path[2], err)
 		iup.Message("ATape", msg)
@@ -144,7 +138,27 @@ local KRIV = OOP.class
 				column.on_dbl_click(cell.row, object)
 			end
         end
-    end
+    end,
+	GetExtObjMarks = function (self)
+		local res = {}
+		for i, obj in ipairs(self.objects) do
+			local name = string.format(" %d.%03d - %d.%03d", obj.BEGIN_KM, obj.BEGIN_M, obj.END_KM, obj.END_M)
+			for begin = 0, 1 do
+				local id = i*2+begin
+				local description = begin==0 and "Начало кривой" or "Конец кривой"
+				local path = begin==0 and {obj.BEGIN_KM, obj.BEGIN_M, 0} or {obj.END_KM, obj.END_M, 0}
+				res[id] = {
+					path = path,
+					description = description .. name,
+					vert_line = 1,
+					icon_file = 'Images/SUM.bmp',
+					icon_rect = {(begin==0 and 6 or 7) * 16, 32, 16, 16},
+					id = id,
+				}
+			end
+		end
+		return res
+	end,
 }
 
 return

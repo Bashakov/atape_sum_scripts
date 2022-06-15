@@ -166,3 +166,9 @@ function OnMouse(act, flags, cell, pos_client, pos_screen)
 		currect_filter:OnMouse(act, flags, cell, pos_client, pos_screen)
 	end
 end
+
+function GetExtObjMarks()
+	if currect_filter and currect_filter.GetExtObjMarks then
+		return currect_filter:GetExtObjMarks()
+	end
+end

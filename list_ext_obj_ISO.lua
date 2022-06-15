@@ -80,17 +80,25 @@ local ISO = OOP.class
         end
     end,
 	JumpIso = function(self, obj)
-		local mark = {
-			description = string.format("ИзоСтык (%d)\n%d км %d м", obj.ID, obj.KM, obj.M),
-			vert_line = 1,
-			filename = 'Images/SUM.bmp',
-			src_rect = {16, 32, 16, 16}
-		}
-		local ok, err = Driver:JumpPath({obj.KM, obj.M, 0}, {mark=mark})
+		local ok, err = Driver:JumpPath({obj.KM, obj.M, 0})
 		if not ok then
 			local msg = string.format("Не удалось перейти на координату %d km %d m\n%s", obj.KM, obj.M, err)
 			iup.Message("ATape", msg)
 		end
+	end,
+	GetExtObjMarks = function (self)
+		local res = {}
+		for i, obj in ipairs(self.objects) do
+			res[i] = {
+				path={obj.KM, obj.M},
+				description = string.format("ИзоСтык (%d)\n%d км %d м", obj.ID, obj.KM, obj.M),
+				vert_line = 1,
+				icon_file = 'Images/SUM.bmp',
+				icon_rect = {16, 32, 16, 16},
+				id = i,
+			}
+		end
+		return res
 	end,
 }
 
