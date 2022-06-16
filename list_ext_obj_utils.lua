@@ -25,9 +25,6 @@ local function get_data_kms(fnContinueCalc)
 		end
 		c = c + step
 	end
-	-- local res = {}
-	-- for km in pairs(kms) do table.insert(res, km) end
-	-- table.sort(res)
 	return kms
 end
 
