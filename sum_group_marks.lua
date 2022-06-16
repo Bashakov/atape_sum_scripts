@@ -437,6 +437,43 @@ local SleeperGroups = OOP.class
     end,
 }
 
+local FASTENER_PLACE =
+{
+    CURVE = 1,
+    STRAIGHT = 2,
+    UNLINED = 3,
+    SWITCH = 4,
+}
+
+local function fastener_group_to_code(group_len, place)
+    if place == FASTENER_PLACE.CURVE then
+        if     group_len == 3 then return DEFECT_CODES.FASTENER_DEFECT_CURVE_GROUP_3
+        elseif group_len == 4 then return DEFECT_CODES.FASTENER_DEFECT_CURVE_GROUP_4
+        elseif group_len >= 5 then return DEFECT_CODES.FASTENER_DEFECT_CURVE_GROUP_5
+        end
+    end
+    if place == FASTENER_PLACE.STRAIGHT then
+        if     group_len == 3 then return DEFECT_CODES.FASTENER_DEFECT_STRAIGHT_GROUP_3
+        elseif group_len == 4 then return DEFECT_CODES.FASTENER_DEFECT_STRAIGHT_GROUP_4
+        elseif group_len == 5 then return DEFECT_CODES.FASTENER_DEFECT_STRAIGHT_GROUP_5
+        elseif group_len >= 6 then return DEFECT_CODES.FASTENER_DEFECT_STRAIGHT_GROUP_6
+        end
+    end
+    if place == FASTENER_PLACE.UNLINED then
+        if     group_len == 3 then return DEFECT_CODES.FASTENER_DEFECT_UNLINED_GROUP_3
+        elseif group_len == 4 then return DEFECT_CODES.FASTENER_DEFECT_UNLINED_GROUP_4
+        elseif group_len >= 5 then return DEFECT_CODES.FASTENER_DEFECT_UNLINED_GROUP_5
+        end
+    end
+    if place == FASTENER_PLACE.SWITCH then
+        if     group_len == 2 then return DEFECT_CODES.FASTENER_DEFECT_SWITCH_GROUP_2
+        elseif group_len == 3 then return DEFECT_CODES.FASTENER_DEFECT_SWITCH_GROUP_3
+        elseif group_len == 4 then return DEFECT_CODES.FASTENER_DEFECT_SWITCH_GROUP_4
+        elseif group_len >= 5 then return DEFECT_CODES.FASTENER_DEFECT_SWITCH_GROUP_5
+        end
+    end
+end
+
 local FastenerGroups = OOP.class
 {
     NAME = 'Скрепления',
@@ -544,31 +581,9 @@ local FastenerGroups = OOP.class
 
         if #group >= 2 then
             local inside_switch = self._switchers:overalped(group[1].prop.SysCoord, group[#group].prop.SysCoord)
-            local code_ekasui = nil
 
-            -- 2020.08.05 Классификатор ред для ATape.xlsx
-            if inside_switch then
-                if #group == 2 then
-                    code_ekasui = '090004017105' -- Отсутствует или дефектное скрепление скрепление на рамном рельсе, в крестовине или контррельсовом рельсе стрелочного перевода по одной нити  на 2-х брусьях подряд по одной нити
-                elseif #group == 3 then
-                    code_ekasui = '090004017106' -- Отсутствует или дефектное скрепление скрепление на рамном рельсе, в крестовине или контррельсовом рельсе стрелочного перевода по одной нити  на 3-х брусьях подряд по одной нити
-                elseif #group == 4 then
-                    code_ekasui = '090004017107' -- Отсутствует или дефектное скрепление скрепление на рамном рельсе, в крестовине или контррельсовом рельсе стрелочного перевода по одной нити  на 4-х брусьях подряд по одной нити
-                elseif #group >= 4 then
-                    code_ekasui = '090004017108' -- Отсутствует или дефектное скрепление скрепление на рамном рельсе, в крестовине или контррельсовом рельсе стрелочного перевода по одной нити  на 5 и более брусьях подряд 
-                end
-            else
-                if #group == 4 then
-                    code_ekasui = '090004017099' -- Отсутствует или дефектное скрепление скрепление в прямых и кривых радиусом более 650 м на 4-х шпалах подряд  по одной нити
-                elseif #group == 5 then
-                    code_ekasui = '090004017100' -- Отсутствует или дефектное скрепление скрепление в прямых и кривых радиусом более 650 м на 5 шпалах подряд по одной нити
-                elseif #group == 6 then
-                    code_ekasui = '090004017101' -- Отсутствует или дефектное скрепление скрепление в прямых и кривых радиусом более 650 м на 6 шпалах подряд по одной нити
-                elseif #group > 6 then
-                    code_ekasui = '090004017098' --  Отсутствует или дефектное скрепление скрепление в прямых и кривых радиусом более 650 м более чем на 6 шпалах подряд по одной нити
-                end
-            end
-
+            local defect = fastener_group_to_code(#group, inside_switch and FASTENER_PLACE.SWITCH or FASTENER_PLACE.STRAIGHT)
+            local code_ekasui = defect and defect[1]
             if code_ekasui then
                 local mark = makeMark(
                     self.GUID,
@@ -633,13 +648,14 @@ end
 if not ATAPE then
     local test_report  = require('test_report')
     -- local data = 'D:\\d-drive\\ATapeXP\\Main\\494\\video_recog\\2019_05_17\\Avikon-03M\\30346\\[494]_2019_03_15_01.xml'
-    local data = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+    -- local data = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+    local data = 'C:/1/2/data_24_25.xml'
     test_report(data, nil, {0, 10000000})
 
     local t = os.clock()
     local save_count = SearchGroupAutoDefects({
-        --'{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
-        '{B6BAB49E-4CEC-4401-A106-355BFB2E0011}',
+        '{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
+        --'{B6BAB49E-4CEC-4401-A106-355BFB2E0011}',
         --'{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
     })
     printf("work %f sec, found %d mark", os.clock() - t, save_count or 0)
