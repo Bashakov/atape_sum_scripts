@@ -16,10 +16,20 @@ local function _load_str(fnContinueCalc, kms)
 	end
 	local db = sqlite3.open('C:\\ApBAZE.db')
 	local sql = [[
-		SELECT s.KM, s.M, s.TYPE
-		FROM STR as s, WAY as w
-		where w.UP_NOM = s.UP_NOM and w.siteid = s.siteid and w.assetnum = :ASSETNUM
-		ORDER BY CAST(s.KM AS REAL), CAST(s.M AS REAL)
+			SELECT
+				s.KM, s.M, t.TYPE, p.TYPE as POSH, s.ID_OB, s.NOM
+			FROM 
+				STR as s
+			JOIN
+				WAY as w ON w.UP_NOM = s.UP_NOM AND w.siteid = s.siteid
+			JOIN
+				SPR_STR AS t ON s.TYPE = t.ID
+			JOIN
+				SPR_STRPOSH AS p ON s.POSH = p.ID
+			WHERE
+				w.assetnum = :ASSETNUM
+			ORDER BY
+				CAST(s.KM AS REAL), CAST(s.M AS REAL)
 		]]
 	local stmt = _sql_assert(db, db:prepare(sql))
 	_sql_assert(db, stmt:bind_names({ASSETNUM=Passport.TRACK_CODE}))
@@ -36,7 +46,7 @@ local COL_N =
 {
 	name = "N",
 	align = 'r',
-	width = 40,
+	width = 30,
 	get_text = function(row_n, obj)
 		return row_n
 	end,
@@ -46,7 +56,7 @@ local COL_PATH =
 {
 	name = "Положение",
 	align = 'r',
-	width = 100,
+	width = 70,
 	get_text = function(row_n, obj)
 		return string.format("%d.%03d", obj.KM, obj.M)
 	end,
@@ -55,12 +65,44 @@ local COL_PATH =
 local COL_TYPE =
 {
 	name = "Тип",
-	align = 'r',
-	width = 100,
+	align = 'l',
+	width = 50,
 	get_text = function(row_n, obj)
-		return string.format("%d", obj.TYPE)
+		return obj.TYPE
 	end,
 }
+
+
+local COL_POSH =
+{
+	name = "Пошерстно",
+	align = 'l',
+	width = 120,
+	get_text = function(row_n, obj)
+		return obj.POSH
+	end,
+}
+
+local COL_NOM  =
+{
+	name = "Номер ",
+	align = 'r',
+	width = 50,
+	get_text = function(row_n, obj)
+		return obj.NOM
+	end,
+}
+
+local COL_ID_OB  =
+{
+	name = "ID_OB ",
+	align = 'r',
+	width = 50,
+	get_text = function(row_n, obj)
+		return string.format("%d", obj.ID_OB)
+	end,
+}
+
 
 local STR = OOP.class
 {
@@ -70,6 +112,9 @@ local STR = OOP.class
 		COL_N,
 		COL_PATH,
 		COL_TYPE,
+		COL_POSH,
+		COL_NOM,
+		COL_ID_OB,
 	},
 	ctor = function (self, fnContinueCalc)
 		local kms = ext_obj_utils.get_data_kms(fnContinueCalc)
@@ -97,7 +142,7 @@ local STR = OOP.class
 		for i, obj in ipairs(self.objects) do
 			res[i] = {
 				path={obj.KM, obj.M},
-				description = string.format("стрелка: %d\n%d км %d м", obj.TYPE, obj.KM, obj.M),
+				description = string.format("стрелка: %s\n%d км %d м", obj.TYPE, obj.KM, obj.M),
 				vert_line = 1,
 				icon_file = 'Images/SUM.bmp',
 				icon_rect = {16, 32, 16, 16},

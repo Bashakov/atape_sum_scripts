@@ -17,11 +17,15 @@ local function _load_issoext(fnContinueCalc, kms)
 	local db = sqlite3.open('C:\\ApBAZE.db')
 	local sql = [[
 		SELECT
-			i.BEGIN_KM, i.BEGIN_M, i.END_KM, i.END_M, i.TYPE
+			i.BEGIN_KM, i.BEGIN_M, i.END_KM, i.END_M, t.TYPE
 		FROM
-			ISSOEXT as i, WAY AS w
+			ISSOEXT as i
+		JOIN
+			WAY AS w ON i.UP_NOM = w.UP_NOM and i.siteid = w.siteid
+		JOIN
+			SPR_ISSOEXT AS t ON i.TYPE = t.ID
 		WHERE
-			i.UP_NOM = w.UP_NOM and i.siteid = w.siteid and w.ASSETNUM = :ASSETNUM
+			w.ASSETNUM = :ASSETNUM
 		ORDER BY
 			CAST(i.BEGIN_KM AS REAL), CAST(i.BEGIN_M AS REAL)
 		]]
@@ -94,20 +98,13 @@ local COL_TYPE =
 	align = 'l',
 	width = 150,
 	get_text = function(row_n, obj)
-		local t = obj.TYPE
-		if t == 0 then return "не определено (возможно мост)" end
-		if t == 1 then return "мост безбалластный" end
-		if t == 2 then return "мост балластный" end
-		if t == 3 then return "тоннель" end
-		if t == 4 then return "путепровод" end
-		if t == 5 then return "переезд" end
-		if t == 6 then return "мост смешанного типа" end
+		return obj.TYPE
 	end,
 }
 
 local ISSOEXT = OOP.class
 {
-	name = "мосты и прочие",
+	name = "ИССО",
 	columns =
 	{
 		COL_N,
@@ -135,7 +132,7 @@ local ISSOEXT = OOP.class
 	GetExtObjMarks = function (self)
 		local res = {}
 		for i, obj in ipairs(self.objects) do
-			local name = string.format("%s %d.%03d - %d.%03d", COL_TYPE.get_text(0, obj), obj.BEGIN_KM, obj.BEGIN_M, obj.END_KM, obj.END_M)
+			local name = string.format("%s %d.%03d - %d.%03d", obj.TYPE, obj.BEGIN_KM, obj.BEGIN_M, obj.END_KM, obj.END_M)
 			for begin = 0, 1 do
 				local id = i*2+begin
 				local description = begin==0 and "Начало " or "Конец "
