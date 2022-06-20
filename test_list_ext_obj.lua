@@ -54,8 +54,9 @@ end
 -- =============================================== --
 
 --local name = "Записная книжка"
-local name = 'Стрелки'
-local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+local name = 'Станции'
+--local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+local psp_path = 'D:/d-drive/ATapeXP/Main/498/Рыбинск-Псков/1/2021_11_25/Avikon-03M/3068/[498]_2021_09_17_35.xml'
 
 _print_header(name)
 _print_data(name, psp_path)

@@ -9,6 +9,7 @@ local kriv = require "list_ext_obj_KRIV"
 local iso = require "list_ext_obj_ISO"
 local issoext = require "list_ext_obj_ISSOEXT"
 local str = require "list_ext_obj_STR"
+local stan = require "list_ext_obj_STAN"
 
 local Empty = OOP.class
 {
@@ -29,7 +30,14 @@ local Filters =
 }
 
 
-for _, lst in ipairs{notebook.filters, kriv.filters, iso.filters, issoext.filters, str.filters} do
+for _, lst in ipairs{
+		notebook.filters,
+		kriv.filters,
+		iso.filters,
+		issoext.filters,
+		str.filters,
+		stan.filters,
+	} do
 	for _, fltr in ipairs(lst) do
 		table.insert(Filters, fltr)
 	end

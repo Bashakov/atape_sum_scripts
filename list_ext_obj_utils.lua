@@ -9,6 +9,9 @@ local function get_data_kms(fnContinueCalc)
         iup.Message("ATape", "отсутсвует функция Driver:GetSysCoordRange, требуется обновление ATape")
         return
     end
+	if sys_begin == 0 and sys_end == 0 then  -- test
+		return
+	end
 	sys_end = sys_end + 1
 	local step = (sys_end - sys_begin) / 1000
 	step = math.max(step, 30000)
