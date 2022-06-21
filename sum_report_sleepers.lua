@@ -8,6 +8,7 @@ end
 
 require "luacom"
 
+local TYPES = require 'sum_types'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 local DEFECT_CODES = require 'report_defect_codes'
@@ -23,16 +24,16 @@ local sprintf = mark_helper.sprintf
 
 local guigs_sleepers =
 {
-	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",	-- Шпалы
-	"{3601038C-A561-46BB-8B0F-F896C2130002}",	-- Шпалы(Пользователь)
-	"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
-	"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",   -- SleeperDefect
+	TYPES.SLEEPER,	        -- Шпалы
+	TYPES.SLEEPER_USER,	    -- Шпалы(Пользователь)
+	TYPES.SLEEPER_TOP,      -- SleeperTop
+	TYPES.SLEEPER_DEFECT,   -- SleeperDefect
 }
 
 local guigs_sleepers_group =
 {
-	"{B6BAB49E-4CEC-4401-A106-355BFB2E0011}",   -- GROUP_SPR_AUTO
-	"{B6BAB49E-4CEC-4401-A106-355BFB2E0012}",   -- GROUP_SPR_USER
+	TYPES.GROUP_SPR_AUTO,
+	TYPES.GROUP_SPR_USER,
 }
 
 
@@ -57,7 +58,7 @@ local function MakeSleeperMarkRow(mark, defect_code)
 	if defect_code then
 		row.DEFECT_CODE = defect_code
 	end
-	
+
 	row.DEFECT_DESC = DEFECT_CODES.code2desc(defect_code) or string.match(mark.prop.Description, '([^\n]+)\n')
 
 	return row
@@ -68,16 +69,6 @@ local function GetMarks()
 	local marks = Driver:GetMarks{GUIDS=guids, ListType="list"}
 	marks = mark_helper.sort_mark_by_coord(marks)
 	return marks
-end
-
-local function add_node(parent, name, attrib)
-	local dom = parent.ownerDocument or parent
-	local node = dom:createElement(name)
-	parent:appendChild(node)
-	for n, v in pairs(attrib or {}) do
-		node:setAttribute(n, v)
-	end
-	return node
 end
 
 -- ==========================================================================
@@ -194,12 +185,12 @@ local function generate_rows_sleeper_user(marks, dlgProgress, pov_filter)
 
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
-		if pov_filter(mark) and mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130002}" and mark.ext.CODE_EKASUI then
+		if pov_filter(mark) and mark.prop.Guid == TYPES.SLEEPER_USER and mark.ext.CODE_EKASUI then
 			local row = MakeSleeperMarkRow(mark, mark.ext.CODE_EKASUI)
 			table.insert(report_rows, row)
 		end
 
-		if i % 10 == 0 and not dlgProgress:step(i / #marks, string.format('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
+		if i % 31 == 0 and not dlgProgress:step(i / #marks, string.format('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
 			return
 		end
 	end
@@ -218,8 +209,6 @@ local defectcode2ekasui =
 
 
 local function generate_rows_sleeper_defects(marks, dlgProgress, pov_filter)
-
-
 	if #marks == 0 then return end
 
 	local report_rows = {}
@@ -232,7 +221,7 @@ local function generate_rows_sleeper_defects(marks, dlgProgress, pov_filter)
 			end
 		end
 
-		if i % 10 == 0 and not dlgProgress:step(i / #marks, string.format('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
+		if i % 31 == 0 and not dlgProgress:step(i / #marks, string.format('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
 			return
 		end
 	end
@@ -530,6 +519,10 @@ return {
 	all_generators = {
 		{generate_rows_sleeper_dist, 	"Соблюдения эпюры шпал"},
 		{generate_rows_sleeper_angle, 	"Перпендикулярность шпалы"},
+		{generate_rows_sleeper_user, 	"Установленые пользователем"},
+		{generate_rows_sleeper_defects, "Дефекты"}
+	},
+	group_generators = {
 		{generate_rows_sleeper_user, 	"Установленые пользователем"},
 		{generate_rows_sleeper_defects, "Дефекты"}
 	},

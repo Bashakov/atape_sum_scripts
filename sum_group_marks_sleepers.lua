@@ -3,6 +3,7 @@ local OOP = require 'OOP'
 local mark_helper = require 'sum_mark_helper'
 local DEFECT_CODES = require 'report_defect_codes'
 local group_utils = require 'sum_group_marks_utils'
+local sqlite3 = require "lsqlite3"
 
 local CHECK = group_utils.CHECK
 
@@ -15,17 +16,21 @@ ATAPE = prev_atape
 
 local EPUR = 1000000 / 1840
 
+local function supress_warning_211(...)
+    local _ =...
+end
+
 -- список координат стыков для определения кода дефекта шпал
 local Joints =  OOP.class{
-    ctor = function (self, dlg)
+    ctor = function (self, dlg, scan_dist)
         local video_joints_juids =
         {
-            TYPES.VID_INDT_1,	-- Стык(Видео)
-            TYPES.VID_INDT_2,	-- Стык(Видео)
-            TYPES.VID_INDT_3,	-- СтыкЗазор(Пользователь)
-            TYPES.VID_INDT_ATS,	-- АТСтык(Видео)
+            TYPES.VID_INDT_1,	    -- Стык(Видео)
+            TYPES.VID_INDT_2,	    -- Стык(Видео)
+            TYPES.VID_INDT_3,	    -- СтыкЗазор(Пользователь)
+            TYPES.VID_INDT_ATS,	    -- АТСтык(Видео)
             TYPES.RAIL_JOINT_USER,	-- Рельсовые стыки(Пользователь)
-            TYPES.VID_ISO,   -- ИзоСтык(Видео)
+            TYPES.VID_ISO,          -- ИзоСтык(Видео)
         }
         local joints = group_utils.loadMarks(video_joints_juids, nil, dlg)
         local coords = {}
@@ -34,11 +39,12 @@ local Joints =  OOP.class{
         end
         table.sort(coords)
         self._coords = coords
+        self._scan_dist = scan_dist
     end,
 
     check_group = function (self, group)
-        local c1 = group[1][1] - EPUR
-        local c2 = group[#group][1] + EPUR
+        local c1 = group[1] - self._scan_dist
+        local c2 = group[#group] + self._scan_dist
         local i1 = mark_helper.lower_bound(self._coords, c1)
         local i2 = mark_helper.lower_bound(self._coords, c2)
         return i1 < i2
@@ -46,24 +52,139 @@ local Joints =  OOP.class{
 }
 
 local SleeperMarkCache = OOP.class{
+    _cmp = function (a, b)
+        return a[1] < b[1]
+    end,
+
     ctor = function (self, marks)
         self._sleepers = {}
         for _, mark in ipairs(marks) do
             -- сохраним отметки шпал по координате, чтобы потом к ним обращаться например за материалом
-            self._sleepers[mark.prop.SysCoord] = mark
+            table.insert(self._sleepers, {mark.prop.SysCoord, mark})
         end
+        table.sort(self._sleepers, self._cmp)
     end,
 
     get_material = function (self, group)
-        for _, mark in ipairs(group) do
-            local sleeper_mark = self._sleepers[mark[1]]
-            if sleeper_mark then
-                local cur_material = mark_helper.GetSleeperMeterial(sleeper_mark)
+        local i1 = mark_helper.lower_bound(self._sleepers, {group[1] - EPUR, 0}, self._cmp)
+        local i2 = mark_helper.lower_bound(self._sleepers, {group[#group] + EPUR, 0}, self._cmp)
+
+        for i = i1,i2 do
+            local sleeper_mark = self._sleepers[i][2]
+            local cur_material = mark_helper.GetSleeperMeterial(sleeper_mark)
+            if cur_material then
                 return cur_material
             end
         end
     end,
 }
+
+-- загружаем все координаты дефектов и просто отметок в список,
+-- потом сортируем его и группируем близкие отметки и потом ищем дефектные подряд
+local SleeperScanner = OOP.class
+{
+    ctor = function (self, serach_dist, epur)
+        self.serach_dist = serach_dist or 150
+        self.epur = epur or (1000000/1840)
+        self.defects = {}
+        self.sleepers = nil
+    end,
+
+    insert = function (self, coord, defect)
+        assert(not self.sleepers)
+        while true do
+            if type(self.defects[coord]) ~= 'nil' then
+                coord = coord+1
+            else
+                self.defects[coord] = defect or false
+                break
+            end
+        end
+    end,
+
+    prepare = function (self)
+        assert(not self.sleepers)
+        assert(self.defects)
+        local sleepers = {}
+        for c, d in pairs(self.defects) do
+            sleepers[#sleepers+1] = {c, d}
+        end
+        table.sort(sleepers, function (a, b) return a[1] < b[1] end)
+        self.sleepers = sleepers
+        self.defects = nil
+    end,
+
+    enum_sleepers = function (self)
+        assert(not self.defects)
+        assert(self.sleepers)
+        return coroutine.wrap(function ()
+            local prev_coord = nil
+            local cur_defects = {}
+            for i, sleeper in ipairs(self.sleepers) do
+                local coord, defect = sleeper[1], sleeper[2]
+                if prev_coord and coord - prev_coord > self.serach_dist then
+                    coroutine.yield(prev_coord, cur_defects)
+                    cur_defects = {}
+                end
+                if defect then
+                    table.insert(cur_defects, defect)
+                end
+                prev_coord = coord
+            end
+            if prev_coord and #cur_defects > 0 then
+                coroutine.yield(prev_coord, cur_defects)
+            end
+        end)
+    end,
+
+    enum_defect_groups = function (self)
+        return coroutine.wrap(function ()
+            local cur_group = {}
+            for coord, defect in self:enum_sleepers() do
+                if #cur_group > 0 then
+                    if coord - cur_group[#cur_group] > self.epur * 1.5 or #defect == 0 then
+                        if #cur_group > 1 then
+                            coroutine.yield(cur_group)
+                        end
+                        cur_group = {}
+                    end
+                end
+
+                if #defect > 0 then
+                    table.insert(cur_group, coord)
+                end
+            end
+
+            if #cur_group > 1 then
+                coroutine.yield(cur_group)
+            end
+        end)
+    end,
+}
+
+local function get_group_defect(cnt, joint, wood)
+    if joint then
+        if cnt>= 2 then
+            if wood then
+                return DEFECT_CODES.SLEEPER_GROUP_JOINT_WOOD
+            else
+                return DEFECT_CODES.SLEEPER_GROUP_JOINT_CONCRETE
+            end
+        end
+    end
+
+    if wood then
+        if     cnt == 4 then return DEFECT_CODES.SLEEPER_GROUP_STRAIGHT_WOOD_4
+        elseif cnt == 5 then return DEFECT_CODES.SLEEPER_GROUP_STRAIGHT_WOOD_5
+        elseif cnt >= 6 then return DEFECT_CODES.SLEEPER_GROUP_STRAIGHT_WOOD_6
+        end
+    else
+        if     cnt == 4 then return DEFECT_CODES.SLEEPER_GROUP_STRAIGHT_CONCRETE_4
+        elseif cnt == 5 then return DEFECT_CODES.SLEEPER_GROUP_STRAIGHT_CONCRETE_5
+        elseif cnt >= 6 then return DEFECT_CODES.SLEEPER_GROUP_STRAIGHT_CONCRETE_6
+        end
+    end
+end
 
 -- ======================================================
 
@@ -79,85 +200,81 @@ local SleeperGroups = OOP.class
     end,
 
     LoadMarks = function (self, _, dlg, pov_filter)
-        self._joints = Joints(dlg)
+        self._joints = Joints(dlg, 1500)
+
+        --[[ сейчас для формирования групповых дефектов нужны только дефектные шпалы (и установленные пользователем),
+        а эпюра и перпендикулярность игнорируются https://bt.abisoft.spb.ru/view.php?id=925#c4760
+        то меняем логику работы.
+        отметки сейчас пишутся таким образом: если на шпале дефект то пишется XML распознавания, иначе только несколько параметров.
+        поэтому на сетку из отметок шпал привязываем дефектные, чтобы искать подряд идущие отметки с дефектами
+        отметки относящиеся к одной шпале могут гулять +-100 мм.
+        ]]
 
 		local guigs_sleepers =
 		{
-			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",	-- Шпалы
-			"{3601038C-A561-46BB-8B0F-F896C2130002}",	-- Шпалы(Пользователь)
-			"{53987511-8176-470D-BE43-A39C1B6D12A3}",   -- SleeperTop
-			"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",   -- SleeperDefect
+            TYPES.SLEEPER,	        -- Шпалы
+			TYPES.SLEEPER_USER,	    -- Шпалы(Пользователь)
+			TYPES.SLEEPER_TOP,      -- SleeperTop
+			TYPES.SLEEPER_DEFECT,   -- SleeperDefect
 		}
 
         local marks = group_utils.loadMarks(guigs_sleepers, pov_filter, dlg)
         self._material_cache = SleeperMarkCache(marks)
 
-        local coord2defects = {}
-        for _, scanner in ipairs(sum_report_sleepers.all_generators) do
+        local group_scanner = SleeperScanner()
+        for _, mark in ipairs(marks) do
+            group_scanner:insert(mark.prop.SysCoord)
+        end
+
+        for _, scanner in ipairs(sum_report_sleepers.group_generators) do
             local cur_rows = scanner[1](marks, dlg, pov_filter)
             if not cur_rows then
                 return {}
             end
             for _, row in ipairs(cur_rows) do
-                local d = coord2defects[row.SYS] or {}
-                table.insert(d, row.DEFECT_CODE)
-                coord2defects[row.SYS] = d
+                group_scanner:insert(row.SYS, row.DEFECT_CODE)
             end
         end
 
-        local order_by_coord = {}
-        for c, d in pairs(coord2defects) do table.insert(order_by_coord, {c, d}) end
-        table.sort(order_by_coord, function (lh, rh) return lh[1] < rh[1] end)
-        return order_by_coord
+        group_scanner:prepare()
+
+        for group in group_scanner:enum_defect_groups() do
+            self:_check_group(group)
+        end
+        return {}
     end,
 
     Check = function (self, get_near_mark)
-        local prev = get_near_mark(-1)
-        local cur = get_near_mark(0)
-
-        if prev then
-            local dist = cur[1] - prev[1]
-            if dist > EPUR * 1.5 then
-                -- если есть предыдущая и расстояние до нее больше чем должно быть между шпалами,
-                -- полагаем что какую то шпалу не записали а значит неизвестно что было до
-                return CHECK.CLOSE_ACCEPT
-            end
-        end
-
-        return CHECK.ACCEPT
+        supress_warning_211(self, get_near_mark)
+        return CHECK.REFUTE
     end,
 
     OnGroup = function (self, group)
-        if
-            (#group >= 4) or
-            (#group >= 2 and self._joints:check_group(group))
-        then
+        supress_warning_211(self, group)
+    end,
+
+    _check_group = function (self, group)
+        assert(#group > 1)
+        local joint = self._joints:check_group(group)
+        local material = self._material_cache:get_material(group)
+        local defect_code = get_group_defect(#group, joint, material==2)
+        if defect_code then
             local new_mark = group_utils.makeMark(
                 self.GUID,
-                group[1][1],
-                group[#group][1] - group[1][1],
+                group[1],
+                group[#group] - group[1],
                 3,
                 #group
             )
-            local cur_material = self._material_cache:get_material(group)
-            if cur_material then
-                new_mark.ext.SLEEPERS_METERIAL = cur_material
-
-                if cur_material == 1 then 
-                    -- "бетон",
-                    new_mark.ext.CODE_EKASUI = DEFECT_CODES.SLEEPER_DISTANCE_CONCRETE[1]
-                else
-                    -- "дерево"
-                    new_mark.ext.CODE_EKASUI = DEFECT_CODES.SLEEPER_DISTANCE_WOODEN[1]
-                end
-
-                table.insert(self.marks, new_mark)
-            end
+            new_mark.ext.SLEEPERS_METERIAL = material
+            new_mark.ext.CODE_EKASUI = defect_code[1]
+            table.insert(self.marks, new_mark)
         end
     end,
 }
 
 return
 {
-    SleeperGroups = SleeperGroups
+    SleeperGroups = SleeperGroups,
+    SleeperScanner = SleeperScanner,
 }

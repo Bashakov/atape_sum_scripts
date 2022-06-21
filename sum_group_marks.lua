@@ -388,17 +388,18 @@ end
 -- =========================================
 
 if not ATAPE then
-    local test_report  = require('test_report')
-    -- local data = 'D:\\d-drive\\ATapeXP\\Main\\494\\video_recog\\2019_05_17\\Avikon-03M\\30346\\[494]_2019_03_15_01.xml'
-    -- local data = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-    local data = 'C:/1/2/data_24_25.xml'
-    test_report(data, nil, {0, 10000000})
+    local local_data_driver  = require('local_data_driver')
+
+    -- local path = 'D:\\d-drive\\ATapeXP\\Main\\494\\video_recog\\2019_05_17\\Avikon-03M\\30346\\[494]_2019_03_15_01.xml'
+    local path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+    --local path = 'C:/1/2/data_24_25.xml'
+    local_data_driver.Driver(path, nil, {0, 10000000})
 
     local t = os.clock()
     local save_count = SearchGroupAutoDefects({
-        '{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
+        --'{B6BAB49E-4CEC-4401-A106-355BFB2E0001}',
         '{B6BAB49E-4CEC-4401-A106-355BFB2E0011}',
-        '{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
+        --'{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
     })
     printf("work %f sec, found %d mark", os.clock() - t, save_count or 0)
 end

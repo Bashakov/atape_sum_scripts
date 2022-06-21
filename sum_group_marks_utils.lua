@@ -75,7 +75,7 @@ local CHECK = {
 
 --[[ defect_type должен быть классом с 3 методами:
 - LoadMarks: строит список отметок, которые нужно проверить
-- Check: проверить отметку на дефектность, должна вернуть CHECK
+- Check: проверить отметку на дефектность, должна вернуть значение из таблицы CHECK
 - OnGroup: обработать полученную группу
 ]]
 local function scanGroupDefect(defect_type, dlg, pov_filter)
@@ -111,7 +111,9 @@ local function scanGroupDefect(defect_type, dlg, pov_filter)
                 assert(false, 'Unknow value' .. tostring(result))
             end
         end
-        defect_type:OnGroup(group, param)
+        if #group > 0 then
+            defect_type:OnGroup(group, param)
+        end
     end
 end
 

@@ -61,6 +61,7 @@ local GroupMarkSearch = OOP.class
 	end,
 }
 
+-- проверяем отметки на включение в групповые, выкидываем такие
 local function remove_grouped_marks(rows, guids_group, check_defect_code)
     local searcher = GroupMarkSearch(guids_group, check_defect_code)
     if searcher:add_groups(rows) then
