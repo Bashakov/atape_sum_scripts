@@ -21,10 +21,6 @@ local sumPOV = require "sumPOV"
 
 -- =====================================================================  
 
--- dofile 'Scripts/sum_list_pane_guids.lua'
-
--- =====================================================================  
-
 -- получить параметр скрепления по имени (разбор xml)
 local function GetFastenerParamName(mark, name)
 	
@@ -995,4 +991,47 @@ column_ekasui_code =
 		local desc = code and DEFECT_CODES.code2desc(code) or code
 		return desc
 	end
+}
+
+column_defect_code_list =
+{
+	name = 'Дефекты',
+	width = 85,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local text = mark.user.defect_codes and table.concat(mark.user.defect_codes, ',') or ''
+		return text
+	end,
+	sorter = function(mark)
+		local text = mark.user.defect_codes and table.concat(mark.user.defect_codes, ',') or ''
+		return text
+	end,
+	get_tooltip = function (row)
+		local mark = work_marks_list[row]
+		local r = {}
+		for _, code in ipairs(mark.user.defect_codes or {}) do
+			table.insert(r, string.format("%s: %s", code, DEFECT_CODES.code2desc(code)))
+		end
+		return table.concat(r, '\n')
+	end
+}
+
+column_speed_limit_list =
+{
+	name = 'Огр.Ск',
+	width = 85,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		local limit = mark.user.speed_limits and math.min(table.unpack(mark.user.speed_limits)) or nil
+		if limit == 0 then
+			return "Закрытие"
+		end
+		return tostring(limit) or ''
+	end,
+	sorter = function(mark)
+		local limit = mark.user.speed_limits and math.min(mark.user.speed_limits) or nil
+		return limit
+	end,
 }

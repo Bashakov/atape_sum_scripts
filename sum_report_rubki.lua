@@ -5,6 +5,7 @@ require "ExitScope"
 local resty = require "resty.template"
 local OOP = require 'OOP'
 local EKASUI = require "sum_report_ekasui"
+local TYPES = require 'sum_types'
 
 if iup then
 	iup.SetGlobal('UTF8MODE', 1)
@@ -18,11 +19,11 @@ local table_find = mark_helper.table_find
 
 local joints_guids =
 {
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC801}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
-	"{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}", 	-- ИзоСтык(Видео)
+	TYPES.VID_INDT_1,
+	TYPES.VID_INDT_2,
+	TYPES.VID_INDT_3,
+	TYPES.VID_INDT_ATS,
+	TYPES.VID_ISO, 	-- ИзоСтык(Видео)
 }
 
 local switch_guids = {
@@ -37,7 +38,7 @@ local sleeper_guids = {
 }
 
 local fastener_guids = {
-	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",
+	TYPES.FASTENER,
 }
 
 local SLEEPER_DIST_REF = 1000000 / 1840
@@ -210,16 +211,16 @@ local function load_near_marks(join_mark, mark_types, mark_count, search_dist)
 		end
 	end
 
-	local rigth = {}
+	local right = {}
 	for i = 1, #marks, 1 do
 		local mark = marks[i]
-		if mark.prop.SysCoord >= join_mark.prop.SysCoord and #rigth < mark_count then
-			table.insert(rigth, mark)
+		if mark.prop.SysCoord >= join_mark.prop.SysCoord and #right < mark_count then
+			table.insert(right, mark)
 		end
 	end
 
 	-- объединим 2 списка
-	for _, m in ipairs(rigth) do
+	for _, m in ipairs(right) do
 		table.insert(left, m)
 	end
 	return left

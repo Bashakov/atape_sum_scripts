@@ -2,6 +2,7 @@ local GUIDS = require "sum_list_pane_guids"
 local sumPOV = require "sumPOV"
 local rubki = require "sum_report_rubki"
 local mark_helper = require 'sum_mark_helper'
+local TYPES = require 'sum_types'
 
 -- =========== stuff ============== --
 
@@ -243,9 +244,9 @@ end
 local function add_npu_tune(menu_items, mark)
 	local name_type =
 	{
-		{name='Возможн. НПУ', guid="{19FF08BB-C344-495B-82ED-10B6CBAD508F}"},
-		{name='Подтвр. НПУ',  guid="{19FF08BB-C344-495B-82ED-10B6CBAD5090}"},
-		{name='БС. НПУ',      guid="{19FF08BB-C344-495B-82ED-10B6CBAD5091}"},
+		{name='Возможн. НПУ', guid=TYPES.PRE_NPU},
+		{name='Подтвр. НПУ',  guid=TYPES.NPU},
+		{name='БС. НПУ',      guid=TYPES.NPU2},
 	}
 	local prefix = 'Изменить тип НПУ|'
 

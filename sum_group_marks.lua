@@ -38,6 +38,7 @@ local luaiup_helper = require 'luaiup_helper'
 local sumPOV = require "sumPOV"
 require 'ExitScope'
 local funcional = require 'functional'
+local TYPES = require 'sum_types'
 
 local printf  = function(fmt, ...)	print(string.format(fmt, ...)) end
 local sprintf = function(fmt, ...) return string.format(fmt, ...)  end
@@ -245,12 +246,12 @@ local GapGroups = OOP.class
         assert(param and param.rail and param.pov_operator)
         local video_joints_juids =
         {
-            "{CBD41D28-9308-4FEC-A330-35EAED9FC801}",	-- Стык(Видео)
-            "{CBD41D28-9308-4FEC-A330-35EAED9FC802}",	-- Стык(Видео)
-            "{CBD41D28-9308-4FEC-A330-35EAED9FC803}",	-- СтыкЗазор(Пользователь)
-            "{CBD41D28-9308-4FEC-A330-35EAED9FC804}",	-- АТСтык(Видео)
-            "{3601038C-A561-46BB-8B0F-F896C2130003}",	-- Рельсовые стыки(Пользователь)
-            "{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}",   -- ИзоСтык(Видео)
+            TYPES.VID_INDT_1,	-- Стык(Видео)
+            TYPES.VID_INDT_2,	-- Стык(Видео)
+            TYPES.VID_INDT_3,	-- СтыкЗазор(Пользователь)
+            TYPES.VID_INDT_ATS,	-- АТСтык(Видео)
+            TYPES.RAIL_JOINT_USER,	-- Рельсовые стыки(Пользователь)
+            TYPES.VID_ISO,   -- ИзоСтык(Видео)
         }
         local marks = loadMarks(video_joints_juids)
         marks = filter_rail(marks, param.rail)
@@ -260,11 +261,11 @@ local GapGroups = OOP.class
 
     Check = function (self, get_near_mark)
         local mark = get_near_mark(0)
-        if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" then
+        if mark.prop.Guid == TYPES.RAIL_JOINT_USER then
             if  mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1] or
                 mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_TWO[1] or
                 mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1] or
-                mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1]
+                mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGHT[1]
             then
                 return CHECK.ACCEPT
             else
@@ -301,7 +302,7 @@ local GapGroups = OOP.class
                 if mark_helper.GetMarkRailPos(mark) == -1 then
                     mark.ext.CODE_EKASUI = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1] -- Три и более слепых (нулевых) зазоров подряд по левой нити
                 else
-                    mark.ext.CODE_EKASUI = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1] -- Три и более слепых (нулевых) зазоров подряд по правой нити
+                    mark.ext.CODE_EKASUI = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGHT[1] -- Три и более слепых (нулевых) зазоров подряд по правой нити
                 end
             end
 
@@ -325,12 +326,12 @@ local SleeperGroups = OOP.class
     load_joints = function (dlg)
         local video_joints_juids =
         {
-            "{CBD41D28-9308-4FEC-A330-35EAED9FC801}",	-- Стык(Видео)
-            "{CBD41D28-9308-4FEC-A330-35EAED9FC802}",	-- Стык(Видео)
-            "{CBD41D28-9308-4FEC-A330-35EAED9FC803}",	-- СтыкЗазор(Пользователь)
-            "{CBD41D28-9308-4FEC-A330-35EAED9FC804}",	-- АТСтык(Видео)
-            "{3601038C-A561-46BB-8B0F-F896C2130003}",	-- Рельсовые стыки(Пользователь)
-            "{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}",   -- ИзоСтык(Видео)
+            TYPES.VID_INDT_1,	-- Стык(Видео)
+            TYPES.VID_INDT_2,	-- Стык(Видео)
+            TYPES.VID_INDT_3,	-- СтыкЗазор(Пользователь)
+            TYPES.VID_INDT_ATS,	-- АТСтык(Видео)
+            TYPES.RAIL_JOINT_USER,	-- Рельсовые стыки(Пользователь)
+            TYPES.VID_ISO,   -- ИзоСтык(Видео)
         }
         local joints = loadMarks(video_joints_juids, nil, dlg)
         local coords = {}
@@ -457,7 +458,7 @@ local FastenerGroups = OOP.class
     _is_fastener_defect = function (self, mark)
         local defect = self._defect_mark_ids[mark.prop.ID]
         if defect == nil then
-            if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130001}" then
+            if mark.prop.Guid == TYPES.FASTENER_USER then
                 defect =
                     mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1] or
                     mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP[1] or
@@ -477,8 +478,8 @@ local FastenerGroups = OOP.class
         assert(param and param.rail)
         local guids_fasteners =
         {
-            "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",	-- Скрепление
-            "{3601038C-A561-46BB-8B0F-F896C2130001}",	-- Скрепления(Пользователь)
+            TYPES.FASTENER,	-- Скрепление
+            TYPES.FASTENER_USER,	-- Скрепления(Пользователь)
         }
         local progress = make_progress_cb(dlg, sprintf('загрузка скреплений рельс %d', param.rail), 123)
         local marks = loadMarks(guids_fasteners)

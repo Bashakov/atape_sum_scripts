@@ -1,4 +1,4 @@
-if not ATAPE then
+﻿if not ATAPE then
 	require "iuplua" 
 end
 
@@ -17,6 +17,7 @@ end
 mark_helper = require 'sum_mark_helper'
 luaiup_helper = require 'luaiup_helper'
 excel_helper = require 'excel_helper'
+local TYPES = require 'sum_types'
 
 local table_find = mark_helper.table_find
 local sprintf = mark_helper.sprintf
@@ -35,15 +36,15 @@ local SelectNodes = mark_helper.SelectNodes
 
 local gap_rep_filter_guids = 
 {
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC801}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",
-	"{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}", 	-- ИзоСтык(Видео)
+	TYPES.VID_INDT_1,
+	TYPES.VID_INDT_2,
+	TYPES.VID_INDT_3,
+	TYPES.VID_INDT_ATS,
+	TYPES.VID_ISO, 	-- ИзоСтык(Видео)
 }
 
 local fastener_guids = {
-	"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"
+	TYPES.FASTENER
 }
 
 local beacon_rep_filter_guids = 
@@ -54,7 +55,7 @@ local beacon_rep_filter_guids =
 
 local surface_defects_guids = 
 {
-	"{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}",
+	TYPES.VID_SURF,
 }
 
 
@@ -782,25 +783,6 @@ local function report_welding(params)
 	excel:SaveAndShow()
 end
 
-
-
-local unspec_obj_filter_guids = 
-{
-	"{0860481C-8363-42DD-BBDE-8A2366EFAC90}",
-}
-
-
-local joint_filter_guids = 
-{
-	"{19253263-2C0B-41EE-8EAA-000000000010}",
-	"{19253263-2C0B-41EE-8EAA-000000000040}",
-}
-
-local ats_joint_filter_guids = 
-{
-	"{19253263-2C0B-41EE-8EAA-000000000080}",
-}
-
 -- отчет по скреплениям 
 local function report_fasteners(params)
 	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Показать все", "Дефектные", "Нормальные"}, 2)
@@ -1093,6 +1075,7 @@ function MakeReport(name) -- exported
 			end
 			name = nil
 			n.fn(n.params)
+			break
 --			ok, msg = pcall(n.fn, n.params)
 --			if not ok then 
 --				error(msg)
@@ -1129,7 +1112,7 @@ function GetFilterGuids(reportName)
 
 	local res = {}
 	for k,_ in pairs(guids) do table.insert(res, k) end
-	print('GetFilterGuids:', table.concat(res, ','))
+	-- print('GetFilterGuids:', table.concat(res, ','))
 	return res
 end
 

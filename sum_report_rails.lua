@@ -15,6 +15,7 @@ local DEFECT_CODES = require 'report_defect_codes'
 local EKASUI_REPORT = require 'sum_report_ekasui'
 local AVIS_REPORT = require 'sum_report_avis'
 local sumPOV = require "sumPOV"
+local TYPES = require 'sum_types'
 
 local table_find = mark_helper.table_find
 
@@ -22,7 +23,7 @@ local table_find = mark_helper.table_find
 
 local guid_surface_defects =
 {
-	"{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}",	-- Поверх.(Видео)
+	TYPES.VID_SURF,	-- Поверх.(Видео)
 }
 
 local guid_surface_user =

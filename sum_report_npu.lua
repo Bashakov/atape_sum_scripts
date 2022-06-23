@@ -1,6 +1,7 @@
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 local excel_helper = require 'excel_helper'
+local TYPES = require 'sum_types'
 require 'ExitScope'
 
 local sprintf = mark_helper.sprintf
@@ -11,12 +12,12 @@ local table_find = mark_helper.table_find
 -- =============================================================================
 
 local NPU_guids = {
-	"{19FF08BB-C344-495B-82ED-10B6CBAD5090}", -- НПУ
-	"{19FF08BB-C344-495B-82ED-10B6CBAD508F}", -- Возможно НПУ
+	TYPES.NPU, -- НПУ
+	TYPES.PRE_NPU, -- Возможно НПУ
 }
 
 local NPU_guids_2 = {
-	"{19FF08BB-C344-495B-82ED-10B6CBAD5091}", -- НПУ БС
+	TYPES.NPU2, -- НПУ БС
 }
 
 local NPU_guids_uzk = {
@@ -108,7 +109,7 @@ end
 -- тестирование
 if not ATAPE then
 
-	test_report  = require('test_report')
+	local test_report  = require('test_report')
 	--test_report('D:\\ATapeXP\\Main\\480\\[480]_2013_11_09_14.xml')
 	test_report('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2022_02_04_01.xml', nil, {0, 1000000}) --
 

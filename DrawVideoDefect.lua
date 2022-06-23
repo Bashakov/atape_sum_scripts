@@ -2,12 +2,11 @@ package.loaded.sumPOV = nil -- для перезагрузки в дебаге
 
 local sumPOV = require "sumPOV"
 
-
 local function errorf(s,...)  error(string.format(s, ...)) end
 
 -- ================= математика =================
 
--- округление до idp значачих цифр после запятой
+-- округление до idp значащих цифр после запятой
 local function round(num, idp)
 	local mult = 10^(idp or 0)
 	return math.floor(num * mult + 0.5) / mult
@@ -76,10 +75,10 @@ end
 
 -- ================= массивы =================
 
---[[ преобразование прямоугольника в кооринаты его вершин
+--[[ преобразование прямоугольника в координаты его вершин
 исходный прямоугольник в формате программы (l, t, w, h) в координатах окна, 
 выходной массив точек определяется параметром corners, который является строкой состоящей из букв "l", "r", "t", "b",
-озанчающих соответствующие вершины, координаты соответствуют пикселям на кадре.
+означающих соответствующие вершины, координаты соответствуют пикселям на кадре.
 дополнительно возвращается координата кадра, на которой находится объект 
 ]]
 local function rect2corners(object, corners)
@@ -161,7 +160,7 @@ end
 
 -- сформировать xml с описание зазора
 local function make_gape_node(nodeRoot, object, action_result)
-	local frame_src = rect2corners(object, "ltrtrblb") -- left, top, rigth, top, rigth, bottom, left, bottom
+	local frame_src = rect2corners(object, "ltrtrblb") -- left, top, right, top, right, bottom, left, bottom
 	local strRect = string.format("%d,%d %d,%d %d,%d %d,%d", table.unpack(frame_src))
 	
 	local nodeActRes = make_node(nodeRoot  , "PARAM", {name="ACTION_RESULTS", channel=object.area.channel, value=action_result})
@@ -173,7 +172,7 @@ end
 
 -- сформировать xml с описание поверхностного дефекта
 local function make_surface_node(nodeRoot, object, action_result)
-	local frame_src = rect2corners(object, "ltrtrblb") -- left, top, rigth, top, rigth, bottom, left, bottom
+	local frame_src = rect2corners(object, "ltrtrblb") -- left, top, right, top, right, bottom, left, bottom
 	local strRect = string.format("%d,%d %d,%d %d,%d %d,%d", table.unpack(frame_src))
 	
 	local nodeActRes = make_node(nodeRoot  , "PARAM", {name="ACTION_RESULTS", channel=object.area.channel, value=action_result})
@@ -186,10 +185,10 @@ local function make_surface_node(nodeRoot, object, action_result)
 	make_node(nodeResult, "PARAM", {name="SurfaceArea", value='0'})
 end
 
--- сформировать xml с описание болтовый отверстий
+-- сформировать xml с описание болтовых отверстий
 local function make_joint_node(nodeRoot, joints)
 	local cfj = {} -- channel-frame-joint
-	-- групируем отверстия по каналам и кадрам
+	-- группируем отверстия по каналам и кадрам
 	for _, object in ipairs(joints) do
 		local ch = object.area.channel
 		local fc = object.center_frame
@@ -297,7 +296,7 @@ local MarkFlags = {
 	eIgnoreShift	= 0x01,		-- смещение канала на котором установлена отметка игнорируется и рамочки не ездят
 	eDrawRect		= 0x02,		-- рисовать прямоугольник
 	eDrawLine		= 0x04,		-- рисовать линию на координате отметки
-	eShiftOnAsIs	= 0x08,		-- смещение применятеся с др знаком, то есть при выключенном сведении рамка рисуется сдвинутая относительно координаты отметки, а при включении сведения на своей координате (объект)
+	eShiftOnAsIs	= 0x08,		-- смещение применяется с др знаком, то есть при выключенном сведении рамка рисуется сдвинутая относительно координаты отметки, а при включении сведения на своей координате (объект)
 }
 
 
@@ -318,9 +317,6 @@ function make_recog_mark(name, objects, driver, defect)
 	mark.ext.VIDEOIDENTRLBLT = reability
 	mark.ext.VIDEOFRAMECOORD = objects[1].center_frame
 	
---	save_and_show(nodeRoot.xml)
---	error('make_recog_mark error')
-	
 	sumPOV.UpdateMarks(mark, false)
 	
 	return {mark}
@@ -333,7 +329,7 @@ function make_simple_defect(name, objects, driver, defect)
 	local marks = {}
 	for i, object in ipairs(objects) do
 		local rmask, chmask = get_rail_channel_mask({object})
-		local points_on_frame, _ = rect2corners(object, "ltrtrblb") -- left, top, rigth, top, rigth, bottom, left, bottom
+		local points_on_frame, _ = rect2corners(object, "ltrtrblb") -- left, top, right, top, right, bottom, left, bottom
 		
 		local mark = driver:NewMark()
 		
@@ -375,10 +371,6 @@ function make_simple_defect(name, objects, driver, defect)
 end
 
 function make_group_defect(name, objects, driver, defect)
-	-- if #objects ~= defect.objects_count then
-	-- 	errorf("\n\nВведено %d объектов, ожидается %d", #objects, defect.objects_count)
-	-- end
-
 	local mark = driver:NewMark()
 
 	local rmask, chmask = get_rail_channel_mask(objects)
@@ -395,7 +387,7 @@ function make_group_defect(name, objects, driver, defect)
 
 	local str_xml = '<draw>\n'
 	for _, object in ipairs(objects) do
-		local points_on_frame, frame_coord = rect2corners(object, "ltrtrblb") -- left, top, rigth, top, rigth, bottom, left, bottom
+		local points_on_frame, frame_coord = rect2corners(object, "ltrtrblb") -- left, top, right, top, right, bottom, left, bottom
 		local rect = string.format("%d,%d,%d,%d,%d,%d,%d,%d", table.unpack(points_on_frame))
 
 		str_xml = str_xml .. string.format("\t<object channel='%d' type='rect' frame='%d' points='%s'/>\n", object.area.channel, frame_coord, rect)
@@ -441,10 +433,10 @@ end
 --[[ Функция вызывается из программы для построения панели с доступными типами дефектов.
 
 Функция должна вернуть массив, где каждый элемент содержит описание типа дефекта,
-описание является массивом из 3х эламентов:
+описание является массивом из 3х элементов:
 - группа,
 - текстовое описание,
-- внутреннее наименование (sign) (передеается в функцию генерации XML)
+- внутреннее наименование (sign) (переедается в функцию генерации XML)
 ]]
 function GetDefects()
 	local defects = {}
@@ -459,7 +451,7 @@ end
 Функция должна вернуть массив с описанием, каждый элемент описания это таблица с полями:
 - draw_sign идентификатор (передается в функцию генерации XML)
 - draw_fig тип (rect, ellipse, line)
-- name: имя инструмента, отображается в пенели инструментов
+- name: имя инструмента, отображается в панели инструментов
 - tooltip: подсказка
 - line_color: цвет рамки (0xRRGGBB или {r=0xRR, g=0xGG, b=0xBB, a=0xAA})
 - fill_color: цвет заливки
@@ -471,7 +463,7 @@ function GetAvailableTools(name)
 	return find_defect(name).tools
 end
 
---[[ Функция вызывается программой для генерации отметкок.
+--[[ Функция вызывается программой для генерации отметок.
 
 Функция принимает параметры:
 
@@ -499,13 +491,13 @@ end
 		  чтобы попасть с одного кадра на другой. 
 		  Принимает 2 параметра: координаты кадров.  
 - объект драйвера, используется для создания и сохранения отметок.
-  Имеееет следующие методы:
-	- NewMark: возвращает обект специальной пользовательской отметки.
-	  описание возвращаемого обекта см. в SumReportLua.md#объект-отметки
+  Имеет следующие методы:
+	- NewMark: возвращает объект специальной пользовательской отметки.
+	  описание возвращаемого объекта см. в SumReportLua.md#объект-отметки
 
 Логика работы функции следующая:
 
-- по сигнатуре дефекта определяется гуид отметки и другие неодходимые параметры.
+- по сигнатуре дефекта определяется гуид отметки и другие необходимые параметры.
 - введенные пользователем объекты разбираются по типам, приводятся в координаты кадра,
 - создается новая отметка,
 - заполняются ее поля (координата, длинна, канал, гуид и тд.)

@@ -15,6 +15,7 @@ local EKASUI_REPORT = require 'sum_report_ekasui'
 local AVIS_REPORT = require 'sum_report_avis'
 local sumPOV = require "sumPOV"
 local remove_grouped_marks = require "sum_report_group_scanner"
+local TYPES = require 'sum_types'
 
 local printf = mark_helper.printf
 local sprintf = mark_helper.sprintf
@@ -22,14 +23,14 @@ local sprintf = mark_helper.sprintf
 
 local video_joints_juids =
 {
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC801}",	-- Стык(Видео)
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC802}",	-- Стык(Видео)
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC803}",	-- СтыкЗазор(Пользователь)
-	"{CBD41D28-9308-4FEC-A330-35EAED9FC804}",	-- АТСтык(Видео)
+	TYPES.VID_INDT_1,	-- Стык(Видео)
+	TYPES.VID_INDT_2,	-- Стык(Видео)
+	TYPES.VID_INDT_3,	-- СтыкЗазор(Пользователь)
+	TYPES.VID_INDT_ATS,	-- АТСтык(Видео)
 
-	"{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}", 	-- ИзоСтык(Видео)
+	TYPES.VID_ISO, 	-- ИзоСтык(Видео)
 
-	"{3601038C-A561-46BB-8B0F-F896C2130003}",	-- Рельсовые стыки(Пользователь)
+	TYPES.RAIL_JOINT_USER,	-- Рельсовые стыки(Пользователь)
 }
 
 local joints_group_defects =
@@ -49,95 +50,27 @@ local function GetMarks()
 end
 
 
-local function MakeJointMarkRow(mark, code)
+local function MakeJointMarkRow(mark, defect_code, gap_width)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
+
 	row.SPEED_LIMIT = ''
-	row.GAP_WIDTH = mark_helper.GetGapWidth(mark)
+	row.GAP_WIDTH = gap_width or mark_helper.GetGapWidth(mark)
 	row.BLINK_GAP_COUNT = ''
 
-	if code then
-		if type(code) == 'table' then code = code[1] end
-		assert(type(code) == 'string')
-		row.DEFECT_CODE = code
-		row.DEFECT_DESC = DEFECT_CODES.code2desc(code)
+	if defect_code then
+		if type(defect_code) == 'table' then defect_code = defect_code[1] end
+		assert(type(defect_code) == 'string')
+		row.DEFECT_CODE = defect_code
+		row.DEFECT_DESC = DEFECT_CODES.code2desc(defect_code)
 	end
 	return row
 end
 
 
-local function scan_for_neigh_blind_joint(marks, dlg)
-
-	local width_threshold = 3
-
-	-- класс для поиска слепых зазоров по одному рельсу
-	local BlickGapSearcher = OOP.class
-	{
-		-- инициализация
-		ctor = function(self, groups)
-			self.groups = groups	-- хранение найденных групп
-			self.cur_group = {}		-- текущая обрабатываемая группа, найденные слепые зазоры
-		end,
-
-		-- проверить очередной стык на рельсе
-		append = function(self, mark)
-			local width = mark_helper.GetGapWidth(mark) or 100000
-			if width <= width_threshold then
-				table.insert(self.cur_group, mark)
-			else
-				self:close()
-			end
-		end,
-
-		-- закрыть поиск, выгрузить последнюю найденную группу
-		close = function(self)
-			if #self.cur_group > 1 then
-				table.insert(self.groups, self.cur_group)
-			end
-			self.cur_group = {}
-		end,
-	}
-
-	local groups = {}
-	local rails = {}
-
-	marks = mark_helper.sort_mark_by_coord(marks)
-	for i, mark in ipairs(marks) do
-		local rm = mark.prop.RailMask
-		local r = rails[rm]
-		if not r then
-			r = BlickGapSearcher(groups)
-			rails[rm] = r
-		end
-		r:append(mark)
-		if dlg and i % 20 == 0 then
-			dlg:step(i / #marks, string.format('Поиск %d / %d', i, #marks))
-		end
-	end
-
-	for _, r in pairs(rails) do
-		r:close()
-	end
-
-	groups = mark_helper.sort_stable(groups, function(group)
-		local c = group[1].prop.SysCoord
-		return c
-	end)
-
-	for n, g in ipairs(groups) do
-		print(n)
-		local s = g[1].prop.SysCoord
-		for _, m in ipairs(g) do
-			print('\t', m.prop.ID, m.prop.SysCoord, m.prop.SysCoord - s, m.prop.RailMask)
-			s = m.prop.SysCoord
-		end
-	end
-
-	return groups
-end
-
 -- ============================================================================= --
 
-local function make_mark_gap_width_exceed(mark)
+
+local function get_mark_gap_width_defect_code(mark)
 	local function width2speed(gap_width)
 		if gap_width <= 26 then return '100' end
 		if gap_width <= 30 then	return '60'	 end
@@ -145,39 +78,45 @@ local function make_mark_gap_width_exceed(mark)
 		return 'Движение закрывается'
 	end
 
-	local function get_code_by_rail(row, defect_code)
+	local function get_code_by_rail(defect_code)
 		--[[ https://bt.abisoft.spb.ru/view.php?id=722#c3398
 		1. новый прикол дефект 090004012062 разнесен по 2 ниткам.
 		Превышение конструктивной ширины зазора левой нити(90004016149) и правой нити(90004016150). ]]
 		if not defect_code or defect_code == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[1] then
-			if row.RAIL_POS	== -1 then
+			local rail_pos = mark_helper.GetMarkRailPos(mark)
+			if rail_pos	== -1 then
 				defect_code = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH_LEFT[1]
 			else
 				defect_code = DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH_RIGHT[1]
 			end
 		end
-		row.DEFECT_CODE = defect_code
-		row.DEFECT_DESC = DEFECT_CODES.code2desc(defect_code)
+		return defect_code
 	end
 
-	if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
+	if mark.prop.Guid == TYPES.RAIL_JOINT_USER and (
 			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH[1] or
 			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH_LEFT[1] or
 			mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_EXCEED_GAP_WIDTH_RIGHT[1]
 		) then
-		local row = MakeJointMarkRow(mark)
-		get_code_by_rail(row, mark.ext.CODE_EKASUI)
-		row.SPEED_LIMIT = width2speed(row.GAP_WIDTH)
-		return row
+			local defect_code = get_code_by_rail(mark.ext.CODE_EKASUI)
+			local gap_width = mark_helper.GetGapWidth(mark)
+			return defect_code, width2speed(gap_width), gap_width
 	else
 		local gap_width = mark_helper.GetGapWidth(mark)
 		if gap_width and gap_width > 24 then
-			local row = MakeJointMarkRow(mark)
-			get_code_by_rail(row, mark.ext.CODE_EKASUI, nil)
-			row.SPEED_LIMIT = width2speed(gap_width)
-			assert(row.GAP_WIDTH == gap_width)
-			return row
+			local defect_code = get_code_by_rail(mark.ext.CODE_EKASUI)
+			return defect_code, width2speed(gap_width), gap_width
 		end
+	end
+end
+
+local function make_mark_gap_width_exceed(mark)
+	local defect_code, speed_limit, gap_width = get_mark_gap_width_defect_code(mark)
+	if defect_code then
+		local row = MakeJointMarkRow(mark, defect_code, gap_width)
+		row.SPEED_LIMIT = speed_limit
+		assert(row.GAP_WIDTH == gap_width)
+		return row
 	end
 end
 
@@ -199,55 +138,93 @@ end
 
 -- -------------------------------------------- --
 
-local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
-	local report_rows = {}
+-- поиск групп слепых зазоров по одному рельсу
+local function scan_for_neigh_blind_joint(marks, fnProgress)
 
+	local WIDTH_THRESHOLD = 3
+	local groups = {}
+	local rail_group = {[1]={}, [2]={}}
+
+	marks = mark_helper.sort_mark_by_coord(marks)
+	for i, mark in ipairs(marks) do
+		local rail_mask = mark.prop.RailMask
+		local width = mark_helper.GetGapWidth(mark) or 100000
+		for r, g in ipairs(rail_group) do
+			if bit32.band(r, rail_mask) ~= 0 then
+				if width <= WIDTH_THRESHOLD then
+					table.insert(g, mark)
+				else
+					if #g >= 2 then
+						table.insert(groups, g)
+					end
+					rail_group[r] = {}
+				end
+			end
+		end
+
+		if i % 20 == 0 and not fnProgress(i / #marks, string.format('Поиск %d / %d', i, #marks)) then
+			break
+		end
+	end
+
+	for _, g in ipairs(rail_group) do
+		if #g >= 2 then
+			table.insert(groups, g)
+		end
+	end
+
+	groups = mark_helper.sort_stable(groups, function(group)
+		local c = group[1].prop.SysCoord
+		return c
+	end)
+
+	return groups
+end
+
+local function get_blind_defect_code(mark)
 	local blind_defect_codes =
 	{
 		DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP[1],
 		DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_TWO[1],
 		DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1],
-		DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1],
+		DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGHT[1],
 	}
+	if( mark.prop.Guid == TYPES.RAIL_JOINT_USER or mark_helper.table_find(joints_group_defects, mark.prop.Guid)) and
+		mark_helper.table_find(blind_defect_codes, mark.ext.CODE_EKASUI) then
+			return mark.ext.CODE_EKASUI, nil
+	end
+end
 
-	for _, mark in ipairs(marks) do
-		if pov_filter(mark) and
-			(mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" or mark_helper.table_find(joints_group_defects, mark.prop.Guid)) and
-			mark_helper.table_find(blind_defect_codes, mark.ext.CODE_EKASUI)
-		then
-			local row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)
-			table.insert(report_rows, row)
+local function iter_blind_group_defect_code(marks, pov_filter, fnProgress)
+	pov_filter = pov_filter or function () return {1} end
+
+	local function group2defectcode(group)
+		if #pov_filter(group) > 0 then
+			local rail_pos = mark_helper.GetMarkRailPos(group[1])
+			-- [[https://bt.abisoft.spb.ru/view.php?id=765]]
+			if #group == 2 then
+				return DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_TWO[1]
+			elseif(rail_pos == -1) then
+				return DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1]
+			else
+				return DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGHT[1]
+			end
 		end
 	end
 
-	local groups = scan_for_neigh_blind_joint(marks, dlgProgress)
-
-	for i, group in ipairs(groups) do
-		if #pov_filter(group) > 0 then
-		local row = MakeJointMarkRow(group[1])
-
-		-- [[https://bt.abisoft.spb.ru/view.php?id=765]]
-		if #group == 2 then
-			row.DEFECT_CODE = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_TWO[1]
-		elseif(row.RAIL_POS == -1) then
-			row.DEFECT_CODE = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1]
-		else
-			row.DEFECT_CODE = DEFECT_CODES.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1]
-		end
-
-		row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
-		row.BLINK_GAP_COUNT = #group
-
-		local to_report = 0
-		RAIL_12500_LENGTH_MIN = 10500
-		RAIL_12500_LENGTH_MAX = 14500
-		RAIL_25000_LENGTH_MIN = 23000
-		RAIL_25000_LENGTH_MAX = 27000
-
+	local function group2speedlimit(group)
 		local temperature = mark_helper.GetTemperature(group[1]) or 0
 		if temperature > 0 then                     -- считаем, при 20 градусах лето ???
-			SysCoord1 = group[1].prop.SysCoord
-			SysCoord2 = group[#group].prop.SysCoord
+			local to_report = false
+			local speed_limit
+
+			local RAIL_12500_LENGTH_MIN = 10500
+			local RAIL_12500_LENGTH_MAX = 14500
+			local RAIL_25000_LENGTH_MIN = 23000
+			local RAIL_25000_LENGTH_MAX = 27000
+
+			local SysCoord1 = group[1].prop.SysCoord
+			local SysCoord2 = group[#group].prop.SysCoord
 
 			local rail_max_length = 0 -- максимальная длина из группы
 			for j = 1, #group-1 do
@@ -261,36 +238,70 @@ local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
 			-- ограничиваем по длине отметки включаемые в отчет
 			-- если максимальная длина звена в диапазоне и 12.5 и 25 звеньев - то в отчет
 			if ( rail_max_length > RAIL_12500_LENGTH_MIN and rail_max_length < RAIL_25000_LENGTH_MAX) then
-				to_report = 1
+				to_report = true
 			end
 
-			print( "****", #group, rail_group_length, rail_max_length, rail_average_length, SysCoord1, SysCoord1, to_report )
+			--print( "****", #group, rail_group_length, rail_max_length, rail_average_length, SysCoord1, SysCoord1, to_report )
 
 			-- определяем является ли звено 25-метровым - находится в диапазоне.
-	        if ( rail_max_length > RAIL_25000_LENGTH_MIN and  rail_max_length< RAIL_25000_LENGTH_MAX ) then
+			if ( rail_max_length > RAIL_25000_LENGTH_MIN and  rail_max_length< RAIL_25000_LENGTH_MAX ) then
 				if  #group >= 2 then -- ограничение для 25 метрового: звена  больше 2-ух подряд
-					row.SPEED_LIMIT = 'ЗАПРЕЩЕНО'
-					to_report = 1
+					speed_limit = 'ЗАПРЕЩЕНО'
+					to_report = true
 				end
 			end
+
 			-- определяем является ли звено 12.5-метровым - находится в диапазоне.
 			if ( rail_max_length > RAIL_12500_LENGTH_MIN and  rail_max_length< RAIL_12500_LENGTH_MAX ) then
-				if  #group >= 4 then -- ограничение для 12.5 метрового: звена  больше 4-ух подряд
-					row.SPEED_LIMIT = 'ЗАПРЕЩЕНО'
-					to_report = 1
+				if #group >= 4 then -- ограничение для 12.5 метрового: звена  больше 4-ух подряд
+					speed_limit = 'ЗАПРЕЩЕНО'
+					to_report = true
 				end
 			end
 
+			if to_report then
+				return to_report, speed_limit
+			end
 		end
-		-- добавляем в отчет
-		if ( to_report == 1 ) then
-			table.insert(report_rows, row)
-		end
+	end
 
-		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Отработка %d / %d отметок, найдено %d', i, #groups, #report_rows)) then
-			return
+	local groups = scan_for_neigh_blind_joint(marks, fnProgress)
+	return coroutine.wrap(function()
+		for i, group in ipairs(groups) do
+			local defect_code = group2defectcode(group)
+			if defect_code then
+				local to_report, speed_limit = group2speedlimit(group)
+				-- добавляем в отчет
+				if to_report then
+					coroutine.yield(group, defect_code, speed_limit)
+				end
+			end
 		end
+	end)
+end
+
+local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
+	local function fnProgress(f, text)
+		return not dlgProgress or dlgProgress:step(f, text)
+	end
+	local report_rows = {}
+
+	for _, mark in ipairs(marks) do
+		if pov_filter(mark) then
+			local defect_code = get_blind_defect_code(mark)
+			if defect_code then
+				table.insert(report_rows, MakeJointMarkRow(mark, defect_code))
+			end
 		end
+	end
+
+	for group, defect_code, speed_limit in iter_blind_group_defect_code(marks, pov_filter, fnProgress) do
+		local row = MakeJointMarkRow(group[1], defect_code)
+		row.BLINK_GAP_COUNT = #group
+		if speed_limit then
+			row.SPEED_LIMIT = speed_limit
+		end
+		table.insert(report_rows, row)
 	end
 
 	report_rows = remove_grouped_marks(report_rows, joints_group_defects, false)
@@ -299,29 +310,40 @@ end
 
 -- -------------------------------------------- --
 
+local function get_joint_step_defect_code(mark)
+	local function get_speed_limit(step_vert, temperature)
+		if     step_vert > 1 and step_vert <= 2 then	return temperature > 25 and '80' or '50'
+		elseif step_vert > 2 and step_vert <= 4 then	return temperature > 25 and '40' or '25'
+		elseif step_vert > 4 and step_vert <= 5 then	return '15'
+		else                                         	return 'Движение закрывается'
+		end
+	end
+
+	if mark.prop.Guid == TYPES.RAIL_JOINT_USER and (
+		mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_HOR_STEP[1] or
+		mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_STEP_VH_LT25[1]) then
+			return mark.ext.CODE_EKASUI, ''
+	else
+		local step_vert = mark_helper.GetRailGapStep(mark) or 0
+		step_vert = math.abs(step_vert)
+		if step_vert > 1 then
+			local temperature = mark_helper.GetTemperature(mark) or 0
+			return DEFECT_CODES.JOINT_STEP_VH_LT25[1], get_speed_limit(step_vert, temperature)
+		end
+	end
+end
+
 local function generate_rows_joint_step(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		if pov_filter(mark) then
-			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
-				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_HOR_STEP[1] or
-				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_STEP_VH_LT25[1]) then
-				local row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)
-				table.insert(report_rows, row)
-			else
-				local step_vert = mark_helper.GetRailGapStep(mark) or 0
-				step_vert = math.abs(step_vert)
-				if step_vert > 1 then
-					local row = MakeJointMarkRow(mark, DEFECT_CODES.JOINT_STEP_VH_LT25[1])
-					row.GAP_WIDTH = mark_helper.GetGapWidth(mark) or ''
-					local temperature = mark_helper.GetTemperature(mark) or 0
-
-					if     step_vert > 1 and step_vert <= 2 then	row.SPEED_LIMIT = temperature > 25 and '80' or '50'
-					elseif step_vert > 2 and step_vert <= 4 then	row.SPEED_LIMIT = temperature > 25 and '40' or '25'
-					elseif step_vert > 4 and step_vert <= 5 then	row.SPEED_LIMIT = '15'
-					else                                         	row.SPEED_LIMIT = 'Движение закрывается' 	end
-					table.insert(report_rows, row)
+			local defect_code, speed_limit = get_joint_step_defect_code(mark)
+			if defect_code then
+				local row = MakeJointMarkRow(mark, defect_code)
+				if speed_limit then
+					row.SPEED_LIMIT = speed_limit
 				end
+				table.insert(report_rows, row)
 			end
 		end
 
@@ -333,6 +355,43 @@ local function generate_rows_joint_step(marks, dlgProgress, pov_filter)
 	return report_rows
 end
 
+local function get_fishplate_defect_code(mark)
+	--[[ Дмитрий 14:23
+	Закрытие движения при изломе накладки.
+	Замечание при трещине одной накладки.
+	40 км/ч при трещине двух накладок.
+]]
+	local eaksui_code = mark.ext.CODE_EKASUI
+	if mark.prop.Guid == TYPES.RAIL_JOINT_USER and (
+		eaksui_code == DEFECT_CODES.JOINT_FISHPLATE_DEFECT[1] or
+		eaksui_code == DEFECT_CODES.JOINT_FISHPLATE_DEFECT_ONE[1] or
+		eaksui_code == DEFECT_CODES.JOINT_FISHPLATE_DEFECT_BOTH[1]
+	) then
+		return eaksui_code, nil
+	else
+		local fishpalte_fault, fishpalte_fault_cnt = mark_helper.GetFishplateState(mark)
+		if fishpalte_fault and fishpalte_fault > 0 then
+			local defect_code
+			if fishpalte_fault_cnt == 1 then
+				defect_code = DEFECT_CODES.JOINT_FISHPLATE_DEFECT_SINGLE[1]
+			else
+				defect_code = DEFECT_CODES.JOINT_FISHPLATE_DEFECT_BOTH[1]
+			end
+
+			local speed_limit
+			if fishpalte_fault == 4 then
+				speed_limit = 'Движение закрывается'
+			elseif fishpalte_fault == 3 then
+				if fishpalte_fault_cnt > 1 then
+					speed_limit = '40'
+				else
+					speed_limit = 'Замечание'
+				end
+			end
+			return defect_code, speed_limit
+		end
+	end
+end
 
 local function generate_rows_fishplate(marks, dlgProgress, pov_filter)
 	local report_rows = {}
@@ -345,41 +404,14 @@ local function generate_rows_fishplate(marks, dlgProgress, pov_filter)
 --			[4] = 'изл.',
 --		}
 
---[[ Дмитрий 14:23
-	Закрытие движения при изломе накладки.
-	Замечание при трещине одной накладки.
-	40 км/ч при трещине двух накладок.
-]]
 		if pov_filter(mark) then
-			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
-				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_FISHPLATE_DEFECT[1] or
-				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_FISHPLATE_DEFECT_ONE[1] or
-				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_FISHPLATE_DEFECT_BOTH[1]
-			) then
-				local row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)
-				table.insert(report_rows, row)
-			else
-				local fishpalte_fault, fishpalte_fault_cnt = mark_helper.GetFishplateState(mark)
-				if fishpalte_fault and fishpalte_fault > 0 then
-					local row = MakeJointMarkRow(mark)
-					if fishpalte_fault_cnt == 1 then
-						row.DEFECT_CODE = DEFECT_CODES.JOINT_FISHPLATE_DEFECT_SINGLE[1]
-					else
-						row.DEFECT_CODE = DEFECT_CODES.JOINT_FISHPLATE_DEFECT_BOTH[1]
-					end
-
-					row.DEFECT_DESC = DEFECT_CODES.code2desc(row.DEFECT_CODE)
-					if fishpalte_fault == 4 then
-						row.SPEED_LIMIT = 'Движение закрывается'
-					elseif fishpalte_fault == 3 then
-						if fishpalte_fault_cnt > 1 then
-							row.SPEED_LIMIT = '40'
-						else
-							row.SPEED_LIMIT = 'Замечание'
-						end
-					end
-					table.insert(report_rows, row)
+			local defect_code, speed_limit = get_fishplate_defect_code(mark)
+			if defect_code then
+				local row = MakeJointMarkRow(mark, defect_code)
+				if speed_limit then
+					row.SPEED_LIMIT = speed_limit
 				end
+				table.insert(report_rows, row)
 			end
 		end
 
@@ -409,7 +441,7 @@ local function generate_rows_missing_bolt(marks, dlgProgress, pov_filter)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 		if not pov_filter or pov_filter(mark) then
-			if mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and (
+			if mark.prop.Guid == TYPES.RAIL_JOINT_USER and (
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT[1] or
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT_NO_GOOD[1] or
 				mark.ext.CODE_EKASUI == DEFECT_CODES.JOINT_MISSING_BOLT_ONE_GOOD[1] or
@@ -458,7 +490,7 @@ local function generate_rows_user(marks, dlgProgress, pov_filter)
 
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
-		if pov_filter(mark) and mark.prop.Guid == "{3601038C-A561-46BB-8B0F-F896C2130003}" and mark.ext.CODE_EKASUI then
+		if pov_filter(mark) and mark.prop.Guid == TYPES.RAIL_JOINT_USER and mark.ext.CODE_EKASUI then
 			local row = make_mark_gap_width_exceed(mark)
 			if not row then
 				row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)
@@ -611,16 +643,15 @@ end
 if not ATAPE then
 	_G.ShowVideo = 0
 	local test_report  = require('test_report')
-	--test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 10000000000})
-	test_report('C:\\Avikon\\CheckAvikonReports\\data\\data_27_short.xml')
+	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 10000000000})
+	--test_report('C:\\Avikon\\CheckAvikonReports\\data\\data_27_short.xml')
     --test_report('D:/ATapeXP/Main/TEST/ZeroGap/2019_06_13/Avikon-03M/6284/[494]_2017_06_14_03.xml')
 
 	-- local report = reports[1]
 	-- print(report.name)
 	-- report.fn()
 
-	ekasui_missing_bolt()
-	--report_neigh_blind_joint()
+	ekasui_fishplate()
 end
 
 
@@ -639,4 +670,8 @@ return {
 	},
 	get_marks = GetMarks,
 	bolt2defect_limit = bolt2defect_limit,
+	get_mark_gap_width_defect_code = get_mark_gap_width_defect_code,
+	get_joint_step_defect_code = get_joint_step_defect_code,
+	get_fishplate_defect_code = get_fishplate_defect_code,
+	iter_blind_group_defect_code = iter_blind_group_defect_code,
 }

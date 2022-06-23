@@ -2,6 +2,7 @@ local mark_helper = require 'sum_mark_helper'
 local defect_codes = require 'report_defect_codes'
 
 local table_merge = mark_helper.table_merge
+local TYPES = require 'sum_types'
 
 local prev_atape = ATAPE
 ATAPE = true -- disable debug code while load scripts
@@ -42,13 +43,26 @@ local function get_sleeper_angle_defect(mark, treshold, material)
 	return false
 end
 
+local function parse_velocity(val)
+	local t = type(val)
+	if t == "number" or t == "nil" then
+		return val
+	end
+	assert(t == 'string')
+	if val == '' then
+		return nil
+	end
+	local n = tonumber(val)
+	return n or 0
+end
+
 
 local filters =
 {
 	--!!! вывод всех объектов с ограничением скорости или дефектами // https://bt.abisoft.spb.ru/view.php?id=779
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
-		name = 'Все замечания', 
+		name = 'Замечания с ограничением скорости',
 		--!!! добавлены коды из report_defect_codes: "Превышение конструктивной величины стыкового зазора левой рельсовой нити"	"090004016149", "Превышение конструктивной величины стыкового зазора правой рельсовой нити"	"090004016150"
 		videogram_defect_codes = {
 			-- устаревшие
@@ -56,7 +70,7 @@ local filters =
 			"090004000999", -- SLEEPER_ANGLE !!! код удален из классификатора
 
 			-- тестированы
-			'090004012062', '090004016149', '090004016150', -- JOINT_EXCEED_GAP_WIDTH
+			'090004012062', '090004016149', '090004016150', -- JOINT_EXCEED_GAP_WIDTH, JOINT_EXCEED_GAP_WIDTH_LEFT, JOINT_EXCEED_GAP_WIDTH_RIGHT
 			'090004000466', -- JOINT_MISSING_BOLT_TWO_GOOD
 			'090004000471', -- JOINT_MISSING_BOLT_ONE_GOOD
 			"090004000521", -- JOINT_WELDED_BOND_FAULT
@@ -82,29 +96,92 @@ local filters =
 			"090004012008", -- RAIL_DEFECT_HEAD
 		},
 		columns = {
-			column_num, 
+			column_num,
 			column_path_coord,
 			column_pov_common,
-			column_mark_type_name,
-			column_joint_speed_limit,
-
-			--column_sys_coord, 
-			--column_rail,
-			--column_recogn_width_inactive,
-			--column_recogn_width_active,
-			--column_recogn_width_tread,
-			--column_recogn_width_user,
-			--column_recogn_bolt,
-			--column_recogn_video_channel,
-			}, 
+			column_defect_code_list,
+			column_speed_limit_list,
+		},
 		GUIDS = recognition_guids,
-		filter = function(mark)
-			local gap_type = mark_helper.GetGapType(mark)
-			if not gap_type or gap_type == 2 then -- https://bt.abisoft.spb.ru/view.php?id=839 hide ATS
-				return false
+		post_load = function(marks, fnContinueCalc)
+			local id2defects = {}
+			local id2speedlimit = {}
+
+			for group, defect_code, speed_limit in sum_report_joints.iter_blind_group_defect_code(marks, nil, fnContinueCalc) do
+				-- JOINT_NEIGHBO_BLIND_GAP_TWO, JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT, JOINT_NEIGHBO_BLIND_GAP_MORE_RIGHT
+				-- 'ЗАПРЕЩЕНО'
+				local id = group[1].prop.ID
+				id2defects[id] = defect_code
+				id2speedlimit[id] = parse_velocity(speed_limit)
 			end
-			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
-			return valid_on_half and valid_on_half < 2
+
+			local res = {}
+
+			for i, mark in ipairs(marks) do
+				local codes, limits = {}, {}
+				if true then
+					local id = mark.prop.ID
+					if id2speedlimit[id] then
+						table.insert(codes, id2defects[id])
+						table.insert(limits, id2speedlimit[id])
+					end
+				end
+
+				if true then
+					-- JOINT_EXCEED_GAP_WIDTH_LEFT, JOINT_EXCEED_GAP_WIDTH_RIGHT
+					-- '100', '60', '25', 'Движение закрывается'
+					local defect_code, speed_limit = sum_report_joints.get_mark_gap_width_defect_code(mark)
+					speed_limit = parse_velocity(speed_limit)
+					if speed_limit then
+						table.insert(codes, defect_code)
+						table.insert(limits, speed_limit)
+					end
+				end
+
+				if true then
+					-- JOINT_MISSING_BOLT_ONE_GOOD[1], '25',
+					-- JOINT_MISSING_BOLT_NO_GOOD[1], 'Закрытие движения'
+					local defect_code, speed_limit = sum_report_joints.bolt2defect_limit(mark)
+					speed_limit = parse_velocity(speed_limit)
+					if speed_limit then
+						table.insert(codes, defect_code)
+						table.insert(limits, speed_limit)
+					end
+				end
+
+				if true then
+					-- DEFECT_CODES.JOINT_HOR_STEP, JOINT_STEP_VH_LT25
+					-- '80', '50', '40', '25',	'15', 'Движение закрывается'
+					local defect_code, speed_limit = sum_report_joints.get_joint_step_defect_code(mark)
+					speed_limit = parse_velocity(speed_limit)
+					if speed_limit then
+						table.insert(codes, defect_code)
+						table.insert(limits, speed_limit)
+					end
+				end
+
+				if true then
+					-- JOINT_FISHPLATE_DEFECT, JOINT_FISHPLATE_DEFECT_ONE, JOINT_FISHPLATE_DEFECT_BOTH, JOINT_FISHPLATE_DEFECT_SINGLE
+					-- 'Движение закрывается', '40','Замечание'
+					local defect_code, speed_limit = sum_report_joints.get_fishplate_defect_code(mark)
+					speed_limit = parse_velocity(speed_limit)
+					if speed_limit then
+						table.insert(codes, defect_code)
+						table.insert(limits, speed_limit)
+					end
+				end
+
+				if #limits > 0 then
+					mark.user.defect_codes = codes
+					mark.user.speed_limits = limits
+					table.insert(res, mark)
+
+					if not fnContinueCalc(i / #marks) then
+						break
+					end
+				end
+			end
+			return res
 		end,
 	},
 
@@ -149,21 +226,6 @@ local filters =
 			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
 			return valid_on_half and valid_on_half < 2 and join_type ~= 2
 		end,
-		-- get_color = function(row, col)
-		-- 	if col == 1 then
-		-- 		return
-		-- 	end
-		-- 	local mark = work_marks_list[row]
-		-- 	if not mark.user.color then
-		-- 		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
-		-- 		if valid_on_half and valid_on_half == 0 then
-		-- 			mark.user.color = {0xff0000, 0xffffff}
-		-- 		else
-		-- 			mark.user.color = {0x000000, 0xffffff}
-		-- 		end
-		-- 	end
-		-- 	return mark.user.color
-		-- end
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
@@ -211,8 +273,10 @@ local filters =
 			column_rail,
 			column_mark_desc,
 			column_recogn_video_channel,
-			}, 
-		GUIDS = recognition_NonNormal_defects,
+			},
+		GUIDS = {
+			TYPES.UNSPC_OBJ
+		},
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
@@ -230,8 +294,8 @@ local filters =
 			column_pov_common,
 			}, 
 		GUIDS = {
-			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",
-			"{3601038C-A561-46BB-8B0F-F896C2130001}",
+			TYPES.FASTENER,
+			TYPES.FASTENER_USER,
 		}
 	},
 	{
@@ -347,11 +411,12 @@ local filters =
 			},
 		GUIDS = {
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
-		post_load = function(marks)
+		post_load = function(marks, fnContinueCalc)
 			local sleeper_count = 1840
 			local MEK = 4
 			marks = mark_helper.sort_mark_by_coord(marks)
 			local res = {}
+			local i = 1
 			for mark, right in mark_helper.enum_group(marks, 2) do
 				local cp, np = mark.prop.SysCoord, right.prop.SysCoord
 				mark.user.dist_next = np - cp
@@ -366,6 +431,10 @@ local filters =
 						table.insert(res, mark)
 					end
 				end
+				if fnContinueCalc and not fnContinueCalc(i / #marks) then
+					return {}
+				end
+				i = i + 1
 			end
 			return res
 		end,
@@ -461,7 +530,7 @@ local filters =
 				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP[1] or
 				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP_TWO[1] or
 				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT[1] or
-				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGTH[1]
+				mark.ext.CODE_EKASUI == defect_codes.JOINT_NEIGHBO_BLIND_GAP_MORE_RIGHT[1]
 			) then
 				return true
 			elseif mark.ext.RAWXMLDATA then
@@ -470,10 +539,10 @@ local filters =
 			end
 			return false
 		end,
-		post_load = function(marks)
+		post_load = function(marks, fnContinueCalc)
 			local prev_pos = {} -- координата пред стыка (по рельсам)
 			marks = sort_stable(marks, column_sys_coord.sorter, true)	-- сортируем отметки от драйвера по координате
-			for _, mark in ipairs(marks) do	-- проходим по отметкам
+			for i, mark in ipairs(marks) do	-- проходим по отметкам
 				local r = bit32.band(mark.prop.RailMask, 3)	-- получаем номер рельса
 				if prev_pos[r] then	-- если есть коордиана предыдущей
 					local delta = mark.prop.SysCoord - prev_pos[r]	        -- в пользовательские данные отметки заносим растойние до нее
@@ -483,6 +552,9 @@ local filters =
 					mark.user.dist_prev = delta --tostring(delta) 
 				end
 				prev_pos[r] = mark.prop.SysCoord	-- и сохраняем положение этой отметки
+				if fnContinueCalc and not fnContinueCalc(i / #marks) then
+					return {}
+				end
 			end
 			return marks	-- возвращаем список для отображения
 		end,
@@ -505,8 +577,8 @@ local filters =
 			"{B6BAB49E-4CEC-4401-A106-355BFB2E0002}",
 			"{B6BAB49E-4CEC-4401-A106-355BFB2E0011}",
 			"{B6BAB49E-4CEC-4401-A106-355BFB2E0012}",
-			"{B6BAB49E-4CEC-4401-A106-355BFB2E0021}",
-			"{B6BAB49E-4CEC-4401-A106-355BFB2E0022}",
+			TYPES.GROUP_FSTR_AUTO,
+			TYPES.GROUP_FSTR_USER,
 		}
 	},
 }

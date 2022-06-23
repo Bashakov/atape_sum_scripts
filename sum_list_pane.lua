@@ -96,10 +96,10 @@ else
 end
 
 
--- =====================================================================  
+-- =====================================================================
 
 work_marks_list = {}
-work_filter = None
+work_filter = nil
 work_sort_param = {0, 0}
 selected_row = 0
 work_mark_ids = {}
@@ -225,6 +225,14 @@ local function jump_mark(row)
 	end
 end
 
+local function clear_lists()
+	work_mark_ids = {}					-- очищаем список id отметок
+	work_marks_list = {}				-- обнуляем список отметок
+	work_filter = nil
+	selected_row = 0
+	work_sort_param = {0, 0}
+end
+
 -- ======================================================================= -- 
 
 -- функция вызывается из программы, для получения списка имен доступных фильтров
@@ -263,40 +271,46 @@ end
 
 -- функция вызывается из программы, при выборе пользователем одного из фильтров, 
 -- тут следует сформировать список отметок, и вернуть его длинну
-function InitMark(name)
+function InitMark(name, fnContinueCalc)
+	fnContinueCalc = fnContinueCalc or function (p) return true end
+
 	local filter = get_filter_by_name(name)		-- ищем фильтр по имени
-	if filter then								-- если нашли
-		if work_filter ~= filter then			-- и если фильтр не тот что был до этого
-			work_filter = filter				-- делаем найденный фильтр - рабочим
-			work_mark_ids = {}					-- очищаем список id отметок
-			work_marks_list = {}				-- обнуляем список отметок
-			local marks = Driver:GetMarks{		-- запрашиваем у дравера новый список отметок
-				GUIDS=filter.GUIDS, 			-- с указанными типами
-				ListType = filter.visible and 'visible' or 'all'}
-			local fn_filter = filter.filter		-- берем функцию фильтрации по отметкам
-			for i = 1, #marks do				-- проходим по отметкам, полученым из драйвера
-				local mark = marks[i]
-				if not fn_filter or fn_filter(mark) then 	-- если функция фильтрации, то проверяем отметку
-					table.insert(work_marks_list, mark)		-- сохраняем отметку в рабочий список
+	if work_filter == filter then				-- если тот что был до этого выходим
+		return #work_marks_list
+	end
+	clear_lists()
+
+	if filter then
+		work_filter = filter						-- делаем найденный фильтр - рабочим
+		local driver_marks = Driver:GetMarks{		-- запрашиваем у драйвера новый список отметок
+			GUIDS=filter.GUIDS, 					-- с указанными типами
+			ListType = filter.visible and 'visible' or 'all'}
+
+		local fn_filter = filter.filter				-- берем функцию фильтрации по отметкам
+		for i, mark in ipairs(driver_marks) do		-- проходим по отметкам, полученным из драйвера
+			local accept = true
+			if fn_filter then						-- если функция фильтрации, то проверяем отметку
+				accept = fn_filter(mark)
+				if not fnContinueCalc(i / #driver_marks) then
+					clear_lists()
+					return 0
 				end
 			end
-
-			if filter.post_load then			-- если объявлена функция пост обработки
-				work_marks_list = filter.post_load(work_marks_list)	-- то запускаме ее
+			if accept then
+				table.insert(work_marks_list, mark)		-- сохраняем отметку в рабочий список
 			end
-			for _, mark in ipairs(work_marks_list) do
-				work_mark_ids[mark.prop.ID] = true
-			end
-			work_marks_list = sort_stable( work_marks_list, column_sys_coord.sorter, true )
 		end
-	else										-- если фильтр с именем не найден
-		work_mark_ids = {}
-		work_marks_list = {}					-- очищаем список
-		work_filter = None
-		selected_row = 0
+
+		if filter.post_load then			-- если объявлена функция пост обработки
+			work_marks_list = filter.post_load(work_marks_list, fnContinueCalc)	-- то запускаем ее
+		end
+
+		for _, mark in ipairs(work_marks_list) do
+			work_mark_ids[mark.prop.ID] = true
+		end
+		work_marks_list = mark_helper.sort_mark_by_coord(work_marks_list)
 	end
-	work_sort_param = {0, 0}
-	return #work_marks_list						-- возврвщаем длинну списка, чтобы атейп зарезервировал таблицу
+	return #work_marks_list						-- возвращаем длину списка, чтобы атейп зарезервировал таблицу
 end
 
 -- функция вызывается из программы, для запроса текста в ячейке
@@ -526,9 +540,9 @@ if not ATAPE then
 
 	test_report  = require('test_report')
 	local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-	test_report(psp_path, nul, {0, 10000000})
+	test_report(psp_path, nul) -- ,  , {0, 1000000}
 
-	local name = 'Маячные отметки'
+	local name = 'Замечания с ограничением скорости'
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}
 	local col_names = {}

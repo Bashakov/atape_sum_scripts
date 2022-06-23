@@ -1,5 +1,6 @@
 require "luacom"
 local DEFECT_CODES = require 'report_defect_codes'
+local TYPES = require 'sum_types'
 
 local function printf (s,...) return print(s:format(...)) end
 local function sprintf (s, ...)
@@ -1202,11 +1203,11 @@ function MakeMarkUri(markid)
 end
 
 local table_gap_types = {
-	["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = 0, 	-- Стык(Видео)
-	["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = 0, 	-- Стык(Видео)
-	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = 0, 	-- СтыкЗазор(Пользователь)
-	["{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}"] = 1, 	-- ИзоСтык(Видео)
-	["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = 2, 	-- АТСтык(Видео)
+	[TYPES.VID_INDT_1] = 0, 	-- Стык(Видео)
+	[TYPES.VID_INDT_2] = 0, 	-- Стык(Видео)
+	[TYPES.VID_INDT_3] = 0, 	-- СтыкЗазор(Пользователь)
+	[TYPES.VID_ISO] = 1, 	-- ИзоСтык(Видео)
+	[TYPES.VID_INDT_ATS] = 2, 	-- АТСтык(Видео)
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC805}"] = 2, 	-- АТСтык(Пользователь)
 }
 
