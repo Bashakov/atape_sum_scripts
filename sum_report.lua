@@ -1,4 +1,5 @@
-﻿if not ATAPE then
+﻿
+if not ATAPE then
 	require "iuplua" 
 end
 
@@ -991,6 +992,17 @@ local function report_surface_defects(params)
 	excel:SaveAndShow()
 end
 
+local function report_show_passport()
+	os.execute("mkdir " .. TEST_EKASUI_OUT_PREFIX)
+	local file = assert(io.open(TEST_EKASUI_OUT_PREFIX .. "\\psp.csv", 'w+'))
+	for name, value in mark_helper.sorted(Passport) do
+		file:write(string.format("%s;%s;\n", name, value))
+	end
+	for name, value in mark_helper.sorted(EKASUI_PARAMS) do
+		file:write(string.format("%s;%s;\n", name, value))
+	end
+	file:close()
+end
 
 
 -- ====================================================================================
@@ -1051,6 +1063,11 @@ if not HUN then
 else
 	local report_hun_video = require 'sum_report_hun'
 	report_hun_video.AppendReports(Report_Functions)
+end
+
+if SHOW_TEST_REPORTS then
+	local r1 = {name="параметры"          , fn=report_show_passport}
+	table.insert(Report_Functions, r1)
 end
 
 ATAPE = prev_ATAPE
