@@ -71,6 +71,20 @@ local column_mark_IP =
 	end
 }
 
+local function get_mark_color(mark)
+	local COLORS = {
+		[LEVEL.HI]  = {text={r=0,g=0,b=0}, bg={r=255,g=180,b=200}},
+		[LEVEL.MED] = {text={r=0,g=0,b=0}, bg={r=255,g=255,b=200}},
+		[LEVEL.LO]  = {text={r=0,g=0,b=0}, bg={r=230,g=255,b=230}},
+	}
+	local lvl = get_lvl(mark)
+	return COLORS[lvl] or {0x000000, 0xffffff}
+end
+
+local function get_row_color(row)
+	return get_mark_color(work_marks_list[row])
+end
+
 -- =============================================== --
 
 
@@ -81,6 +95,7 @@ local defects_all =
 	name = 'УЗ Дефекты',
 	columns =  concat(cmn_columns, {column_mark_desc}),
 	GUIDS = guids,
+	get_color = get_row_color,
 }
 
 local defects_neck =
@@ -92,6 +107,7 @@ local defects_neck =
 	filter = function(mark)
 		return not string.match(mark.prop.Description, "%S")
 	end,
+	get_color = get_row_color,
 }
 
 local defects_head_1 =
@@ -104,6 +120,7 @@ local defects_head_1 =
 		local lvl = get_lvl(mark)
 		return lvl <= LEVEL.HI
 	end,
+	get_color = get_row_color,
 }
 
 local defects_head_2 =
@@ -116,6 +133,7 @@ local defects_head_2 =
 		local lvl = get_lvl(mark)
 		return lvl <= LEVEL.MED
 	end,
+	get_color = get_row_color,
 }
 
 local defects_head_3 =
@@ -128,6 +146,7 @@ local defects_head_3 =
 		local lvl = get_lvl(mark)
 		return lvl <= LEVEL.LO
 	end,
+	get_color = get_row_color,
 }
 
 -- =============================================== --
