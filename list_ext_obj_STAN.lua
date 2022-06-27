@@ -1,24 +1,11 @@
-local sqlite3 = require "lsqlite3"
 local OOP = require 'OOP'
 local ext_obj_utils = require 'list_ext_obj_utils'
 
-
-local function _sql_assert(db, val, msg)
-	if val then return val end
-	local msg = string.format('%s(%s) %s', db:errcode(), db:errmsg(), msg or '')
-	error(msg)
-end
-
-local function _get_way_param(db)
+local function _get_way_param()
 	local sql = "SELECT SITEID, NOM, UP_NOM FROM WAY WHERE assetnum = :ASSETNUM"
-	local stmt = _sql_assert(db, db:prepare(sql))
-	_sql_assert(db, stmt:bind_names({ASSETNUM=Passport.TRACK_CODE}))
-	local res = {}
-	for row in stmt:nrows() do
-		table.insert(res, row)
-	end
+	local res  = ext_obj_utils.load_objects(sql, {ASSETNUM=Passport.TRACK_CODE}, nil)
 	if #res == 1 then
-		return res[1].SITEID, res[1].NOM, res[1].UP_NOM 
+		return res[1].SITEID, res[1].NOM, res[1].UP_NOM
 	end
 end
 
@@ -26,8 +13,7 @@ local function _load_stan(fnContinueCalc, kms)
 	if Passport.TRACK_CODE == '' then
 		return {}
 	end
-	local db = sqlite3.open('C:\\ApBAZE.db')
-	local SITEID, NOM, UP_NOM = _get_way_param(db)
+	local SITEID, NOM, UP_NOM = _get_way_param()
 	if not SITEID then
 		return {}
 	end
@@ -64,15 +50,9 @@ local function _load_stan(fnContinueCalc, kms)
 		  x1.KMIN2,
 		  x1.MMIN
 		]]
-	local stmt = _sql_assert(db, db:prepare(sql))
-	_sql_assert(db, stmt:bind_names({SID=SITEID, NAIM=UP_NOM, PUT=NOM}))
-	local res = {}
-	for row in stmt:nrows() do
-		if not kms or kms[row.BEGIN_KM] or kms[row.END_KM] then
-			table.insert(res, row)
-		end
-	end
-	return res
+	return ext_obj_utils.load_objects(sql, {SID=SITEID, NAIM=UP_NOM, PUT=NOM}, function (row)
+		return not kms or kms[row.BEGIN_KM] or kms[row.END_KM]
+	end)
 end
 
 local COL_N =
@@ -87,11 +67,7 @@ local COL_N =
 
 local function jump(obj, begin)
 	local path = begin and {obj.BEGIN_KM, obj.BEGIN_M, 0} or {obj.END_KM, obj.END_M, 0}
-	local ok, err = Driver:JumpPath(path)
-	if not ok then
-		local msg = string.format("Не удалось перейти на координату %d km %d m\n%s", path[1], path[2], err)
-		iup.Message("ATape", msg)
-	end
+	ext_obj_utils.jump_path(path)
 end
 
 local COL_NAME =

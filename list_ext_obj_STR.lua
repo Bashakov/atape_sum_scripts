@@ -1,20 +1,11 @@
-local sqlite3 = require "lsqlite3"
 local OOP = require 'OOP'
 local ext_obj_utils = require 'list_ext_obj_utils'
-
-
-local function _sql_assert(db, val, msg)
-	if val then return val end
-	local msg = string.format('%s(%s) %s', db:errcode(), db:errmsg(), msg or '')
-	error(msg)
-end
 
 
 local function _load_str(fnContinueCalc, kms)
 	if Passport.TRACK_CODE == '' then
 		return {}
 	end
-	local db = sqlite3.open('C:\\ApBAZE.db')
 	local sql = [[
 			SELECT
 				s.KM, s.M, t.TYPE, p.TYPE as POSH, s.ID_OB, s.NOM
@@ -31,15 +22,9 @@ local function _load_str(fnContinueCalc, kms)
 			ORDER BY
 				CAST(s.KM AS REAL), CAST(s.M AS REAL)
 		]]
-	local stmt = _sql_assert(db, db:prepare(sql))
-	_sql_assert(db, stmt:bind_names({ASSETNUM=Passport.TRACK_CODE}))
-	local res = {}
-	for row in stmt:nrows() do
-		if not kms or kms[row.KM] then
-			table.insert(res, row)
-		end
-	end
-	return res
+	return ext_obj_utils.load_objects(sql, {ASSETNUM=Passport.TRACK_CODE}, function (row)
+		return not kms or kms[row.KM]
+	end)
 end
 
 local COL_N =
@@ -131,11 +116,7 @@ local STR = OOP.class
         end
     end,
 	Jump = function(self, obj)
-		local ok, err = Driver:JumpPath({obj.KM, obj.M, 0})
-		if not ok then
-			local msg = string.format("Не удалось перейти на координату %d km %d m\n%s", obj.KM, obj.M, err)
-			iup.Message("ATape", msg)
-		end
+		ext_obj_utils.jump_path({obj.KM, obj.M, 0})
 	end,
 	GetExtObjMarks = function (self)
 		local res = {}
