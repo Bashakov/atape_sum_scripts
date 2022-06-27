@@ -1,3 +1,5 @@
+--require("mobdebug").start()
+
 if iup then
 	iup.SetGlobal('UTF8MODE', 1)
 end
@@ -96,7 +98,7 @@ end
 -- функция вызывается из программы, при выборе пользователем одного из фильтров,
 -- тут следует сформировать список отметок, и вернуть его длину
 function InitMark(name, fnContinueCalc)
-	fnContinueCalc = fnContinueCalc or function (p) return true end
+	fnContinueCalc = fnContinueCalc or function (_) return true end
 	local cnt = 0
 	if not currect_filter or currect_filter.name ~= name then
 		currect_filter = {}

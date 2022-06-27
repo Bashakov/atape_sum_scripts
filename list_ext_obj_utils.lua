@@ -22,11 +22,13 @@ local function get_data_kms(fnContinueCalc)
 	local c = sys_begin
 	while c < sys_end do
 		local km, _, _ = Driver:GetPathCoord(c)
-		kms[km-1] = true
-		kms[km] = true
-		kms[km+1] = true
-		if fnContinueCalc and not fnContinueCalc((c-sys_begin) / (sys_end-sys_begin)) then
-			return {}
+		if km then
+			kms[km-1] = true
+			kms[km] = true
+			kms[km+1] = true
+			if fnContinueCalc and not fnContinueCalc((c-sys_begin) / (sys_end-sys_begin)) then
+				return {}
+			end
 		end
 		c = c + step
 	end
