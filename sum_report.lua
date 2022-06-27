@@ -25,7 +25,7 @@ local sprintf = mark_helper.sprintf
 local printf = mark_helper.printf
 local errorf = mark_helper.errorf
 
-local get_rail_name = mark_helper.GetRailName
+get_rail_name = mark_helper.GetRailName -- non local for html template work https://bt.abisoft.spb.ru/view.php?id=935#c4802
 make_mark_uri = mark_helper.MakeMarkUri
 
 if not ShowVideo then
@@ -546,7 +546,8 @@ local function report_gaps(params)
 		local data_range = excel:CloneTemplateRow(#mark_pairs)
 
 		--print(#mark_pairs, data_range.Rows.count)
-		assert(#mark_pairs == data_range.Rows.count, 'misamtch count of mark_pairs and table rows')
+		assert(#mark_pairs == 0 or #mark_pairs == data_range.Rows.count, 'misamtch count of mark_pairs and table rows') -- https://bt.abisoft.spb.ru/view.php?id=935#c4801
+		
 		
 		local function insert_mark(line, rail, mark)
 			local column_offset = (rail == right_rail_mask) and 9 or 0
