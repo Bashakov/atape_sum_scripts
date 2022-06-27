@@ -10,6 +10,7 @@ local iso = require "list_ext_obj_ISO"
 local issoext = require "list_ext_obj_ISSOEXT"
 local str = require "list_ext_obj_STR"
 local stan = require "list_ext_obj_STAN"
+local KM = require "list_ext_obj_KM"
 
 local Empty = OOP.class
 {
@@ -37,6 +38,7 @@ for _, lst in ipairs{
 		issoext.filters,
 		str.filters,
 		stan.filters,
+		KM.filters
 	} do
 	for _, fltr in ipairs(lst) do
 		table.insert(Filters, fltr)

@@ -10,20 +10,21 @@ local function _sql_assert(db, val, msg)
 end
 
 
-local function _load_iso(fnContinueCalc, kms)
+local function _load_km(fnContinueCalc, kms)
 	if Passport.TRACK_CODE == '' then
 		return {}
 	end
 	local db = sqlite3.open('C:\\ApBAZE.db')
 	local sql = [[
 		SELECT
-			i.KM, i.M, i.ID
-		FROM
-			ISO as i, WAY AS w
+			k.ID, k.KM, k.BEGIN_M, k.END_M, k.LENGT
+		FROM KM AS k
+		JOIN WAY as w ON
+			k.UP_NOM = w.UP_NOM and k.PUT_NOM = w.NOM and k.SITEID = w.SITEID
 		WHERE
-			i.UP_NOM = w.UP_NOM and i.PUT_NOM = w.NOM and w.ASSETNUM = :ASSETNUM
+			w.ASSETNUM = :ASSETNUM
 		ORDER BY
-			CAST(i.KM AS REAL), CAST(i.M AS REAL)
+			k.KM
 		]]
 	local stmt = _sql_assert(db, db:prepare(sql))
 	_sql_assert(db, stmt:bind_names({ASSETNUM=Passport.TRACK_CODE}))
@@ -36,7 +37,7 @@ local function _load_iso(fnContinueCalc, kms)
 	return res
 end
 
-local COL_ISO_N =
+local COL_N =
 {
 	name = "N",
 	align = 'r',
@@ -46,66 +47,73 @@ local COL_ISO_N =
 	end,
 }
 
-local COL_ISO_PATH =
+local COL_KM =
 {
-	name = "Положение",
+	name = "KM",
 	align = 'r',
-	width = 100,
+	width = 50,
 	get_text = function(row_n, obj)
-		return string.format("%d.%03d", obj.KM, obj.M)
+		return string.format("%d", obj.KM)
 	end,
 }
 
-local COL_ISO_ID =
+local COL_LEN =
 {
-	name = "ID",
+	name = "Длн",
+	align = 'r',
+	width = 60,
+	get_text = function(row_n, obj)
+		return string.format("%d", obj.LENGT)
+	end,
+}
+
+local COL_M =
+{
+	name = "нач-кон",
 	align = 'r',
 	width = 70,
 	get_text = function(row_n, obj)
-		return string.format("%d", obj.ID)
+		return string.format("%d -> %d", obj.BEGIN_M, obj.END_M)
 	end,
 }
 
-
-local ISO = OOP.class
+local KM = OOP.class
 {
-	name = "Изостыки",
+	name = "KM",
 	columns =
 	{
-		COL_ISO_N,
-		COL_ISO_PATH,
-		COL_ISO_ID,
+		COL_N,
+		COL_KM,
+		COL_LEN,
+		COL_M,
 	},
 	ctor = function (self, fnContinueCalc)
 		local kms = ext_obj_utils.get_data_kms(fnContinueCalc)
-		self.objects = _load_iso(fnContinueCalc, kms)
+		self.objects = _load_km(fnContinueCalc, kms)
 		return #self.objects
 	end,
 	get_object = function (self, row)
 		return self.objects[row]
 	end,
 	OnMouse = function(self, act, flags, cell, pos_client, pos_screen)
-        local object = self:get_object(cell.row)
-        if act == 'left_dbl_click' and object then
-			self:JumpIso(object)
+        local obj  = self:get_object(cell.row)
+        if act == 'left_dbl_click' and obj then
+			local ok, err = Driver:JumpPath({obj.KM, obj.BEGIN_M-1, 0})
+			if not ok then
+				local msg = string.format("Не удалось перейти на координату %d km %d m\n%s", obj.KM, obj.BEGIN_M-1, err)
+				iup.Message("ATape", msg)
+			end
         end
     end,
-	JumpIso = function(self, obj)
-		local ok, err = Driver:JumpPath({obj.KM, obj.M, 0})
-		if not ok then
-			local msg = string.format("Не удалось перейти на координату %d km %d m\n%s", obj.KM, obj.M, err)
-			iup.Message("ATape", msg)
-		end
-	end,
 	GetExtObjMarks = function (self)
 		local res = {}
 		for i, obj in ipairs(self.objects) do
 			res[i] = {
-				path={obj.KM, obj.M},
-				description = string.format("ИзоСтык (%d)\n%d км %d м", obj.ID, obj.KM, obj.M),
+				path={obj.KM, obj.BEGIN_M-1},
+				description = string.format("Столб %d км", obj.KM),
 				vert_line = 1,
 				icon_file = 'Images/SUM.bmp',
-				icon_rect = {16, 32, 16, 16},
+				icon_rect = {13*16, 0, 16, 16},
 				id = i,
 			}
 		end
@@ -116,6 +124,6 @@ local ISO = OOP.class
 return
 {
     filters = {
-        ISO,
+        KM,
     }
 }
