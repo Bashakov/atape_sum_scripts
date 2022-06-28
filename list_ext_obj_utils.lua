@@ -21,7 +21,7 @@ local function get_data_kms(fnContinueCalc)
 	local kms = {}
 	local c = sys_begin
 	while c < sys_end do
-		local km, _, _ = Driver:GetPathCoord(c)
+		local km, _, _ = Driver:GetPathCoord(c, {["AskSwitch"] = false})
 		if km then
 			kms[km-1] = true
 			kms[km] = true
