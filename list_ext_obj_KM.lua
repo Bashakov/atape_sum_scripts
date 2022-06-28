@@ -2,6 +2,18 @@ local OOP = require 'OOP'
 local ext_obj_utils = require 'list_ext_obj_utils'
 
 
+local function jump_KM(km, m)
+	local ok, err
+	for o = 0, 10 do
+		ok, err = Driver:JumpPath({km, m+o, 0})
+		if ok then
+			return
+		end
+	end
+	local msg = string.format("Не удалось перейти %d километр:\n%s", km, err or '')
+	iup.Message("ATape", msg)
+end
+
 local function _load_km(fnContinueCalc, kms)
 	if Passport.TRACK_CODE == '' then
 		return {}
@@ -59,7 +71,7 @@ local COL_M =
 	align = 'r',
 	width = 70,
 	get_text = function(row_n, obj)
-		return string.format("%d -> %d", obj.BEGIN_M, obj.END_M)
+		return string.format("%4d -> %4d", obj.BEGIN_M, obj.END_M)
 	end,
 }
 
@@ -84,7 +96,7 @@ local KM = OOP.class
 	OnMouse = function(self, act, flags, cell, pos_client, pos_screen)
         local obj  = self:get_object(cell.row)
         if act == 'left_dbl_click' and obj then
-			ext_obj_utils.jump_path({obj.KM, obj.BEGIN_M-1, 0})
+			jump_KM(obj.KM, obj.BEGIN_M-1)
         end
     end,
 	GetExtObjMarks = function (self)
