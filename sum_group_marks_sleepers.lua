@@ -3,7 +3,6 @@ local OOP = require 'OOP'
 local mark_helper = require 'sum_mark_helper'
 local DEFECT_CODES = require 'report_defect_codes'
 local group_utils = require 'sum_group_marks_utils'
-local sqlite3 = require "lsqlite3"
 
 local CHECK = group_utils.CHECK
 
@@ -20,36 +19,6 @@ local function supress_warning_211(...)
     local _ =...
 end
 
--- список координат стыков для определения кода дефекта шпал
-local Joints =  OOP.class{
-    ctor = function (self, dlg, scan_dist)
-        local video_joints_juids =
-        {
-            TYPES.VID_INDT_1,	    -- Стык(Видео)
-            TYPES.VID_INDT_2,	    -- Стык(Видео)
-            TYPES.VID_INDT_3,	    -- СтыкЗазор(Пользователь)
-            TYPES.VID_INDT_ATS,	    -- АТСтык(Видео)
-            TYPES.RAIL_JOINT_USER,	-- Рельсовые стыки(Пользователь)
-            TYPES.VID_ISO,          -- ИзоСтык(Видео)
-        }
-        local joints = group_utils.loadMarks(video_joints_juids, nil, dlg)
-        local coords = {}
-        for _, mark in ipairs(joints) do
-            table.insert(coords, mark.prop.SysCoord)
-        end
-        table.sort(coords)
-        self._coords = coords
-        self._scan_dist = scan_dist
-    end,
-
-    check_group = function (self, group)
-        local c1 = group[1] - self._scan_dist
-        local c2 = group[#group] + self._scan_dist
-        local i1 = mark_helper.lower_bound(self._coords, c1)
-        local i2 = mark_helper.lower_bound(self._coords, c2)
-        return i1 < i2
-    end,
-}
 
 local SleeperMarkCache = OOP.class{
     _cmp = function (a, b)
@@ -114,13 +83,14 @@ local SleeperScanner = OOP.class
         self.defects = nil
     end,
 
+    -- объединение близких отметок в отметки шпал
     enum_sleepers = function (self)
         assert(not self.defects)
         assert(self.sleepers)
         return coroutine.wrap(function ()
             local prev_coord = nil
             local cur_defects = {}
-            for i, sleeper in ipairs(self.sleepers) do
+            for _, sleeper in ipairs(self.sleepers) do
                 local coord, defect = sleeper[1], sleeper[2]
                 if prev_coord and coord - prev_coord > self.serach_dist then
                     coroutine.yield(prev_coord, cur_defects)
@@ -137,6 +107,7 @@ local SleeperScanner = OOP.class
         end)
     end,
 
+    -- сбор шпал с дефектами в группы
     enum_defect_groups = function (self)
         return coroutine.wrap(function ()
             local cur_group = {}
@@ -200,7 +171,7 @@ local SleeperGroups = OOP.class
     end,
 
     LoadMarks = function (self, _, dlg, pov_filter)
-        self._joints = Joints(dlg, 1500)
+        self._joints = group_utils.Joints(dlg, 1500)
 
         --[[ сейчас для формирования групповых дефектов нужны только дефектные шпалы (и установленные пользователем),
         а эпюра и перпендикулярность игнорируются https://bt.abisoft.spb.ru/view.php?id=925#c4760

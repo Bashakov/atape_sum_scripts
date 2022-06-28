@@ -1,6 +1,7 @@
 local mark_helper = require 'sum_mark_helper'
 local funcional = require 'functional'
-
+local OOP = require 'OOP'
+local TYPES = require 'sum_types'
 
 
 local function make_progress_cb(dlg, title, step)
@@ -17,10 +18,9 @@ end
 
 local function filter_rail(marks, rail)
     assert(rail == 1 or rail == 2)
-    local function f(mark)
+    return funcional.filter(function (mark)
         return bit32.btest(mark.prop.RailMask, rail)
-    end
-    return funcional.filter(f, marks)
+    end, marks)
 end
 
 local function filter_pov_operator(marks, pov_operator)
@@ -143,6 +143,82 @@ local function save_marks(marks, dlg)
     end
 end
 
+-- список стрелок
+local Switchers = OOP.class
+{
+    ctor = function (self, marks)
+        if not marks then
+            local switch_guids = {
+                TYPES.STRELKA1, TYPES.STRELKA2, TYPES.STRELKA3, TYPES.STRELK4
+            }
+            -- найти все стрелки
+            marks = Driver:GetMarks{ListType='all', GUIDS=switch_guids}
+        end
+
+        self._items = {}
+        for i = 1, #marks do
+            local mark = marks[i]
+            local prop = mark.prop
+            table.insert(self._items, {from=prop.SysCoord, to=prop.SysCoord + prop.Len, id=prop.ID})
+            table.sort(self._items, self._cmp)
+        end
+    end,
+
+    -- проверить что координата находится в стрелке
+    overalped = function(self, c1, c2)
+        assert(c1 <= c2)
+
+        local i1 = mark_helper.lower_bound(self._items, {from=c1}, self._cmp)
+        local i2 = mark_helper.lower_bound(self._items, {from=c2}, self._cmp)
+        for i = i1-1, i2 do
+            local switch = self._items[i]
+            if switch then
+                local l = math.max(c1, switch.from)
+                local r = math.min(c2, switch.to)
+                if l <= r then
+                    return switch.id
+                end
+            end
+        end
+        return nil
+    end,
+
+    _cmp = function (a, b)
+        return a.from < b.from
+    end
+}
+
+-- список координат стыков для определения кода дефекта шпал
+local Joints =  OOP.class{
+    ctor = function (self, dlg, scan_dist)
+        local video_joints_juids =
+        {
+            TYPES.VID_INDT_1,	    -- Стык(Видео)
+            TYPES.VID_INDT_2,	    -- Стык(Видео)
+            TYPES.VID_INDT_3,	    -- СтыкЗазор(Пользователь)
+            TYPES.VID_INDT_ATS,	    -- АТСтык(Видео)
+            TYPES.RAIL_JOINT_USER,	-- Рельсовые стыки(Пользователь)
+            TYPES.VID_ISO,          -- ИзоСтык(Видео)
+        }
+        local joints = loadMarks(video_joints_juids, nil, dlg)
+        local coords = {}
+        for _, mark in ipairs(joints) do
+            table.insert(coords, mark.prop.SysCoord)
+        end
+        table.sort(coords)
+        self._coords = coords
+        self._scan_dist = scan_dist
+    end,
+
+    check_group = function (self, group)
+        local c1 = group[1] - self._scan_dist
+        local c2 = group[#group] + self._scan_dist
+        local i1 = mark_helper.lower_bound(self._coords, c1)
+        local i2 = mark_helper.lower_bound(self._coords, c2)
+        return i1 < i2
+    end,
+}
+
 -- ===============================================
 
 return
@@ -156,4 +232,6 @@ return
     scanGroupDefect = scanGroupDefect,
     remove_old_marks = remove_old_marks,
     save_marks = save_marks,
+    Switchers = Switchers,
+    Joints = Joints,
 }

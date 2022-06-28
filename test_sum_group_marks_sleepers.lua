@@ -1,8 +1,7 @@
 local lu = require('luaunit')
 
-print(package.cpath)
 package.cpath = package.cpath  .. ';D:\\Distrib\\lua\\ZeroBraneStudioEduPack\\bin\\clibs52\\?.dll'
-print(package.cpath)
+
 
 local sum_group_marks_sleepers = require 'sum_group_marks_sleepers'
 local SleeperScanner = sum_group_marks_sleepers.SleeperScanner
