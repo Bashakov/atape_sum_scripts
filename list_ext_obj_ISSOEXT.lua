@@ -12,7 +12,7 @@ local function _load_issoext(fnContinueCalc, kms)
 		FROM
 			ISSOEXT as i
 		JOIN
-			WAY AS w ON i.UP_NOM = w.UP_NOM and i.siteid = w.siteid
+			WAY AS w ON i.UP_NOM = w.UP_NOM and i.siteid = w.siteid and w.NOM = i.PUT_NOM
 		JOIN
 			SPR_ISSOEXT AS t ON i.TYPE = t.ID
 		WHERE

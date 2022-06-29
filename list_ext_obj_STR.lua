@@ -9,10 +9,10 @@ local function _load_str(fnContinueCalc, kms)
 	local sql = [[
 			SELECT
 				s.KM, s.M, t.TYPE, p.TYPE as POSH, s.ID_OB, s.NOM
-			FROM 
+			FROM
 				STR as s
 			JOIN
-				WAY as w ON w.UP_NOM = s.UP_NOM AND w.siteid = s.siteid
+				WAY as w ON w.UP_NOM = s.UP_NOM AND w.siteid = s.siteid and w.NOM = s.NOM
 			JOIN
 				SPR_STR AS t ON s.TYPE = t.ID
 			JOIN

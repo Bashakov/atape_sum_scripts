@@ -9,9 +9,11 @@ local function _load_iso(fnContinueCalc, kms)
 		SELECT
 			i.KM, i.M, i.ID
 		FROM
-			ISO as i, WAY AS w
+			ISO as i
+		JOIN
+			WAY AS w ON	i.UP_NOM = w.UP_NOM and i.PUT_NOM = w.NOM and i.siteid = w.siteid
 		WHERE
-			i.UP_NOM = w.UP_NOM and i.PUT_NOM = w.NOM and w.ASSETNUM = :ASSETNUM
+			w.ASSETNUM = :ASSETNUM
 		ORDER BY
 			CAST(i.KM AS REAL), CAST(i.M AS REAL)
 		]]

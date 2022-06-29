@@ -22,9 +22,10 @@ local function _load_km(fnContinueCalc, kms)
 	local sql = [[
 		SELECT
 			k.ID, k.KM, k.BEGIN_M, k.END_M, k.LENGT
-		FROM KM AS k
-		JOIN WAY as w ON
-			k.UP_NOM = w.UP_NOM and k.PUT_NOM = w.NOM and k.SITEID = w.SITEID
+		FROM
+			KM AS k
+		JOIN
+			WAY as w ON	k.UP_NOM = w.UP_NOM and k.PUT_NOM = w.NOM and k.SITEID = w.SITEID
 		WHERE
 			w.ASSETNUM = :ASSETNUM
 		ORDER BY
