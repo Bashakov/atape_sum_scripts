@@ -48,90 +48,6 @@ local SleeperMarkCache = OOP.class{
     end,
 }
 
--- загружаем все координаты дефектов и просто отметок в список,
--- потом сортируем его и группируем близкие отметки и потом ищем дефектные подряд
-local SleeperScanner = OOP.class
-{
-    ctor = function (self, serach_dist, epur)
-        self.serach_dist = serach_dist or 150
-        self.epur = epur or (1000000/1840)
-        self.defects = {}
-        self.sleepers = nil
-    end,
-
-    insert = function (self, coord, defect)
-        assert(not self.sleepers)
-        while true do
-            if type(self.defects[coord]) ~= 'nil' then
-                coord = coord+1
-            else
-                self.defects[coord] = defect or false
-                break
-            end
-        end
-    end,
-
-    prepare = function (self)
-        assert(not self.sleepers)
-        assert(self.defects)
-        local sleepers = {}
-        for c, d in pairs(self.defects) do
-            sleepers[#sleepers+1] = {c, d}
-        end
-        table.sort(sleepers, function (a, b) return a[1] < b[1] end)
-        self.sleepers = sleepers
-        self.defects = nil
-    end,
-
-    -- объединение близких отметок в отметки шпал
-    enum_sleepers = function (self)
-        assert(not self.defects)
-        assert(self.sleepers)
-        return coroutine.wrap(function ()
-            local prev_coord = nil
-            local cur_defects = {}
-            for _, sleeper in ipairs(self.sleepers) do
-                local coord, defect = sleeper[1], sleeper[2]
-                if prev_coord and coord - prev_coord > self.serach_dist then
-                    coroutine.yield(prev_coord, cur_defects)
-                    cur_defects = {}
-                end
-                if defect then
-                    table.insert(cur_defects, defect)
-                end
-                prev_coord = coord
-            end
-            if prev_coord and #cur_defects > 0 then
-                coroutine.yield(prev_coord, cur_defects)
-            end
-        end)
-    end,
-
-    -- сбор шпал с дефектами в группы
-    enum_defect_groups = function (self)
-        return coroutine.wrap(function ()
-            local cur_group = {}
-            for coord, defect in self:enum_sleepers() do
-                if #cur_group > 0 then
-                    if coord - cur_group[#cur_group] > self.epur * 1.5 or #defect == 0 then
-                        if #cur_group > 1 then
-                            coroutine.yield(cur_group)
-                        end
-                        cur_group = {}
-                    end
-                end
-
-                if #defect > 0 then
-                    table.insert(cur_group, coord)
-                end
-            end
-
-            if #cur_group > 1 then
-                coroutine.yield(cur_group)
-            end
-        end)
-    end,
-}
 
 local function get_group_defect(cnt, joint, wood)
     if joint then
@@ -192,9 +108,10 @@ local SleeperGroups = OOP.class
         local marks = group_utils.loadMarks(guigs_sleepers, pov_filter, dlg)
         self._material_cache = SleeperMarkCache(marks)
 
-        local group_scanner = SleeperScanner()
+        local group_maker = group_utils.GroupMaker(1000000/1840 * 1.5, 150)
+
         for _, mark in ipairs(marks) do
-            group_scanner:insert(mark.prop.SysCoord)
+            group_maker:insert(mark.prop.SysCoord)
         end
 
         for _, scanner in ipairs(sum_report_sleepers.group_generators) do
@@ -203,19 +120,18 @@ local SleeperGroups = OOP.class
                 return {}
             end
             for _, row in ipairs(cur_rows) do
-                group_scanner:insert(row.SYS, row.DEFECT_CODE)
+                group_maker:insert(row.SYS, row.DEFECT_CODE)
             end
         end
 
-        group_scanner:prepare()
-
-        for group in group_scanner:enum_defect_groups() do
+        for group in group_maker:enum_defect_groups() do
             self:_check_group(group)
         end
         return {}
     end,
 
     Check = function (self, get_near_mark)
+        assert(0)
         supress_warning_211(self, get_near_mark)
         return CHECK.REFUTE
     end,
@@ -247,5 +163,4 @@ local SleeperGroups = OOP.class
 return
 {
     SleeperGroups = SleeperGroups,
-    SleeperScanner = SleeperScanner,
 }

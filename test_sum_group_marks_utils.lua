@@ -6,6 +6,8 @@ package.cpath = package.cpath  .. ';D:\\Distrib\\lua\\ZeroBraneStudioEduPack\\bi
 
 local group_utils = require 'sum_group_marks_utils'
 
+-- ========================================================== --
+
 function testSwitchers()
     local function make_switcher(coord, len, i)
         return {
@@ -47,5 +49,133 @@ function testSwitchers()
     lu.assertEquals(nil, switchers:overalped(0, 100))
 end
 
+function testDefectJoiner()
+    local defects = {
+        {0, false},
+        {2, "1"},
+        {10, '10'},
+        {12, '12'},
+        {20, '20'},
+        {21, false},
+        {22, false},
+        {23, false},
+        {24, '24'},
+        {30, false},
+        {40, false},
+        {50, '50'},
+        {60, '60'},
+    }
+    local res = {}
+    local dj = group_utils.DefectJoiner(5, function (c, ds)
+        table.insert(res, {c, ds})
+    end)
+    for _, cd in ipairs(defects) do
+        dj:push(cd[1], cd[2])
+    end
+    dj:flash()
+    lu.assertEquals({
+        {1, {'1'}},
+        {11, {'10', '12'}},
+        {22, {'20', '24'}},
+        {30, {}},
+        {40, {}},
+        {50, {'50'}},
+        {60, {'60'}},
+    }, res)
+end
+
+function testGroupJoiner()
+    local objs = {
+        {0, false},
+        {10, true},
+        {11, true},
+        {15, true},
+        {20, true},
+        {40, true},
+        {60, true},
+        {70, true},
+        {75, false},
+        {80, true},
+        {90, true},
+        {120,true},
+    }
+    local res = {}
+    local gj = group_utils.GroupJoiner(10, function (g)
+        table.insert(res, g)
+    end)
+    for _, obj in ipairs(objs) do
+        gj:push(obj[1], obj[2])
+    end
+    gj:flash()
+    lu.assertEquals({
+        {10, 11, 15, 20},
+        {60, 70},
+        {80, 90},
+    }, res)
+end
+
+function testGroupMaker()
+    local marks = {
+        {0, false},
+        {2, "1"},
+        {10, '10'},
+        {12, '12'},
+        {20, '20'},
+        {21, false},
+        {22, false},
+        {23, false},
+        {24, '24'},
+        {30, false},
+        {40, false},
+        {50, '50'},
+        {60, '60'},
+    }
+    local gm = group_utils.GroupMaker(15, 5)
+    for _, mark in ipairs(marks) do
+        gm:insert(mark[1], mark[2])
+    end
+    local res = {}
+    for group in gm:enum_defect_groups() do
+        table.insert(res, group)
+    end
+    lu.assertEquals({
+        {1, 11, 22},
+        {50, 60},
+    }, res)
+end
+
+
+function testGroupMaker2()
+    local sc = group_utils.GroupMaker(1000000/1840 * 1.5, 150)
+    sc:insert(1000)
+    sc:insert(1100, "code1")
+    sc:insert(1130)
+
+    sc:insert(1500)
+
+    sc:insert(2000, '2000')
+    sc:insert(2500, '2500')
+    sc:insert(3600)
+
+    sc:insert(3000)
+    sc:insert(3500)
+    sc:insert(4500)
+
+    sc:insert(5000, "5000")
+    sc:insert(5300)
+    sc:insert(5600, '5600')
+    sc:insert(6000)
+
+    sc:insert(6300, '6300')
+    sc:insert(7000, '7000')
+
+    local groups = {}
+    for group in sc:enum_defect_groups() do
+        table.insert(groups, table.concat(group, ','))
+    end
+    lu.assertEquals("2000,2500;6300,7000", table.concat(groups, ";"))
+end
+
+-- ========================================================== --
 
 os.exit( lu.LuaUnit.run() )

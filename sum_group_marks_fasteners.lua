@@ -46,12 +46,27 @@ local function fastener_group_to_code(group_len, place)
     end
 end
 
+local function is_fastener_defect(mark)
+    local defect
+    if mark.prop.Guid == TYPES.FASTENER_USER then
+        defect =
+            mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1] or
+            mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP[1] or
+            mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_BOLT[1]
+    else
+        local prm = mark_helper.GetFastenetParams(mark)
+        local FastenerFault = prm and prm.FastenerFault
+        defect = FastenerFault and FastenerFault > 0
+    end
+    return defect
+end
+
 
 local FastenerGroups = OOP.class
 {
     NAME = 'Скрепления',
     GUID = '{B6BAB49E-4CEC-4401-A106-355BFB2E0021}',
-    FastenerMaxDinstanceToSleeperJoin = 100,
+    FastenerMaxDinstanceToSleeperJoin = 100,    -- https://bt.abisoft.spb.ru/view.php?id=617
     FastenerMaxGroupDistance = 1000000/1840 * 1.5,
 
     PARAMETERS = {
@@ -62,26 +77,6 @@ local FastenerGroups = OOP.class
     ctor = function (self)
         self.marks = {}                 -- хранилище найденных отметок
         self._switchers = group_utils.Switchers()   -- стрелки
-        self._defect_mark_ids = {}      -- таблица id отметки - дефектность
-    end,
-
-    _is_fastener_defect = function (self, mark)
-        local defect = self._defect_mark_ids[mark.prop.ID]
-        if defect == nil then
-            if mark.prop.Guid == TYPES.FASTENER_USER then
-                defect =
-                    mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT[1] or
-                    mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_CLAMP[1] or
-                    mark.ext.CODE_EKASUI == DEFECT_CODES.FASTENER_MISSING_BOLT[1]
-            else
-                local prm = mark_helper.GetFastenetParams(mark)
-                local FastenerFault = prm and prm.FastenerFault
-                defect = not not FastenerFault and FastenerFault > 0
-            end
-            self._defect_mark_ids[mark.prop.ID] = defect
-        end
-        assert(type(defect) == 'boolean', type(defect))
-        return defect
     end,
 
     LoadMarks = function (self, param, dlg)
@@ -95,81 +90,46 @@ local FastenerGroups = OOP.class
         local marks = group_utils.loadMarks(guids_fasteners)
         marks = group_utils.filter_rail(marks, param.rail)
 
-        -- https://bt.abisoft.spb.ru/view.php?id=617
-        local function is_pair_defect(mark, neighbour)
-            if neighbour then
-                local dist = math.abs(neighbour.prop.SysCoord - mark.prop.SysCoord)
-                if dist < self.FastenerMaxDinstanceToSleeperJoin then
-                    return self:_is_fastener_defect(neighbour)
-                end
-            end
-            return false
-        end
+        local group_maker = group_utils.GroupMaker(
+            self.FastenerMaxGroupDistance,
+            self.FastenerMaxDinstanceToSleeperJoin)
 
-        -- удалим хорошие отметки, если с другой стороны рельса есть дефектная
-        local res = {}
         for i, mark in ipairs(marks) do
             if not progress(i, #marks) then return {} end
-            if self:_is_fastener_defect(mark) then
-                -- если дефектная, то добавляем
-                table.insert(res, mark)
-            else
-                -- иначе посмотрим на соседей
-                if is_pair_defect(mark, marks[i-1]) or
-                   is_pair_defect(mark, marks[i+1]) then
-                    -- парная дефектная, значит эту пропускаем
-                    printf('skip %d/%d, on found pair defect', mark.prop.RailMask, mark.prop.SysCoord)
-                else
-                    -- нет парных, или они не дефектные. добавляем
-                    table.insert(res, mark)
-                end
-            end
+            local defect = is_fastener_defect(mark)
+            group_maker:insert(mark.prop.SysCoord, defect)
         end
-        printf('skip %d fasteners, leave %d', #marks - #res, #res)
-        return res
+
+        for group in group_maker:enum_defect_groups() do
+            self:OnGroup(group, param)
+        end
+
+        return {}
     end,
 
     Check = function (self, get_near_mark)
-        local mark = get_near_mark(0)
-        if not self:_is_fastener_defect(mark) then
-            -- если отметка хорошая, то пропускаем ее и закрываем группу
-            return CHECK.REFUTE
-        end
-        -- иначе посмотрим расстояние до предыдущей отметки
-        local prev = get_near_mark(-1)
-        if prev then
-            local dist = math.abs(prev.prop.SysCoord - mark.prop.SysCoord)
-            if dist > self.FastenerMaxGroupDistance then
-                --[[ если больше чем максимально возможное между шпалами,
-                значит что возможно хорошие скрепления не писались,
-                пред группу надо закрывать и начинать новую ]]
-                return CHECK.CLOSE_ACCEPT
-            end
-        end
-        -- иначе добавляем отметку в группу
-        return CHECK.ACCEPT
+        assert(0)
     end,
 
     OnGroup = function (self, group, param)
         assert(param and param.rail)
-
         if #group >= 2 then
-            local inside_switch = self._switchers:overalped(group[1].prop.SysCoord, group[#group].prop.SysCoord)
+            local inside_switch = self._switchers:overalped(group[1], group[#group])
 
-            local defect = fastener_group_to_code(#group, inside_switch and FASTENER_PLACE.SWITCH or FASTENER_PLACE.STRAIGHT)
+            local place = inside_switch and FASTENER_PLACE.SWITCH or FASTENER_PLACE.STRAIGHT
+            local defect = fastener_group_to_code(#group, place)
             local code_ekasui = defect and defect[1]
             if code_ekasui then
                 local mark = group_utils.makeMark(
                     self.GUID,
-                    group[1].prop.SysCoord,
-                    group[#group].prop.SysCoord - group[1].prop.SysCoord,
+                    group[1],
+                    group[#group] - group[1],
                     param.rail,
                     #group
                 )
                 mark.ext.CODE_EKASUI = code_ekasui
                 table.insert(self.marks, mark)
             end
-            -- print('Fastener', #group, table.unpack(map(function (mark) return mark.prop.SysCoord end, group)))
         end
     end,
 }

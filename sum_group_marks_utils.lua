@@ -219,6 +219,145 @@ local Joints =  OOP.class{
     end,
 }
 
+
+-- объединение меток дефектов в одну отметку
+local DefectJoiner = OOP.class
+{
+    ctor = function (self, union_dist, receiver)
+        self._coords = {}
+        self._defects = {}
+        self._union_dist = union_dist
+        self._receiver = receiver
+    end,
+
+    push = function (self, coord, defect)
+        local dist = self:_prev_dist(coord)
+        if dist and dist > self._union_dist then
+            self:flash()
+        end
+        if defect then
+            table.insert(self._defects, defect)
+        end
+        table.insert(self._coords, coord)
+    end,
+
+    flash = function (self)
+        local mid = self:_mid_coord()
+        if mid then
+            self._receiver(mid, self._defects)
+        end
+        self._coords = {}
+        self._defects = {}
+    end,
+
+    _prev_dist = function (self, coord)
+        if #self._coords > 0 then
+            local prev = self._coords[#self._coords]
+            return coord - prev
+        end
+    end,
+
+    _mid_coord = function (self)
+        local cnt = #self._coords
+        if cnt ~= 0 then
+            local sum = 0
+            for _, c in ipairs(self._coords) do
+                sum = sum + c
+            end
+            return math.floor(sum / cnt + 0.5)
+        end
+    end,
+}
+
+-- Объединение отметок с дефектами в группы
+local GroupJoiner = OOP.class
+{
+    ctor = function (self, max_obj_dist, recv)
+        self._max_obj_dist = max_obj_dist
+        self._cur_group = {}
+        self._receiver = recv
+    end,
+
+    push = function (self, coord, defect)
+        if #self._cur_group ~= 0 then
+            local dist = coord - self._cur_group[#self._cur_group]
+            if dist > self._max_obj_dist or not defect then
+                self:flash()
+            end
+        end
+
+        if defect then
+            table.insert(self._cur_group, coord)
+        end
+    end,
+
+    flash = function (self)
+        if #self._cur_group > 1 then
+            self._receiver(self._cur_group)
+        end
+        self._cur_group = {}
+    end
+}
+
+-- загружаем все отметки на одну прямую, а потом идем по ней и смотрим наличие дефектности
+local GroupMaker = OOP.class
+{
+    ctor = function (self, max_group_dist, max_self_dist)
+        self.defects = {}
+        self.marks = nil
+        self.max_group_dist = max_group_dist
+        self.union_dist = max_self_dist  -- расстояние до отметки распознавания того же скрепления по др камере
+    end,
+
+    insert = function (self, coord, defect)
+        assert(not self.marks)
+        while true do
+            if self.defects[coord] == nil then
+                self.defects[coord] = defect or false
+                break
+            end
+            coord = coord + 1
+        end
+    end,
+
+    -- сбор отметок с дефектами в группы
+    enum_defect_groups = function (self)
+        return coroutine.wrap(function ()
+            local joiner = GroupJoiner(self.max_group_dist, coroutine.yield)
+            for coord, defects in self:_enum_objects() do
+                joiner:push(coord, #defects > 0)
+            end
+            joiner:flash()
+        end)
+    end,
+
+    -- объединение близких дефектов в объекты
+    _enum_objects = function (self)
+        self:_prepare()
+        assert(not self.defects)
+        assert(self.marks)
+        return coroutine.wrap(function ()
+            local joiner = DefectJoiner(self.union_dist, coroutine.yield)
+            for _, sleeper in ipairs(self.marks) do
+                joiner:push(sleeper[1], sleeper[2])
+            end
+            joiner:flash()
+        end)
+    end,
+
+    _prepare = function (self)
+        assert(not self.marks)
+        assert(self.defects)
+        local marks = {}
+        for c, d in pairs(self.defects) do
+            marks[#marks+1] = {c, d}
+        end
+        table.sort(marks, function (a, b) return a[1] < b[1] end)
+        self.marks = marks
+        self.defects = nil
+    end,
+}
+
 -- ===============================================
 
 return
@@ -234,4 +373,7 @@ return
     save_marks = save_marks,
     Switchers = Switchers,
     Joints = Joints,
+    DefectJoiner = DefectJoiner,
+    GroupJoiner = GroupJoiner,
+    GroupMaker = GroupMaker,
 }
