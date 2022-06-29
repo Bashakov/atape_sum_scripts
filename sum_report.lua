@@ -14,7 +14,7 @@ if iup then
  iup.SetGlobal('UTF8MODE', 1)
 end
 
-
+require 'ExitScope'
 mark_helper = require 'sum_mark_helper'
 luaiup_helper = require 'luaiup_helper'
 excel_helper = require 'excel_helper'
@@ -388,7 +388,7 @@ local function report_crew_join(params)
 		excel:ApplyPassportValues(Passport)
 		local data_range = excel:CloneTemplateRow(#mark_pairs) -- data_range - область, куда вставлять отметки
 
-		assert(#mark_pairs == data_range.Rows.count, 'mismatch count of mark_pairs and table rows')
+		assert(#mark_pairs == 0 or #mark_pairs == data_range.Rows.count, 'mismatch count of mark_pairs and table rows')
 
 		local function insert_mark(line, rail, mark)
 			local column_offset = (rail == right_rail_mask) and 5 or 0
@@ -419,7 +419,7 @@ local function report_crew_join(params)
 			end
 		end 
 
-		if ShowVideo == 0 then  -- спрячем столбцы с видео
+		if data_range and ShowVideo == 0 then  -- спрячем столбцы с видео
 			excel:AutoFitDataRows()
 			data_range.Cells(nil, 5).ColumnWidth = 1
 			data_range.Cells(nil, 10).ColumnWidth = 1
@@ -474,7 +474,9 @@ local function report_crew_join(params)
 		dst_file:write(res)
 		dst_file:close()
 		
-		os.execute("start " .. file_name)
+		if not DONT_OPEN_RESULT then
+			os.execute("start " .. file_name)
+		end
 	else
 		errorf('для отчета должен быть задан файл шаблона или флаг отчета ЕКСУИ')
 	end
@@ -545,7 +547,6 @@ local function report_gaps(params)
 		excel:ApplyPassportValues(Passport)
 		local data_range = excel:CloneTemplateRow(#mark_pairs)
 
-		--print(#mark_pairs, data_range.Rows.count)
 		assert(#mark_pairs == 0 or #mark_pairs == data_range.Rows.count, 'misamtch count of mark_pairs and table rows') -- https://bt.abisoft.spb.ru/view.php?id=935#c4801
 		
 		
@@ -606,7 +607,7 @@ local function report_gaps(params)
 			end
 		end 
 		
-		if ShowVideo == 0 then 
+		if data_range and ShowVideo == 0 then 
 			excel:AutoFitDataRows()
 			data_range.Cells(nil, 8).ColumnWidth = 0
 			data_range.Cells(nil, 17).ColumnWidth = 0
@@ -685,13 +686,16 @@ local function report_gaps(params)
 		dst_file:write(res)
 		dst_file:close()
 		
-		os.execute("start " .. file_name)
+		if not DONT_OPEN_RESULT then
+			os.execute("start " .. file_name)
+		end
 	end
 	dlg:Destroy()
 end
 
 -- отчет по маячнам отметкам
 local function report_welding(params)
+	return EnterScope(function (defer)
 	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
 	local ok, setup_temperature = iup.GetParam(params.sheetname, nil, "Температура закрепления: %i\n", 35)
 	if not ok then	
@@ -704,6 +708,7 @@ local function report_welding(params)
 		}
 	
 	local dlg = luaiup_helper.ProgressDlg()
+	defer(dlg.Destroy, dlg)
 	local marks = Driver:GetMarks()
 	
 	marks = FilterSort(marks, 
@@ -717,7 +722,7 @@ local function report_welding(params)
 	excel:ApplyPassportValues(Passport)
 	local data_range = excel:CloneTemplateRow(#mark_pairs)
 
-	assert(#mark_pairs == data_range.Rows.count, 'misamtch count of mark_pairs and table rows')
+	assert(#mark_pairs == 0 or #mark_pairs == data_range.Rows.count, 'misamtch count of mark_pairs and table rows')
 
 	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 	assert(xmlDom, 'can not create MSXML object')
@@ -777,17 +782,23 @@ local function report_welding(params)
 		end
 	end 
 
-	if ShowVideo == 0 then 
+	if data_range and ShowVideo == 0 then 
 		excel:AutoFitDataRows()
 		data_range.Cells(nil, 8).ColumnWidth = 0
 		data_range.Cells(nil, 16).ColumnWidth = 0
 	end
 	excel:SaveAndShow()
+	end)
 end
 
 -- отчет по скреплениям 
 local function report_fasteners(params)
-	local filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Показать все", "Дефектные", "Нормальные"}, 2)
+	return EnterScope(function (defer)
+		
+	local filter_mode = 2
+	if not HIDE_PROGRESS_DLG then
+		filter_mode = luaiup_helper.ShowRadioBtn('Тип отчета', {"Показать все", "Дефектные", "Нормальные"}, filter_mode)
+	end
 	
 	if not filter_mode then
 		return
@@ -804,6 +815,7 @@ local function report_fasteners(params)
 	end
 	
 	local dlg = luaiup_helper.ProgressDlg()
+	defer(dlg.Destroy, dlg)
 	local marks = Driver:GetMarks()
 	
 	marks = mark_helper.filter_marks(marks, filter_fn, make_filter_progress_fn(dlg))
@@ -829,7 +841,7 @@ local fastener_fault_names = {
 }
 
 
-	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
+	assert(#marks == 0 or #marks == data_range.Rows.count, 'misamtch count of mark and table rows')
 
 	for line, mark in ipairs(marks) do
 		local prop, ext = mark.prop, mark.ext
@@ -849,18 +861,19 @@ local fastener_fault_names = {
 		end
 	end 
 
-	if ShowVideo == 0 then 
+	if data_range and ShowVideo == 0 then 
 		excel:AutoFitDataRows()
 		data_range.Cells(6).ColumnWidth = 0
 	end
 	
 	excel:SaveAndShow()
+	end)
 end
 
 
 -- отчет по сткпенькам на стыках
 local function report_recog_joint_step(params)
-
+	return EnterScope(function (defer)
 	local ok, min_height = iup.GetParam(params.sheetname, nil, "Пороговая высота ступеньки: %i мм\n", 20)
 	if not ok then	
 		return
@@ -876,6 +889,7 @@ local function report_recog_joint_step(params)
 	end
 	
 	local dlg = luaiup_helper.ProgressDlg()
+	defer(dlg.Destroy, dlg)
 	local marks = Driver:GetMarks()
 	
 	marks = mark_helper.filter_marks(marks, filter_fn, make_filter_progress_fn(dlg))
@@ -885,7 +899,7 @@ local function report_recog_joint_step(params)
 	excel:ApplyPassportValues(Passport)
 	local data_range = excel:CloneTemplateRow(#marks)
 
-	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
+	assert(#marks == 0 or #marks == data_range.Rows.count, 'misamtch count of mark and table rows')
 
 	for line, mark in ipairs(marks) do
 		local prop, ext = mark.prop, mark.ext
@@ -904,17 +918,19 @@ local function report_recog_joint_step(params)
 		end
 	end 
 
-	if ShowVideo == 0 then 
+	if data_range and ShowVideo == 0 then 
 		excel:AutoFitDataRows()
 		data_range.Cells(4).ColumnWidth = 0
 	end
 	
 	excel:SaveAndShow()
+	end)
 end
 
 
 -- отчет по неспецифицированным объектам
 local function report_surface_defects(params)
+	return EnterScope(function (defer)
 	local res, user_width, user_lenght, user_area = iup.GetParam("Фильтрация дефектов", nil, 
 		"Ширина (мм): %s\n\z
 		Высота (мм): %s\n\z
@@ -952,6 +968,7 @@ local function report_surface_defects(params)
 	end
 	
 	local dlg = luaiup_helper.ProgressDlg()
+	defer(dlg.Destroy, dlg)
 	local marks = Driver:GetMarks()
 	
 	marks = mark_helper.filter_marks(marks, filter_fn, make_filter_progress_fn(dlg))
@@ -961,7 +978,7 @@ local function report_surface_defects(params)
 	excel:ApplyPassportValues(Passport)
 	local data_range = excel:CloneTemplateRow(#marks)
 
-	assert(#marks == data_range.Rows.count, 'misamtch count of mark and table rows')
+	assert(#marks == 0 or #marks == data_range.Rows.count, 'misamtch count of mark and table rows')
 
 	for line, mark in ipairs(marks) do
 		
@@ -986,11 +1003,12 @@ local function report_surface_defects(params)
 		end
 	end 
 
-	if ShowVideo == 0 then 
+	if data_range and ShowVideo == 0 then 
 		excel:AutoFitDataRows()
 		data_range.Cells(5).ColumnWidth = 0
 	end
 	excel:SaveAndShow()
+	end)
 end
 
 local function report_show_passport()

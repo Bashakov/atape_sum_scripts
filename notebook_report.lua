@@ -175,7 +175,7 @@ local function vedomost_with_US_images_excel(records)
 		data_range.Columns(19).ColumnWidth = 40.0
 	end
 
-	assert(#records == data_range.Rows.count, 'misamtch count of mark and table rows')
+	assert(#records == 0 or #records == data_range.Rows.count, 'misamtch count of mark and table rows')
 
 	for line, record in ipairs(records) do
 		local km, m, mm = Driver:GetPathCoord(record.MARK_COORD)

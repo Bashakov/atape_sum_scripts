@@ -305,7 +305,7 @@ local function AskEkasuiParam()
 				дата (ГГГГММДД_ЧЧММСС): %s\n\z
 				вид проверки: %o|рабочая|контрольная|дополнительная|\n\z
 				ID пути БД ЕК АСУИ: %s\n\z",
-				Passport.SITEID, Passport.CARID, psp_date, 0, Passport.TRACK_CODE
+				Passport.SITEID or '', Passport.CARID or '', psp_date, 0, Passport.TRACK_CODE
 			)
 		if ok then
 			return {road=road, vagon=vagon, proezd=proezd, proverka=proverka, assetnum=assetnum}

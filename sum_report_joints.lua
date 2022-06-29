@@ -504,10 +504,6 @@ local function generate_rows_user(marks, dlgProgress, pov_filter)
 	return report_rows
 end
 
-local function report_broken_insulation()
-	iup.Message('Error', "Отчет не реализован")
-end
-
 -- вместо функций генераторов, вставляем функции обертки вызывающие генераторы с доп параметрами
 local function make_gen_pov_filter(generator, ...)
 	local args = {...}
@@ -620,7 +616,6 @@ local function AppendReports(reports)
 		{name = name_pref..'Определение наличия и состояния (надрыв, трещина, излом) накладок',			fn = report_fishplate,					},
 		{name = name_pref..'Определение наличия и состояния (ослаблен, раскручен, не типовой) стыковых болтов',		fn = report_missing_bolt,	},
 		{name = name_pref..'Определение наличия и состояния приварных рельсовых соединителей',    		fn = report_WeldedBond, 				},
-		{name = name_pref..'*Определение наличия и видимых повреждений изоляции в изолирующих стыках',	fn = report_broken_insulation,			},
 
 		{name = name_pref..'ЕКАСУИ ВСЕ',																		fn = ekasui_ALL,			},
 		{name = name_pref..'ЕКАСУИ Ширина стыкового зазора, мм',    											fn = ekasui_joint_width, 				},

@@ -539,7 +539,7 @@ local function report_short_rails_excel(params)
 		excel:ApplyPassportValues(Passport)
 		local data_range = excel:CloneTemplateRow(#short_rails)
 
-		assert(#short_rails == data_range.Rows.count, 'misamtch count of mark and table rows')
+		assert(#short_rails == 0 or #short_rails == data_range.Rows.count, 'misamtch count of mark and table rows')
 
 		for line, mark_pair in ipairs(short_rails) do
 			local mark1, mark2 = table.unpack(mark_pair)
