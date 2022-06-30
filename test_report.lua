@@ -2,6 +2,7 @@ require "luacom"
 local sqlite3 = require "lsqlite3"
 local OOP = require "OOP"
 local GUID = require "guids"
+local ntb = require 'notebook_xml_utils'
 
 local printf  = function(fmt, ...)	print(string.format(fmt, ...)) end
 local sprintf = function(fmt, ...) return string.format(fmt, ...)  end
@@ -187,9 +188,11 @@ local function read_XmlC(file_path)
 			h.name = idx2names[h.idx]
 			h.type = nil
 			h.idx = nil
-			values[#values + 1] = h
+			if #values == 0 or values[#values].coord <= h.coord then
+				values[#values + 1] = h
+			end
 		else
-			assert()
+			assert(0, 'unknown h.type')
 		end
 	end
 	return values
@@ -432,6 +435,7 @@ local Driver = OOP.class
 		_G.Passport = self._passport
 		_G.EKASUI_PARAMS = read_EKASUI_cfg()
 		self._guids = read_guids()
+		self._notebook = ntb.load_file(psp_path)
 	end,
 
 	GetMarks = function(self, filter)
@@ -531,6 +535,18 @@ local Driver = OOP.class
 		for _, mark in ipairs(marks) do
 			mark:Save()
 		end
+	end,
+
+	GetNoteRecords = function(self)
+		return self._notebook
+	end,
+
+	GetSysCoordRange = function (self)
+		-- тк данные еще не умею смотреть, возьму из gps
+		if #self._gps > 1 then
+			return self._gps[1].coord, self._gps[#self._gps].coord
+		end
+		return 0, 0
 	end
 }
 
