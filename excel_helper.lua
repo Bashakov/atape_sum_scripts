@@ -388,10 +388,12 @@ local excel_helper = OOP.class
 					user_range.Rows(template_row_num+row_count))
 			else
 				user_range.Rows(template_row_num).EntireRow:Delete()
+				self._data_range = nil
 			end
 		else
 			if row_count == 0 then
 				user_range.Rows(template_row_num).EntireRow:Delete()
+				self._data_range = nil
 			end
 			if row_count > 1 then
 				local row_template = user_range.Rows(template_row_num+1).EntireRow -- возьмем строку (включая размеремы EntireRow)
@@ -441,7 +443,9 @@ local excel_helper = OOP.class
 	end,
 
 	AutoFitDataRows = function(self)
-		self._data_range.Rows:AutoFit()
+		if self._data_range then
+			self._data_range.Rows:AutoFit()
+		end
 	end,
 
 	SaveAndShow = function(self)
@@ -536,6 +540,9 @@ local excel_helper = OOP.class
 	ApplyRows = function (self, marks, fn_get_templates_data, dlgProgress)
 		local dst_row_count = #marks
 		local data_range, user_range, template_values, marker = self:CloneTemplateRow(dst_row_count, 0, dlgProgress)
+		if dst_row_count == 0 then
+			return
+		end
 		if marker == '%$table_rs%$' then
 			local row_template = data_range.row - user_range.row
 			local col_count = #template_values

@@ -139,18 +139,19 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg, path
 	node_header:setAttribute("PackageNUM", PackageNUM)
 	node_header:setAttribute("runDate", runDate)
 	node_header:setAttribute("decodeDate", runDate)
-	node_header:setAttribute("carID", EKASUI_PARAMS.carID)
-	node_header:setAttribute("decoder", Passport.SIGNED)
+	node_header:setAttribute("carID", Passport.CARID or "")					-- https://bt.abisoft.spb.ru/view.php?id=935
+	node_header:setAttribute("decoder", Passport.CURRENT_OPERATOR or "")	-- https://bt.abisoft.spb.ru/view.php?id=935
 	node_header:setAttribute("soft", "ATapeXP")
-	node_header:setAttribute("decodePlaceID", "")
+	node_header:setAttribute("decodePlaceID", Passport.RCDM or "")			-- https://bt.abisoft.spb.ru/view.php?id=935
 	node_header:setAttribute("pathType", pathType )
-	node_header:setAttribute("SiteID", EKASUI_PARAMS.SITEID)
+	node_header:setAttribute("SiteID", Passport.SITEID or "")				-- https://bt.abisoft.spb.ru/view.php?id=935
 	node_header:setAttribute("pathID", Passport.TRACK_CODE)
 	node_header:setAttribute("pathText", Passport.TRACK_NUM)
 	node_header:setAttribute("startKM", Passport.FromKm or '0')
 	node_header:setAttribute("startM", "0")
 	node_header:setAttribute("endKM", Passport.ToKm or '0')
 	node_header:setAttribute("endM", "0")
+	node_header:setAttribute("NSIver", Passport.NSIVER or "")				-- https://bt.abisoft.spb.ru/view.php?id=935
 
 	for i, mark in ipairs(marks) do
 		local runtime = Driver:GetRunTime(mark.SYS)
@@ -248,8 +249,8 @@ local function make_ekasui_generator(getMarks, ...)
 
         -- РЕДАКТИРОВАНИЕ  атрибутов проезда
             -- Получаем атрибуты проезда
-        local SiteID   = EKASUI_PARAMS.SITEID
-        local carID    = EKASUI_PARAMS.carID
+        local SiteID   = Passport.SITEID		-- https://bt.abisoft.spb.ru/view.php?id=935
+        local carID    = Passport.CARID			-- https://bt.abisoft.spb.ru/view.php?id=935
         local pathType = 1 						-- https://bt.abisoft.spb.ru/view.php?id=722#c3397
         local pathID   = Passport.TRACK_CODE
         local pathText = Passport.TRACK_NUM
@@ -258,8 +259,8 @@ local function make_ekasui_generator(getMarks, ...)
         "SiteID = %i\n\z carID = %s\n\z pathType = %i\n\z  pathID = %s\n\z pathText = %s\n\z",
         SiteID, carID, pathType, pathID, pathText )
         if res then
-            EKASUI_PARAMS.SITEID = _SiteID
-            EKASUI_PARAMS.carID  = _carID
+            Passport.SITEID 	= _SiteID
+            Passport.CARID  	= _carID
             pathType             = _pathType
             Passport.TRACK_CODE  = _pathID
             Passport.TRACK_NUM   = _pathText
@@ -304,7 +305,7 @@ local function AskEkasuiParam()
 				дата (ГГГГММДД_ЧЧММСС): %s\n\z
 				вид проверки: %o|рабочая|контрольная|дополнительная|\n\z
 				ID пути БД ЕК АСУИ: %s\n\z",
-				EKASUI_PARAMS.SITEID, EKASUI_PARAMS.carID, psp_date, 0, Passport.TRACK_CODE
+				Passport.SITEID or '', Passport.CARID or '', psp_date, 0, Passport.TRACK_CODE
 			)
 		if ok then
 			return {road=road, vagon=vagon, proezd=proezd, proverka=proverka, assetnum=assetnum}

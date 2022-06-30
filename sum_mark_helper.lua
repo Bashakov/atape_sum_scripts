@@ -228,7 +228,17 @@ local function table_merge(...)
 	return res
 end
 
-
+-- проход по таблице в сортированном порядке
+local function sorted(tbl)
+	local keys = {}
+	for n, _ in pairs(tbl) do table.insert(keys, n) end
+	table.sort(keys)
+	local i = 0
+	return function()
+		i = i + 1
+		return keys[i], tbl[keys[i]]
+	end
+end
 
 -- =================== ШИРИНА ЗАЗОРА ===================
 
@@ -1254,6 +1264,7 @@ return {
 	upper_bound = upper_bound,
 	equal_range = equal_range,
 	round = round,
+	sorted = sorted,
 
 	sort_mark_by_coord = sort_mark_by_coord,
 	format_path_coord = format_path_coord,
