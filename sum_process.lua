@@ -237,6 +237,30 @@ local function getMarkImageUserRecog(mark)
 	end
 end
 
+
+-- https://bt.abisoft.spb.ru/view.php?id=932
+local US_RECOG_LEVEL =
+{
+	HI = 1,
+	MED = 2,
+	LO = 3,
+	NONE = 4,
+}
+
+local function get_us_recog_params(mark)
+	local desc = mark.Description
+	local IP, CN, G = string.match(desc, "IP:%s*(%d+)%s*CN:%s*(%d+)%s*G:%s*(%d+)")
+	return tonumber(IP), tonumber(CN), tonumber(G)
+end
+
+local function get_us_recog_lvl(mark)
+	local IP = get_us_recog_params(mark)
+	if not IP then		return US_RECOG_LEVEL.NONE	end
+	if IP <= 200 then	return US_RECOG_LEVEL.LO		end
+	if IP <= 500 then	return US_RECOG_LEVEL.MED	end
+						return US_RECOG_LEVEL.HI
+end
+
 -- ================================ GUIDS ================================= --
 
 
@@ -334,6 +358,23 @@ function GetMarkImage(mark) -- exported (return ico desc from mark)
 	local chMask = mark.ChannelMask
 	local coord = mark.SysCoord
 	local typeGuid = mark.Guid
+
+	if typeGuid == "{29FF08BB-C344-495B-82ED-00000000000C}" or typeGuid == "{29FF08BB-C344-495B-82ED-000000000010}" then
+		-- https://bt.abisoft.spb.ru/view.php?id=932
+		local lvl = get_us_recog_lvl(mark)
+		local y = bit32.band(RailMask, 0x3) - 1
+		local x = 4
+		if lvl == US_RECOG_LEVEL.HI  then x = 1 end
+		if lvl == US_RECOG_LEVEL.MED then x = 2 end
+		if lvl == US_RECOG_LEVEL.LO  then x = 3 end
+
+		local img_size = { x=16, y=16 }                        -- set img size
+		local res = {
+			filename = 'Images/us_recog.bmp',                -- filename
+			src_rect = {x * img_size.x, y *img_size.y, img_size.x, img_size.y}, -- {left, top, width, height}
+		}
+		return res
+	end
 
 	local rail, video = getMarkRail(mark)                -- get rail and fideo_glag
 	
