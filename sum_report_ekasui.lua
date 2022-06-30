@@ -249,8 +249,8 @@ local function make_ekasui_generator(getMarks, ...)
 
         -- РЕДАКТИРОВАНИЕ  атрибутов проезда
             -- Получаем атрибуты проезда
-        local SiteID   = EKASUI_PARAMS.SITEID
-        local carID    = EKASUI_PARAMS.carID
+        local SiteID   = Passport.SITEID		-- https://bt.abisoft.spb.ru/view.php?id=935
+        local carID    = Passport.CARID			-- https://bt.abisoft.spb.ru/view.php?id=935
         local pathType = 1 						-- https://bt.abisoft.spb.ru/view.php?id=722#c3397
         local pathID   = Passport.TRACK_CODE
         local pathText = Passport.TRACK_NUM
@@ -259,8 +259,8 @@ local function make_ekasui_generator(getMarks, ...)
         "SiteID = %i\n\z carID = %s\n\z pathType = %i\n\z  pathID = %s\n\z pathText = %s\n\z",
         SiteID, carID, pathType, pathID, pathText )
         if res then
-            EKASUI_PARAMS.SITEID = _SiteID
-            EKASUI_PARAMS.carID  = _carID
+            Passport.SITEID 	= _SiteID
+            Passport.CARID  	= _carID
             pathType             = _pathType
             Passport.TRACK_CODE  = _pathID
             Passport.TRACK_NUM   = _pathText
