@@ -12,7 +12,7 @@ local function _load_str(fnContinueCalc, kms)
 			FROM
 				STR as s
 			JOIN
-				WAY as w ON w.UP_NOM = s.UP_NOM AND w.siteid = s.siteid and w.NOM = s.NOM
+				WAY as w ON w.UP_NOM = s.UP_NOM AND w.siteid = s.siteid and w.NOM = s.PUT_NOM
 			JOIN
 				SPR_STR AS t ON s.TYPE = t.ID
 			JOIN
