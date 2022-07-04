@@ -552,4 +552,7 @@ local Driver = OOP.class
 
 Driver.GUID = GUID
 
-return Driver
+return
+{
+	Driver = Driver
+}
