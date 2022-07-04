@@ -747,8 +747,9 @@ local function ProcessSleeper(mark)
 		local color = {r=250, g=0, b=0, a=255}
 		drawLines(points, 1, color, color)
 
-		local ml = string.gsub(defect_code, ",", "\n")
-		OutlineTextOut(xc, h+10, ml, {line_color=color})
+		--local text = string.gsub(defect_code, ",", "\n")
+		local text = string.format("<- %d mm", dist_next)
+		OutlineTextOut(xc, h+10, text, {line_color=color})
 	end
 end
 
