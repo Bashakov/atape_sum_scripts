@@ -1052,16 +1052,6 @@ prev_ATAPE = ATAPE -- disable test code execute
 ATAPE = true
 
 if not HUN then
-	for _, report in ipairs(cur_file_reports) do
-		table.insert(Report_Functions, report)
-	end
-
-	local report_rubki = require 'sum_report_rubki'
-	report_rubki.AppendReports(Report_Functions)
-	
-	local report_npu = require 'sum_report_npu'
-	report_npu.AppendReports(Report_Functions)
-	
 	local report_rails = require 'sum_report_rails'
 	report_rails.AppendReports(Report_Functions)
 
@@ -1079,6 +1069,16 @@ if not HUN then
 
 	local report_summory = require 'sum_report_summary'
 	report_summory.AppendReports(Report_Functions)
+
+	local report_rubki = require 'sum_report_rubki'
+	report_rubki.AppendReports(Report_Functions)
+
+	local report_npu = require 'sum_report_npu'
+	report_npu.AppendReports(Report_Functions)
+
+	for _, report in ipairs(cur_file_reports) do
+		table.insert(Report_Functions, report)
+	end
 else
 	local report_hun_video = require 'sum_report_hun'
 	report_hun_video.AppendReports(Report_Functions)

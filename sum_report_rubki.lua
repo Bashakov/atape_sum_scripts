@@ -929,16 +929,18 @@ end
 
 -- =============================================== --
 
+local name_prefix = "КОС (компл. оценка стыка)|"
+
 local cur_reports =
 {
 	{
-		name = "Короткие рубки|Excel",
+		name = name_prefix .. "Excel",
 		fn = report_short_rails_excel,
 		params = {filename="Scripts\\ProcessSum.xlsm", sheetname="Рубки"},
 		guids = joints_guids,
 	},
 	{
-		name = "Короткие рубки|ЕКАСУИ",
+		name = name_prefix .. "ЕКАСУИ",
 		fn = report_short_rails_ekasui,
 		guids = joints_guids,
 	},
