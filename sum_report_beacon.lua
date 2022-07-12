@@ -51,7 +51,7 @@ end
 
 local function generate_row_beacon(marks, dlgProgress)
 
-	local ok, max_offset = true, 10
+	local ok, max_offset = true, 0
 	ok, max_offset  = iup.GetParam("Отчет по маячным отметкам", nil, "Смещение: %i\n", max_offset)
 	if not ok then
 		return
