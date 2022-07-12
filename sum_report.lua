@@ -1023,6 +1023,9 @@ local function report_show_passport()
 	file:close()
 end
 
+local function report_not_implemented()
+	iup.Message("ATape", "Отчет не реализован")
+end
 
 -- ====================================================================================
 local ProcessSumFile = "Scripts\\ProcessSum.xlsm"
@@ -1066,6 +1069,8 @@ if not HUN then
 
 	local report_beacon = require 'sum_report_beacon'
 	report_beacon.AppendReports(Report_Functions)
+
+	table.insert(Report_Functions, {name="Ведомость отступлений в содержании балласта", fn=report_not_implemented, guids={"{00000000-0000-0000-0000-000000000000}"},})
 
 	local report_summory = require 'sum_report_summary'
 	report_summory.AppendReports(Report_Functions)
