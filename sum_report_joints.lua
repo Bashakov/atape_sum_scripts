@@ -364,7 +364,7 @@ local function get_fishplate_defect_code(mark)
 	local eaksui_code = mark.ext.CODE_EKASUI
 	if mark.prop.Guid == TYPES.RAIL_JOINT_USER and (
 		eaksui_code == DEFECT_CODES.JOINT_FISHPLATE_DEFECT[1] or
-		eaksui_code == DEFECT_CODES.JOINT_FISHPLATE_DEFECT_ONE[1] or
+		eaksui_code == DEFECT_CODES.JOINT_FISHPLATE_DEFECT_SINGLE[1] or
 		eaksui_code == DEFECT_CODES.JOINT_FISHPLATE_DEFECT_BOTH[1]
 	) then
 		return eaksui_code, nil
