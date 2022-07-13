@@ -993,6 +993,14 @@ column_ekasui_code =
 	end
 }
 
+local function ecasui_defect_desc(mark)
+	local r = {}
+	for _, code in ipairs(mark.user.defect_codes or {}) do
+		table.insert(r, string.format("%s: %s", code, DEFECT_CODES.code2desc(code)))
+	end
+	return table.concat(r, '\n')
+end
+
 column_defect_code_list =
 {
 	name = 'Дефекты',
@@ -1008,12 +1016,29 @@ column_defect_code_list =
 		return text
 	end,
 	get_tooltip = function (row)
+		return ecasui_defect_desc(work_marks_list[row])
+	end
+}
+
+column_defect_code_desc_list =
+{
+	name = 'Описание',
+	width = 120,
+	align = 'r',
+	text = function(row)
 		local mark = work_marks_list[row]
 		local r = {}
 		for _, code in ipairs(mark.user.defect_codes or {}) do
-			table.insert(r, string.format("%s: %s", code, DEFECT_CODES.code2desc(code)))
+			table.insert(r, DEFECT_CODES.code2desc(code))
 		end
-		return table.concat(r, '\n')
+		return table.concat(r, ',')
+	end,
+	sorter = function(mark)
+		local text = mark.user.defect_codes and table.concat(mark.user.defect_codes, ',') or ''
+		return text
+	end,
+	get_tooltip = function (row)
+		return ecasui_defect_desc(work_marks_list[row])
 	end
 }
 

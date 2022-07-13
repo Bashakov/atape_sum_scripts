@@ -539,12 +539,12 @@ if not ATAPE then
 	-- 	end
 	-- end
 
-	test_report  = require('test_report')
-	--local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-	local psp_path = 'D:/Downloads/932/31883/[507]_2022_04_14_04.xml'
-	test_report(psp_path, nul) -- ,  , {0, 1000000}
+	local test_report  = require('local_data_driver')
+	local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+	--local psp_path = 'D:/Downloads/932/31883/[507]_2022_04_14_04.xml'
+	test_report.Driver(psp_path, nul) -- ,  , {0, 1000000}
 
-	local name = 'УЗ Дефекты Головка 2 уровень'
+	local name = 'Замечания с ограничением скорости'
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}
 	local col_names = {}

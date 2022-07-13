@@ -101,6 +101,8 @@ local filters =
 			column_pov_common,
 			column_defect_code_list,
 			column_speed_limit_list,
+			column_mark_type_name,
+			column_defect_code_desc_list,
 		},
 		GUIDS = recognition_guids,
 		post_load = function(marks, fnContinueCalc)
