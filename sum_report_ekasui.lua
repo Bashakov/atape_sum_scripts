@@ -257,7 +257,7 @@ local function make_ekasui_generator(getMarks, ...)
             -- Диалог редактирования  атрибутов проезда
         local res, _SiteID, _carID, _pathType, _pathID, _pathText = iup.GetParam("ЕКАСУИ: Проверка заполнения атрибутов", nil,
         "SiteID = %i\n\z carID = %s\n\z pathType = %i\n\z  pathID = %s\n\z pathText = %s\n\z",
-        SiteID, carID, pathType, pathID, pathText )
+        SiteID or '', carID or '', pathType, pathID, pathText )
         if res then
             Passport.SITEID 	= _SiteID
             Passport.CARID  	= _carID
