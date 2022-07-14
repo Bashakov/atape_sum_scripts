@@ -247,23 +247,30 @@ local function make_ekasui_generator(getMarks, ...)
 		local export_id = os.date('%Y%m%d%H%M%S')
 		local pghlp = make_export_prgs_dlg(dlgProgress, #report_rows)
 
-        -- РЕДАКТИРОВАНИЕ  атрибутов проезда
-            -- Получаем атрибуты проезда
-        local SiteID   = Passport.SITEID		-- https://bt.abisoft.spb.ru/view.php?id=935
-        local carID    = Passport.CARID			-- https://bt.abisoft.spb.ru/view.php?id=935
-        local pathType = 1 						-- https://bt.abisoft.spb.ru/view.php?id=722#c3397
-        local pathID   = Passport.TRACK_CODE
-        local pathText = Passport.TRACK_NUM
-            -- Диалог редактирования  атрибутов проезда
-        local res, _SiteID, _carID, _pathType, _pathID, _pathText = iup.GetParam("ЕКАСУИ: Проверка заполнения атрибутов", nil,
-        "SiteID = %i\n\z carID = %s\n\z pathType = %i\n\z  pathID = %s\n\z pathText = %s\n\z",
-        SiteID or '', carID or '', pathType, pathID, pathText )
-        if res then
-            Passport.SITEID 	= _SiteID
-            Passport.CARID  	= _carID
-            pathType             = _pathType
-            Passport.TRACK_CODE  = _pathID
-            Passport.TRACK_NUM   = _pathText
+		-- https://bt.abisoft.spb.ru/view.php?id=949
+		Passport.SITEID = Passport.SITEID or ''
+		Passport.CARID = Passport.CARID or ''
+
+        -- Диалог редактирования  атрибутов проезда
+        local res = {iup.GetParam(
+			"ЕКАСУИ: Проверка заполнения атрибутов", nil,
+			"SiteID = %s\n\z
+			carID = %s\n\z
+			pathType = %i\n\z
+			pathID = %s\n\z
+			pathText = %s\n\z",
+			Passport.SITEID,		-- https://bt.abisoft.spb.ru/view.php?id=935
+			Passport.CARID,			-- https://bt.abisoft.spb.ru/view.php?id=935
+			1, 						-- https://bt.abisoft.spb.ru/view.php?id=722#c3397
+			Passport.TRACK_CODE,
+			Passport.TRACK_NUM
+		)}
+        if res[1] then
+            Passport.SITEID 	= res[2]
+            Passport.CARID  	= res[3]
+            pathType            = res[4]
+            Passport.TRACK_CODE = res[5]
+            Passport.TRACK_NUM  = res[6]
         end
 
 		local first_file
