@@ -18,6 +18,7 @@ deepcopy = mark_helper.deepcopy
 
 local DEFECT_CODES = require 'report_defect_codes'
 local sumPOV = require "sumPOV"
+local read_csv = require 'read_csv'
 
 -- =====================================================================  
 
@@ -54,6 +55,28 @@ local function split(str, sep)
    local pattern = string.format("([^%s]+)", sep)
    str:gsub(pattern, function(c) fields[#fields+1] = c end)
    return fields
+end
+
+local function is_file_exists(path)
+	local f = io.open(path, 'rb')
+	if f then f:close() end
+	return f
+end
+
+local function _load_ekasui_code_speed_limit_tbl()
+	local name = "ekasuicode2sleedlimit.csv"
+	if not is_file_exists(name) then
+		name = "Scripts/" .. name
+		if not is_file_exists(name) then
+			return {}
+		end
+	end
+	local code2limit = {}
+	for _, row in read_csv.iter_csv(name, ';', false) do
+		assert(#row >= 2)
+		code2limit[row[1]] = row[2]
+	end
+	return code2limit
 end
 
 -- =====================================================================  
@@ -992,6 +1015,31 @@ column_ekasui_code =
 		return desc
 	end
 }
+
+local ekasui_code_speed_limit_tbl = _load_ekasui_code_speed_limit_tbl()
+
+column_ekasui_code_speed_limit_tbl =
+{
+	name = 'Огр. Скр.',
+	width = 50,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		return ekasui_code_speed_limit_tbl[mark.ext.CODE_EKASUI] or ''
+	end,
+	sorter = function(mark)
+		local s = ekasui_code_speed_limit_tbl[mark.ext.CODE_EKASUI]
+		if not s then
+			return 100000
+		end
+		local limits = {}
+		string.gsub(s, '(%d+)', function(i) 
+			table.insert(limits, tonumber(i)) 
+		end)
+		return math.min(table.unpack(limits))
+	end,
+}
+
 
 local function ecasui_defect_desc(mark)
 	local r = {}

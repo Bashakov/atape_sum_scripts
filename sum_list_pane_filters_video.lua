@@ -571,6 +571,7 @@ local filters =
 			column_rail,
 			column_group_defect_count,
 			column_ekasui_code,
+			column_ekasui_code_speed_limit_tbl,
 			column_mark_type_name,
 			column_pov_common,
 		},
