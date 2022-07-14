@@ -1056,7 +1056,7 @@ column_speed_limit_list =
 		return tostring(limit) or ''
 	end,
 	sorter = function(mark)
-		local limit = mark.user.speed_limits and math.min(mark.user.speed_limits) or nil
+		local limit = mark.user.speed_limits and math.min(table.unpack(mark.user.speed_limits)) or 1000000
 		return limit
 	end,
 }
