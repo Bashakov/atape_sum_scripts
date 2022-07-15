@@ -1070,7 +1070,8 @@ if not HUN then
 	local report_beacon = require 'sum_report_beacon'
 	report_beacon.AppendReports(Report_Functions)
 
-	table.insert(Report_Functions, {name="Ведомость отступлений в содержании балласта", fn=report_not_implemented, guids={"{00000000-0000-0000-0000-000000000000}"},})
+	local report_ballast = require 'sum_report_ballast'
+	report_ballast.AppendReports(Report_Functions)
 
 	local report_summory = require 'sum_report_summary'
 	report_summory.AppendReports(Report_Functions)
@@ -1167,11 +1168,11 @@ end
 
 -- тестирование
 if not ATAPE then
-	test_report  = require('test_report')
-	--test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
-	test_report('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2020_11_30_01.xml')
+	local test_report  = require('local_data_driver')
+	test_report.Driver('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
+	--test_report.Driver('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2020_11_30_01.xml')
 	
-	MakeReport('Болтовые стыки|Excel')
+	MakeReport('Ведомость отступлений в содержании балласта|ЕКАСУИ пользователь')
 	--local guids = GetFilterGuids('Ведомость отступлений в содержании рельсов')
 	--print(guids)
 
