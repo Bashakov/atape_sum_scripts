@@ -249,7 +249,7 @@ local XlInsertFormatOrigin =
     xlFormatFromRightOrBelow = 1
 };
 
--- Размножить указанную строку нужное число раз 
+-- Размножить указанную строку нужное число раз
 local function cloneRowCpPs(rng, row_num, req_cnt)
 	local cur_cnt = 1
 	if req_cnt == 0 then

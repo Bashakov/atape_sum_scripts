@@ -376,15 +376,15 @@ end
 -- ================================================================= --
 
 if not ATAPE then
-    local test_report  = require('test_report')
+    local test_report  = require('local_data_driver')
     -- local data_path = 'D:\\Downloads\\722\\492 dlt xml sum\\[492]_2021_03_14_03.xml'
-    -- local data_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-    local data_path = 'D:\\Downloads\\722\\2021.03.23\\[492]_2021_01_26_02.xml'
+    local data_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+    --local data_path = 'D:\\Downloads\\722\\2021.03.23\\[492]_2021_01_26_02.xml'
 
-	test_report(data_path, nil, {0, 10000000})
+	test_report.Driver(data_path, nil, {0, 10000000})
 
-    make_summary_report()
-    --make_per_km_report()
+    --make_summary_report()
+    make_per_km_report()
 end
 
 
