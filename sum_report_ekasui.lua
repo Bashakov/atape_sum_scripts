@@ -32,87 +32,21 @@ local function uuid()
 	return res
 end
 
-local function GetBase64EncodedFrame1(row)
-	local rail = bit32.band(row.RAIL_RAW_MASK, 0x03)
-	local video_channel = rail==1 and 17 or 18
-	local video_img
-	local ok, err = pcall(function()
-		video_img = Driver:GetFrame(video_channel, row.SYS, {mode=3, panoram_width=700, width=400, height=300, base64=true} )
-	end)
-	if not ok then
-		video_img = err
-	end
-	return video_img
-end
-
-local function merge_images(images)
-	if not images or #images == 0 then
-		return ''
-	end
-
-	local cmd = 'ImageMagick_convert.exe '
-	for _, p in ipairs(images) do
-		cmd = cmd .. '"' .. p .. '" '
-	end
-	local out_file_name = string.match(images[1], "(.*[/\\])") .. string.format('%08d.base64.jpg', os.clock() * 1000)
-	cmd = cmd .. ' +append INLINE:"'  .. out_file_name .. '"'
-	-- print(cmd)
-	if not os.execute(cmd) then
-		return 'command [' .. cmd .. '] failed'
-	end
-
-	local file_data = io.open(out_file_name, 'r')
-	local data = file_data:read('*a')
-	file_data:close()
-	os.remove(out_file_name)
-
-	-- print(#data)
-	local hdr = 'data:image/jpeg;base64,'
-	if(data:sub(1, #hdr) ~= hdr) then
-		return 'bad output file header: [' .. data:sub(1, #hdr) .. ']'
-	end
-
-	return data:sub(#hdr+1)
-end
-
 local function GetBase64EncodedFrame(row)
 	if ShowVideo == 0 then
 		return ""
 	end
-	local p, e = pcall(function()
-		local rail = bit32.band(row.RAIL_RAW_MASK, 0x03)
-		local video_channels = rail==1 and {17, 19, 21} or {18, 20, 22}
-		local channel_images_paths = {}
-		for _, ch in ipairs(video_channels) do
-			local ok, err = pcall(function()
-				local image_params =
-				{
-					mode=3,
-					panoram_width=700,
-					width=400,
-					height=300,
-					base64=false,
-					show_marks=0,
-					hibit_dev_method='average',
-					hibit_dev_param=50,
-				}
-				local p = Driver:GetFrame(ch, row.SYS, image_params)
-				table.insert(channel_images_paths, p)
-			end)
-			if not ok then
-				print(err)
-			end
-		end
-		--iup.Message( 'Info', string.format("%d %d", row.SYS, #channel_images_paths))
-		local res_image = merge_images(channel_images_paths)
-		return res_image
+
+	local rail = bit32.band(row.RAIL_RAW_MASK, 0x03)
+	local img_prop = {
+		width = 1200,
+		height = 300,
+		base64 = true,
+	}
+	local _, img_data = pcall(function ()
+		return Driver:GetVideoComponentImage("ЕКАСУИ", row.SYS, rail, img_prop)
 	end)
-	-- iup.Message( 'Info', string.format("%d: %s %s", row.SYS, p, e))
-	if p then
-		return e
-	end
-	print(e)
-	return ""
+	return img_data
 end
 
 -- ========================================

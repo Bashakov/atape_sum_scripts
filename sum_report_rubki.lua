@@ -369,90 +369,6 @@ local function get_bolt_nakltype(mark)
 	return bolt, nakltype[all_count]
 end
 
---[[ ImageMagick умеет принимать изображения в base64 через командную стоку,
-	но есть ограничение системы на ее длину,
-	поэтому приходится сохранять в файл и передавать название временного файла ]]
-local TmpFiles = OOP.class{
-	ctor = function (self)
-		self.tmp_dir = os.getenv("TEMP")
-		self.files = {}
-	end,
-	close = function (self)
-		for _, path in ipairs(self.files) do
-			os.remove(path)
-		end
-	end,
-	save = function (self, data)
-		local path = os.tmpname()
-		if not string.find(path, ':') then
-			path = self.tmp_dir .. path
-		end
-		local f = assert(io.open(path, 'w+b'))
-		f:write(data)
-		f:close()
-		table.insert(self.files, path)
-		return path
-	end
-}
-
---[[ построить изображение стыка для рубок (вид с боковых камер обоих рельсов)
-	https://bt.abisoft.spb.ru/view.php?id=752#c3727]]
-local function make_joint_image_ext(mark)
-	return EnterScope(function (defer)
-		if ShowVideo ~= 1 then -- https://bt.abisoft.spb.ru/view.php?id=809
-			return ''
-		end
-		local tmp_files = TmpFiles()
-		defer(tmp_files.close, tmp_files)
-		local center = mark.prop.SysCoord + mark.prop.Len / 2
-
-		--[[ поправка по масштабу - 2 шпалы + 2 шпалы.
-			https://bt.abisoft.spb.ru/view.php?id=752#c3728
-			https://bt.abisoft.spb.ru/view.php?id=742
-			картинка было бы не плохо ужать до 4 шпал https://bt.abisoft.spb.ru/view.php?id=780#c3790 ]]
-		local panoram_width = 2 * 1000
-
-		local channels = {19, 17, 18, 20} -- https://bt.abisoft.spb.ru/view.php?id=780#c3807
-		local rotate = {1, 5, 1, 5} -- повороты кадра https://bt.abisoft.spb.ru/view.php?id=780#c3807
-		local img_prop = {
-			mark_id = mark.prop.ID,
-			mode = 3,  -- panorama
-			panoram_width = panoram_width,
-			width = 600/#channels,
-			height = 300,
-			base64 = true,
-			show_marks = 0,
-			hibit_dev_method = 'average',
-			hibit_dev_param = 50,
-		}
-
-		local jpg_hdr = 'data:image/jpeg;base64,'
-		local cmd = 'ImageMagick_convert.exe '
-
-		for i, video_channel in ipairs(channels) do
-			local img_ok, img_data = pcall(function ()
-				img_prop.rotate_fixed = rotate[i]
-				return Driver:GetFrame(video_channel, center, img_prop)
-			end)
-			if img_ok then
-				cmd = cmd .. ' INLINE:' .. tmp_files:save(jpg_hdr .. img_data)
-			else
-				print('Error: ', img_data)
-			end
-		end
-		cmd = cmd
-			.. string.format(' -density %d -units PixelsPerCentimeter', img_prop.height / 19) -- высота 190 мм https://bt.abisoft.spb.ru/view.php?id=780#c3807
-			.. ' +append INLINE:JPG:-'
-
-		-- склеить кадры в один
-		local f = assert(io.popen(cmd, 'r'))
-		local data = assert(f:read('*a'))
-		f:close()
-
-		data = data:sub(#jpg_hdr+1)
-		return data
-	end)
-end
 
 --[[ построить изображение стыка для рубок (вид с боковых камер обоих рельсов)
 	https://bt.abisoft.spb.ru/view.php?id=752#c3727]]
@@ -479,11 +395,7 @@ local function make_joint_image_inner(mark)
 end
 
 local function make_joint_image(mark)
-	if true then
-		return make_joint_image_inner(mark)
-	else
-		return make_joint_image_ext(mark)
-	end
+	return make_joint_image_inner(mark)
 end
 
 local function make_gap_description(mark)
