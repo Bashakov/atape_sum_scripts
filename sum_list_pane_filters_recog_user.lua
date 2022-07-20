@@ -30,6 +30,7 @@ local filters =
 			column_path_coord,
 			column_rail,
 			column_ekasui_code,
+			column_ekasui_code_speed_limit_tbl,
 			column_user_name,
 			column_mark_type_name,
 			column_pov_common,
