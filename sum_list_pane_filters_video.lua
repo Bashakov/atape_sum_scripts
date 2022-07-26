@@ -43,19 +43,106 @@ local function get_sleeper_angle_defect(mark, treshold, material)
 	return false
 end
 
-local function parse_velocity(val)
-	local t = type(val)
-	if t == "number" or t == "nil" then
-		return val
+
+local function get_joint_speed_limits(marks, fnContinueCalc)
+	local id2defects = {}
+	local id2speedlimit = {}
+
+	for group, defect_code, speed_limit in sum_report_joints.iter_blind_group_defect_code(marks, nil, fnContinueCalc) do
+		-- JOINT_NEIGHBO_BLIND_GAP_TWO, JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT, JOINT_NEIGHBO_BLIND_GAP_MORE_RIGHT
+		-- 'ЗАПРЕЩЕНО'
+		local id = group[1].prop.ID
+		id2defects[id] = defect_code
+		id2speedlimit[id] = parse_speed_limit(speed_limit)
 	end
-	assert(t == 'string')
-	if val == '' then
-		return nil
+
+	local res = {}
+
+	for i, mark in ipairs(marks) do
+		local codes, limits = {}, {}
+		if true then
+			local id = mark.prop.ID
+			if id2speedlimit[id] then
+				table.insert(codes, id2defects[id])
+				table.insert(limits, id2speedlimit[id])
+			end
+		end
+
+		if true then
+			-- JOINT_EXCEED_GAP_WIDTH_LEFT, JOINT_EXCEED_GAP_WIDTH_RIGHT
+			-- '100', '60', '25', 'Движение закрывается'
+			local defect_code, speed_limit = sum_report_joints.get_mark_gap_width_defect_code(mark)
+			speed_limit = parse_speed_limit(speed_limit)
+			if speed_limit then
+				table.insert(codes, defect_code)
+				table.insert(limits, speed_limit)
+			end
+		end
+
+		if true then
+			-- JOINT_MISSING_BOLT_ONE_GOOD[1], '25',
+			-- JOINT_MISSING_BOLT_NO_GOOD[1], 'Закрытие движения'
+			local defect_code, speed_limit = sum_report_joints.bolt2defect_limit(mark)
+			speed_limit = parse_speed_limit(speed_limit)
+			if speed_limit then
+				table.insert(codes, defect_code)
+				table.insert(limits, speed_limit)
+			end
+		end
+
+		if true then
+			-- DEFECT_CODES.JOINT_HOR_STEP, JOINT_STEP_VH_LT25
+			-- '80', '50', '40', '25',	'15', 'Движение закрывается'
+			local defect_code, speed_limit = sum_report_joints.get_joint_step_defect_code(mark)
+			speed_limit = parse_speed_limit(speed_limit)
+			if speed_limit then
+				table.insert(codes, defect_code)
+				table.insert(limits, speed_limit)
+			end
+		end
+
+		if true then
+			-- JOINT_FISHPLATE_DEFECT, JOINT_FISHPLATE_DEFECT_ONE, JOINT_FISHPLATE_DEFECT_BOTH, JOINT_FISHPLATE_DEFECT_SINGLE
+			-- 'Движение закрывается', '40','Замечание'
+			local defect_code, speed_limit = sum_report_joints.get_fishplate_defect_code(mark)
+			speed_limit = parse_speed_limit(speed_limit)
+			if speed_limit then
+				table.insert(codes, defect_code)
+				table.insert(limits, speed_limit)
+			end
+		end
+
+		if #limits > 0 then
+			mark.user.defect_codes = codes
+			mark.user.speed_limits = limits
+			table.insert(res, mark)
+
+			if not fnContinueCalc(i / #marks) then
+				break
+			end
+		end
 	end
-	local n = tonumber(val)
-	return n or 0
+	return res
 end
 
+local function filter_mark_ekasui_speed_limits(marks, fnContinueCalc)
+	local res = {}
+	for i, mark in ipairs(marks) do
+		local speed_limit = get_mark_ekasui_speed_limit(mark)
+		if speed_limit then
+			mark.user.defect_codes = {mark.ext.CODE_EKASUI}
+			mark.user.speed_limits = {speed_limit}
+			table.insert(res, mark)
+		end
+
+		if not fnContinueCalc(i / #marks) then
+			break
+		end
+	end
+	return res
+end
+
+-- ========================================================
 
 local filters =
 {
@@ -63,38 +150,6 @@ local filters =
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
 		name = 'Замечания с ограничением скорости',
-		--!!! добавлены коды из report_defect_codes: "Превышение конструктивной величины стыкового зазора левой рельсовой нити"	"090004016149", "Превышение конструктивной величины стыкового зазора правой рельсовой нити"	"090004016150"
-		videogram_defect_codes = {
-			-- устаревшие
-			'090004000465', -- JOINT_MISSING_BOLT !!! код удален из классификатора
-			"090004000999", -- SLEEPER_ANGLE !!! код удален из классификатора
-
-			-- тестированы
-			'090004012062', '090004016149', '090004016150', -- JOINT_EXCEED_GAP_WIDTH, JOINT_EXCEED_GAP_WIDTH_LEFT, JOINT_EXCEED_GAP_WIDTH_RIGHT
-			'090004000466', -- JOINT_MISSING_BOLT_TWO_GOOD
-			'090004000471', -- JOINT_MISSING_BOLT_ONE_GOOD
-			"090004000521", -- JOINT_WELDED_BOND_FAULT
-			"090004000394", -- FASTENER_MISSING_BOLT, FASTENER_MISSING_CLAMP_BOLT
-			"090004000375", -- SLEEPER_DISTANCE_CONCRETE
-
-			-- не тестированы (нет данных)
-			'090004000467', -- JOINT_MISSING_BOLT_NO_GOOD
-			"090004000370", -- SLEEPER_DISTANCE_WOODEN
-
-			-- не тестированы
-			"090004015367", -- BEACON_MISSING_LINE
-
-			-- не устанавливаются
-			"090004015840", -- JOINT_NEIGHBO_BLIND_GAP
-			"090004012002", -- RAIL_DEFECT_BASE
-			"090004012004", -- RAIL_BREAK
-			"090004012001", -- RAIL_SURF_DEFECT
-			"090004012058", -- JOINT_VER_STEP
-			"090004012059", -- JOINT_HOR_STEP
-			"090004000474", -- JOINT_FISHPLATE_DEFECT
-			"090004000477", -- JOINT_FISHPLATE_MISSING
-			"090004012008", -- RAIL_DEFECT_HEAD
-		},
 		columns = {
 			column_num,
 			column_path_coord,
@@ -104,86 +159,27 @@ local filters =
 			column_mark_type_name,
 			column_defect_code_desc_list,
 		},
-		GUIDS = recognition_guids,
+		GUIDS = table_merge(
+			recognition_guids,
+			TYPES.BALLAST_USER,
+			group_defects),
 		post_load = function(marks, fnContinueCalc)
-			local id2defects = {}
-			local id2speedlimit = {}
-
-			for group, defect_code, speed_limit in sum_report_joints.iter_blind_group_defect_code(marks, nil, fnContinueCalc) do
-				-- JOINT_NEIGHBO_BLIND_GAP_TWO, JOINT_NEIGHBO_BLIND_GAP_MORE_LEFT, JOINT_NEIGHBO_BLIND_GAP_MORE_RIGHT
-				-- 'ЗАПРЕЩЕНО'
-				local id = group[1].prop.ID
-				id2defects[id] = defect_code
-				id2speedlimit[id] = parse_velocity(speed_limit)
+			local joints = {}
+			local simple = {}
+			local separator = {}
+			separator[TYPES.BALLAST_USER] = simple
+			for _, g in ipairs(group_defects) do separator[g] = simple end
+			for _, g in ipairs(recognition_guids) do separator[g] = joints end
+			for _, mark in ipairs(marks) do
+				local dst = separator[mark.prop.Guid]
+				if dst then table.insert(dst, mark)	end
 			end
-
+			simple = filter_mark_ekasui_speed_limits(simple, fnContinueCalc)
+			joints = get_joint_speed_limits(joints, fnContinueCalc)
 			local res = {}
-
-			for i, mark in ipairs(marks) do
-				local codes, limits = {}, {}
-				if true then
-					local id = mark.prop.ID
-					if id2speedlimit[id] then
-						table.insert(codes, id2defects[id])
-						table.insert(limits, id2speedlimit[id])
-					end
-				end
-
-				if true then
-					-- JOINT_EXCEED_GAP_WIDTH_LEFT, JOINT_EXCEED_GAP_WIDTH_RIGHT
-					-- '100', '60', '25', 'Движение закрывается'
-					local defect_code, speed_limit = sum_report_joints.get_mark_gap_width_defect_code(mark)
-					speed_limit = parse_velocity(speed_limit)
-					if speed_limit then
-						table.insert(codes, defect_code)
-						table.insert(limits, speed_limit)
-					end
-				end
-
-				if true then
-					-- JOINT_MISSING_BOLT_ONE_GOOD[1], '25',
-					-- JOINT_MISSING_BOLT_NO_GOOD[1], 'Закрытие движения'
-					local defect_code, speed_limit = sum_report_joints.bolt2defect_limit(mark)
-					speed_limit = parse_velocity(speed_limit)
-					if speed_limit then
-						table.insert(codes, defect_code)
-						table.insert(limits, speed_limit)
-					end
-				end
-
-				if true then
-					-- DEFECT_CODES.JOINT_HOR_STEP, JOINT_STEP_VH_LT25
-					-- '80', '50', '40', '25',	'15', 'Движение закрывается'
-					local defect_code, speed_limit = sum_report_joints.get_joint_step_defect_code(mark)
-					speed_limit = parse_velocity(speed_limit)
-					if speed_limit then
-						table.insert(codes, defect_code)
-						table.insert(limits, speed_limit)
-					end
-				end
-
-				if true then
-					-- JOINT_FISHPLATE_DEFECT, JOINT_FISHPLATE_DEFECT_ONE, JOINT_FISHPLATE_DEFECT_BOTH, JOINT_FISHPLATE_DEFECT_SINGLE
-					-- 'Движение закрывается', '40','Замечание'
-					local defect_code, speed_limit = sum_report_joints.get_fishplate_defect_code(mark)
-					speed_limit = parse_velocity(speed_limit)
-					if speed_limit then
-						table.insert(codes, defect_code)
-						table.insert(limits, speed_limit)
-					end
-				end
-
-				if #limits > 0 then
-					mark.user.defect_codes = codes
-					mark.user.speed_limits = limits
-					table.insert(res, mark)
-
-					if not fnContinueCalc(i / #marks) then
-						break
-					end
-				end
-			end
-			return res
+			for _, mark in ipairs(simple) do table.insert(res, mark) end
+			for _, mark in ipairs(joints) do table.insert(res, mark) end
+			return mark_helper.sort_mark_by_coord(res)
 		end,
 	},
 
@@ -575,14 +571,7 @@ local filters =
 			column_mark_type_name,
 			column_pov_common,
 		},
-		GUIDS = {
-			"{B6BAB49E-4CEC-4401-A106-355BFB2E0001}",
-			"{B6BAB49E-4CEC-4401-A106-355BFB2E0002}",
-			"{B6BAB49E-4CEC-4401-A106-355BFB2E0011}",
-			"{B6BAB49E-4CEC-4401-A106-355BFB2E0012}",
-			TYPES.GROUP_FSTR_AUTO,
-			TYPES.GROUP_FSTR_USER,
-		}
+		GUIDS = group_defects,
 	},
 }
 
