@@ -372,30 +372,27 @@ end
 
 --[[ построить изображение стыка для рубок (вид с боковых камер обоих рельсов)
 	https://bt.abisoft.spb.ru/view.php?id=752#c3727]]
-local function make_joint_image_inner(mark)
+local function make_joint_image(mark)
 	return EnterScope(function (defer)
 		if ShowVideo ~= 1 then -- https://bt.abisoft.spb.ru/view.php?id=809
 			return ''
 		end
 		local center = mark.prop.SysCoord + mark.prop.Len / 2
+		local rail = bit32.band(mark.prop.RailMask, 0x03)
 
 		local img_prop = {
 			mark_id = mark.prop.ID,
-			width = 600,
-			height = 300,
+			width = 900,
+			height = 600,
 			base64 = true,
 			show_marks = 0,
 		}
 
 		local _, img_data = pcall(function ()
-			return Driver:GetVideoComponentImage("КОС", center, 3, img_prop)
+			return Driver:GetVideoComponentImage("КОС", center, rail, img_prop)
 		end)
 		return img_data
 	end)
-end
-
-local function make_joint_image(mark)
-	return make_joint_image_inner(mark)
 end
 
 local function make_gap_description(mark)

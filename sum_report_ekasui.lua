@@ -39,8 +39,8 @@ local function GetBase64EncodedFrame(row)
 
 	local rail = bit32.band(row.RAIL_RAW_MASK, 0x03)
 	local img_prop = {
-		width = 1200,
-		height = 300,
+		width = 900,
+		height = 600,
 		base64 = true,
 	}
 	local _, img_data = pcall(function ()
