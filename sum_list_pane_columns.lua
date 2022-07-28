@@ -79,7 +79,37 @@ local function _load_ekasui_code_speed_limit_tbl()
 	return code2limit
 end
 
--- =====================================================================  
+function parse_speed_limit(val)
+	local t = type(val)
+	if t == "number" or t == "nil" then
+		return val
+	end
+	assert(t == 'string')
+	if val == '' then
+		return nil
+	end
+	local limits = {}
+	string.gsub(val, '(%d+)', function(i) 
+		table.insert(limits, tonumber(i)) 
+	end)
+	if #limits > 0 then
+		return math.min(table.unpack(limits))
+	end
+	return 0
+end
+
+local ekasui_code_speed_limit_tbl = _load_ekasui_code_speed_limit_tbl()
+
+function get_mark_ekasui_speed_limit(mark)
+	local user_speed_limit = mark.ext.USER_SPEED_LIMIT
+	local speed_limit = parse_speed_limit(user_speed_limit)
+	if not speed_limit then
+		speed_limit = ekasui_code_speed_limit_tbl[mark.ext.CODE_EKASUI]
+	end
+	return speed_limit
+end
+
+-- =====================================================================
 
 
 column_num = 
@@ -1016,8 +1046,6 @@ column_ekasui_code =
 	end
 }
 
-local ekasui_code_speed_limit_tbl = _load_ekasui_code_speed_limit_tbl()
-
 column_ekasui_code_speed_limit_tbl =
 {
 	name = 'Огр. Скр.',
@@ -1025,18 +1053,12 @@ column_ekasui_code_speed_limit_tbl =
 	align = 'r',
 	text = function(row)
 		local mark = work_marks_list[row]
-		return ekasui_code_speed_limit_tbl[mark.ext.CODE_EKASUI] or ''
+		local speed_limit = get_mark_ekasui_speed_limit(mark)
+		return speed_limit or ''
 	end,
 	sorter = function(mark)
-		local s = ekasui_code_speed_limit_tbl[mark.ext.CODE_EKASUI]
-		if not s then
-			return 100000
-		end
-		local limits = {}
-		string.gsub(s, '(%d+)', function(i) 
-			table.insert(limits, tonumber(i)) 
-		end)
-		return math.min(table.unpack(limits))
+		local speed_limit = get_mark_ekasui_speed_limit(mark)
+		return speed_limit or 100000
 	end,
 }
 
@@ -1077,7 +1099,8 @@ column_defect_code_desc_list =
 		local mark = work_marks_list[row]
 		local r = {}
 		for _, code in ipairs(mark.user.defect_codes or {}) do
-			table.insert(r, DEFECT_CODES.code2desc(code))
+			local desc = DEFECT_CODES.code2desc(code) or tostring(code)
+			table.insert(r, desc)
 		end
 		return table.concat(r, ',')
 	end,

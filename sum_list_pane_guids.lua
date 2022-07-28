@@ -32,10 +32,21 @@ recognition_uic_surface_defects = {
 	TYPES.HC_USER,
 }
 
+group_defects =
+{
+	TYPES.GROUP_GAP_AUTO,
+	TYPES.GROUP_GAP_USER,
+	TYPES.GROUP_SPR_AUTO,
+	TYPES.GROUP_SPR_USER,
+	TYPES.GROUP_FSTR_AUTO,
+	TYPES.GROUP_FSTR_USER,
+}
+
 return
 {
 	NPU_guids = NPU_guids,
 	recognition_guids = recognition_guids,
 	recognition_surface_defects = recognition_surface_defects,
 	recognition_uic_surface_defects = recognition_uic_surface_defects,
+	group_defects = group_defects,
 }

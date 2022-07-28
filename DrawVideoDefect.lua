@@ -18,8 +18,8 @@ local function sorted(src, cmp)
 	local keys = {}
 	for n in pairs(src) do table.insert(keys, n) end
 	table.sort(keys, cmp)
-	local i = 0 
-	return function ()   
+	local i = 0
+	return function ()
 		i = i + 1
 		return keys[i], src[keys[i]]
 	end
@@ -76,10 +76,10 @@ end
 -- ================= массивы =================
 
 --[[ преобразование прямоугольника в координаты его вершин
-исходный прямоугольник в формате программы (l, t, w, h) в координатах окна, 
+исходный прямоугольник в формате программы (l, t, w, h) в координатах окна,
 выходной массив точек определяется параметром corners, который является строкой состоящей из букв "l", "r", "t", "b",
 означающих соответствующие вершины, координаты соответствуют пикселям на кадре.
-дополнительно возвращается координата кадра, на которой находится объект 
+дополнительно возвращается координата кадра, на которой находится объект
 ]]
 local function rect2corners(object, corners)
 	assert(#object.points == 4)
@@ -87,8 +87,8 @@ local function rect2corners(object, corners)
 	local src = {
 		l = object.points[1],
 		t = object.points[2],
-		r = object.points[1] + object.points[3], 
-		b = object.points[2] + object.points[4], 
+		r = object.points[1] + object.points[3],
+		b = object.points[2] + object.points[4],
 	}
 	local points = {}
 	for i = 1, #corners do
@@ -107,7 +107,7 @@ local function get_rail_channel_mask(objects)
 		local c = bit32.lshift(1, object.area.channel)
 		chmask = bit32.bor(chmask, c)
 	end
-	
+
 	local rmask = 0
 	if bit32.btest(chmask, 0xaaaaaaaa) then  -- b10101010
 		rmask = bit32.bor(rmask, 1)
@@ -136,7 +136,7 @@ local function make_fishplate_node(nodeRoot, object)
 		local pos, frame = rect2corners(object, corners)
 		local frame_offset = object.area:frame_offset(frame, object.center_frame)
 		local poligon = string.format("%d,%d %d,%d", pos[1], pos[2], pos[3], pos[4])
-	
+
 		local nodeFrame  = make_node(nodeActRes, "PARAM", {name="FrameNumber", value=frame_offset, coord=frame})
 		local nodeResult = make_node(nodeFrame , "PARAM", {name="Result", value="main"})
 		local nodeEdge   = make_node(nodeResult , "PARAM", {name="FishplateEdge", value=i})
@@ -162,7 +162,7 @@ end
 local function make_gape_node(nodeRoot, object, action_result)
 	local frame_src = rect2corners(object, "ltrtrblb") -- left, top, right, top, right, bottom, left, bottom
 	local strRect = string.format("%d,%d %d,%d %d,%d %d,%d", table.unpack(frame_src))
-	
+
 	local nodeActRes = make_node(nodeRoot  , "PARAM", {name="ACTION_RESULTS", channel=object.area.channel, value=action_result})
 	local nodeFrame  = make_node(nodeActRes, "PARAM", {name="FrameNumber", value="0", coord=object.center_frame})
 	local nodeResult = make_node(nodeFrame , "PARAM", {name="Result", value="main"})
@@ -174,7 +174,7 @@ end
 local function make_surface_node(nodeRoot, object, action_result)
 	local frame_src = rect2corners(object, "ltrtrblb") -- left, top, right, top, right, bottom, left, bottom
 	local strRect = string.format("%d,%d %d,%d %d,%d %d,%d", table.unpack(frame_src))
-	
+
 	local nodeActRes = make_node(nodeRoot  , "PARAM", {name="ACTION_RESULTS", channel=object.area.channel, value=action_result})
 	local nodeFrame  = make_node(nodeActRes, "PARAM", {name="FrameNumber", value="0", coord=object.center_frame})
 	local nodeResult = make_node(nodeFrame , "PARAM", {name="Result", value="main"})
@@ -196,16 +196,16 @@ local function make_joint_node(nodeRoot, joints)
 		if not cfj[ch][fc] then cfj[ch][fc] = {} end
 		table.insert(cfj[ch][fc], object)
 	end
-	
+
 	for ch, fj in sorted(cfj) do
-		local nodeActRes = make_node(nodeRoot, "PARAM", {name="ACTION_RESULTS", channel=ch, value='CrewJoint'})	
+		local nodeActRes = make_node(nodeRoot, "PARAM", {name="ACTION_RESULTS", channel=ch, value='CrewJoint'})
 		local ffc = nil
 		local n = 0
 		for fc, joints in sorted(fj) do
 			if not ffc then ffc = fc end
 			local frame_offset = joints[1].area:frame_offset(fc, ffc)
 			local nodeFrame  = make_node(nodeActRes, "PARAM", {name="FrameNumber", value=frame_offset, coord=fc})
-			local nodeResult = make_node(nodeFrame , "PARAM", {name="Result", value="main"})	
+			local nodeResult = make_node(nodeFrame , "PARAM", {name="Result", value="main"})
 			for _, joint in ipairs(joints) do
 				local nodeJoint  = make_node(nodeResult , "PARAM", {name="JointNumber", value=n})
 				n = n + 1
@@ -213,8 +213,8 @@ local function make_joint_node(nodeRoot, joints)
 				local pos_rb = joint.area:draw2frame({joint.points[1]+joint.points[3], joint.points[2]+joint.points[4]}, fc)
 				local s = string.format("%d,%d,%d,%d", pos_c[1], pos_c[2], pos_rb[1]-pos_c[1], pos_c[2]-pos_rb[2])
 				make_node(nodeJoint , "PARAM", {name="Coord", ['type']="ellipse", value=s})
-				
-				local safe = ({joint_ok=1, joint_fl=-1})[joint.sign] 
+
+				local safe = ({joint_ok=1, joint_fl=-1})[joint.sign]
 				if safe then
 					make_node(nodeJoint , "PARAM", {name="CrewJointSafe", value=safe})
 				end
@@ -225,32 +225,32 @@ end
 
 local function make_beacons_node(nodeRoot, beacons)
 	if #beacons == 0 then return end
-	
+
 	if #beacons ~=2 then
 		error('Для установки Маячной отметки слеудет поставить 2 объекта: метку на рельсе и метку на накладке')
 	end
 	-- упорядочим по высоте
-	if (beacons[1].points[2] + beacons[1].points[4]/2) < 
+	if (beacons[1].points[2] + beacons[1].points[4]/2) <
 	   (beacons[2].points[2] + beacons[2].points[4]/2) then
 			beacons = {beacons[2], beacons[1]} -- swap
 	end
-	
+
 	local shift = beacons[1].center_system - beacons[2].center_system
 	for i, object in pairs(beacons) do
 		local tps = {'Beacon_Web', 'Beacon_Fastener'}
 		local nodeActRes = make_node(nodeRoot, "PARAM", {name="ACTION_RESULTS", channel=object.area.channel, value=tps[i]})
 		local nodeFrame  = make_node(nodeActRes, "PARAM", {name="FrameNumber", value='0', coord=object.center_frame})
 		local nodeResult = make_node(nodeFrame , "PARAM", {name="Result", value="main"})
-		
+
 		local frame_src = rect2corners(object, "ltrb")
 		local strRect = string.format("%d,%d,%d,%d", table.unpack(frame_src))
 		make_node(nodeResult, "PARAM", {name="Coord", ['type']="rect", value=strRect})
-		
+
 		local sign = k == 1 and 1 or -1
 		make_node(nodeResult, "PARAM", {name="Shift", value=sign*shift})
 		make_node(nodeResult, "PARAM", {name="Shift_mkm", value=sign*shift*1000})
 	end
-	
+
 end
 
 
@@ -260,7 +260,7 @@ local function make_recog_xml(objects, action_result, reliability)
 
 	local joints = {}
 	local beacons = {}
-	
+
 	local nodeRoot = dom:createElement("ACTION_RESULTS")
 	for _, object in ipairs(objects) do
 		if object.sign == 'fishplate' then
@@ -279,10 +279,10 @@ local function make_recog_xml(objects, action_result, reliability)
 			error('unknown tool: ' .. object.sign)
 		end
 	end
-	
+
 	make_joint_node(nodeRoot, joints)
 	make_beacons_node(nodeRoot, beacons)
-	
+
 	local nodeCommon = make_node(nodeRoot, "PARAM", {name="ACTION_RESULTS", value="Common"})
 	make_node(nodeCommon, "PARAM", {name="Reliability", value=reliability})
 	make_node(nodeCommon, "PARAM", {name="RecogObjCoord", value=get_common_system_coord(objects)})
@@ -291,7 +291,7 @@ end
 
 -- ================== MARK GENERATION ===================== --
 
--- значения флагов MarkFlags отметки 
+-- значения флагов MarkFlags отметки
 local MarkFlags = {
 	eIgnoreShift	= 0x01,		-- смещение канала на котором установлена отметка игнорируется и рамочки не ездят
 	eDrawRect		= 0x02,		-- рисовать прямоугольник
@@ -305,7 +305,7 @@ function make_recog_mark(name, objects, driver, defect)
 	local mark = driver:NewMark()
 	local nodeRoot = make_recog_xml(objects, defect.action_result, reability)
 	local rmask, chmask = get_rail_channel_mask(objects)
-	
+
 	mark.prop.SysCoord = get_common_system_coord(objects)
 	mark.prop.Len = 1
 	mark.prop.RailMask = rmask + 8   -- video_mask_bit
@@ -316,9 +316,9 @@ function make_recog_mark(name, objects, driver, defect)
 	mark.ext.RAWXMLDATA = nodeRoot.xml
 	mark.ext.VIDEOIDENTRLBLT = reability
 	mark.ext.VIDEOFRAMECOORD = objects[1].center_frame
-	
+
 	sumPOV.UpdateMarks(mark, false)
-	
+
 	return {mark}
 end
 
@@ -330,20 +330,20 @@ function make_simple_defect(name, objects, driver, defect)
 	for i, object in ipairs(objects) do
 		local rmask, chmask = get_rail_channel_mask({object})
 		local points_on_frame, _ = rect2corners(object, "ltrtrblb") -- left, top, right, top, right, bottom, left, bottom
-		
+
 		local mark = driver:NewMark()
-		
+
 		if defect.add_width_from_user_rect then
 			local w = tonumber(points_on_frame[3] - points_on_frame[1])
 			--object.options.joint_width = w
 			mark.ext.VIDEOIDENTGWT = w
 			mark.ext.VIDEOIDENTGWS = w
 		end
-		
-		local str_options = {}
-		for n, v in sorted(object.options) do table.insert(str_options, string.format("%s:%s", n, v)) end
-		str_options = table.concat(str_options, "\n")
-		
+
+		local tbl_options = {}
+		for n, v in sorted(object.options) do table.insert(tbl_options, string.format("%s:%s", n, v)) end
+		local str_options = table.concat(tbl_options, "\n")
+
 		mark.prop.SysCoord = get_common_system_coord({object})
 		mark.prop.Len = 1
 		mark.prop.RailMask = rmask + 8   -- video_mask_bit
@@ -359,13 +359,16 @@ function make_simple_defect(name, objects, driver, defect)
 		if str_options and # str_options ~= 0 then
 			mark.ext.DEFECT_OPTIONS = str_options
 		end
-		mark.ext.UNSPCOBJPOINTS = string.format("%d,%d %d,%d %d,%d %d,%d", table.unpack(points_on_frame)) 
-		
+		mark.ext.UNSPCOBJPOINTS = string.format("%d,%d %d,%d %d,%d %d,%d", table.unpack(points_on_frame))
+		if defect.speed_limit then
+			mark.ext.USER_SPEED_LIMIT = tostring(defect.speed_limit)
+		end
+
 		marks[i] = mark
 	end
-	
+
 	sumPOV.UpdateMarks(marks, false)
-	
+
 	--error('make_simple_defect error') -- testing
 	return marks
 end
@@ -381,6 +384,9 @@ function make_group_defect(name, objects, driver, defect)
 	mark.prop.Description = defect.name .. '\nЕКАСУИ = ' .. defect.ekasui_code
 	mark.ext.CODE_EKASUI = defect.ekasui_code
 	mark.ext.GROUP_DEFECT_COUNT = defect.objects_count
+	if defect.speed_limit then
+		mark.ext.USER_SPEED_LIMIT=tostring(defect.speed_limit)
+	end
 
 	local l = get_common_system_coord({objects[1]})
 	local r = l
@@ -455,7 +461,7 @@ end
 - tooltip: подсказка
 - line_color: цвет рамки (0xRRGGBB или {r=0xRR, g=0xGG, b=0xBB, a=0xAA})
 - fill_color: цвет заливки
-- icon: иконка на панели. 
+- icon: иконка на панели.
   если отсутствует то рисуется автоматически используй line_color и fill_color,
   иначе должна иметь префикс "file:" или "base64:" и содержать изображение (bmp, jpg, png)
 ]]
@@ -487,9 +493,9 @@ end
 		- draw2frame: метод переводит экранные координаты точек в координаты фрейма.
 		  Принимает массив точек и опционально номер фрейма (иначе вычисляет его сам по средней точке).
 		  Возвращает массив точек в координатах фрейма.
-		- frame_offset: метод для определения необходимого количества шагов, 
-		  чтобы попасть с одного кадра на другой. 
-		  Принимает 2 параметра: координаты кадров.  
+		- frame_offset: метод для определения необходимого количества шагов,
+		  чтобы попасть с одного кадра на другой.
+		  Принимает 2 параметра: координаты кадров.
 - объект драйвера, используется для создания и сохранения отметок.
   Имеет следующие методы:
 	- NewMark: возвращает объект специальной пользовательской отметки.
