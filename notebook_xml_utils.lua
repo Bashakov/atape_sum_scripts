@@ -28,6 +28,10 @@ local NoteRec = OOP.class
 		return tonumber(self:_get_field_val(inner_name))
 	end,
 
+	GetNoteID = function (self)
+		return self:_get_header_int('SYST')
+	end,
+
 	GetPath = function (self)
 		return self:_get_field_int('KM'), self:_get_field_int('M'), self:_get_field_int('MM')
 	end,
@@ -59,7 +63,32 @@ local NoteRec = OOP.class
 
     GetScale = function (self)
         return tonumber(self:_get_header_val("SCALE")) or 0
-    end
+    end,
+
+	GetThread = function (self)
+		return self:_get_field_val('THREAD')
+	end,
+
+	GetRailMask = function (self)
+		local thread = self:GetThread()
+		local first_left = tonumber(Passport.FIRST_LEFT) == 1
+		local mask = 0
+		if string.find('лЛlL', thread.sub(1,1)) then
+			mask = first_left and 1 or 2
+		end
+		if string.find('пПrR', thread.sub(1,1)) then
+			mask = first_left and 2 or 1
+		end
+		return mask
+	end,
+
+	GetDefectCode = function (self)
+		return self:_get_field_val('DEFECT_CODE')
+	end,
+
+	GetSpeedLimit = function (self)
+		return self:_get_field_int('NUM_OTV')
+	end
 }
 
 local load_xml = function (xmlDom)
