@@ -73,6 +73,25 @@ local function format_defect_speed_limit(defect)
     return num_otv
 end
 
+local function get_image(center, rail)
+    if ShowVideo ~= 1 then -- https://bt.abisoft.spb.ru/view.php?id=809
+        return ''
+    end
+    rail = bit32.band(rail, 0x03)
+
+    local img_prop = {
+        width = 900,
+        height = 600,
+        base64 = true,
+        show_marks = 0,
+    }
+
+    local _, img_data = pcall(function ()
+        return Driver:GetVideoComponentImage("ЕКАСУИ", center, rail, img_prop)
+    end)
+    return img_data
+end
+
 -- ==================================================== --
 
 local EkasuiReportWriter = OOP.class{
@@ -105,7 +124,7 @@ local EkasuiReportWriter = OOP.class{
             self:_add_text_node(2, "Sessionid", "s1" .. extwonum)
             self:_add_text_node(2, "Session_date", os.date("%d.%m.%Y %H:%M:%S"))
             self:_add_text_node(2, "Vag", get_carid())
-            self:_add_text_node(2, "Decoder", Passport.OPERATOR or "")
+            self:_add_text_node(2, "Decoder", Passport.CURRENT_OPERATOR or "")
             self:_add_text_node(2, "Siteid", Passport.SITEID or "")
             self:_add_text_node(2, "Assetnum", Passport.TRACK_CODE)
         self:_end_node(1, "Common_inf")
@@ -176,14 +195,15 @@ local EkasuiReportWriter = OOP.class{
             self:_add_text_node(3, "Endlon", lon2 and sformat("%.6f", lon2) or "")
             self:_add_text_node(3, "Endlat", lat2 and sformat("%.6f", lat2) or "")
             self:_add_text_node(3, "Generate", "!!! 1")
-            self:_add_text_node(3, "Pic", "")
+            self:_add_text_node(3, "Pic", "") -- get_image(mark.prop.SysCoord + mark.prop.Len/2)
         self:_end_node(2, "Workorder")
     end,
 
     _add_defect = function (self, defect)
         local rail_mask = defect:GetRailMask()
-        if (rail_mask == 1 or rail_mask == 2) and tonumber(Passport.FIRST_LEFT) == 0 then
-            rail_mask = bit32.bxor(rail_mask, 0x3)
+        local rail_left = rail_mask
+        if (rail_left == 1 or rail_left == 2) and tonumber(Passport.FIRST_LEFT) == 0 then
+            rail_left = bit32.bxor(rail_left, 0x3)
         end
         local km, m, _ = defect:GetPath()
         local defect_code = defect:GetDefectCode()
@@ -194,7 +214,7 @@ local EkasuiReportWriter = OOP.class{
             self:_add_text_node(3, "Runtime", os.date('%d.%m.%Y %H:%M:%S', Driver:GetRunTime(defect:GetMarkCoord())))
             self:_add_text_node(3, "Decodetime", os.date('%d.%m.%Y %H:%M:%S'))
             self:_add_text_node(3, "Predid", Passport.RCDM or "")
-            self:_add_text_node(3, "Thread", rail_mask)
+            self:_add_text_node(3, "Thread", rail_left)
             self:_add_text_node(3, "Km", km)
             self:_add_text_node(3, "M", m)
             self:_add_text_node(3, "Defclass", get_ekasui_code_by_defect_code(defect_code))
@@ -212,7 +232,7 @@ local EkasuiReportWriter = OOP.class{
             self:_add_text_node(3, "Lon", lon and sformat("%.6f", lon) or "")
             self:_add_text_node(3, "Lat", lat and sformat("%.6f", lat) or "")
             self:_add_text_node(3, "Generate", "!!! 1")
-            self:_add_text_node(3, "Pic", "")
+            self:_add_text_node(3, "Pic", get_image(defect:GetMarkCoord(), rail_mask))
         self:_end_node(2, "Defect")
     end,
 
@@ -246,7 +266,7 @@ local function make_item_gen(dlg, desc, items)
 	return coroutine.wrap(function()
 		for i, item in ipairs(items) do
 			local msg = sformat("Обработка %s %d/%d", desc, i, #items)
-			if i % 23 == 1 and dlg and not dlg:step(1 / #items, msg) then
+			if i % 12 == 1 and dlg and not dlg:step(1 / #items, msg) then
 				break
 			end
 			coroutine.yield(item)
@@ -258,7 +278,13 @@ local function report_EKASUI_US()
 	EnterScope(function(defer)
 		local dlgProgress = luaiup_helper.ProgressDlg()
 		defer(dlgProgress.Destroy, dlgProgress)
-		local w = EkasuiReportWriter("1.xml")
+        local path_dst = sformat("%s\\%s_US.xml",
+            EKASUI_PARAMS.ExportFolder, Passport.SOURCE)
+        if TEST_EKASUI_OUT_PREFIX then
+            path_dst = TEST_EKASUI_OUT_PREFIX .. "_1.xml"
+        end
+
+		local w = EkasuiReportWriter(path_dst)
 		w:add_header("!!! 413369986")
 
 		local npu = Driver:GetMarks({GUIDS=NPU_GUIDS})
@@ -268,6 +294,11 @@ local function report_EKASUI_US()
 		local ntb = Driver:GetNoteRecords()
 		w:add_defects(make_item_gen(dlgProgress, "ЗК", ntb))
 		w:close()
+
+        local anwser = iup.Alarm("EKASUI", sformat("Сохранен файл: %s", path_dst), "Показать", "Закрыть")
+		if 1 == anwser then
+			os.execute(path_dst)
+		end
 	end)
 end
 
@@ -288,7 +319,6 @@ local function AppendReports(res)
 		end
 	end
 end
-
 
 -- тестирование
 if not ATAPE then
