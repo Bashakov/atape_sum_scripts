@@ -19,16 +19,16 @@ local FASTENER_PLACE =
 
 local function fastener_group_to_code(group_len, place)
     if place == FASTENER_PLACE.CURVE then
-        if     group_len == 3 then return DEFECT_CODES.FASTENER_DEFECT_CURVE_GROUP_3
-        elseif group_len == 4 then return DEFECT_CODES.FASTENER_DEFECT_CURVE_GROUP_4
-        elseif group_len >= 5 then return DEFECT_CODES.FASTENER_DEFECT_CURVE_GROUP_5
+        if     group_len == 4 then return DEFECT_CODES.FASTENER_DEFECT_CURVE_GROUP_4
+        elseif group_len == 5 then return DEFECT_CODES.FASTENER_DEFECT_CURVE_GROUP_5
+        elseif group_len >= 6 then return DEFECT_CODES.FASTENER_DEFECT_CURVE_GROUP_6
         end
     end
     if place == FASTENER_PLACE.STRAIGHT then
-        if     group_len == 3 then return DEFECT_CODES.FASTENER_DEFECT_STRAIGHT_GROUP_3
-        elseif group_len == 4 then return DEFECT_CODES.FASTENER_DEFECT_STRAIGHT_GROUP_4
+        if     group_len == 4 then return DEFECT_CODES.FASTENER_DEFECT_STRAIGHT_GROUP_4
         elseif group_len == 5 then return DEFECT_CODES.FASTENER_DEFECT_STRAIGHT_GROUP_5
-        elseif group_len >= 6 then return DEFECT_CODES.FASTENER_DEFECT_STRAIGHT_GROUP_6
+        elseif group_len == 6 then return DEFECT_CODES.FASTENER_DEFECT_STRAIGHT_GROUP_6
+        elseif group_len >= 7 then return DEFECT_CODES.FASTENER_DEFECT_STRAIGHT_GROUP_7
         end
     end
     if place == FASTENER_PLACE.UNLINED then
