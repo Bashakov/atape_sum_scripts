@@ -1,7 +1,6 @@
 ﻿require "luacom"
 local OOP = require "OOP"
 
-
 local NoteRec = OOP.class
 {
 	ctor = function (self, node_rec)
@@ -45,7 +44,7 @@ local NoteRec = OOP.class
 		return self:_get_field_val("PLACEMENT") or ''
 	end,
 
-	GetAction= function (self)
+	GetAction = function (self)
 		return self:_get_field_val("ACTION") or ''
 	end,
 
@@ -88,10 +87,14 @@ local NoteRec = OOP.class
 
 	GetSpeedLimit = function (self)
 		return self:_get_field_int('NUM_OTV')
-	end
+	end,
+
+	IsODR = function (self)
+		return self:_get_field_int("RAIL_DIR") == 1
+	end,
 }
 
-local load_xml = function (xmlDom)
+local function xml2ntb(xmlDom)
 	local nodes_record = xmlDom:SelectNodes('NOTEBOOK/RECORD')
 	local res = {}
 	while true do
@@ -103,19 +106,22 @@ local load_xml = function (xmlDom)
 	return res
 end
 
-local load_str = function (str)
+local function make_dom()
 	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom, 'can not create MSXML object')
-	assert(xmlDom:loadXML(str), "can not load xml")
-	return load_xml(xmlDom)
+	return assert(xmlDom, 'Can not create MSXML object')
 end
 
-local load_file = function (path_psp)
+local function load_str(str)
+	local xmlDom = make_dom()
+	assert(xmlDom:loadXML(str), "can not load xml")
+	return xml2ntb(xmlDom)
+end
+
+local function load_file(path_psp)
 	local path_ntb = string.gsub(path_psp, '%.xml$', '.ntb')
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	assert(xmlDom, 'can not create MSXML object')
+	local xmlDom = make_dom()
 	assert(xmlDom:load(path_ntb), "can not open xml file: " .. path_ntb)
-    return load_xml(xmlDom)
+    return xml2ntb(xmlDom)
 end
 
 
