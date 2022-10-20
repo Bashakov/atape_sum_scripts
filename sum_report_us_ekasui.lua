@@ -72,36 +72,27 @@ local function format_defect_speed_limit(speed_limit)
     return speed_limit
 end
 
-local function get_video_image(center, rail)
+local function get_us_image(defect)
     if ShowVideo ~= 1 then
         return ''
     end
-    rail = bit32.band(rail, 0x03)
 
-    local img_prop = {
-        width = 900,
-        height = 600,
-        base64 = true,
-        show_marks = 0,
-    }
-
-    local _, img_data = pcall(function ()
-        return Driver:GetVideoComponentImage("ЕКАСУИ", center, rail, img_prop)
-    end)
-    return img_data
-end
-
-local function get_us_image(center)
     local params = {
-        note_rec=nil,
         width=800,
         height=600,
         color=1,
-        coord=center,
-        length=10, -- 10 m
-        sved=1, -- ctShift
         base64=true,
     }
+
+    if defect.is_ntb then
+        params.note_rec = defect.item:GetNoteID()
+    else
+        local s1, s2 = defect:get_sys_coord(0), defect:get_sys_coord(1)
+        params.coord = (s1 + s2) / 2
+        params.length = (s2 - s1 + 1) * 1.1
+        params.length = math.min(params.length, 30)
+        params.sved = 1 -- ctShift
+    end
 
     local _, img_data = pcall(function ()
         return Driver:GetUltrasoundImage(params)
@@ -134,8 +125,8 @@ end
 -- адаптор для работы с записью ЗК или спец. польз. отметкой
 local Defect = OOP.class{
     ctor = function (self, item)
-        self._item = item
-        self._is_ntb = type(item.GetNoteID) == "function"
+        self.item = item
+        self.is_ntb = type(item.GetNoteID) == "function"
     end,
 
     get_thread = function (self)
@@ -147,57 +138,57 @@ local Defect = OOP.class{
     end,
 
     get_rail_mask = function (self)
-        local mask = self._is_ntb and self._item:GetRailMask() or self._item.prop.RailMask
+        local mask = self.is_ntb and self.item:GetRailMask() or self.item.prop.RailMask
         return bit32.band(mask, 0x3)
     end,
 
     get_sys_coord = function (self, last)
         assert(last == 0 or last == 1)
-        if self._is_ntb then
-            return self._item:GetMarkCoord()
+        if self.is_ntb then
+            return self.item:GetMarkCoord()
         else
-            return self._item.prop.SysCoord + self._item.prop.Len * last
+            return self.item.prop.SysCoord + self.item.prop.Len * last
         end
     end,
 
     get_path_coord = function (self, last)
-        if self._is_ntb then
-            return self._item:GetPath()
+        if self.is_ntb then
+            return self.item:GetPath()
         else
             return Driver:GetPathCoord(self:get_sys_coord(last))
         end
     end,
 
     get_description = function (self)
-        if self._is_ntb then
-            local plcmt, desc = self._item:GetPlacement(), self._item:GetDescription()
+        if self.is_ntb then
+            local plcmt, desc = self.item:GetPlacement(), self.item:GetDescription()
             local delm = ""
             if plcmt:len() > 0 and desc:len() > 0 then delm = " " end
             return plcmt .. delm .. desc
         else
-            return self.prop.Description
+            return self.item.prop.Description
         end
     end,
 
     get_speed_limit = function (self)
-        if self._is_ntb then
-            return self._item:GetSpeedLimit()
+        if self.is_ntb then
+            return self.item:GetSpeedLimit()
         else
             return 0 -- ???
         end
     end,
 
     get_action = function (self)
-        if self._is_ntb then
-            return self._item:GetAction()
+        if self.is_ntb then
+            return self.item:GetAction()
         else
             return ""
         end
     end,
 
     get_defect_code = function (self)
-        if self._is_ntb then
-            return self._item:GetDefectCode()
+        if self.is_ntb then
+            return self.item:GetDefectCode()
         else
             return ""
         end
@@ -205,10 +196,10 @@ local Defect = OOP.class{
 
     get_id = function (self)
         local prefix, code
-        if self._is_ntb then
-            prefix, code = 1, self._item:GetNoteID()
+        if self.is_ntb then
+            prefix, code = 1, self.item:GetNoteID()
         else
-            prefix, code = 0, self._item.prop.ID
+            prefix, code = 0, self.item.prop.ID
         end
         return sformat("%s%08d", prefix, code)
     end,
@@ -273,8 +264,6 @@ local EkasuiReportWriter = OOP.class{
     end,
 
     _add_defect = function (self, defect)
-
-        --local rail_mask = defect:get_rail_mask()
         local thread = defect:get_thread()
 
         local km, m, _ = defect:get_path_coord(defect, 0)
@@ -305,7 +294,7 @@ local EkasuiReportWriter = OOP.class{
             self:_add_text_node(3, "Lon", lon and sformat("%.6f", lon) or "")
             self:_add_text_node(3, "Lat", lat and sformat("%.6f", lat) or "")
             self:_add_text_node(3, "Generate", "0") -- 0 – всегда, 1 – во время регистрации
-            self:_add_text_node(3, "Pic", get_us_image(sys_coord))
+            self:_add_text_node(3, "Pic", get_us_image(defect))
         self:_end_node(2, "Defect")
     end,
 
@@ -325,7 +314,6 @@ local EkasuiReportWriter = OOP.class{
     end,
 
     _add_workorder = function (self, defect)
-        --local rail_mask = defect:get_rail_mask()
         local thread = defect:get_thread()
 
         local km1, m1, _ = defect:get_path_coord(0)
@@ -359,7 +347,7 @@ local EkasuiReportWriter = OOP.class{
             self:_add_text_node(3, "Endlon", lon2 and sformat("%.6f", lon2) or "")
             self:_add_text_node(3, "Endlat", lat2 and sformat("%.6f", lat2) or "")
             self:_add_text_node(3, "Generate", "0") -- 0 – всегда, 1 – во время регистрации
-            self:_add_text_node(3, "Pic", get_us_image((s1+s2) / 2.0))
+            self:_add_text_node(3, "Pic", get_us_image(defect))
         self:_end_node(2, "Workorder")
     end,
 
@@ -391,10 +379,10 @@ local NPU_GUIDS =
 
 local function make_item_gen(dlg, desc, items_list)
 	return coroutine.wrap(function()
-        for _, items in ipairs(items_list) do
-            for i, item in ipairs(items) do
-                local msg = sformat("Обработка %s %d/%d", desc, i, #items)
-                if dlg and not dlg:step(1 / #items, msg) then
+        for ni, items in ipairs(items_list) do
+            for ii, item in ipairs(items) do
+                local msg = sformat("Обработка %s (%d/%d) %d/%d", desc, ni, #items_list, ii, #items)
+                if dlg and not dlg:step(ii / #items, msg) then
                     break
                 end
                 coroutine.yield(Defect(item))
@@ -404,18 +392,39 @@ local function make_item_gen(dlg, desc, items_list)
 end
 
 local function get_parameters()
-    local function val2idx(dict, val)
-        if not dict then return val end
-        for i, row in ipairs(dict) do
-            if row.value == val then
-                return i-1
+    local function prep_val(row)
+        if row.dict then
+            for i, d in ipairs(row.dict) do
+                if d.value == row.value then
+                    return i-1
+                end
             end
+            error(sformat("unknow value %", val))
+        elseif row.bool then
+            return row.value and 1 or 0
+        else
+            return row.value
         end
-        error(sformat("unknow value %", val))
     end
-    local function idx2val (dict, idx)
-        if not dict then return idx end
-        return assert(dict[idx+1], sformat("unknow idx %s", idx)).value
+    local function get_val(row, val)
+        if row.dict then
+            return assert(row.dict[val+1], sformat("unknow idx %s", val)).value
+        elseif row.bool then
+            return val == 1
+        else
+            return val
+        end
+    end
+    local function get_fmt(row)
+        local s = row.desc .. ": "
+        if row.dict then
+            s = s .. "%l|" .. table.concat(functional.map(function (d) return d.desc end, row.dict), "|") .. "|"
+        elseif row.bool then
+            s = s .. "%b[No,Yes]"
+        else
+            s = s .. "%s"
+        end
+        return s .. "\n"
     end
 
     local woclass_dict = {
@@ -425,20 +434,13 @@ local function get_parameters()
         {value="010001000203", desc="РЗ на вторичный контроль" },
     }
 
-    local params = {
+    local rows = {
         {name="Wonum", desc="Wonum", value=Passport.WONUM or "", },
         {name="Woclass", desc="Woclass", value="010001000203", dict=woclass_dict},
+        {name="show_npu", desc="Выводить НПУ", value=false, bool=true},
     }
-    local sfmt = functional.map(function (p)
-        local s = p.desc .. ": "
-        if p.dict then
-            s = s .. "%l|" .. table.concat(functional.map(function (p) return p.desc end, p.dict), "|") .. "|"
-        else
-            s = s .. "%s"
-        end
-        return s .. "\n"
-    end, params)
-    local values = functional.map(function (p) return val2idx(p.dict, p.value) end, params)
+    local sfmt = functional.map( get_fmt, rows)
+    local values = functional.map(prep_val, rows)
     local res
     if true then -- !!!!!
         res = {iup.GetParam("Параметры генерации отчета", nil,
@@ -450,8 +452,8 @@ local function get_parameters()
     end
     if res[1] then
         local out = {}
-        for i, p in ipairs(params) do
-            out[p.name] = idx2val(p.dict, res[i+1])
+        for i, row in ipairs(rows) do
+            out[row.name] = get_val(row, res[i+1])
         end
         return out
     end
@@ -485,19 +487,21 @@ local function report_EKASUI_US()
         local ntb = Driver:GetNoteRecords()
         local odr, other_ntb = split_notebook_category(ntb)
 
-		local w = EkasuiReportWriter(path_dst, params)
-		w:add_header()
-
-		local npu = {}
-        if false then -- load NPU
-            Driver:GetMarks({GUIDS=NPU_GUIDS})
+        local npu = {}
+        print("params.show_npu", params.show_npu ~= "0", params.show_npu)
+        if params.show_npu ~= 0 then -- load NPU
+            npu = Driver:GetMarks({GUIDS=NPU_GUIDS})
             npu = mark_helper.sort_mark_by_coord(npu)
         end
+
+        local w = EkasuiReportWriter(path_dst, params)
+		w:add_header()
 
         w:add_workorders(make_item_gen(dlgProgress, "Workorder", {other_ntb, npu}))
 		w:add_defects(make_item_gen(dlgProgress, "ОДР", {odr}))
 		w:close()
         Driver:MarkNtbIDsAsReported(functional.map(function (d) return d:GetNoteID() end, ntb))
+        dlgProgress:Hide()
 
         local anwser = iup.Alarm("EKASUI", sformat("Сохранен файл: %s", path_dst), "Показать", "Закрыть")
 		if 1 == anwser then

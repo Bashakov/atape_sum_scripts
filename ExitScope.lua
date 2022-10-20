@@ -37,7 +37,7 @@ function EnterScope(work_fn)
 	end
 
 	local ok, msg
-	if ATAPE then
+	if true then
 		ok, msg = pcall(function() return work_fn(defer) end)
 	else
 		ok = true
