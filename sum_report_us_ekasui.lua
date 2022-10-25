@@ -235,7 +235,7 @@ local EkasuiReportWriter = OOP.class{
 
         self:_start_node(1, "Common_inf")
             self:_add_text_node(2, "Manufacture", "5")
-            self:_add_text_node(2, "Softint", "EKASUI_sync_3.40")
+            self:_add_text_node(2, "Softint", EKASUI_PARAMS.Softint or "")
             self:_add_text_node(2, "Softdecode", "ATape 2.0")
             self:_add_text_node(2, "Nsiver", Passport.NSIVER or "")
             self:_add_text_node(2, "Extwonum", extwonum)
@@ -435,8 +435,8 @@ local function get_parameters()
     }
 
     local rows = {
-        {name="Wonum", desc="Wonum", value=Passport.WONUM or "", },
-        {name="Woclass", desc="Woclass", value="010001000203", dict=woclass_dict},
+        {name="Wonum", desc="Код раб.задания в ЕКАСУИ ДМ НК (Wonum)", value=Passport.WONUM or "", },
+        {name="Woclass", desc="Отметки для доп. диагностики (Woclass)", value="010001000203", dict=woclass_dict},
         {name="show_npu", desc="Выводить НПУ", value=false, bool=true},
     }
     local sfmt = functional.map( get_fmt, rows)
@@ -489,7 +489,7 @@ local function report_EKASUI_US()
 
         local npu = {}
         print("params.show_npu", params.show_npu ~= "0", params.show_npu)
-        if params.show_npu ~= 0 then -- load NPU
+        if params.show_npu then -- load NPU
             npu = Driver:GetMarks({GUIDS=NPU_GUIDS})
             npu = mark_helper.sort_mark_by_coord(npu)
         end
