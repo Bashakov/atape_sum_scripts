@@ -1061,6 +1061,33 @@ local function prepare_row_path(row, prefix, coord)
 	end
 end
 
+local function prepare_row_gps(row, mark)
+	local function fmt(val)
+		if not val then return '' end
+		local sign = val < 0 and -1 or 1
+		val = math.abs(val)
+		local d = math.floor(val)
+		val = (val - d) * 60
+		local m = math.floor(val)
+		local s = (val-m) * 60
+		return string.format("%d %2d' %.3f''", d*sign, m, s)
+	end
+	local function fmt_row(val)
+		if not val then return '' end
+		return string.format("%.6f", val)
+	end
+
+	local lat, lon
+	if Driver.GetGPS then
+		lat, lon = Driver:GetGPS(mark.prop.SysCoord + mark.prop.Len/2)
+	end
+
+	row.LAT = fmt(lat)
+	row.LON = fmt(lon)
+	row.LAT_ROW = fmt_row(lat)
+	row.LON_ROW = fmt_row(lon)
+end
+
 -- создание таблицы подстановок с общими параметрами отметки
 local function MakeCommonMarkTemplate(mark)
 	local rails_names = {
@@ -1090,12 +1117,7 @@ local function MakeCommonMarkTemplate(mark)
 	row.RAIL_NAME = rails_names[row.RAIL_POS]
 	row.RAIL_TEMP = temperature and sprintf('%+.1f', temperature) or ''
 
-	if Driver.GetGPS then
-		row.LAT, row.LON = Driver:GetGPS(prop.SysCoord)
-	else
-		row.LAT = ''
-		row.LON = ''
-	end
+	prepare_row_gps(row, mark)
 
 	row.DEFECT_CODE = ''
 	row.DEFECT_DESC = ''

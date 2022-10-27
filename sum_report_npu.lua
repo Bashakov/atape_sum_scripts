@@ -109,9 +109,9 @@ end
 -- тестирование
 if not ATAPE then
 
-	local test_report  = require('test_report')
-	--test_report('D:\\ATapeXP\\Main\\480\\[480]_2013_11_09_14.xml')
-	test_report('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2022_02_04_01.xml', nil, {0, 100}) --
+	local test_report  = require('local_data_driver')
+	-- test_report.Driver('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2022_02_04_01.xml', nil) --
+	test_report.Driver("D:\\ATapeXP\\Main\\494\\video\\[494]_2017_06_08_12.xml")
 
 	report_NPU(cur_reports[1].params)
 	--ekasui_rails()

@@ -106,8 +106,8 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg, path
 		node_incident:setAttribute("speedLimitID", mark.SPEED_LIMIT)
 		node_incident:setAttribute("jpads", "null")
 		node_incident:setAttribute("comment", "null")
-		node_incident:setAttribute("lon", format_gps(mark.LON))
-		node_incident:setAttribute("lat", format_gps(mark.LAT))
+		node_incident:setAttribute("lon", format_gps(mark.LON_RAW or mark.LON))
+		node_incident:setAttribute("lat", format_gps(mark.LAT_ROW or mark.LAT))
 		node_incident:setAttribute("Pic", img)
 		node_incident:setAttribute("avikon_system_coord", mark.SYS)
 
