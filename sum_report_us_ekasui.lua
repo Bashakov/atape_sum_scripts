@@ -236,7 +236,7 @@ local EkasuiReportWriter = OOP.class{
         self:_start_node(1, "Common_inf")
             self:_add_text_node(2, "Manufacture", "5")
             self:_add_text_node(2, "Softint", EKASUI_PARAMS.Softint or "")
-            self:_add_text_node(2, "Softdecode", "ATape 2.0")
+            self:_add_text_node(2, "Softdecode", "ATape 2.24")
             self:_add_text_node(2, "Nsiver", Passport.NSIVER or "")
             self:_add_text_node(2, "Extwonum", extwonum)
             self:_add_text_node(2, "Sessionid", "s1" .. extwonum)
@@ -503,9 +503,10 @@ local function report_EKASUI_US()
         Driver:MarkNtbIDsAsReported(functional.map(function (d) return d:GetNoteID() end, ntb))
         dlgProgress:Hide()
 
-        local anwser = iup.Alarm("EKASUI", sformat("Сохранен файл: %s", path_dst), "Показать", "Закрыть")
+        local anwser = iup.Alarm("EKASUI", sformat("Сохранен файл: %s", path_dst), "Показать расположение", "Закрыть")
 		if 1 == anwser then
-			os.execute(path_dst)
+            local cmd = string.format('%%SystemRoot%%\\explorer.exe /select,"%s"', path_dst)
+			os.execute(cmd)
 		end
 	end)
 end
