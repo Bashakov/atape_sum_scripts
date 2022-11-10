@@ -257,6 +257,16 @@ local Defect = OOP.class{
 
     get_full_id = function (self)
         return sformat("%s%s", get_reg_date_id(), self:get_id())
+    end,
+
+    get_woclass = function (self)
+        -- https://bt.abisoft.spb.ru/view.php?id=965#c5205
+        if self.is_ntb then
+            return "010001000203"
+            -- Для преддефект - пока не уверен
+        else
+            return "010001000202" -- НПУ
+        end
     end
 }
 
@@ -350,15 +360,15 @@ local EkasuiReportWriter = OOP.class{
         self:_end_node(2, "Defect")
     end,
 
-    add_workorders =function(self, npu_gen)
+    add_workorders =function(self, defect_gen)
         assert(self._header_added)
         local add_hdr_node = false
-        for npu in npu_gen do
+        for defect in defect_gen do
             if not add_hdr_node then
                 add_hdr_node = true
                 self:_start_node(1, "Workorderset")
             end
-            self:_add_workorder(npu)
+            self:_add_workorder(defect)
         end
         if add_hdr_node then
             self:_end_node(1, "Workorderset")
@@ -376,7 +386,7 @@ local EkasuiReportWriter = OOP.class{
         local lat2, lon2 = Driver:GetGPS(s2)
 
         self:_start_node(2, "Workorder", {Workorderid=defect:get_full_id()})
-          self:_add_text_node(3, "Woclass", self._params.Woclass)
+          self:_add_text_node(3, "Woclass", defect:get_woclass())
           self:_add_text_node(3, "Notificationnum", "") -- всегда пусто!
             self:_add_text_node(3, "Runtime", os.date('%d.%m.%Y %H:%M:%S', Driver:GetRunTime(s1)))
             self:_add_text_node(3, "Decodetime", os.date('%d.%m.%Y %H:%M:%S'))
@@ -480,15 +490,15 @@ local function get_parameters()
     end
 
     local woclass_dict = {
-        {value="0",            desc="административное замечание" },
-        {value="010001000201", desc="плановое РЗ на сплошной контроль" },
-        {value="010001000202", desc="РЗ на повторный проход" },
-        {value="010001000203", desc="РЗ на вторичный контроль" },
+        -- {value="0",            desc="административное замечание" },
+        -- {value="010001000201", desc="плановое РЗ на сплошной контроль" },
+        -- {value="010001000202", desc="РЗ на повторный проход" },
+        -- {value="010001000203", desc="РЗ на вторичный контроль" },
     }
 
     local rows = {
         {name="Wonum", desc="Код раб.задания в ЕКАСУИ ДМ НК (Wonum)", value=Passport.WONUM or "", },
-        {name="Woclass", desc="Отметки для доп. диагностики (Woclass)", value="010001000203", dict=woclass_dict},
+        -- {name="Woclass", desc="Отметки для доп. диагностики (Woclass)", value="010001000203", dict=woclass_dict},
         {name="show_npu", desc="Выводить НПУ", value=false, bool=true},
     }
     local sfmt = functional.map( get_fmt, rows)
