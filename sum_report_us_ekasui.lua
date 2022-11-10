@@ -291,7 +291,7 @@ local EkasuiReportWriter = OOP.class{
             self:_add_text_node(2, "Softdecode", "ATape 2.24")
             self:_add_text_node(2, "Nsiver", Passport.NSIVER or "")
             self:_add_text_node(2, "Extwonum", extwonum)
-            self:_add_text_node(2, "Sessionid", "s1" .. extwonum)
+            self:_add_text_node(2, "Sessionid", "1S" .. extwonum)
             self:_add_text_node(2, "Session_date", os.date("%d.%m.%Y %H:%M:%S"))
             self:_add_text_node(2, "Vag", get_carid())
             self:_add_text_node(2, "Decoder", Passport.CURRENT_OPERATOR or "")
