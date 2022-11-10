@@ -14,6 +14,8 @@ local GUIDS = require "sum_types"
 local functional = require "functional"
 require "ExitScope"
 require "luacom"
+local ext_obj_utils = require 'list_ext_obj_utils'
+local sqlite3 = require "lsqlite3"
 
 local sformat = string.format
 
@@ -122,6 +124,55 @@ local function format_critic_date(action)
     return 1 -- 3 часа
 end
 
+local PRED_ID_TBL = OOP.class{
+    ctor = function (self, TRACK_CODE)
+        local sql = [[
+            CREATE TEMP TABLE temp.ph as
+            SELECT
+                a.BEGIN_KM, a.BEGIN_M, a.END_KM, a.END_M, c.TYPE, a.NUM, a.ID_PODR, b.CHIEF_NAME
+            FROM
+                PODRGR a
+            INNER JOIN
+                PODR b on a.SITEID=b.SITEID AND a.NUM=b.NUM AND a.TYPE=b.TYPE AND a.TYPE=5
+            INNER JOIN
+                SPR_PODR c on a.TYPE=c.ID
+            INNER JOIN
+                WAY d on a.SITEID=d.SITEID AND a.UP_NOM=d.UP_NOM AND a.PUT_NOM=d.NOM
+            WHERE
+                d.ASSETNUM=:ASSETNUM ]]
+        local db = ext_obj_utils.open_db()
+        local stmt = db:prepare(sql)
+        if not stmt then
+            local msg = string.format('%s(%s) on %s', db:errcode(), db:errmsg(), sql)
+            error(msg)
+        end
+        stmt:bind_names({ASSETNUM=Passport.TRACK_CODE})
+        assert(stmt:step() == sqlite3.DONE)
+        self._db = db
+    end,
+
+    get = function (self, km, m)
+        local db = self._db
+        local sql = [[
+            SELECT *
+            FROM temp.ph
+            WHERE
+                (BEGIN_KM<:km or (BEGIN_KM=:km and BEGIN_M<=:m)) AND
+                (END_KM>:km or (END_KM=:km and END_M>=:m)) ]]
+
+        local stmt = db:prepare(sql)
+        if not stmt then
+            local msg = string.format('%s(%s) on %s', db:errcode(), db:errmsg(), sql)
+            error(msg)
+        end
+        stmt:bind_names({km=km, m=m})
+        for row in stmt:nrows() do
+            return "PRED_" .. row.ID_PODR
+        end
+        return ""
+    end,
+}
+
 -- адаптор для работы с записью ЗК или спец. польз. отметкой
 local Defect = OOP.class{
     ctor = function (self, item)
@@ -216,6 +267,7 @@ local EkasuiReportWriter = OOP.class{
         self._file = io.open(path, "w+")
         self._header_added = false
         self._params = params
+        self._pred_ids = PRED_ID_TBL()
     end,
 
     close = function (self)
@@ -275,7 +327,7 @@ local EkasuiReportWriter = OOP.class{
             self:_add_text_node(3, "Notificationnum", "")
             self:_add_text_node(3, "Runtime", os.date('%d.%m.%Y %H:%M:%S', Driver:GetRunTime(sys_coord)))
             self:_add_text_node(3, "Decodetime", os.date('%d.%m.%Y %H:%M:%S'))
-            self:_add_text_node(3, "Predid", Passport.RCDM or "")
+            self:_add_text_node(3, "Predid", self._pred_ids:get(km, m))
             self:_add_text_node(3, "Thread", thread)
             self:_add_text_node(3, "Km", km)
             self:_add_text_node(3, "M", m)
