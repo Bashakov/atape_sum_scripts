@@ -28,8 +28,8 @@ local function _print_data(name, psp_path)
 	local columns = GetColumnDescription(name)
 	local col_fmt = _make_column_format(columns)
 
-	local test_report  = require('test_report')
-	test_report(psp_path, nul) -- ,  , {0, 1000000}
+	local test_report  = require('local_data_driver')
+	test_report.Driver(psp_path, nil)
 
 	local cnt_row = InitMark(name)
 	--SortMarks(6, True)
@@ -54,7 +54,7 @@ end
 -- =============================================== --
 
 --local name = "Записная книжка"
-local name = 'KM'
+local name = 'ПЧ'
 --local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
 local psp_path = 'D:/d-drive/ATapeXP/Main/498/Рыбинск-Псков/1/2021_11_25/Avikon-03M/3068/[498]_2021_09_17_35.xml'
 

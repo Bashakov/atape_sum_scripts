@@ -4,6 +4,19 @@ if iup then
 	iup.SetGlobal('UTF8MODE', 1)
 end
 
+local function get_psp_km_range()
+	local rng = {}
+	for i, v in ipairs{Passport.START_CHOORD, Passport.END_CHOORD} do
+		rng[i] = tonumber(string.match(v, '^(-?%d+):'))
+	end
+	if rng[1] > rng[2] then rng[1], rng[2] = rng[2], rng[1] end
+
+	local res = {}
+	for km = rng[1], rng[2] do
+		res[km] = true
+	end
+	return res
+end
 
 local function get_data_kms(fnContinueCalc)
 	local sys_begin, sys_end = Driver:GetSysCoordRange()
@@ -12,7 +25,7 @@ local function get_data_kms(fnContinueCalc)
         return
     end
 	if sys_begin == 0 and sys_end == 0 then  -- test
-		return
+		return get_psp_km_range()
 	end
 	sys_end = sys_end + 1
 	local step = (sys_end - sys_begin) / 1000
@@ -38,7 +51,7 @@ end
 local function jump_path(path)
 	local ok, err = Driver:JumpPath(path)
 	if not ok then
-		local msg = string.format("Не удалось перейти на координату %d km %d m:\n%s", path[1], path[2] or 0, err or '')
+		local msg = string.format("Не удалось перейти на координату %s km %s m:\n%s", path[1], path[2] or 0, err or '')
 		iup.Message("ATape", msg)
 	end
 end
