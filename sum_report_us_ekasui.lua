@@ -401,7 +401,7 @@ local EkasuiReportWriter = OOP.class{
                 self:_add_text_node(4, "Railpart", "") -- пока пусто всегда, потом - справочник в ЗК
                 self:_add_text_node(4, "Holenum", "") -- пока пусто всегда,номер отверстия.......
             self:_end_node(3, "Boltholes")
-            self:_add_text_node(3, "Defgroup", defect_code and defect_code:sub(1,1) or "")
+            self:_add_text_node(3, "Defgroup", defect_code and string.match(defect_code, "%d") or "")
             self:_add_text_node(3, "Criticdate", format_critic_date(defect:get_action()))
             self:_add_text_node(3, "Binding", defect:get_description())
             self:_add_text_node(3, "Startlon", lon1 and sformat("%.6f", lon1) or "")
@@ -547,6 +547,7 @@ local function report_EKASUI_US()
         end
 
         local ntb = Driver:GetNoteRecords()
+
         local odr, other_ntb = split_notebook_category(ntb)
 
         local npu = {}
