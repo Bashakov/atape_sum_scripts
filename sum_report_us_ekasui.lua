@@ -262,11 +262,13 @@ local Defect = OOP.class{
 
     get_woclass = function (self)
         -- https://bt.abisoft.spb.ru/view.php?id=965#c5205
+        -- https://bt.abisoft.spb.ru/view.php?id=965#c5258
+
         if self.is_ntb then
-            return "010001000203"
-            -- Для преддефект - пока не уверен
+            return "010001000203" -- Для Дефектов (ДР) Woclass = 10001000203 РЗ на вторичный контроль
+            -- Преддефект - к вагону это не относится, "создает съемное средство контроля по результатам проведения вторичного контроля".
         else
-            return "010001000202" -- НПУ
+            return "010001000202" -- Для НПУ Woclass = 10001000202 РЗ на повторный проход
         end
     end
 }
@@ -490,16 +492,8 @@ local function get_parameters()
         return s .. "\n"
     end
 
-    local woclass_dict = {
-        -- {value="0",            desc="административное замечание" },
-        -- {value="010001000201", desc="плановое РЗ на сплошной контроль" },
-        -- {value="010001000202", desc="РЗ на повторный проход" },
-        -- {value="010001000203", desc="РЗ на вторичный контроль" },
-    }
-
     local rows = {
         {name="Wonum", desc="Код раб.задания в ЕКАСУИ ДМ НК (Wonum)", value=Passport.WONUM or "", },
-        -- {name="Woclass", desc="Отметки для доп. диагностики (Woclass)", value="010001000203", dict=woclass_dict},
         {name="show_npu", desc="Выводить НПУ", value=false, bool=true},
     }
     local sfmt = functional.map( get_fmt, rows)
