@@ -88,6 +88,7 @@ local function get_us_image(defect)
 
     if defect.is_ntb then
         params.note_rec = defect.item:GetNoteID()
+        params.coord = defect.item:GetMarkCoord()
     else
         local s1, s2 = defect:get_sys_coord(0), defect:get_sys_coord(1)
         params.coord = (s1 + s2) / 2
