@@ -205,7 +205,11 @@ local Defect = OOP.class{
 
     get_path_coord = function (self, last)
         if self.is_ntb then
-            return self.item:GetPath()
+            if last == 0 then
+                return self.item:GetPath()
+            else
+                return nil
+            end
         else
             return Driver:GetPathCoord(self:get_sys_coord(last))
         end
@@ -331,7 +335,7 @@ local EkasuiReportWriter = OOP.class{
     _add_defect = function (self, defect)
         local thread = defect:get_thread()
 
-        local km, m, _ = defect:get_path_coord(defect, 0)
+        local km, m, _ = defect:get_path_coord(0)
         local sys_coord = defect:get_sys_coord(0)
         local defect_code = defect:get_defect_code()
         local lat, lon = Driver:GetGPS(sys_coord)
