@@ -125,6 +125,10 @@ local function format_critic_date(action)
     return 1 -- 3 часа
 end
 
+local function format_gps(val)
+    return val and sformat("%.6f", val) or ""
+end
+
 local PRED_ID_TBL = OOP.class{
     ctor = function (self, TRACK_CODE)
         local sql = [[
@@ -197,10 +201,21 @@ local Defect = OOP.class{
     get_sys_coord = function (self, last)
         assert(last == 0 or last == 1)
         if self.is_ntb then
-            return self.item:GetMarkCoord()
+            if last == 0 then
+                return self.item:GetMarkCoord()
+            else
+                return nil
+            end
         else
+            if Passport.INCREASE == '0' then
+                last = 1 - last
+            end
             return self.item.prop.SysCoord + self.item.prop.Len * last
         end
+    end,
+
+    get_gps = function (self, last)
+        return Driver:GetGPS(self:get_sys_coord(last));
     end,
 
     get_path_coord = function (self, last)
@@ -338,7 +353,7 @@ local EkasuiReportWriter = OOP.class{
         local km, m, _ = defect:get_path_coord(0)
         local sys_coord = defect:get_sys_coord(0)
         local defect_code = defect:get_defect_code()
-        local lat, lon = Driver:GetGPS(sys_coord)
+        local lat, lon = defect:get_gps(0)
 
         self:_start_node(2, "Defect", {Defectid=defect:get_full_id()})
             self:_add_text_node(3, "Notificationnum", "")
@@ -360,8 +375,8 @@ local EkasuiReportWriter = OOP.class{
             self:_add_text_node(3, "Sizewidth", "")
             self:_add_text_node(3, "Speedlimitid", format_defect_speed_limit(defect:get_speed_limit()))
             self:_add_text_node(3, "Comment", defect:get_description())
-            self:_add_text_node(3, "Lon", lon and sformat("%.6f", lon) or "")
-            self:_add_text_node(3, "Lat", lat and sformat("%.6f", lat) or "")
+            self:_add_text_node(3, "Lon", format_gps(lon))
+            self:_add_text_node(3, "Lat", format_gps(lat))
             self:_add_text_node(3, "Generate", "0") -- 0 – всегда, 1 – во время регистрации
             self:_add_text_node(3, "Pic", get_us_image(defect))
         self:_end_node(2, "Defect")
@@ -387,10 +402,11 @@ local EkasuiReportWriter = OOP.class{
 
         local km1, m1, _ = defect:get_path_coord(0)
         local km2, m2, _ = defect:get_path_coord(1)
-        local s1, s2 = defect:get_sys_coord(0), defect:get_sys_coord(1)
+        local lat1, lon1 = defect:get_gps(0)
+        local lat2, lon2 = defect:get_gps(1)
+
+        local s1 = defect:get_sys_coord(0)
         local defect_code = defect:get_defect_code()
-        local lat1, lon1 = Driver:GetGPS(s1)
-        local lat2, lon2 = Driver:GetGPS(s2)
 
         self:_start_node(2, "Workorder", {Workorderid=defect:get_full_id()})
           self:_add_text_node(3, "Woclass", defect:get_woclass())
@@ -411,10 +427,10 @@ local EkasuiReportWriter = OOP.class{
             self:_add_text_node(3, "Defgroup", defect_code and string.match(defect_code, "%d") or "")
             self:_add_text_node(3, "Criticdate", format_critic_date(defect:get_action()))
             self:_add_text_node(3, "Binding", defect:get_description())
-            self:_add_text_node(3, "Startlon", lon1 and sformat("%.6f", lon1) or "")
-            self:_add_text_node(3, "Beginlat", lat1 and sformat("%.6f", lat1) or "")
-            self:_add_text_node(3, "Endlon", lon2 and sformat("%.6f", lon2) or "")
-            self:_add_text_node(3, "Endlat", lat2 and sformat("%.6f", lat2) or "")
+            self:_add_text_node(3, "Startlon", format_gps(lon1))
+            self:_add_text_node(3, "Beginlat", format_gps(lat1))
+            self:_add_text_node(3, "Endlon", format_gps(lon2))
+            self:_add_text_node(3, "Endlat", format_gps(lat2))
             self:_add_text_node(3, "Generate", "0") -- 0 – всегда, 1 – во время регистрации
             self:_add_text_node(3, "Pic", get_us_image(defect))
         self:_end_node(2, "Workorder")

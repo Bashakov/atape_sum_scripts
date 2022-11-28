@@ -542,6 +542,7 @@ local Driver = OOP.class
 	end,
 
 	GetGPS = function(self, sys)
+		if not sys then return end
 		local k = 60*60*1000
 		local lat = nil
 		local lon = nil
