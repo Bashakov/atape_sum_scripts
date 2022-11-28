@@ -297,6 +297,9 @@ local Defect = OOP.class{
 local EkasuiReportWriter = OOP.class{
     ctor = function (self, path, params)
         self._file = io.open(path, "w+")
+        if not self._file then
+            error("can not open output file: " .. path)
+        end
         self._header_added = false
         self._params = params
         self._pred_ids = PRED_ID_TBL()
