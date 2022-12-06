@@ -1085,6 +1085,9 @@ if not HUN then
 	for _, report in ipairs(cur_file_reports) do
 		table.insert(Report_Functions, report)
 	end
+
+	local report_us_ekasui = require 'sum_report_us_ekasui'
+	report_us_ekasui.AppendReports(Report_Functions)
 else
 	local report_hun_video = require 'sum_report_hun'
 	report_hun_video.AppendReports(Report_Functions)
@@ -1172,7 +1175,7 @@ if not ATAPE then
 	test_report.Driver('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	--test_report.Driver('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2020_11_30_01.xml')
 	
-	MakeReport('Ведомость отступлений в содержании балласта|ЕКАСУИ пользователь')
+	MakeReport('Дефекты УЗК в екасуи')
 	--local guids = GetFilterGuids('Ведомость отступлений в содержании рельсов')
 	--print(guids)
 

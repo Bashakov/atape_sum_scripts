@@ -3,6 +3,7 @@ local sqlite3 = require "lsqlite3"
 local OOP = require "OOP"
 local GUID = require "guids"
 local ntb = require 'notebook_xml_utils'
+local functional = require "functional"
 
 local printf  = function(fmt, ...)	print(string.format(fmt, ...)) end
 local sprintf = function(fmt, ...) return string.format(fmt, ...)  end
@@ -503,6 +504,36 @@ local Driver = OOP.class
 		end
 	end,
 
+	GetUltrasoundImage = function (self, params)
+		local text = 'Test GetUltrasoundImage:\\n'
+		for n, v in pairs(params) do
+			text = text .. sprintf('\\n  %s = %s', n, v)
+		end
+
+		local width = params.width or 600
+		local height = params.height or 400
+
+		local cmd = sprintf('ImageMagick_convert.exe convert -size %dx%d xc:skyblue -fill black -gravity West -annotate 0,0 "%s" ', width, height, text)
+		if params.base64 then
+			cmd = cmd .. ' INLINE:JPG:-'
+			local f = assert(io.popen(cmd, 'r'))
+			local data = assert(f:read('*a'))
+			f:close()
+			local hdr = 'data:image/jpeg;base64,'
+			if data:sub(1, #hdr) ~= hdr then
+				error( 'bad output file header: [' .. data:sub(1, #hdr) .. ']')
+			end
+			return data:sub(#hdr+1)
+		else
+			local path = os.tmpname() .. ".jpg"
+			cmd = cmd .. path
+			if not os.execute(cmd) then
+				error('command [' .. cmd .. '] failed')
+			end
+			return path
+		end
+	end,
+
 	GetRunTime = function(self, sys)
 		local date = self._passport.DATE
 		local year, month, day, hour, min = string.match(date, "(%d+):(%d+):(%d+):(%d+):(%d+)")
@@ -511,6 +542,7 @@ local Driver = OOP.class
 	end,
 
 	GetGPS = function(self, sys)
+		if not sys then return end
 		local k = 60*60*1000
 		local lat = nil
 		local lon = nil
@@ -547,6 +579,11 @@ local Driver = OOP.class
 			return self._gps[1].coord, self._gps[#self._gps].coord
 		end
 		return 0, 0
+	end,
+
+	MarkNtbIDsAsReported = function (self, ntb_ids)
+		local s = table.concat(functional.map(function (id) return tostring(id) end, ntb_ids), ",")
+		print("MarkNtbIDsAsReported: ", s)
 	end
 }
 
