@@ -541,15 +541,15 @@ end
 
 local function split_notebook_category(ntb)
     local odr = {}
-    local other = {}
+    local dr = {}
     for _, rec in ipairs(ntb) do
         if rec:IsODR() then
             table.insert(odr, rec)
-        else
-            table.insert(other, rec)
+        elseif rec:IsDR() then
+            table.insert(dr, rec)
         end
     end
-    return odr, other
+    return odr, dr
 end
 
 local function report_EKASUI_US()

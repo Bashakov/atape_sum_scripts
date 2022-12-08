@@ -90,7 +90,11 @@ local NoteRec = OOP.class
 	end,
 
 	IsODR = function (self)
-		return self:_get_field_int("RAIL_DIR") == 1
+		return self:GetIncluded() and self:GetAction() == "Замена"
+	end,
+
+	IsDR = function (self)
+		return self:GetIncluded() and self:GetAction() ~= "Замена"
 	end,
 }
 
