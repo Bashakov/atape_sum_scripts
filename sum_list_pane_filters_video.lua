@@ -147,17 +147,18 @@ end
 local filters =
 {
 	--!!! вывод всех объектов с ограничением скорости или дефектами // https://bt.abisoft.spb.ru/view.php?id=779
+	--!!! 2022.09.01 Исправлены name у списков. Поля поменяны по шаблону: номер-путевая коорд-пов-огр скорости-описание-все остальное
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
-		name = 'Замечания с ограничением скорости',
+		name = 'I Все ограничения скорости',
 		columns = {
 			column_num,
 			column_path_coord,
 			column_pov_common,
-			column_defect_code_list,
 			column_speed_limit_list,
-			column_mark_type_name,
 			column_defect_code_desc_list,
+			column_mark_type_name,
+			column_defect_code_list,
 		},
 		GUIDS = table_merge(
 			recognition_guids,
@@ -185,38 +186,38 @@ local filters =
 
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
-		name = 'Стыковые зазоры', 
+		name = 'I Стыковые зазоры', 
 		--videogram_defect_codes = {'090004012062', '090004016149', '090004016150'},
 		columns = {
 			column_num, 
 			column_path_coord, 
-			-- column_sys_coord, 
+			-- column_sys_coord,
+			column_pov_common,
 			column_rail,
+			column_recogn_width_user,
 			column_recogn_width_inactive,
 			column_recogn_width_active,
 			column_recogn_width_tread,
-			column_recogn_width_user,
 			column_gap_type,
 			column_recogn_bolt,
 			column_recogn_video_channel,
-			column_pov_common,
 			}, 
 		GUIDS = table_merge(recognition_guids, '{3601038C-A561-46BB-8B0F-F896C2130003}'),
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
-		name = 'Отсутствующие болты (вне норматива)', 
+		name = 'I Отсутствие болтов в стыках', 
 		-- videogram_defect_codes = {'090004000465'},
 		columns = {
 			column_num, 
 			column_path_coord, 
+			column_pov_common,
+			column_joint_speed_limit,
 			column_rail,
 			column_recogn_bolt,
-			column_joint_speed_limit,
 			column_gap_type,
 			--column_recogn_reability,
 			column_recogn_video_channel,
-			column_pov_common,
 			}, 
 		GUIDS = recognition_guids,
 		filter = function(mark)
@@ -226,17 +227,51 @@ local filters =
 		end,
 	},
 	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'Групповые дефекты'},
+		name = 'I Кустовые дефекты',
+		columns = {
+			column_num,
+			column_path_coord_begin_end,
+			column_pov_common,
+			column_ekasui_code_speed_limit_tbl,
+			column_rail,
+			column_group_defect_count,
+			column_mark_type_name,
+			column_length,
+			column_ekasui_code,
+		},
+		GUIDS = group_defects,
+	},
+	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ',},
+		name = 'I Дефекты накладок', 
+		--videogram_defect_codes = {'090004000474'},
+		columns = {
+			column_num, 
+			column_path_coord,
+			column_pov_common,
+			column_rail,
+			column_fishplate_state,
+			column_recogn_video_channel,
+			}, 
+		GUIDS = recognition_guids,
+		filter = function(mark)
+			local fault = mark_helper.GetFishplateState(mark)
+			return fault > 0
+		end,
+	},
+	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
-		name = 'Маячные отметки',
+		name = 'II Маячные отметки',
 		--videogram_defect_codes = {'000000000000'},
 		columns = {
 			column_num,
-			column_path_coord, 
+			column_path_coord,
+			column_pov_common,
 			column_rail,
 			column_beacon_offset,
 			column_firtree_beacon,
 			column_pair_beacon,
-			column_pov_common,
 			column_mark_type_name
 			}, 
 		GUIDS = {
@@ -264,91 +299,34 @@ local filters =
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
-		name = 'Ненормативный объект', 
+		name = 'III Соединитель: штепсельный', 
 		columns = {
 			column_num, 
 			column_path_coord, 
-			column_rail,
-			column_mark_desc,
-			column_recogn_video_channel,
-			},
-		GUIDS = {
-			TYPES.UNSPC_OBJ
-		},
-	},
-	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
-		name = 'Скрепления',
-		--videogram_defect_codes = {'090004000457','090004000389','090004000402','090004015853','090004000400','090004000384','090004000395','090004000409','090004003539','090004000394','090004000385','090004000397','090004000405','090004000401','090004000478',},
-		columns = {
-			column_num,
-			column_path_coord, 
-			column_rail,
-			column_fastener_type,
-			column_fastener_fault,
-			column_recogn_video_channel,
---			column_recogn_reability,
---			column_fastener_width,
 			column_pov_common,
-			}, 
-		GUIDS = {
-			TYPES.FASTENER,
-			TYPES.FASTENER_USER,
-		}
-	},
-	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
-		name = 'Горизонтальные уступы', 
-		--videogram_defect_codes = {'090004012059'},
-		columns = {
-			column_num, 
-			column_path_coord, 
-			column_rail,
-			column_recogn_width,
-			column_recogn_rail_gap_step,
-			column_recogn_video_channel,
-			column_pov_common,
-			}, 
-		GUIDS = table_merge(recognition_guids, '{3601038C-A561-46BB-8B0F-F896C2130003}'),
-		filter = function(mark)
-			if mark.prop.Guid == '{3601038C-A561-46BB-8B0F-F896C2130003}' and mark.ext.CODE_EKASUI == '090004012059' then
-				return true
-			elseif mark.ext.RAWXMLDATA then
-				local step = mark_helper.GetRailGapStep(mark)
-				return step
-			end
-			return false
-		end,
-	},
-	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
-		name = 'Штепсельные соединители', 
-		columns = {
-			column_num, 
-			column_path_coord, 
-			column_rail,
 			column_rail_lr,
+			column_gap_type,
 			column_connections_all,
 			--column_connections_defect,
 			column_recogn_video_channel,
-			column_pov_common,
+			column_rail,
 			}, 
 		GUIDS = recognition_guids,
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
-		name = 'III Соединитель',  -- Приварные соединители https://bt.abisoft.spb.ru/view.php?id=834#c4240
+		name = 'III Соединитель: приварной',  -- Приварные соединители https://bt.abisoft.spb.ru/view.php?id=834#c4240
 		--videogram_defect_codes = {'000000000001'},
 		columns = {
 			column_num,
 			column_path_coord,
-			column_rail,
 			column_rail_lr,
-			-- column_gap_type,
+			column_pov_common,
+			column_gap_type,
 			-- column_weldedbond_status,
 			column_weldedbond_defect_code,
 			--column_mark_id, для проверки
-			column_pov_common,
+			column_rail,
 		},
 		GUIDS = recognition_guids,
 		filter = function(mark)
@@ -359,41 +337,6 @@ local filters =
 		end,
 	},
 	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
-		name = 'Поверхностные дефекты', 
-		--videogram_defect_codes = {'090004012001'},
-		columns = {
-			column_num, 
-			column_path_coord, 
-			column_rail,
-			column_surf_defect_type,
-			column_surf_defect_area,
-			column_surf_defect_len,
-			column_surf_defect_wdh,
-			column_recogn_video_channel,
-			column_pov_common,
-			}, 
-		GUIDS = recognition_surface_defects,
-	},
-	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ',},
-		name = 'Дефекты накладок', 
-		--videogram_defect_codes = {'090004000474'},
-		columns = {
-			column_num, 
-			column_path_coord, 
-			column_rail,
-			column_fishplate_state,
-			column_recogn_video_channel,
-			column_pov_common,
-			}, 
-		GUIDS = recognition_guids,
-		filter = function(mark)
-			local fault = mark_helper.GetFishplateState(mark)
-			return fault > 0
-		end,
-	},
-	{
 		-- https://bt.abisoft.spb.ru/view.php?id=815
 		-- https://bt.abisoft.spb.ru/view.php?id=863
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "Шпалы"},
@@ -401,11 +344,11 @@ local filters =
 		columns = {
 			column_num,
 			column_path_coord,
-			column_sleeper_meterial,
+			column_pov_common,
 			column_sleeper_dist_next,
+			column_sleeper_meterial,
 			column_sleeper_epure_defect_user,
 			--column_sys_coord,
-			column_pov_common,
 			},
 		GUIDS = {
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
@@ -444,11 +387,11 @@ local filters =
 		columns = {
 			column_num,
 			column_path_coord,
+			column_pov_common,
+			column_sleeper_fault,
 			column_sleeper_meterial,
 			--column_sleeper_dist_next,
-			column_sleeper_fault,
 			--column_sys_coord,
-			column_pov_common,
 			},
 		GUIDS = {
 			"{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}",  -- Дефекты шпал
@@ -461,13 +404,13 @@ local filters =
 		columns = {
 			column_num,
 			column_path_coord,
-			column_rail,
+			column_pov_common,
 			column_sleeper_angle,
+			column_rail,
 			column_sleeper_meterial,
 			column_recogn_video_channel,
 			column_sleeper_epure_defect_user,
 			--column_sys_coord,
-			column_pov_common,
 			},
 		GUIDS = {
 			"{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"},
@@ -493,6 +436,81 @@ local filters =
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		name = 'III Дефектные скрепления',
+		--videogram_defect_codes = {'090004000457','090004000389','090004000402','090004015853','090004000400','090004000384','090004000395','090004000409','090004003539','090004000394','090004000385','090004000397','090004000405','090004000401','090004000478',},
+		columns = {
+			column_num,
+			column_path_coord,
+			column_pov_common,
+			column_fastener_fault,
+			column_rail,
+			column_fastener_type,
+			column_recogn_video_channel,
+--			column_recogn_reability,
+--			column_fastener_width,
+			}, 
+		GUIDS = {
+			TYPES.FASTENER,
+			TYPES.FASTENER_USER,
+		}
+	},
+	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		name = 'Ненормативный объект', 
+		columns = {
+			column_num, 
+			column_path_coord, 
+			column_rail,
+			column_mark_desc,
+			column_recogn_video_channel,
+			},
+		GUIDS = {
+			TYPES.UNSPC_OBJ
+		},
+	},
+	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		name = 'Горизонтальные уступы', 
+		--videogram_defect_codes = {'090004012059'},
+		columns = {
+			column_num, 
+			column_path_coord, 
+			column_rail,
+			column_recogn_width,
+			column_recogn_rail_gap_step,
+			column_recogn_video_channel,
+			column_pov_common,
+			}, 
+		GUIDS = table_merge(recognition_guids, '{3601038C-A561-46BB-8B0F-F896C2130003}'),
+		filter = function(mark)
+			if mark.prop.Guid == '{3601038C-A561-46BB-8B0F-F896C2130003}' and mark.ext.CODE_EKASUI == '090004012059' then
+				return true
+			elseif mark.ext.RAWXMLDATA then
+				local step = mark_helper.GetRailGapStep(mark)
+				return step
+			end
+			return false
+		end,
+	},
+	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		name = 'Поверхностные дефекты', 
+		--videogram_defect_codes = {'090004012001'},
+		columns = {
+			column_num, 
+			column_path_coord, 
+			column_rail,
+			column_surf_defect_type,
+			column_surf_defect_area,
+			column_surf_defect_len,
+			column_surf_defect_wdh,
+			column_recogn_video_channel,
+			column_pov_common,
+			}, 
+		GUIDS = recognition_surface_defects,
+	},
+	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'Запуски распознавания',
 		columns = {
 			column_num,
@@ -506,7 +524,6 @@ local filters =
 		},
 		GUIDS = {"{1D5095ED-AF51-43C2-AA13-6F6C86302FB0}"},
 	},
-
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
 		name = 'Слепые зазоры', 
@@ -556,22 +573,6 @@ local filters =
 			end
 			return marks	-- возвращаем список для отображения
 		end,
-	},
-	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'Групповые дефекты'},
-		name = 'Групповые дефекты',
-		columns = {
-			column_num,
-			column_path_coord_begin_end,
-			column_length,
-			column_rail,
-			column_group_defect_count,
-			column_ekasui_code,
-			column_ekasui_code_speed_limit_tbl,
-			column_mark_type_name,
-			column_pov_common,
-		},
-		GUIDS = group_defects,
 	},
 }
 
