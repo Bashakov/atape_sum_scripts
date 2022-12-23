@@ -1074,7 +1074,7 @@ local function prepare_row_gps(row, mark)
 	end
 	local function fmt_row(val)
 		if not val then return '' end
-		return string.format("%.6f", val)
+		return string.format("%.8f", val)
 	end
 
 	local lat, lon
@@ -1084,8 +1084,8 @@ local function prepare_row_gps(row, mark)
 
 	row.LAT = fmt(lat)
 	row.LON = fmt(lon)
-	row.LAT_ROW = fmt_row(lat)
-	row.LON_ROW = fmt_row(lon)
+	row.LAT_RAW = fmt_row(lat)
+	row.LON_RAW = fmt_row(lon)
 end
 
 -- создание таблицы подстановок с общими параметрами отметки

@@ -1175,7 +1175,8 @@ if not ATAPE then
 	test_report.Driver('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml')
 	--test_report.Driver('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2020_11_30_01.xml')
 	
-	MakeReport('Дефекты УЗК в екасуи')
+	--MakeReport('Дефекты УЗК в екасуи')
+	MakeReport('Ведомость отступлений в содержании рельсовых стыков|ЕКАСУИ Ширина стыкового зазора, мм')
 	--local guids = GetFilterGuids('Ведомость отступлений в содержании рельсов')
 	--print(guids)
 
