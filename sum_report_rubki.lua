@@ -141,15 +141,12 @@ local function make_rail_image(mark1, mark2)
 end
 
 -- запрос у пользователя верхнего порога длинны рельса
+--!!! закомментирована часть диалога, которая не работает при формировании выходной формы, верхний порог по умолчанию установлен 300000.
+--!!! В настоящее время параметр может быть задан статически - интерактивный ввод/подтверждение избыточны.
+-- https://bt.abisoft.spb.ru/view.php?id=999
 local function askUpperRailLen()
-	local ok, min_length, out =
-		iup.GetParam("Рубки", nil,
-			"Верхний порог длины рельса (м): %i\n\z
-			Отображать: %o|только РУБКИ|все рельсы|\n\z",
-			30, 1
-		)
-	local show_only_rubki = out == 0
-	return ok and min_length, show_only_rubki
+	return 300000, false
+	-- return min_length, show_only_rubki
 end
 
 -- получить список с отметками стыков, отсортированный по системной координате
