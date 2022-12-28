@@ -343,6 +343,7 @@ function MakeReportFilter(ekasui)
 end
 
 
+GetCurrentSettingsDescription = GetShortCurPOVDesc -- для DrawVideoDefect https://bt.abisoft.spb.ru/view.php?id=998
 
 -- =====================================================
 -- =====================================================
