@@ -13,7 +13,6 @@ local table_find = mark_helper.table_find
 
 local NPU_guids = {
 	TYPES.NPU, -- НПУ
-	TYPES.PRE_NPU, -- Возможно НПУ
 }
 
 local NPU_guids_2 = {
