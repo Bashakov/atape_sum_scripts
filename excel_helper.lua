@@ -609,7 +609,7 @@ local excel_helper = OOP.class
 			local cell = user_range.Cells(row, 2)
 			cell.NumberFormat = "@"
 			cell.HorizontalAlignment = -4131 --xlLeft
-			cell.Value2 = v
+			cell.Value2 = tostring(v)
 
 			row = row + 1
 		end
