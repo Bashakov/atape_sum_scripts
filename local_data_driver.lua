@@ -28,6 +28,12 @@ local function binsearch(tbl, value, fcompval, allow_nearest)
 	end
 end
 
+local function selectNodes(xml, xpath)
+	return function(nodes)
+		return nodes:nextNode()
+	end, xml:SelectNodes(xpath)
+end
+
 local function _make_new_mark(prop)
 	local mark = {
 		prop = prop or {},
@@ -67,15 +73,24 @@ local function psp2table(psp_path)						-- открыть xml паспорт и 
 
 	local res = {}
 	for _, req in ipairs(requests) do
-		local nodes = xmlDom:SelectNodes(req.path)
-		while true do
-			local node = nodes:nextNode()
-			if not node then break end
+		for node in selectNodes(xmlDom, req.path) do
 			local name, value = req.fn(node)
 			-- print(name, value)
 			res[name] = value
 		end
 	end
+
+	local channels = {}
+	for nodeCh in selectNodes(xmlDom, "/DATA_SET/DEVICE/CHANNEL") do
+		local channal = {}
+		for nodeParam in selectNodes(nodeCh, "@*") do
+			local name, value = parse_attr(nodeParam)
+			-- print(name, value)
+			channal[name] = value
+		end
+		table.insert(channels, channal)
+	end
+	res["CHANNELS"] = channels
 	return res
 end
 
