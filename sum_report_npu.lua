@@ -61,7 +61,7 @@ local function report_NPU(params)
     local dlg = luaiup_helper.ProgressDlg('Построение отчета НПУ')
     defer(dlg.Destroy, dlg)
 
-	local marks_drv = Driver:GetMarks{ListType='list', GUIDS=params.guids}
+	local marks_drv = Driver:GetMarks{ListType='list'}
 	local marks, reject = _check_marks_path_coord(marks_drv, dlg)
 
 	marks = mark_helper.sort_mark_by_coord(marks)
@@ -94,9 +94,9 @@ end
 
 local cur_reports =
 {
-	{name="НПУ",    fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls", guids=NPU_guids },     guids=NPU_guids},
-	{name="УЗ_НПУ", fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls", guids=NPU_guids_uzk }, guids=NPU_guids_uzk},
-	{name="НПУ БС", fn=report_NPU,	params={ filename="Telegrams\\НПУ_БС_VedomostTemplate.xls", guids=NPU_guids_2}, 	guids=NPU_guids_2},
+	{name="НПУ",    fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls"},     	guids=NPU_guids},
+	{name="УЗ_НПУ", fn=report_NPU,	params={ filename="Telegrams\\НПУ_VedomostTemplate.xls"}, 		guids=NPU_guids_uzk},
+	{name="НПУ БС", fn=report_NPU,	params={ filename="Telegrams\\НПУ_БС_VedomostTemplate.xls"}, 	guids=NPU_guids_2},
 }
 
 local function AppendReports(reports)
