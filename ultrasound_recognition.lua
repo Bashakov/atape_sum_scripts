@@ -24,11 +24,18 @@ local POSITION =
     HEAD = 2,
 }
 
+local function get_recog_param(desc, name)
+    local m = string.match(desc, name ..":%s*(%d+)")
+    return tonumber(m)
+end
+
 local function get_recog_params(mark)
 	local desc = mark.Description or mark.prop.Description  -- отметка из sum_process.lua или нового типа
     if type(desc) == "string" then
-        local IP, CN, G = string.match(desc, "IP:%s*(%d+)%s*CN:%s*(%d+)%s*G:%s*(%d+)")
-	    return tonumber(IP), tonumber(CN), tonumber(G)
+        return 
+            get_recog_param(desc, "IP"),
+            get_recog_param(desc, "CN"),
+            get_recog_param(desc, "G")
     end
 end
 
