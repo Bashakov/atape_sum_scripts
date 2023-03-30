@@ -154,11 +154,12 @@ local filters =
 		columns = {
 			column_num,
 			column_path_coord,
-			column_pov_common,
-			column_speed_limit_list,
 			column_defect_code_desc_list,
-			column_mark_type_name,
+			column_rail_lr,
+			column_speed_limit_list,
+			column_pov_common,
 			column_defect_code_list,
+			column_mark_type_name,
 		},
 		GUIDS = table_merge(
 			recognition_guids,
