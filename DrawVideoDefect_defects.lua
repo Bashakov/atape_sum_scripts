@@ -284,6 +284,8 @@ table.insert(DEFECTS,  {guid=GUIDS.USER_JOINTLESS_DEFECT, group="Бесстык�
 table.insert(DEFECTS,  {guid=GUIDS.USER_JOINTLESS_DEFECT, group="Бесстыковой путь", ekasui_code="090004015467", name="Нарушения крепления маячной шпалы", fn=make_simple_defect, tools = {DRAW_TOOL.rect_defect}})
 
 
+-- ================= групповые дефекты =================
+
 local group_defect_desc = {
 
 	{GUIDS.GROUP_GAP_USER, 2, '090004012061', 'Стыки', '2 слитых зазора подряд'}, --Наличие двух подряд слитых зазоров
@@ -336,58 +338,6 @@ local group_defect_desc = {
 	{GUIDS.GROUP_FSTR_USER, 5, '090004017108', 'Скрепления', 'Деф.скр.стрелка: 5 шп. и более: одна нить', "15/0"},  --Отсутствует или дефектное скрепление скрепление на рамном рельсе, в крестовине или контррельсовом рельсе стрелочного перевода по одной нити  на 5 и более брусьях подряд
 }
 
---!!! дописаны варианты привязки кода ЖАТ при ручной постановке
-
-local JAT_TOOL = {
-	rect_defect =
-		DRAW_TOOL.rect_defect,
-	jat_defect_p_str_scb = copy_update(DRAW_TOOL.rect_defect, {options={
-		{"jat_defect_type",   "Расположение дефекта",  {"путь","стрелка","СЦБ/КПС"}},
-	}}),
-	jat_defect_p_str = copy_update(DRAW_TOOL.rect_defect, {options={
-		{"jat_defect_type",   "Расположение дефекта",  {"путь","стрелка"}},
-	}}),
-	jat_defect_scb = copy_update(DRAW_TOOL.rect_defect, {options={
-		{"jat_defect_type",   "Расположение дефекта",  "СЦБ/КПС"},
-	}}),
-	jat_defect_str = copy_update(DRAW_TOOL.rect_defect, {options={
-		{"jat_defect_type",   "Расположение дефекта",  "стрелка"},
-	}}),
-	jat_defect_p = copy_update(DRAW_TOOL.rect_defect, {options={
-		{"jat_defect_type",   "Расположение дефекта",  "стрелка"},
-	}}),
-}
-
-	--!!! дописаны дефекты по классификатору ЖАТ без guid 1,2,3,4,5
-	--дроссельные
-
-table.insert(DEFECTS,  {guid='{1}', group="ЖАТ: Рельсовые соединители", ekasui_code= {"090004012111","090004012383","090004003599"}, name="Дроссель:  обрыв троса полн/частич", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_p_str_scb}}) --!!! нужен guid для "дроссельная перемычка" и обработка 3-х кодов ЕКАСУИ
-table.insert(DEFECTS,  {guid='{1}', group="ЖАТ: Рельсовые соединители", ekasui_code= {"090004012114","090004012386","090004007699"}, name="Дроссель: нет гаек на штепселе", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_p_str_scb}}) --!!! нужен guid для "дроссельная перемычка" и обработка 3-х кодов ЕКАСУИ
-table.insert(DEFECTS,  {guid='{1}', group="ЖАТ: Рельсовые соединители", ekasui_code= "090004003597", name="Дроссель: засыпана перемычка", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_scb}})  --!!! нужен guid для "дроссельная перемычка" и обработка 1-х кодов ЕКАСУИ
-
-	--приварные
-
-table.insert(DEFECTS,  {guid='{2}', group="ЖАТ: Рельсовые соединители", ekasui_code= {"090004000521","090004000995"}, name="Приварной: дефектный соединитель", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_p_str}}) --!!! нужен guid для "приварной соединитель" и обработка 2-х кодов ЕКАСУИ
-table.insert(DEFECTS,  {guid='{2}', group="ЖАТ: Рельсовые соединители", ekasui_code= {"090004004928","090004012367","090004003583"}, name="Приварной: отсутствует соединитель", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_p_str_scb}}) --!!! нужен guid для "приварной соединитель" и обработка 3-х кодов ЕКАСУИ
-
-	--штепсельные
-
-table.insert(DEFECTS,  {guid='{3}', group="ЖАТ: Рельсовые соединители", ekasui_code= {"090004000520","090004000994"}, name="Штепсельный: дефектный соединитель", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_p_str}})  --!!! нужен guid для "штепсельный соединитель" и обработка 2-х кодов ЕКАСУИ
-table.insert(DEFECTS,  {guid='{3}', group="ЖАТ: Рельсовые соединители", ekasui_code= "090004003990", name="Штепсельный: засыпан соединитель", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_scb}})  --!!! нужен guid для "штепсельный соединитель" и обработка 1-х кодов ЕКАСУИ
-table.insert(DEFECTS,  {guid='{3}', group="ЖАТ: Рельсовые соединители", ekasui_code= "090004003582", name="Штепсельный: нет гаек", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_scb}}) --!!! нужен guid для "штепсельный соединитель" и обработка 1-х кодов ЕКАСУИ
-table.insert(DEFECTS,  {guid='{3}', group="ЖАТ: Рельсовые соединители", ekasui_code= "090004004926", name="Штепсельный: нет отверстий", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_p}}) --!!! нужен guid для "штепсельный соединитель" и обработка 1-х кодов ЕКАСУИ
-table.insert(DEFECTS,  {guid='{3}', group="ЖАТ: Рельсовые соединители", ekasui_code= {"090004004927","090004012371","090004003581"}, name="Штепсельный: нет соединителя", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_p_str_scb}}) --!!! нужен guid для "штепсельный соединитель" и обработка 3-х кодов ЕКАСУИ
-
-	-- саут
-
-table.insert(DEFECTS,  {guid='{4}', group="ЖАТ: Устройства СЦБ, КПС", ekasui_code= "090004004573", name="САУТ:нарушена норма укладки перемычек", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_scb}})  --!!! нужен guid для "саут" и обработка 1-х кодов ЕКАСУИ
-table.insert(DEFECTS,  {guid='{4}', group="ЖАТ: Устройства СЦБ, КПС", ekasui_code= "090004003767", name="САУТ:нарушено расст. от 1-й точки до изостыка", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_scb}})  --!!! нужен guid для "саут" и обработка 1-х кодов ЕКАСУИ
-
-	-- укспс
-
-table.insert(DEFECTS,  {guid='{5}', group="ЖАТ: Устройства СЦБ, КПС", ekasui_code= "090004006853", name="Плохое сост. планки УКСПС", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_scb}})  --!!! нужен guid для "укспс" и обработка 1-х кодов ЕКАСУИ
-table.insert(DEFECTS,  {guid='{5}', group="ЖАТ: Устройства СЦБ, КПС", ekasui_code= "090004003777", name="Датчики УКСПС не по эпюре", fn=make_simple_defect, tools = {JAT_TOOL.jat_defect_scb}})  --!!! нужен guid для "укспс" и обработка 1-х кодов ЕКАСУИ
-
 for _, gd in ipairs(group_defect_desc) do
 	table.insert(DEFECTS, {
 		group = "Групповые дефекты",
@@ -401,6 +351,137 @@ for _, gd in ipairs(group_defect_desc) do
 		speed_limit = gd[6],
 	})
 end
+
+-- ================= ЖАТ =================
+
+local JAT_TOOL = {
+	way = {
+		sign = "jat_way",
+		fig  = "rect",
+		line_color = {r=255, g=0, b=0, a=200},
+		fill_color = {r=255, g=0, b=0, a=10},
+		name = 'Расположение дефекта: ПУТЬ',
+		tooltip = 'Рисование дефекта тип: ПУТЬ',
+		icon = "file:Scripts/жат_путь.png",
+		options = {
+			JAT_TYPE = "WAY",	-- путь
+			JAT_HOUSE = "WAY", 	-- хозяйство пути.
+		},
+	},
+	joint = {
+		sign = "jat_joint",
+		fig  = "rect",
+		line_color = {r=0, g=0, b=255, a=200},
+		fill_color = {r=0, g=0, b=255, a=10},
+		name = 'Расположение дефекта: СТРЕЛКА',
+		tooltip = 'Рисование дефекта тип: СТРЕЛКА',
+		icon = "file:Scripts/жат_стрелка.png",
+		options = {
+			JAT_TYPE = "JOINT",	-- стрелка
+			JAT_HOUSE = "WAY", 	-- хозяйство пути.
+		},
+	},
+	scb = {
+		sign = "jat_scb",
+		fig  = "rect",
+		line_color = {r=0, g=255, b=0, a=200},
+		fill_color = {r=0, g=255, b=0, a=10},
+		name = 'Расположение дефекта СЦБ',
+		tooltip = 'Расположение дефекта: СЦБ',
+		icon = "file:Scripts/жат_СЦБ.png",
+		options = {
+			JAT_TYPE = "SCB",	-- сигнализация, централизация, блокировка
+			JAT_HOUSE = "FATM", -- хозяйство напольной автоматики и телемеханики (floor automation and telemechanics)
+		},
+	},
+}
+
+local function _append_jat_defect(tmpl, name, variants)
+	local defect = copy_update(tmpl, {
+		fn = make_jat_defect,
+		name = name,
+		tools = {},
+		ekasui_code_list = {},
+	})
+	for _, variant in ipairs(variants) do
+		table.insert(defect.tools, variant.tool)
+		table.insert(defect.ekasui_code_list, variant.code)
+	end
+	table.insert(DEFECTS, defect)
+end
+
+
+--дроссельные
+local jat_rcc_tmpl = {guid = GUIDS.JAT_RAIL_CONN_CHOKE, group = "ЖАТ: Рельсовые соединители"}
+
+_append_jat_defect(jat_rcc_tmpl, "Дроссель: обрыв троса полн/частич", {
+	{tool = JAT_TOOL.way,   code = "090004012111"},
+	{tool = JAT_TOOL.joint, code = "090004012383"},
+	{tool = JAT_TOOL.scb,   code = "090004003599"},
+})
+_append_jat_defect(jat_rcc_tmpl, "Дроссель: нет гаек на штепселе", {
+	{tool = JAT_TOOL.way,   code = "090004012114"},
+	{tool = JAT_TOOL.joint, code = "090004012386"},
+	{tool = JAT_TOOL.scb,   code = "090004007699"},
+})
+_append_jat_defect(jat_rcc_tmpl, "Дроссель: засыпана перемычка", {
+	{tool = JAT_TOOL.scb,   code = "090004003597"},
+})
+
+--приварные
+local jat_rcw_tmpl = {guid = GUIDS.JAT_RAIL_CONN_WELDED, group = "ЖАТ: Рельсовые соединители"}
+
+_append_jat_defect(jat_rcw_tmpl, "Приварной: дефектный соединитель", {
+	{tool = JAT_TOOL.way,   code = "090004000521"},
+	{tool = JAT_TOOL.joint, code = "090004000995"},
+})
+_append_jat_defect(jat_rcw_tmpl, "Приварной: отсутствует соединитель", {
+	{tool = JAT_TOOL.way,   code = "090004004928"},
+	{tool = JAT_TOOL.joint, code = "090004012367"},
+	{tool = JAT_TOOL.scb,   code = "090004003583"},
+})
+
+--штепсельные
+local jat_rcp_tmpl = {guid = GUIDS.JAT_RAIL_CONN_PLUG, group = "ЖАТ: Рельсовые соединители"}
+
+_append_jat_defect(jat_rcp_tmpl, "Штепсельный: дефектный соединитель", {
+	{tool = JAT_TOOL.way,   code = "090004000520"},
+	{tool = JAT_TOOL.joint, code = "090004000994"},
+})
+_append_jat_defect(jat_rcp_tmpl, "Штепсельный: засыпан соединитель", {
+	{tool = JAT_TOOL.scb,   code = "090004003990"},
+})
+_append_jat_defect(jat_rcp_tmpl, "Штепсельный: нет гаек", {
+	{tool = JAT_TOOL.scb,   code = "090004003582"},
+})
+_append_jat_defect(jat_rcp_tmpl, "Штепсельный: нет отверстий", {
+	{tool = JAT_TOOL.way,   code = "090004004926"},
+})
+_append_jat_defect(jat_rcp_tmpl, "Штепсельный: нет соединителя", {
+	{tool = JAT_TOOL.way,   code = "090004004927"},
+	{tool = JAT_TOOL.joint, code = "090004012371"},
+	{tool = JAT_TOOL.scb,   code = "090004003581"},
+})
+
+-- САУТ
+local jat_scb_abcs_tmpl = {guid = GUIDS.JAT_SCB_CRS_ABCS, group = "ЖАТ: Устройства СЦБ, КПС"}
+
+_append_jat_defect(jat_scb_abcs_tmpl, "САУТ:нарушена норма укладки перемычек", {
+	{tool = JAT_TOOL.scb,   code = "090004004573"},
+})
+_append_jat_defect(jat_scb_abcs_tmpl, "САУТ:нарушено расст. от 1-й точки до изостыка", {
+	{tool = JAT_TOOL.scb,   code = "090004003767"},
+})
+
+-- УКСПС
+local jat_scb_rscmd_tmpl = {guid = GUIDS.JAT_SCB_CRS_RSCMD, group = "ЖАТ: Устройства СЦБ, КПС"}
+
+_append_jat_defect(jat_scb_rscmd_tmpl, "Плохое сост. планки УКСПС", {
+	{tool = JAT_TOOL.scb,   code = "090004006853"},
+})
+_append_jat_defect(jat_scb_rscmd_tmpl, "Датчики УКСПС не по эпюре", {
+	{tool = JAT_TOOL.scb,   code = "090004003777"},
+})
 
 
 return DEFECTS
