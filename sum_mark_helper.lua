@@ -246,7 +246,7 @@ end
 -- возвращает таблицу [тип][номер канала] = ширина
 local function GetAllGapWidth(mark)
 	local res = {}
-	
+
 	local ext = mark.ext
 	for _, name in pairs{"VIDEOIDENTGWT", "VIDEOIDENTGWS"} do
 		local w = name and ext[name]
@@ -254,7 +254,7 @@ local function GetAllGapWidth(mark)
 			res[name] = {[0] = tonumber(w)}
 		end
 	end
-	
+
 	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
 		local req = '\z
 		/ACTION_RESULTS\z
@@ -262,37 +262,37 @@ local function GetAllGapWidth(mark)
 		/PARAM[@name="FrameNumber" and @value="0" and @coord]\z
 		/PARAM[@name="Result" and @value="main"]\z
 		/PARAM[@name="RailGapWidth_mkm" and @value]/@value'
-		
+
 		for node in SelectNodes(xmlDom, req) do
 			local node_gap_type =  node:SelectSingleNode("../../../../@value").nodeValue
 			local width = tonumber(node.nodeValue) / 1000
-			
+
 			local node_channel = node:SelectSingleNode("../../../../@channel")
 			local channel = node_channel and tonumber(node_channel.nodeValue) or 0
-			
+
 			if not res[node_gap_type] then
 				res[node_gap_type] = {}
 			end
 			res[node_gap_type][channel] = width
 		end
 	end
-	
+
 	return res
 end
 
 
--- выбрать ширину зазора из таблицы {номер_канала:ширина} в соответствии с приоритетами каналов, 
+-- выбрать ширину зазора из таблицы {номер_канала:ширина} в соответствии с приоритетами каналов,
 -- сначала 19,20 (внешняя камера), потом 17,18 (внутренняя), остальные (в тч. непромаркированные)
 -- возвращает ширину, и номер откуда взята
 local function SelectWidthFromChannelsWidths(channel_widths, mark)
-	if channel_widths then 
+	if channel_widths then
 		-- сначала проверим известные каналы
 		for _, n in ipairs{19, 20, 17, 18} do
-			if channel_widths[n] then 
+			if channel_widths[n] then
 				return channel_widths[n], n
 			end
 		end
-		
+
 		-- а потом хоть какой нибудь
 		for n, width in pairs(channel_widths) do
 			if n == 0 and mark then
@@ -308,12 +308,12 @@ end
 -- получить результирующую ширину зазора
 local function GetGapWidth(mark)
 	local widths = GetAllGapWidth(mark)
-	
+
 	-- сначала проверим установленные пользователем ширины
 	-- если их нет, то сначала проверим ширину по боковой грани, потом по пов. катания
 	local src_names = {
-		'CalcRailGap_User', 
-		'VIDEOIDENTGWS', 
+		'CalcRailGap_User',
+		'VIDEOIDENTGWS',
 		'VIDEOIDENTGWT',
 		'CalcRailGap_Head_Side',
 		'CalcRailGap_Head_Top',
@@ -332,9 +332,9 @@ local function GetGapWidthName(mark, name)
 	if not name then
 		return GetGapWidth(mark)
 	end
-	
+
 	local widths = GetAllGapWidth(mark)
-	
+
 	if name == 'inactive' then -- нерабочая: боковая по 19,20 каналу
 		local w = widths.CalcRailGap_Head_Side
 		if w then
@@ -346,16 +346,16 @@ local function GetGapWidthName(mark, name)
 		if w then
 			if w[17] then return w[17], 17 end
 			if w[18] then return w[18], 18 end
-			if w[0] then 
+			if w[0] then
 				local video_channel = GetSelectedBits(mark.prop.ChannelMask)
 				video_channel = video_channel and video_channel[1]
-				return w[0], video_channel 
+				return w[0], video_channel
 			end
 		end
-	elseif name == 'thread' then -- поверх катания: 
+	elseif name == 'thread' then -- поверх катания:
 		local w = widths.CalcRailGap_Head_Top
 		return SelectWidthFromChannelsWidths(w, mark)
-	elseif name == 'user' then -- поверх катания: 
+	elseif name == 'user' then -- поверх катания:
 		for _, n in ipairs{'CalcRailGap_User', 'VIDEOIDENTGWS', 'VIDEOIDENTGWT'} do
 			if widths[n] then
 				return SelectWidthFromChannelsWidths(widths[n], mark)
@@ -369,9 +369,9 @@ end
 -- получить высоты ступеньки на стыке
 local function GetRailGapStep(mark)
 	local ext = mark.ext
-	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA) then 
+	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA) then
 		return nil
-	end 
+	end
 	local node = xmlDom:SelectSingleNode('\z
 		/ACTION_RESULTS\z
 		/PARAM[@name="ACTION_RESULTS" and @value="CalcRailGapStep"]\z
@@ -408,7 +408,7 @@ local function GetCrewJointArray(mark)
 	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA)	then
 		return nil
 	end
-	
+
 	local req_safe = '\z
 		PARAM[@name="FrameNumber" and @value]\z
 		/PARAM[@name="Result" and @value="main"]\z
@@ -420,7 +420,7 @@ local function GetCrewJointArray(mark)
 	for nodeCrewJoint in SelectNodes(xmlDom, '/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="CrewJoint"]') do
 		local video_channel = nodeCrewJoint:SelectSingleNode("@channel")
 		video_channel = video_channel and tonumber(video_channel.nodeValue) or 0
-		
+
 		local cur_safe = {}
 		for node in SelectNodes(nodeCrewJoint, req_safe) do
 			local safe = tonumber(node.nodeValue)
@@ -510,7 +510,7 @@ local function GetFishplateState(mark)
 	local cnt = 0
 	local ext = mark.ext
 	if ext and ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
-	
+
 		local req = '\z
 			ACTION_RESULTS\z
 			/PARAM[@name="ACTION_RESULTS" and @value="Fishplate"]\z
@@ -554,13 +554,13 @@ local function GetFastenetParams(mark)
 				res[name] = tonumber(value) or value
 			end
 		end
-		
+
 		local roc = 'RecogObjCoord'
 		local node = xmlDom:SelectSingleNode('//PARAM[@name="' .. roc .. '" and @value]/@value')
 		if node then
 			res[roc] = tonumber(node.nodeValue)
 		end
-		
+
 		return res
 	end
 end
@@ -569,7 +569,7 @@ end
 
 local function GetSurfDefectPrm(mark)
 	local res = {}
-	
+
 	local ext = mark.ext
 	if ext and ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
 		local req = '\z
@@ -580,25 +580,25 @@ local function GetSurfDefectPrm(mark)
 		/PARAM[@name and @value]'
 		for node_param in SelectNodes(xmlDom, req) do
 			local name, value = xml_attr(node_param, {'name', 'value'})
-			if value and name and name:find('Surface') then 
+			if value and name and name:find('Surface') then
 				value = tonumber(value)
 			end
 			res[name] = value
 		end
-				
+
 		if 1 then
-			if res.SurfaceWidth then 
+			if res.SurfaceWidth then
 				res.SurfaceWidth = res.SurfaceWidth/10
 			end
-			
-			if res.SurfaceLength then 
+
+			if res.SurfaceLength then
 				res.SurfaceLength = (res.SurfaceLength/10) or 0
 			end
 
 			if not res.SurfaceArea and res.SurfaceWidth and res.SurfaceLength then
 				res.SurfaceArea = res.SurfaceWidth * res.SurfaceLength / 100
 			end
-			if res.SurfaceArea then 
+			if res.SurfaceArea then
 				res.SurfaceArea = res.SurfaceArea / 100
 			end
 		end
@@ -614,7 +614,7 @@ local function GetConnectorsArray(mark)
 	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA)	then
 		return nil
 	end
-	
+
 	local req = '\z
 		/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Connector"]\z
 		/PARAM[@name="FrameNumber" and @value]\z
@@ -627,7 +627,7 @@ local function GetConnectorsArray(mark)
 		local video_channel = node:SelectSingleNode("../../../../@channel")
 		video_channel = video_channel and tonumber(video_channel.nodeValue) or 0
 		local fault = tonumber(node.nodeValue)
-		
+
 		if not res[video_channel] then
 			res[video_channel] = {}
 		end
@@ -640,7 +640,7 @@ end
 
 -- получить полное количество, колич. дефектных
 local function GetConnectorsCount(mark)
-	
+
 	local arr = GetConnectorsArray(mark)
 	if not arr then
 		return nil
@@ -688,12 +688,12 @@ end
 
 -- получить параметры шпалы
 local function GetSleeperParam(mark)
-	
+
 	local ext = mark.ext
 	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA)	then
 		return nil
 	end
-	
+
 	local req = '\z
 		/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Sleepers"]\z
 		/PARAM[@name and @value]'
@@ -705,7 +705,7 @@ local function GetSleeperParam(mark)
 		local val = node:SelectSingleNode("@value").nodeValue
 		res[name] = tonumber(val)
 	end
-	
+
 	return res
 end
 
@@ -748,11 +748,11 @@ end
 -- получить материал шпалы
 local function GetSleeperMeterial(mark)
 	local ext = mark.ext
-	
+
 	if ext.SLEEPERS_METERIAL then
 		return ext.SLEEPERS_METERIAL
 	end
-	
+
 	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
 		local req = '\z
 			/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Sleepers"]\z
@@ -810,7 +810,7 @@ local function filter_marks(marks, fn, progress_callback)
 	if not fn then
 		return marks
 	end
-	
+
 	local res = {}
 	for i = 1, #marks do
 		local mark = marks[i]
@@ -829,12 +829,12 @@ local function filter_user_accept(marks, values, progress_callback)
 	if not values then
 		return marks
 	end
-	
+
 	local res = {}
 	for i = 1, #marks do
 		local mark = marks[i]
 		local ua = mark.ext.ACCEPT_USER or -1
-		
+
 		if values[ua] then
 			res[#res+1] = mark
 		end
@@ -846,27 +846,27 @@ local function filter_user_accept(marks, values, progress_callback)
 	return res
 end
 
--- сортировка отметок 
+-- сортировка отметок
 local function sort_marks(marks, fn, inc, progress_callback)
 	if inc == nil then inc = true end
 	inc = inc and inc ~= 0
 	local start_time = os.clock()
-	
+
 	local keys = {}	-- массив ключей, который будем сортировать
 	for i = 1, #marks do
 		local mark = marks[i]
 		local key = fn(mark)	-- создадим ключ (каждый ключ - массив), с сортируемой характеристикой
 		key[#key+1] = i 		-- добавим текущий номер отметки номер последним элементом, для стабильности сортировки
-		keys[#keys+1] = key 	-- и вставим в таблицу ключей 
+		keys[#keys+1] = key 	-- и вставим в таблицу ключей
 		if progress_callback then
 			progress_callback(#marks, i)
 		end
 	end
-	
+
 	assert(#keys == #marks)
 	local fetch_time = os.clock()
-	
-	local compare_fn = function(t1, t2)  -- функция сравнения массивов, поэлементное сравнение 
+
+	local compare_fn = function(t1, t2)  -- функция сравнения массивов, поэлементное сравнение
 		for i = 1, #t1 do
 			local a, b = t1[i], t2[i]
 			if a < b then return inc end
@@ -907,14 +907,14 @@ end
 -- другой способ сортировки, должен быть быстрее чем sort_marks
 local function sort_stable(marks, fn, inc, progress_callback)
 	local start_time = os.clock()
-	
+
 	local keys = {}	-- массив ключей, который будем сортировать
 	local key_nums = {} -- таблица ключ - массив позиций исходных отметок
-	
+
 	if true and #marks > 0 and marks[1].prop and marks[1].prop.ID then
-		-- оптимизация для специальных пользовательских отметок, 
+		-- оптимизация для специальных пользовательских отметок,
 		-- их свойства лучше читать последовательно по ID, тк доп свойства кешируются
-		
+
 		local id2mark = {}	-- таблица id-отметка
 		local ids = {}		-- id отметок
 		for i = 1, #marks do
@@ -924,11 +924,11 @@ local function sort_stable(marks, fn, inc, progress_callback)
 			ids[#ids + 1] = mark_id
 		end
 		table.sort(ids)		-- сортируем ID отметок
-		local id2val = {}	
+		local id2val = {}
 		for _, mark_id in ipairs(ids) do
 			-- проходим по отмекам упрорядоченным по ID и получаем нужные свойства
 			local mark = id2mark[mark_id]
-			id2val[mark_id] = fn(mark)	
+			id2val[mark_id] = fn(mark)
 		end
 		-- переопределяем функцию получения значения, чтобы читать закешированные значения
 		fn = function(mark)
@@ -940,22 +940,22 @@ local function sort_stable(marks, fn, inc, progress_callback)
 	for i = 1, #marks do
 		local mark = marks[i]
 		local key = fn(mark) or 0	-- создадим ключ, с сортируемой характеристикой
-		
+
 		local nms = key_nums[key]
 		if not nms then
 			nms = {i}
 			key_nums[key] = nms
-			keys[#keys+1] = key 	-- вставим в таблицу ключей 
+			keys[#keys+1] = key 	-- вставим в таблицу ключей
 		else
 			nms[#nms + 1] = i
 		end
-		
+
 		if progress_callback then
 			progress_callback(#marks, i)
 		end
 	end
 	local fetch_time = os.clock()
-	
+
 	table.sort(keys)  -- сортируем массив с ключами
 	local sort_time = os.clock()
 
@@ -974,7 +974,7 @@ local function sort_stable(marks, fn, inc, progress_callback)
 	local copy_res_time = os.clock()
 	-- print(inc, #marks, #tmp)
 	--printf('fetch: %.2f,  sort = %.2f, rev = %.2f copy_res = %.2f', fetch_time - start_time, sort_time-fetch_time, rev_time-sort_time, copy_res_time-rev_time)
-	
+
 	--print("mem before KB: ", collectgarbage("count"))
 	marks = nil
 	key = nil
@@ -1000,8 +1000,8 @@ end
 
 -- отсортировать отметки по системной координате
 local function sort_mark_by_coord(marks)
-	return sort_stable(marks, function(mark) 
-		return mark.prop.SysCoord 
+	return sort_stable(marks, function(mark)
+		return mark.prop.SysCoord
 	end)
 end
 
@@ -1015,11 +1015,11 @@ local function GetRailName(mark)
 	else
 		errorf('type of mark must be number or Mark(table), got %s', type(mark))
 	end
-	
+
 	if bit32.btest(mark_rail, 0x03) then
-		return "Оба" 
+		return "Оба"
 	end
-	
+
 	local right_rail_mask = tonumber(Passport.FIRST_LEFT) + 1
 	return bit32.btest(mark_rail, right_rail_mask) and "Правый" or "Левый"
 end
@@ -1030,7 +1030,7 @@ local function GetMarkRailPos(mark)
 	if rail_mask == 3 then
 		return 0
 	end
-	
+
 	local left_mask = tonumber(Passport.FIRST_LEFT) + 1
 	return left_mask == rail_mask and 1 or -1
 end
@@ -1040,14 +1040,14 @@ local function GetTemperature(mark)
 	if mark and mark.prop then
 		local rail = bit32.btest(mark.prop.RailMask, 0x01) and 0 or 1
 		local temp = Driver:GetTemperature(rail, mark.prop.SysCoord)
-		
+
 		local v = temp and (temp.target or temp.head)
 		if v then
 			return math.floor(v + 0.5)
 		end
 	end
 end
-	
+
 local function prepare_row_path(row, prefix, coord)
 	local km, m, mm = Driver:GetPathCoord(coord)
 	if km then
@@ -1056,7 +1056,7 @@ local function prepare_row_path(row, prefix, coord)
 		row[prefix .. 'MM'] = mm
 		row[prefix .. 'M_MM1'] = sprintf('%.1f', m + mm/1000)
 		row[prefix .. 'M_MM2'] = sprintf('%.2f', m + mm/1000)
-		row[prefix .. 'PK'] = sprintf('%d', m/100+1) 
+		row[prefix .. 'PK'] = sprintf('%d', m/100+1)
 		row[prefix .. 'PATH'] = sprintf('%d км %.1f м', km, m + mm/1000)
 	end
 end
@@ -1130,9 +1130,9 @@ local function GetRecognitionStartInfo()
 	local guids_recog_info = {'{1D5095ED-AF51-43C2-AA13-6F6C86302FB0}'}
 	local marks = Driver:GetMarks{ListType='all', GUIDS=guids_recog_info}
 	marks = sort_stable(marks, function(mark) return mark.prop.ID end)
-	
+
 	-- for i, mark in ipairs(marks) do print(i, mark.prop.ID, park.prop.SysCoord) end
-	
+
 	local infos  = {}
 	for _, mark in ipairs(marks) do
 		local desc = mark and mark.prop.Description
@@ -1150,29 +1150,29 @@ end
 -- получить таблицу паспорта с доп параметрами
 local function GetExtPassport(psp)
 	psp = psp or Passport
-	
+
 	if not _ext_passport_table then
 		_ext_passport_table = {}
 		for n,v in pairs(psp) do
-			_ext_passport_table[n] = v 
+			_ext_passport_table[n] = v
 		end
-		
+
 		local data_format = ' %Y-%m-%d %H:%M:%S '
 		_ext_passport_table.REPORT_DATE = os.date(data_format)
-		
+
 		local recog_info = GetRecognitionStartInfo()
 		if recog_info and #recog_info > 0 then
 			local info = recog_info[#recog_info]
-			
-			if info.RECOGNITION_START then 
+
+			if info.RECOGNITION_START then
 				_ext_passport_table.RECOGNITION_START = os.date(data_format, info.RECOGNITION_START)
 			end
-			
-			if info.RECOGNITION_DLL_CTIME then 
+
+			if info.RECOGNITION_DLL_CTIME then
 				_ext_passport_table.RECOG_VERSION_DATE = os.date(data_format, info.RECOGNITION_DLL_CTIME)
 			end
-			
-			if info.RECOGNITION_DLL_VERSION then 
+
+			if info.RECOGNITION_DLL_VERSION then
 				local ver = info.RECOGNITION_DLL_VERSION
 				_ext_passport_table.RECOG_VERSION = ver
 				_ext_passport_table.RECOG_VERSION_MAJOR = string.match(ver, '(%d+)%.')
@@ -1185,10 +1185,10 @@ end
 -- построить изображение для данной отметки
 local function MakeMarkImage(mark, video_channel, show_range, base64)
 	local img_path
-	
+
 	if ShowVideo ~= 0 then
 		local prop = mark.prop
-		
+
 		if not video_channel then
 			local recog_video_channels = GetSelectedBits(prop.ChannelMask)
 			video_channel = recog_video_channels and recog_video_channels[1]
@@ -1197,7 +1197,7 @@ local function MakeMarkImage(mark, video_channel, show_range, base64)
 		local panoram_width = 1500
 		local width = 400
 		local mark_id = (ShowVideo == 1) and prop.ID or 0
-		
+
 		if show_range then
 			panoram_width = show_range[2] - show_range[1]
 			width = panoram_width / 10
@@ -1205,18 +1205,18 @@ local function MakeMarkImage(mark, video_channel, show_range, base64)
 				mark_id = -1
 			end
 		end
-		
+
 		if video_channel then
 			local img_prop = {
 				mark_id = mark_id,
 				mode = 3,  -- panoram
-				panoram_width = panoram_width, 
-				-- frame_count = 3, 
-				width = width, 
+				panoram_width = panoram_width,
+				-- frame_count = 3,
+				width = width,
 				height = 300,
 				base64=base64
 			}
-			
+
 			--print(prop.ID, prop.SysCoord, prop.Guid, video_channel)
 			local coord = show_range and (show_range[1] + show_range[2])/2 or prop.SysCoord
 			img_path = Driver:GetFrame(video_channel, coord, img_prop)
@@ -1298,22 +1298,22 @@ return {
 	GetTemperature = GetTemperature,
 	GetRecognitionStartInfo = GetRecognitionStartInfo,
 	GetExtPassport = GetExtPassport,
-	
+
 	GetAllGapWidth = GetAllGapWidth,
 	GetGapWidth = GetGapWidth,
 	GetGapWidthName = GetGapWidthName,
 	GetRailGapStep = GetRailGapStep,
 	GetGapType = GetGapType,
-	
+
 	GetFishplateState = GetFishplateState,
-	
+
 	GetBeaconOffset = GetBeaconOffset,
-	
+
 	IsFastenerDefect = IsFastenerDefect,
 	GetFastenetParams = GetFastenetParams,
-	
+
 	GetSurfDefectPrm = GetSurfDefectPrm,
-	
+
 	GetConnectorsArray = GetConnectorsArray,
 	GetConnectorsCount = GetConnectorsCount,
 

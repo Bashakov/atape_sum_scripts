@@ -187,11 +187,11 @@ local filters =
 
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
-		name = 'I Стыковые зазоры', 
+		name = 'I Стыковые зазоры',
 		--videogram_defect_codes = {'090004012062', '090004016149', '090004016150'},
 		columns = {
-			column_num, 
-			column_path_coord, 
+			column_num,
+			column_path_coord,
 			-- column_sys_coord,
 			column_pov_common,
 			column_rail,
@@ -202,16 +202,16 @@ local filters =
 			column_gap_type,
 			column_recogn_bolt,
 			column_recogn_video_channel,
-			}, 
+			},
 		GUIDS = table_merge(recognition_guids, '{3601038C-A561-46BB-8B0F-F896C2130003}'),
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
-		name = 'I Отсутствие болтов в стыках', 
+		name = 'I Отсутствие болтов в стыках',
 		-- videogram_defect_codes = {'090004000465'},
 		columns = {
-			column_num, 
-			column_path_coord, 
+			column_num,
+			column_path_coord,
 			column_pov_common,
 			column_joint_speed_limit,
 			column_rail,
@@ -219,10 +219,10 @@ local filters =
 			column_gap_type,
 			--column_recogn_reability,
 			column_recogn_video_channel,
-			}, 
+			},
 		GUIDS = recognition_guids,
 		filter = function(mark)
-			local join_type = mark_helper.GetGapType(mark) 
+			local join_type = mark_helper.GetGapType(mark)
 			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
 			return valid_on_half and valid_on_half < 2 and join_type ~= 2
 		end,
@@ -245,16 +245,16 @@ local filters =
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ',},
-		name = 'I Дефекты накладок', 
+		name = 'I Дефекты накладок',
 		--videogram_defect_codes = {'090004000474'},
 		columns = {
-			column_num, 
+			column_num,
 			column_path_coord,
 			column_pov_common,
 			column_rail,
 			column_fishplate_state,
 			column_recogn_video_channel,
-			}, 
+			},
 		GUIDS = recognition_guids,
 		filter = function(mark)
 			local fault = mark_helper.GetFishplateState(mark)
@@ -274,7 +274,7 @@ local filters =
 			column_firtree_beacon,
 			column_pair_beacon,
 			column_mark_type_name
-			}, 
+			},
 		GUIDS = {
 			"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}", 	-- Маячная(Пользователь)
 			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",	-- Маячная
@@ -300,10 +300,10 @@ local filters =
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
-		name = 'III Соединитель: штепсельный', 
+		name = 'III Соединитель: штепсельный',
 		columns = {
-			column_num, 
-			column_path_coord, 
+			column_num,
+			column_path_coord,
 			column_pov_common,
 			column_rail_lr,
 			column_gap_type,
@@ -311,7 +311,7 @@ local filters =
 			--column_connections_defect,
 			column_recogn_video_channel,
 			column_rail,
-			}, 
+			},
 		GUIDS = recognition_guids,
 	},
 	{
@@ -364,7 +364,7 @@ local filters =
 				mark.user.dist_next = np - cp
 				local material = mark_helper.GetSleeperMeterial(mark)
 				if not material and SHOW_SLEEPER_UNKNOWN_MATERIAL then
-					material = 1 -- https://bt.abisoft.spb.ru/view.php?id=863#c4393 В случае "не скрывать" - считать все шнапля ЖБ 
+					material = 1 -- https://bt.abisoft.spb.ru/view.php?id=863#c4393 В случае "не скрывать" - считать все шнапля ЖБ
 				end
 				if material == 1 or material == 2 then
 					local dist_ok, defect_code = mark_helper.CheckSleeperEpure(mark, sleeper_count, MEK, mark.user.dist_next, material)
@@ -423,7 +423,7 @@ local filters =
 
 			local material = mark_helper.GetSleeperMeterial(mark)
 			if not material and SHOW_SLEEPER_UNKNOWN_MATERIAL then
-				material = 1 -- https://bt.abisoft.spb.ru/view.php?id=863#c4393 В случае "не скрывать" - считать все шнапля ЖБ 
+				material = 1 -- https://bt.abisoft.spb.ru/view.php?id=863#c4393 В случае "не скрывать" - считать все шнапля ЖБ
 			end
 			if material == 1 or material == 2 then
 				local angle_defect = get_sleeper_angle_defect(mark, SLEEPER_ANGLE_TRESHOLD_RAD, material)
@@ -449,7 +449,7 @@ local filters =
 			column_recogn_video_channel,
 --			column_recogn_reability,
 --			column_fastener_width,
-			}, 
+			},
 		GUIDS = {
 			TYPES.FASTENER,
 			TYPES.FASTENER_USER,
@@ -457,10 +457,10 @@ local filters =
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
-		name = 'Ненормативный объект', 
+		name = 'Ненормативный объект',
 		columns = {
-			column_num, 
-			column_path_coord, 
+			column_num,
+			column_path_coord,
 			column_rail,
 			column_mark_desc,
 			column_recogn_video_channel,
@@ -471,17 +471,17 @@ local filters =
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
-		name = 'Горизонтальные уступы', 
+		name = 'Горизонтальные уступы',
 		--videogram_defect_codes = {'090004012059'},
 		columns = {
-			column_num, 
-			column_path_coord, 
+			column_num,
+			column_path_coord,
 			column_rail,
 			column_recogn_width,
 			column_recogn_rail_gap_step,
 			column_recogn_video_channel,
 			column_pov_common,
-			}, 
+			},
 		GUIDS = table_merge(recognition_guids, '{3601038C-A561-46BB-8B0F-F896C2130003}'),
 		filter = function(mark)
 			if mark.prop.Guid == '{3601038C-A561-46BB-8B0F-F896C2130003}' and mark.ext.CODE_EKASUI == '090004012059' then
@@ -495,11 +495,11 @@ local filters =
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
-		name = 'Поверхностные дефекты', 
+		name = 'Поверхностные дефекты',
 		--videogram_defect_codes = {'090004012001'},
 		columns = {
-			column_num, 
-			column_path_coord, 
+			column_num,
+			column_path_coord,
 			column_rail,
 			column_surf_defect_type,
 			column_surf_defect_area,
@@ -507,7 +507,7 @@ local filters =
 			column_surf_defect_wdh,
 			column_recogn_video_channel,
 			column_pov_common,
-			}, 
+			},
 		GUIDS = recognition_surface_defects,
 	},
 	{
@@ -527,19 +527,19 @@ local filters =
 	},
 	{
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'СТЫКИ'},
-		name = 'Слепые зазоры', 
+		name = 'Слепые зазоры',
 		videogram_direct_set_defect = defect_codes.JOINT_NEIGHBO_BLIND_GAP,
 		columns = {
 			column_num,
-			column_path_coord, 
-			column_sys_coord, 
+			column_path_coord,
+			column_sys_coord,
 			column_rail,
 			column_recogn_width,
 			column_recogn_video_channel,
 			column_mark_id,
 			column_sleeper_dist_prev,
 			column_pov_common,
-			}, 
+			},
 		GUIDS = table_merge(recognition_guids, '{3601038C-A561-46BB-8B0F-F896C2130003}'),
 		filter = function(mark)
 			if mark.prop.Guid == '{3601038C-A561-46BB-8B0F-F896C2130003}' and (
@@ -562,10 +562,10 @@ local filters =
 				local r = bit32.band(mark.prop.RailMask, 3)	-- получаем номер рельса
 				if prev_pos[r] then	-- если есть коордиана предыдущей
 					local delta = mark.prop.SysCoord - prev_pos[r]	        -- в пользовательские данные отметки заносим растойние до нее
-					if ( delta > 27000 or delta < 10500) then 
+					if ( delta > 27000 or delta < 10500) then
 						delta=0
 					end
-					mark.user.dist_prev = delta --tostring(delta) 
+					mark.user.dist_prev = delta --tostring(delta)
 				end
 				prev_pos[r] = mark.prop.SysCoord	-- и сохраняем положение этой отметки
 				if fnContinueCalc and not fnContinueCalc(i / #marks) then
