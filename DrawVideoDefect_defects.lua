@@ -364,8 +364,8 @@ local JAT_TOOL = {
 		tooltip = 'Рисование дефекта тип: ПУТЬ',
 		icon = "file:Scripts/жат_путь.png",
 		options = {
-			JAT_TYPE = "WAY",	-- путь
-			JAT_HOUSE = "WAY", 	-- хозяйство пути.
+			JAT_TYPE = "путь",	-- путь
+			JAT_HOUSE = "П", 	-- хозяйство пути.
 		},
 	},
 	joint = {
@@ -377,8 +377,8 @@ local JAT_TOOL = {
 		tooltip = 'Рисование дефекта тип: СТРЕЛКА',
 		icon = "file:Scripts/жат_стрелка.png",
 		options = {
-			JAT_TYPE = "JOINT",	-- стрелка
-			JAT_HOUSE = "WAY", 	-- хозяйство пути.
+			JAT_TYPE = "стрелка",	-- стрелка
+			JAT_HOUSE = "П", 		-- хозяйство пути.
 		},
 	},
 	scb = {
@@ -390,18 +390,21 @@ local JAT_TOOL = {
 		tooltip = 'Расположение дефекта: СЦБ',
 		icon = "file:Scripts/жат_СЦБ.png",
 		options = {
-			JAT_TYPE = "SCB",	-- сигнализация, централизация, блокировка
-			JAT_HOUSE = "FATM", -- хозяйство напольной автоматики и телемеханики (floor automation and telemechanics)
+			JAT_TYPE = "СЦБ",	-- сигнализация, централизация, блокировка
+			JAT_HOUSE = "Ш", 	-- хозяйство напольной автоматики и телемеханики
 		},
 	},
 }
 
-local function _append_jat_defect(tmpl, name, variants)
+local function _append_jat_defect(tmpl, desc, variants)
+	local src = tmpl.src and tmpl.src .. ": " or ""
+
 	local defect = copy_update(tmpl, {
 		fn = make_jat_defect,
-		name = name,
+		name = src .. desc,
 		tools = {},
 		ekasui_code_list = {},
+		desc = desc,
 	})
 	for _, variant in ipairs(variants) do
 		table.insert(defect.tools, variant.tool)
@@ -412,64 +415,64 @@ end
 
 
 --дроссельные
-local jat_rcc_tmpl = {guid = GUIDS.JAT_RAIL_CONN_CHOKE, group = "ЖАТ: Рельсовые соединители"}
+local jat_rcc_tmpl = {guid = GUIDS.JAT_RAIL_CONN_CHOKE, group = "ЖАТ: Рельсовые соединители", src="Дроссельный"}
 
-_append_jat_defect(jat_rcc_tmpl, "Дроссель: обрыв троса полн/частич", {
+_append_jat_defect(jat_rcc_tmpl, "обрыв троса полн/частич", {
 	{tool = JAT_TOOL.way,   code = "090004012111"},
 	{tool = JAT_TOOL.joint, code = "090004012383"},
 	{tool = JAT_TOOL.scb,   code = "090004003599"},
 })
-_append_jat_defect(jat_rcc_tmpl, "Дроссель: нет гаек на штепселе", {
+_append_jat_defect(jat_rcc_tmpl, "нет гаек на штепселе", {
 	{tool = JAT_TOOL.way,   code = "090004012114"},
 	{tool = JAT_TOOL.joint, code = "090004012386"},
 	{tool = JAT_TOOL.scb,   code = "090004007699"},
 })
-_append_jat_defect(jat_rcc_tmpl, "Дроссель: засыпана перемычка", {
+_append_jat_defect(jat_rcc_tmpl, "засыпана перемычка", {
 	{tool = JAT_TOOL.scb,   code = "090004003597"},
 })
 
 --приварные
-local jat_rcw_tmpl = {guid = GUIDS.JAT_RAIL_CONN_WELDED, group = "ЖАТ: Рельсовые соединители"}
+local jat_rcw_tmpl = {guid = GUIDS.JAT_RAIL_CONN_WELDED, group = "ЖАТ: Рельсовые соединители", src="Приварной"}
 
-_append_jat_defect(jat_rcw_tmpl, "Приварной: дефектный соединитель", {
+_append_jat_defect(jat_rcw_tmpl, "дефектный соединитель", {
 	{tool = JAT_TOOL.way,   code = "090004000521"},
 	{tool = JAT_TOOL.joint, code = "090004000995"},
 })
-_append_jat_defect(jat_rcw_tmpl, "Приварной: отсутствует соединитель", {
+_append_jat_defect(jat_rcw_tmpl, "отсутствует соединитель", {
 	{tool = JAT_TOOL.way,   code = "090004004928"},
 	{tool = JAT_TOOL.joint, code = "090004012367"},
 	{tool = JAT_TOOL.scb,   code = "090004003583"},
 })
 
 --штепсельные
-local jat_rcp_tmpl = {guid = GUIDS.JAT_RAIL_CONN_PLUG, group = "ЖАТ: Рельсовые соединители"}
+local jat_rcp_tmpl = {guid = GUIDS.JAT_RAIL_CONN_PLUG, group = "ЖАТ: Рельсовые соединители", src="Штепсельный"}
 
-_append_jat_defect(jat_rcp_tmpl, "Штепсельный: дефектный соединитель", {
+_append_jat_defect(jat_rcp_tmpl, "дефектный соединитель", {
 	{tool = JAT_TOOL.way,   code = "090004000520"},
 	{tool = JAT_TOOL.joint, code = "090004000994"},
 })
-_append_jat_defect(jat_rcp_tmpl, "Штепсельный: засыпан соединитель", {
+_append_jat_defect(jat_rcp_tmpl, "засыпан соединитель", {
 	{tool = JAT_TOOL.scb,   code = "090004003990"},
 })
-_append_jat_defect(jat_rcp_tmpl, "Штепсельный: нет гаек", {
+_append_jat_defect(jat_rcp_tmpl, "нет гаек", {
 	{tool = JAT_TOOL.scb,   code = "090004003582"},
 })
-_append_jat_defect(jat_rcp_tmpl, "Штепсельный: нет отверстий", {
+_append_jat_defect(jat_rcp_tmpl, "нет отверстий", {
 	{tool = JAT_TOOL.way,   code = "090004004926"},
 })
-_append_jat_defect(jat_rcp_tmpl, "Штепсельный: нет соединителя", {
+_append_jat_defect(jat_rcp_tmpl, "нет соединителя", {
 	{tool = JAT_TOOL.way,   code = "090004004927"},
 	{tool = JAT_TOOL.joint, code = "090004012371"},
 	{tool = JAT_TOOL.scb,   code = "090004003581"},
 })
 
 -- САУТ
-local jat_scb_abcs_tmpl = {guid = GUIDS.JAT_SCB_CRS_ABCS, group = "ЖАТ: Устройства СЦБ, КПС"}
+local jat_scb_abcs_tmpl = {guid = GUIDS.JAT_SCB_CRS_ABCS, group = "ЖАТ: Устройства СЦБ, КПС", src = "САУТ"}
 
-_append_jat_defect(jat_scb_abcs_tmpl, "САУТ:нарушена норма укладки перемычек", {
+_append_jat_defect(jat_scb_abcs_tmpl, "нарушена норма укладки перемычек", {
 	{tool = JAT_TOOL.scb,   code = "090004004573"},
 })
-_append_jat_defect(jat_scb_abcs_tmpl, "САУТ:нарушено расст. от 1-й точки до изостыка", {
+_append_jat_defect(jat_scb_abcs_tmpl, "нарушено расст. от 1-й точки до изостыка", {
 	{tool = JAT_TOOL.scb,   code = "090004003767"},
 })
 

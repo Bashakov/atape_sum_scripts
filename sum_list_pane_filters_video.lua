@@ -3,6 +3,7 @@ local defect_codes = require 'report_defect_codes'
 
 local table_merge = mark_helper.table_merge
 local TYPES = require 'sum_types'
+local TYPE_GROUPS = require "sum_list_pane_guids"
 
 local prev_atape = ATAPE
 ATAPE = true -- disable debug code while load scripts
@@ -336,6 +337,49 @@ local filters =
 			local code = mark_helper.GetWeldedBondDefectCode(mark)
 			return code
 		end,
+	},
+	{
+		-- 84.201.134.151/issues/31
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "ЖАТ"},
+		name = 'III Cоединители и перемычки',
+		columns = {
+			column_path_coord,
+			column_rail_lr,
+			column_jat_viewed,
+			column_jat_pov,
+			column_jat_defect,
+			column_jat_object,
+			column_jat_type,
+			column_jat_value,
+			column_gap_type,
+			column_pov_common,
+		},
+		GUIDS =  table_merge(TYPE_GROUPS.recognition_guids, TYPE_GROUPS.JAT_CONN),
+		filter = function(mark)
+			local g = mark.prop.Guid
+			if mark_helper.table_find(TYPE_GROUPS.JAT_CONN, g) then
+				return true
+			else
+				local code = mark_helper.GetWeldedBondDefectCode(mark)
+				return code
+			end
+		end,
+	},
+	{
+		-- 84.201.134.151/issues/31
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "ЖАТ"},
+		name = 'III Устройства ЖАТ',
+		columns = {
+			column_path_coord,
+			column_rail_lr,
+			column_jat_viewed,
+			column_jat_pov,
+			column_jat_defect,
+			column_jat_object,
+			column_jat_value,
+			column_pov_common,
+		},
+		GUIDS =  TYPE_GROUPS.JAT_SCB,
 	},
 	{
 		-- https://bt.abisoft.spb.ru/view.php?id=815

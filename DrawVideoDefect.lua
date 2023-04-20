@@ -386,7 +386,7 @@ function make_jat_defect(name, objects, driver, defect)
 				end
 			end
 		end
-
+		mark.prop.Description = defect.desc
 		marks[i] = mark
 	end
 

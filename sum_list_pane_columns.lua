@@ -1130,3 +1130,96 @@ column_speed_limit_list =
 		return limit
 	end,
 }
+
+column_jat_viewed = {
+	name = 'ПР',
+	width = 30,
+	align = 'r',
+	text = function(row)
+		return ""
+	end,
+}
+
+column_jat_pov = {
+	name = 'ПОВ',
+	width = 35,
+	align = 'r',
+	text = function(row)
+		return ""
+	end,
+}
+
+column_jat_defect = {
+
+	name = 'Неисправность',
+	width = 85,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		return column_jat_defect._impl_text(mark)
+	end,
+	sorter = function(mark)
+		return column_jat_defect._impl_text(mark)
+	end,
+	_impl_text = function (mark)
+		local g = mark.prop.Guid
+		if table_find(TYPE_GROUPS.JAT, g) then
+			return mark.prop.Description
+		end
+	
+		local ecasui_code = mark_helper.GetWeldedBondDefectCode(mark)
+		local desc = ecasui_code and DEFECT_CODES.code2desc(ecasui_code)
+		return desc or ""
+	end
+}
+
+column_jat_object = {
+	name = 'Объект',
+	width = 85,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		return column_jat_object._impl_text(mark)
+	end,
+	sorter = function(mark)
+		return column_jat_object._impl_text(mark)
+	end,
+	_impl_text = function (mark)
+		local g = mark.prop.Guid
+		if g == TYPES.JAT_RAIL_CONN_CHOKE  then return "Дроссельный" end
+		if g == TYPES.JAT_RAIL_CONN_WELDED then return "Приварной" end
+		if g == TYPES.JAT_RAIL_CONN_PLUG   then return "Штепсельный" end
+
+		if g == TYPES.JAT_SCB_CRS_ABCS     then return "САУТ" end
+		if g == TYPES.JAT_SCB_CRS_RSCMD    then return "УКСПС" end
+
+		-- local ecasui_code = mark_helper.GetWeldedBondDefectCode(mark)
+		-- if ecasui_code == DEFECT_CODES.JOINT_WELDED_BOND_FAULT[1] then
+		-- 	return "Приварной"
+		-- end
+		return ""
+	end
+}
+
+column_jat_type = {
+
+	name = 'Тип',
+	width = 85,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		return mark.ext.JAT_TYPE or ''
+	end,
+	sorter = function(mark)
+		return mark.ext.JAT_TYPE
+	end,
+}
+
+column_jat_value = {
+	name = 'Знач.',
+	width = 45,
+	align = 'r',
+	text = function(row)
+		return ""
+	end,
+}
