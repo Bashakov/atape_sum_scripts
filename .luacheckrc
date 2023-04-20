@@ -11,7 +11,21 @@ files["DrawVideoDefect.lua"] = {
     ignore = {"631"}
 }
 
+files["sum_list_pane_*.lua"] = {
+    global = {
+        "work_marks_list",
+    }
+}
+
 read_globals = {
     "luacom",
-    "bit32"
+    "bit32",
+    "iup",
+    "MarkTable",
+    "Driver",
+}
+
+globals = {
+    "ATAPE",
+    "HUN",
 }

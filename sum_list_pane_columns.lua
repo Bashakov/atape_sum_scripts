@@ -1,34 +1,32 @@
-mark_helper = require 'sum_mark_helper'
+local mark_helper = require 'sum_mark_helper'
 
 local prev_atape = ATAPE
 ATAPE = true -- disable debug code while load scripts
 	local sum_report_joints = require "sum_report_joints"
 ATAPE = prev_atape
 
-sprintf = mark_helper.sprintf
-printf = mark_helper.printf
-table_find = mark_helper.table_find
+local sprintf = mark_helper.sprintf
+local table_find = mark_helper.table_find
 
-SelectNodes = mark_helper.SelectNodes
-sort_marks = mark_helper.sort_marks
-reverse_array = mark_helper.reverse_array
-sort_stable = mark_helper.sort_stable
-shallowcopy = mark_helper.shallowcopy
-deepcopy = mark_helper.deepcopy
+local shallowcopy = mark_helper.shallowcopy
 
 local DEFECT_CODES = require 'report_defect_codes'
 local sumPOV = require "sumPOV"
 local read_csv = require 'read_csv'
 
--- =====================================================================  
+local TYPES = require "sum_types"
+local TYPE_GROUPS = require "sum_list_pane_guids"
+
+
+-- =====================================================================
 
 -- получить параметр скрепления по имени (разбор xml)
 local function GetFastenerParamName(mark, name)
-	
+
 	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 	assert(xmlDom)
 	xmlDom:loadXML(mark.ext.RAWXMLDATA)
-	
+
 	local req = string.format('\z
 		/ACTION_RESULTS\z
 		/PARAM[@name="ACTION_RESULTS" and @value="Fastener"]\z
@@ -51,8 +49,8 @@ local function GetFastenerParamName1(mark, name)
 end
 
 local function split(str, sep)
-   local sep, fields = sep or ":", {}
-   local pattern = string.format("([^%s]+)", sep)
+   local fields = {}
+   local pattern = string.format("([^%s]+)", sep or ":")
    str:gsub(pattern, function(c) fields[#fields+1] = c end)
    return fields
 end
@@ -89,8 +87,8 @@ function parse_speed_limit(val)
 		return nil
 	end
 	local limits = {}
-	string.gsub(val, '(%d+)', function(i) 
-		table.insert(limits, tonumber(i)) 
+	string.gsub(val, '(%d+)', function(i)
+		table.insert(limits, tonumber(i))
 	end)
 	if #limits > 0 then
 		return math.min(table.unpack(limits))
@@ -395,6 +393,7 @@ column_gap_type =
 		elseif gap_type == 2 then
 			return "сварной"
 		end
+		return ""
 	end,
 	sorter = function(mark)
 		local gap_type = mark_helper.GetGapType(mark)

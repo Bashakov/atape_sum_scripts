@@ -4,15 +4,9 @@ end
 
 mark_helper = require 'sum_mark_helper'
 
-local SelectNodes = mark_helper.SelectNodes
-local sort_marks = mark_helper.sort_marks
 local reverse_array = mark_helper.reverse_array
 local sort_stable = mark_helper.sort_stable
-local shallowcopy = mark_helper.shallowcopy
-local deepcopy = mark_helper.deepcopy
-local table_find = mark_helper.table_find
 local sprintf = mark_helper.sprintf
-local printf = mark_helper.printf
 
 local sumPOV = require "sumPOV"
 
@@ -21,8 +15,8 @@ if iup then
 end
 
 
-MK_SHIFT     =  0x0004
-MK_CONTROL   =	0x0008
+local MK_SHIFT     =  0x0004
+--local MK_CONTROL   =	0x0008
 
 -- =====================================================================
 
@@ -169,18 +163,6 @@ local function delete_mark(row)
 		Driver:RedrawView()
 	end
 end
-
--- сделать видеограмму
-local function videogram_mark(row, col)
-	local mark = work_marks_list[row]
-	if mark and mark.prop and mark.ext then -- проверим что объект является именно специальной пользовательской отметкой
-		my_dofile "sum_videogram.lua"
-		local defect_codes = work_filter and work_filter.videogram_defect_codes
-		local videogram_direct_set_defect = work_filter and work_filter.videogram_direct_set_defect
-		MakeVideogram('mark', {mark=mark, defect_codes=defect_codes, direct_set_defect=videogram_direct_set_defect})
-	end
-end
-
 
 -- дефолтный обработчик ПКМ
 local function default_mark_contextmenu(row, col)
@@ -540,14 +522,15 @@ if not ATAPE then
 	-- end
 
 	local test_report  = require('local_data_driver')
-	--local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+	local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
 
 	-- local psp_path = 'D:/Downloads/932/31883/[507]_2022_04_14_04.xml'
-	local psp_path = "D:/Downloads/1006/123/[500]_2020_03_05_01(1 км 754 м 679 мм - 5 км 765 м 763 мм).xml"
+	--local psp_path = "D:/Downloads/1006/123/[500]_2020_03_05_01(1 км 754 м 679 мм - 5 км 765 м 763 мм).xml"
 
-	test_report.Driver(psp_path, nul) -- ,  , {0, 1000000}
+	test_report.Driver(psp_path, nil, {0, 200000}) -- ,  , 
 
-	local name = 'УЗ дефекты Шейка\\подошва Все'
+	-- local name = 'III Cоединители и перемычки'
+	local name = 'III Устройства ЖАТ'
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}
 	local col_names = {}

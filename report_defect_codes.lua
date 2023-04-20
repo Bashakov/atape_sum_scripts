@@ -130,12 +130,16 @@ local codes = {
 	BEACON_MISSING_LINE  		=   { "090004015367", "Отсутствует маркировка «маячных» шпал"},
 }
 
-codes.code2desc = function (code)
-	for _, value in pairs(codes) do
-		if type(value) == 'table' and #value == 2 and value[1] == code then
-			return value[2]
-		end
+local _code2desc_tbl = {}
+
+for _, value in pairs(codes) do
+	if type(value) == 'table' and #value == 2 then
+		_code2desc_tbl[value[1]] = value[2]
 	end
+end
+
+codes.code2desc = function (code)
+	return _code2desc_tbl[code]
 end
 
 return codes
