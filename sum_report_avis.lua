@@ -28,7 +28,7 @@ local function SaveAndShow(report_rows, dlgProgress, report_template_name, sheet
 	local ext_psp = mark_helper.GetExtPassport(Passport)
 	local excel = excel_helper(template_path, sheet_name, false)
 
-	excel:ApplyPassportValues(ext_psp)
+	excel:ApplyPassportValues(ext_psp, dlgProgress)
 	excel:ApplyRows(report_rows, nil, dlgProgress)
 	excel:AppendTemplateSheet(ext_psp, report_rows, nil, 3)
 	excel:SaveAndShow()
