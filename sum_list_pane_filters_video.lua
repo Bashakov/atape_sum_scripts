@@ -345,8 +345,6 @@ local filters =
 		columns = {
 			column_path_coord,
 			column_rail_lr,
-			column_jat_viewed,
-			column_jat_pov,
 			column_jat_defect,
 			column_jat_object,
 			column_jat_type,
@@ -372,8 +370,6 @@ local filters =
 		columns = {
 			column_path_coord,
 			column_rail_lr,
-			column_jat_viewed,
-			column_jat_pov,
 			column_jat_defect,
 			column_jat_object,
 			column_jat_value,

@@ -1131,24 +1131,6 @@ column_speed_limit_list =
 	end,
 }
 
-column_jat_viewed = {
-	name = 'ПР',
-	width = 30,
-	align = 'r',
-	text = function(row)
-		return ""
-	end,
-}
-
-column_jat_pov = {
-	name = 'ПОВ',
-	width = 35,
-	align = 'r',
-	text = function(row)
-		return ""
-	end,
-}
-
 column_jat_defect = {
 
 	name = 'Неисправность',
