@@ -1,0 +1,137 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{report_name}}</title>
+</head>
+<style type="text/css">
+    html {
+        font-family: Times New Roman;
+        font-size: 14px;
+    }
+    
+    h1 {
+        font-size: 16px;
+    }
+    
+    h1, h2, h3{
+        text-align: center;
+    }
+    
+    #header, #data {
+        width: 100%;
+    }
+
+    table {
+        border-collapse: collapse;
+        border-spacing: 0;
+    }
+    
+    th {
+        padding: 6px 6px
+    }
+    
+    td {
+        padding: 4px 4px
+    }
+    #data tr:nth-child(2) {
+        /*font-size: 10px;*/
+        font-style: italic;
+        text-align: right;
+    }
+   
+    #data th {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        /*transform: rotate(90deg);*/
+        /*text-align: center;*/
+        
+    }
+
+    #data th,
+    #data td {
+        border: 1px solid #ccc;
+    }
+</style>
+<body>
+    <table id="header">
+        <tr>
+            <td>ОАО "Радиоавионика", версия ПО 2.0</td>
+            <td>{{os.date('%Y-%m-%d')}}</td>
+        </tr>
+    </table>
+    
+    <H1>{{report_name}}</H1>
+
+    <table id="common">
+        <tr>
+            <td>Мод. и ном. диагн. ср-ва. :	</td>
+            <td>{{psp.CARID}}</td>
+        </tr>
+        <tr>
+            <td>Дорога, Дистанция :</td>
+            <td>{{psp.SITEID}} ЖД, ПЧ-_______</td>
+        </tr>
+        <tr>
+            <td>Дата, тип проверки :</td>
+            <td>{{psp.DATE}}</td>
+        </tr>
+        <tr>
+            <td>Напр-е, код направления : </td>
+            <td>{{psp.DIRECTION}}</td>
+        </tr>
+        <tr>
+            <td>Ф.И.О. начальника смены :</td>
+            <td>{{psp.CURRENT_OPERATOR}}</td>
+        </tr>
+    </table>
+
+    <br/>
+
+    <table id="data">
+        <tr>
+            <th>№ п/п</th>
+            <th>ПЧУ, ПДБ, ПД</th>
+            <th>Перегон, станция</th>
+            <th>Путь</th>
+            <th>КМ</th>
+            <th>ПК</th>
+            <th>М</th>
+            <th>Вид неисправности</th>
+            <th>Параметр, мм., шт.</th>
+            <th>Рельсовая нить</th>
+            <th>Примечание<br/>(изостык, стрелка, стык)</th>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td>2</td>
+            <td>3</td>
+            <td>4</td>
+            <td>5</td>
+            <td>6</td>
+            <td>7</td>
+            <td>8</td>
+            <td>9</td>
+            <td>10</td>
+            <td>11</td>
+        </tr>
+        {% for line, row in ipairs(rows) do %}
+        <tr>
+            <td>{{line}}</td>
+            <td></td>
+            <td>{{psp.DIRECTION}}</td>
+            <td>{{psp.TRACK_NUM}}</td>
+            <td>{{row.KM}}</td>
+            <td>{{row.PK}}</td>
+            <td>{{row.M_MM1}}</td>
+            <td>{{row.DESCRIPTION}}</td>
+            <td>{{row.JAT_VALUE}}</td>
+            <td>{{row.RAIL_NAME}}</td>
+            <td>{{row.GAP_TYPE}}</td>
+        </tr>
+        {% end %}
+    </table>
+</body>
+</html>

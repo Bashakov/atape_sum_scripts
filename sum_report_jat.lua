@@ -16,6 +16,7 @@ local sumPOV = require "sumPOV"
 local TYPES = require 'sum_types'
 local TYPE_GROUPS = require "sum_list_pane_guids"
 
+
 local jat_guids = mark_helper.table_merge(TYPE_GROUPS.recognition_guids, TYPE_GROUPS.JAT)
 
 
@@ -136,6 +137,7 @@ end
 
 local function make_report_generator(...)
 	local generators = {...}
+
 	return function(params)
 		local pov_filter = sumPOV.MakeReportFilter(false)
 		if not pov_filter then return {} end
@@ -152,23 +154,47 @@ local function make_report_generator(...)
 	end
 end
 
+local function make_html_report_generator(...)
+	local generators = {...}
+	return function(params)
+		local pov_filter = sumPOV.MakeReportFilter(false)
+		if not pov_filter then return {} end
+
+		generators = make_gen_pov_filter(generators, pov_filter)
+
+		local gen = AVIS_REPORT.make_html_generator(
+            function() return GetMarks(params) end,
+			"jat_report_template.html",
+            "jat_",
+			"ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ УСТРОЙСТВ ЖАТ",
+            table.unpack(generators))
+		gen()
+	end
+end
+
 -- =============================================================================
 
 local jat_ekasui = make_report_ekasui(generate_rows_jat)
 local jat_report = make_report_generator(generate_rows_jat)
+local jat_html = make_html_report_generator(generate_rows_jat)
+
 
 local function AppendReports(reports)
 	local name_pref = 'Ведомость отступлений в содержании устройств ЖАТ|'
 
 	local jat_reports =
 	{
-        {name = name_pref..'все',            fn=jat_report, params = {filter="all"}, },
-        {name = name_pref..'пользователь',   fn=jat_report, params = {filter="user"}, },
-        {name = name_pref..'автоматические', fn=jat_report, params = {filter="auto"}, },
+		{name = name_pref..'все',            		fn=jat_report, 	params = {filter="all" }, },
+		{name = name_pref..'пользователь',   		fn=jat_report, 	params = {filter="user"}, },
+		{name = name_pref..'автоматические', 		fn=jat_report, 	params = {filter="auto"}, },
 
-		{name = name_pref..'ЕКАСУИ все',            fn=jat_ekasui, params = {filter="all"}, },
-        {name = name_pref..'ЕКАСУИ пользователь',   fn=jat_ekasui, params = {filter="user"}, },
-        {name = name_pref..'ЕКАСУИ автоматические', fn=jat_ekasui, params = {filter="auto"}, },
+		{name = name_pref..'ЕКАСУИ все',            fn=jat_ekasui, 	params = {filter="all" }, },
+		{name = name_pref..'ЕКАСУИ пользователь',   fn=jat_ekasui, 	params = {filter="user"}, },
+		{name = name_pref..'ЕКАСУИ автоматические', fn=jat_ekasui, 	params = {filter="auto"}, },
+
+		{name = name_pref..'HTML все',            	fn=jat_html, 	params = {filter="all" }, },
+		{name = name_pref..'HTML пользователь',   	fn=jat_html, 	params = {filter="user"}, },
+		{name = name_pref..'HTML автоматические', 	fn=jat_html, 	params = {filter="auto"}, },
     }
 
     for _, report in ipairs(jat_reports) do

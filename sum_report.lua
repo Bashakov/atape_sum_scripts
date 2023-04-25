@@ -1179,7 +1179,7 @@ if not ATAPE then
 	--test_report.Driver('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2020_11_30_01.xml')
 	
 	--MakeReport('Дефекты УЗК в екасуи')
-	MakeReport('Ведомость отступлений в содержании устройств ЖАТ|все')
+	MakeReport('Ведомость отступлений в содержании устройств ЖАТ|ЕКАСУИ все')
 	--local guids = GetFilterGuids('Ведомость отступлений в содержании рельсов')
 	--print(guids)
 
