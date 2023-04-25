@@ -5,7 +5,7 @@ local GUIDS = require "sum_types"
 local function copy_update(src, new)
 	local res = {}
 	for n, v in pairs(src) do res[n] = v end
-	for n, v in pairs(new) do res[n] = v end
+	for n, v in pairs(new or {}) do res[n] = v end
 	return res
 end
 
@@ -363,7 +363,8 @@ local JAT_TOOL = {
 		name = 'Расположение дефекта: ПУТЬ',
 		tooltip = 'Рисование дефекта тип: ПУТЬ',
 		icon = "file:Scripts/жат_путь.png",
-		options = {
+		options = {},
+		static_options = {
 			JAT_TYPE = "путь",	-- путь
 			JAT_HOUSE = "П", 	-- хозяйство пути.
 		},
@@ -376,7 +377,8 @@ local JAT_TOOL = {
 		name = 'Расположение дефекта: СТРЕЛКА',
 		tooltip = 'Рисование дефекта тип: СТРЕЛКА',
 		icon = "file:Scripts/жат_стрелка.png",
-		options = {
+		options = {},
+		static_options = {
 			JAT_TYPE = "стрелка",	-- стрелка
 			JAT_HOUSE = "П", 		-- хозяйство пути.
 		},
@@ -389,14 +391,15 @@ local JAT_TOOL = {
 		name = 'Расположение дефекта СЦБ',
 		tooltip = 'Расположение дефекта: СЦБ',
 		icon = "file:Scripts/жат_СЦБ.png",
-		options = {
+		options = {},
+		static_options = {
 			JAT_TYPE = "СЦБ",	-- сигнализация, централизация, блокировка
 			JAT_HOUSE = "Ш", 	-- хозяйство напольной автоматики и телемеханики
 		},
 	},
 }
 
-local function _append_jat_defect(tmpl, desc, variants)
+local function _append_jat_defect(tmpl, desc, variants, value_desc)
 	local src = tmpl.src and tmpl.src .. ": " or ""
 
 	local defect = copy_update(tmpl, {
@@ -407,9 +410,16 @@ local function _append_jat_defect(tmpl, desc, variants)
 		desc = desc,
 	})
 	for _, variant in ipairs(variants) do
-		table.insert(defect.tools, variant.tool)
+		local cur_tool = copy_update(variant.tool)
+		table.insert(defect.tools, cur_tool)
 		table.insert(defect.ekasui_code_list, variant.code)
+
+		if value_desc then
+			table.insert(cur_tool.options, {"JAT_VALUE", value_desc, {""}})
+			cur_tool.static_options.JAT_VALUE_DESC=value_desc
+		end
 	end
+
 	table.insert(DEFECTS, defect)
 end
 
@@ -426,7 +436,7 @@ _append_jat_defect(jat_rcc_tmpl, "нет гаек на штепселе", {
 	{tool = JAT_TOOL.way,   code = "090004012114"},
 	{tool = JAT_TOOL.joint, code = "090004012386"},
 	{tool = JAT_TOOL.scb,   code = "090004007699"},
-})
+}, "Количество гаек")
 _append_jat_defect(jat_rcc_tmpl, "засыпана перемычка", {
 	{tool = JAT_TOOL.scb,   code = "090004003597"},
 })

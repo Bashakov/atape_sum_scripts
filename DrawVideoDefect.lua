@@ -381,8 +381,12 @@ function make_jat_defect(name, objects, driver, defect)
 		for ti, tool in ipairs(defect.tools) do
 			if tool.sign == object.sign then
 				mark.ext.CODE_EKASUI = defect.ekasui_code_list[ti]
-				for n, val in pairs(tool.options) do
+				for n, val in pairs(tool.static_options) do
 					mark.ext[n] = val
+				end
+
+				for n, v in sorted(object.options) do 
+					mark.ext[n] = v
 				end
 			end
 		end

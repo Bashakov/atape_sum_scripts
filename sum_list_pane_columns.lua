@@ -1202,6 +1202,7 @@ column_jat_value = {
 	width = 45,
 	align = 'r',
 	text = function(row)
-		return ""
+		local mark = work_marks_list[row]
+		return mark.ext.JAT_VALUE or ""
 	end,
 }
