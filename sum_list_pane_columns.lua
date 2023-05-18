@@ -380,7 +380,7 @@ column_recogn_bolt =
 
 column_gap_type =
 {
-	name = 'тип',
+	name = 'Стык',
 	width = 60,
 	align = 'c',
 	text = function(row)
@@ -1156,7 +1156,7 @@ column_jat_defect = {
 }
 
 column_jat_object = {
-	name = 'Объект',
+	name = 'Тип',
 	width = 85,
 	align = 'r',
 	text = function(row)
@@ -1185,7 +1185,7 @@ column_jat_object = {
 
 column_jat_type = {
 
-	name = 'Тип',
+	name = 'Прим.:путь, стр, СЦБ',
 	width = 85,
 	align = 'r',
 	text = function(row)

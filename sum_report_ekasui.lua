@@ -103,7 +103,7 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg, path
 		node_incident:setAttribute("posM", mark.M)
 		node_incident:setAttribute("thread", rail_ekasui_table[mark.RAIL_POS])
 		node_incident:setAttribute("defectID", mark.DEFECT_CODE)
-		node_incident:setAttribute("sizeLength", mark.GAP_WIDTH or mark.BEACON_OFFSET or "")
+		node_incident:setAttribute("sizeLength", mark.GAP_WIDTH or mark.BEACON_OFFSET or mark.JAT_VALUE or "")
 		node_incident:setAttribute("sizeWidth", "")
 		node_incident:setAttribute("sizeDepth", "")
 		node_incident:setAttribute("speedLimitID", mark.SPEED_LIMIT)
@@ -191,11 +191,11 @@ local function make_ekasui_generator(getMarks, ...)
         -- Диалог редактирования  атрибутов проезда
         local res = {iup.GetParam(
 			"ЕКАСУИ: Проверка заполнения атрибутов", nil,
-			"SiteID = %s\n\z
-			carID = %s\n\z
-			pathType = %i\n\z
-			pathID = %s\n\z
-			pathText = %s\n\z",
+			"Идентификатор дороги (ID БД ЕК АСУИ) %s\n\z
+			Идентификатор средства диагностики (ID БД ЕК АСУИ) %s\n\z
+			Вид проверки %i\n\z
+			ID пути БД ЕК АСУИ %s\n\z
+			Название пути БД ЕК АСУИ %s\n\z",
 			Passport.SITEID,		-- https://bt.abisoft.spb.ru/view.php?id=935
 			Passport.CARID,			-- https://bt.abisoft.spb.ru/view.php?id=935
 			1, 						-- https://bt.abisoft.spb.ru/view.php?id=722#c3397
