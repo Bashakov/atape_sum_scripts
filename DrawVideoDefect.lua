@@ -362,7 +362,7 @@ function make_simple_defect(name, objects, driver, defect)
 			mark.ext.USER_SPEED_LIMIT = tostring(defect.speed_limit)
 		end
 
-		for _, attr_name in ipairs{"JAT_HOUSE", "JAT_TYPE"} do
+		for _, attr_name in ipairs{"RAILWAY_HOUSE", "RAILWAY_TYPE"} do
 			local val = defect[attr_name]
 			if val then
 				mark.ext[attr_name] = tostring(val)

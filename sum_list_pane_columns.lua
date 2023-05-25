@@ -1190,10 +1190,10 @@ column_jat_type = {
 	align = 'r',
 	text = function(row)
 		local mark = work_marks_list[row]
-		return mark.ext.JAT_TYPE or ''
+		return mark.ext.RAILWAY_TYPE or ''
 	end,
 	sorter = function(mark)
-		return mark.ext.JAT_TYPE
+		return mark.ext.RAILWAY_TYPE
 	end,
 }
 

@@ -365,8 +365,8 @@ local JAT_TOOL = {
 		icon = "file:Scripts/жат_путь.png",
 		options = {},
 		static_options = {
-			JAT_TYPE = "путь",	-- путь
-			JAT_HOUSE = "П", 	-- хозяйство пути.
+			RAILWAY_TYPE = "путь",	-- путь
+			RAILWAY_HOUSE = "П", 	-- хозяйство пути.
 		},
 	},
 	joint = {
@@ -379,8 +379,8 @@ local JAT_TOOL = {
 		icon = "file:Scripts/жат_стрелка.png",
 		options = {},
 		static_options = {
-			JAT_TYPE = "стрелка",	-- стрелка
-			JAT_HOUSE = "П", 		-- хозяйство пути.
+			RAILWAY_TYPE = "стрелка",	-- стрелка
+			RAILWAY_HOUSE = "П", 		-- хозяйство пути.
 		},
 	},
 	scb = {
@@ -393,8 +393,8 @@ local JAT_TOOL = {
 		icon = "file:Scripts/жат_СЦБ.png",
 		options = {},
 		static_options = {
-			JAT_TYPE = "СЦБ",	-- сигнализация, централизация, блокировка
-			JAT_HOUSE = "Ш", 	-- хозяйство напольной автоматики и телемеханики
+			RAILWAY_TYPE = "СЦБ",	-- сигнализация, централизация, блокировка
+			RAILWAY_HOUSE = "Ш", 	-- хозяйство напольной автоматики и телемеханики
 		},
 	},
 }

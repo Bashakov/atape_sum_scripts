@@ -59,8 +59,8 @@ local function MakeJatMarkRow(mark, defect_code)
 	end
 	row.DEFECT_DESC = DEFECT_CODES.code2desc(defect_code)
     row.JAT_VALUE = mark.ext.JAT_VALUE or ""
-    row.JAT_HOUSE = mark.ext.JAT_HOUSE or ""
-    row.JAT_TYPE = mark.ext.JAT_TYPE or ""
+    row.RAILWAY_HOUSE = mark.ext.RAILWAY_HOUSE or ""
+    row.RAILWAY_TYPE = mark.ext.RAILWAY_TYPE or ""
     row.GAP_TYPE = ""
 	return row
 end
