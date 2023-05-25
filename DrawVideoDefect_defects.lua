@@ -349,6 +349,8 @@ for _, gd in ipairs(group_defect_desc) do
 		--name = gd[4] .. ':' .. gd[5]
 		name = gd[5],
 		speed_limit = gd[6],
+		RAILWAY_TYPE = gd.RAILWAY_TYPE,
+		RAILWAY_HOUSE = gd.JRAILWAY_HOUSE,
 	})
 end
 

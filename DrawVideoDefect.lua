@@ -446,6 +446,13 @@ function make_group_defect(name, objects, driver, defect)
 
 	sumPOV.UpdateMarks({mark}, false)
 
+	for _, attr_name in ipairs{"RAILWAY_HOUSE", "RAILWAY_TYPE"} do
+		local val = defect[attr_name]
+		if val then
+			mark.ext[attr_name] = tostring(val)
+		end
+	end
+
 	--error('make_group_defect error') -- testing
 	return {mark}
 end
