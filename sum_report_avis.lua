@@ -79,6 +79,48 @@ local function make_report_generator(getMarks, report_template_name, sheet_name,
 	end
 end
 
+local function findFile(name)
+	for _, prefix in ipairs{"", "Scripts/"} do
+		local f = io.open(prefix .. name, 'rb')
+		if f then
+			return f
+		end
+	end
+end
+
+local function ExportPDF()
+	local f = findFile('html2pdf.bundle.min.js')
+	if f then
+		local html2pdf = f:read("*all")
+		io.close(f)
+		return string.format([[
+	<script>
+%s
+	</script>
+	<script>
+		function export2pdf() {
+			var opt = {
+				pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+				margin:       3,
+				filename:     'report.pdf',
+				image:        { type: 'jpeg', quality: 0.98 },
+				html2canvas:  { 
+					scale: 2, 
+					ignoreElements: function(element) { return element.id == "expo1rtForm";} // ignore for page break
+				},
+				jsPDF:        { orientation: 'l' }
+			};
+			html2pdf().set(opt).from(document.body).save();
+		}
+	</script>
+	<form action="" id='exportForm'>
+	   <p><input type="button" value="Export To PDF" onclick="export2pdf()"></p>
+	</form>]], html2pdf)
+	else
+		return ""
+	end
+end
+
 local function make_html_generator(getMarks, html_template_name, dst_prefix, report_name, ...)
 	local row_generators = {...}
 
@@ -98,6 +140,7 @@ local function make_html_generator(getMarks, html_template_name, dst_prefix, rep
 			view.psp = mark_helper.GetExtPassport(Passport)
 			view.rows = rows
 			view.report_name = report_name
+			view.export_pdf_script = ExportPDF
 			local strHtml = tostring(view)
 			local f = assert(io.open(path_dst, "w+"))
 			f:write(strHtml)
