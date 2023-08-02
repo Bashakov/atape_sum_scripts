@@ -1,34 +1,32 @@
-mark_helper = require 'sum_mark_helper'
+local mark_helper = require 'sum_mark_helper'
 
 local prev_atape = ATAPE
 ATAPE = true -- disable debug code while load scripts
 	local sum_report_joints = require "sum_report_joints"
 ATAPE = prev_atape
 
-sprintf = mark_helper.sprintf
-printf = mark_helper.printf
-table_find = mark_helper.table_find
+local sprintf = mark_helper.sprintf
+local table_find = mark_helper.table_find
 
-SelectNodes = mark_helper.SelectNodes
-sort_marks = mark_helper.sort_marks
-reverse_array = mark_helper.reverse_array
-sort_stable = mark_helper.sort_stable
-shallowcopy = mark_helper.shallowcopy
-deepcopy = mark_helper.deepcopy
+local shallowcopy = mark_helper.shallowcopy
 
 local DEFECT_CODES = require 'report_defect_codes'
 local sumPOV = require "sumPOV"
 local read_csv = require 'read_csv'
 
--- =====================================================================  
+local TYPES = require "sum_types"
+local TYPE_GROUPS = require "sum_list_pane_guids"
+
+
+-- =====================================================================
 
 -- получить параметр скрепления по имени (разбор xml)
 local function GetFastenerParamName(mark, name)
-	
+
 	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
 	assert(xmlDom)
 	xmlDom:loadXML(mark.ext.RAWXMLDATA)
-	
+
 	local req = string.format('\z
 		/ACTION_RESULTS\z
 		/PARAM[@name="ACTION_RESULTS" and @value="Fastener"]\z
@@ -51,8 +49,8 @@ local function GetFastenerParamName1(mark, name)
 end
 
 local function split(str, sep)
-   local sep, fields = sep or ":", {}
-   local pattern = string.format("([^%s]+)", sep)
+   local fields = {}
+   local pattern = string.format("([^%s]+)", sep or ":")
    str:gsub(pattern, function(c) fields[#fields+1] = c end)
    return fields
 end
@@ -89,8 +87,8 @@ function parse_speed_limit(val)
 		return nil
 	end
 	local limits = {}
-	string.gsub(val, '(%d+)', function(i) 
-		table.insert(limits, tonumber(i)) 
+	string.gsub(val, '(%d+)', function(i)
+		table.insert(limits, tonumber(i))
 	end)
 	if #limits > 0 then
 		return math.min(table.unpack(limits))
@@ -382,7 +380,7 @@ column_recogn_bolt =
 
 column_gap_type =
 {
-	name = 'тип',
+	name = 'Стык',
 	width = 60,
 	align = 'c',
 	text = function(row)
@@ -395,6 +393,7 @@ column_gap_type =
 		elseif gap_type == 2 then
 			return "сварной"
 		end
+		return ""
 	end,
 	sorter = function(mark)
 		local gap_type = mark_helper.GetGapType(mark)
@@ -1129,5 +1128,81 @@ column_speed_limit_list =
 	sorter = function(mark)
 		local limit = mark.user.speed_limits and math.min(table.unpack(mark.user.speed_limits)) or 1000000
 		return limit
+	end,
+}
+
+column_jat_defect = {
+
+	name = 'Неисправность',
+	width = 85,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		return column_jat_defect._impl_text(mark)
+	end,
+	sorter = function(mark)
+		return column_jat_defect._impl_text(mark)
+	end,
+	_impl_text = function (mark)
+		local g = mark.prop.Guid
+		if table_find(TYPE_GROUPS.JAT, g) then
+			return mark.prop.Description
+		end
+	
+		local ecasui_code = mark_helper.GetWeldedBondDefectCode(mark)
+		local desc = ecasui_code and DEFECT_CODES.code2desc(ecasui_code)
+		return desc or ""
+	end
+}
+
+column_jat_object = {
+	name = 'Тип',
+	width = 85,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		return column_jat_object._impl_text(mark)
+	end,
+	sorter = function(mark)
+		return column_jat_object._impl_text(mark)
+	end,
+	_impl_text = function (mark)
+		local g = mark.prop.Guid
+		if g == TYPES.JAT_RAIL_CONN_CHOKE  then return "Дроссельный" end
+		if g == TYPES.JAT_RAIL_CONN_WELDED then return "Приварной" end
+		if g == TYPES.JAT_RAIL_CONN_PLUG   then return "Штепсельный" end
+
+		if g == TYPES.JAT_SCB_CRS_ABCS     then return "САУТ" end
+		if g == TYPES.JAT_SCB_CRS_RSCMD    then return "УКСПС" end
+
+		-- local ecasui_code = mark_helper.GetWeldedBondDefectCode(mark)
+		-- if ecasui_code == DEFECT_CODES.JOINT_WELDED_BOND_FAULT[1] then
+		-- 	return "Приварной"
+		-- end
+		return ""
+	end
+}
+
+column_jat_type = {
+
+	name = 'Прим.:путь, стр, СЦБ',
+	width = 85,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		return mark.ext.RAILWAY_TYPE or ''
+	end,
+	sorter = function(mark)
+		return mark.ext.RAILWAY_TYPE
+	end,
+}
+
+column_jat_value = {
+	name = 'Знач.',
+	width = 45,
+	align = 'r',
+	text = function(row)
+		local mark = work_marks_list[row]
+		return mark.ext.JAT_VALUE or ""
 	end,
 }

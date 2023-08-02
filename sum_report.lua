@@ -1073,6 +1073,9 @@ if not HUN then
 	local report_ballast = require 'sum_report_ballast'
 	report_ballast.AppendReports(Report_Functions)
 
+	local report_jat = require 'sum_report_jat'
+	report_jat.AppendReports(Report_Functions)
+
 	local report_summory = require 'sum_report_summary'
 	report_summory.AppendReports(Report_Functions)
 
@@ -1113,7 +1116,7 @@ function GetAvailableReports() -- exported
 end
 
 function MakeReport(name) -- exported
-	for _, n in ipairs(Report_Functions) do 
+	for _, n in ipairs(Report_Functions) do
 		if n.name == name then
 			if not n.fn then
 				errorf('report function (%s) not defined', name)
@@ -1176,7 +1179,7 @@ if not ATAPE then
 	--test_report.Driver('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2020_11_30_01.xml')
 	
 	--MakeReport('Дефекты УЗК в екасуи')
-	MakeReport('Ведомость отступлений в содержании рельсовых стыков|ЕКАСУИ Ширина стыкового зазора, мм')
+	MakeReport('Ведомость отступлений в содержании устройств ЖАТ|ЕКАСУИ все')
 	--local guids = GetFilterGuids('Ведомость отступлений в содержании рельсов')
 	--print(guids)
 

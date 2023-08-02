@@ -1,5 +1,13 @@
 local TYPES = require 'sum_types'
 
+local function array_concat(...)
+	local res = {}
+	for _, t in ipairs{...} do
+		for _, v in ipairs(t) do table.insert(res, v) end
+	end
+	return res
+end
+
 NPU_guids = {
 	TYPES.PRE_NPU, -- НПУ auto
 	TYPES.NPU, -- НПУ
@@ -42,6 +50,20 @@ group_defects =
 	TYPES.GROUP_FSTR_USER,
 }
 
+local JAT_CONN = {
+	TYPES.JAT_RAIL_CONN_CHOKE,
+	TYPES.JAT_RAIL_CONN_WELDED,
+	TYPES.JAT_RAIL_CONN_PLUG,
+}
+
+local JAT_SCB = {
+	TYPES.JAT_SCB_CRS_ABCS,
+	TYPES.JAT_SCB_CRS_RSCMD,
+}
+
+local JAT = array_concat(JAT_CONN, JAT_SCB)
+
+
 return
 {
 	NPU_guids = NPU_guids,
@@ -49,4 +71,7 @@ return
 	recognition_surface_defects = recognition_surface_defects,
 	recognition_uic_surface_defects = recognition_uic_surface_defects,
 	group_defects = group_defects,
+	JAT_CONN = JAT_CONN,
+	JAT_SCB = JAT_SCB,
+	JAT = JAT,
 }

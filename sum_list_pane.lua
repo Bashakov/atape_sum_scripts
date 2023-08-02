@@ -4,15 +4,9 @@ end
 
 mark_helper = require 'sum_mark_helper'
 
-local SelectNodes = mark_helper.SelectNodes
-local sort_marks = mark_helper.sort_marks
 local reverse_array = mark_helper.reverse_array
 local sort_stable = mark_helper.sort_stable
-local shallowcopy = mark_helper.shallowcopy
-local deepcopy = mark_helper.deepcopy
-local table_find = mark_helper.table_find
 local sprintf = mark_helper.sprintf
-local printf = mark_helper.printf
 
 local sumPOV = require "sumPOV"
 
@@ -21,10 +15,10 @@ if iup then
 end
 
 
-MK_SHIFT     =  0x0004
-MK_CONTROL   =	0x0008
+local MK_SHIFT     =  0x0004
+--local MK_CONTROL   =	0x0008
 
--- =====================================================================  
+-- =====================================================================
 
 -- для запуска и из атейпа и из отладчика
 local function my_dofile(file_name)
@@ -33,7 +27,7 @@ local function my_dofile(file_name)
 		file_name,
 		'Scripts\\' .. file_name,
 	}
-	
+
 	for i = 1,2 do
 		for _, path in ipairs(paths) do
 		local ok, data = pcall(function() return dofile(path)	end)
@@ -68,12 +62,12 @@ end
 local function load_filters(filters, ...)
 	for _, file_name in ipairs{...} do
 		local file_filters = my_dofile(file_name)
-		table.append(filters, file_filters)	
+		table.append(filters, file_filters)
 	end
 	return filters
 end
 
--- =====================================================================  
+-- =====================================================================
 
 
 my_dofile "sum_list_pane_guids.lua"
@@ -81,17 +75,17 @@ my_dofile "sum_list_pane_columns.lua"
 
 local Filters = {}
 
-if not HUN then 
-	Filters = load_filters(Filters, 
-		"sum_list_pane_filters_video.lua", 
-		"sum_list_pane_filters_magn.lua", 
+if not HUN then
+	Filters = load_filters(Filters,
+		"sum_list_pane_filters_video.lua",
+		"sum_list_pane_filters_magn.lua",
 		"sum_list_pane_filters_npu.lua",
 		"sum_list_pane_filters_visible.lua",
 		"sum_list_pane_filters_recog_user.lua",
 		"sum_list_pane_filters_ultrasound.lua"
 		)
 else
-	Filters = load_filters(Filters, 
+	Filters = load_filters(Filters,
 		"sum_list_pane_filters_video_uic.lua"
 		)
 end
@@ -122,10 +116,10 @@ local function set_selected_row(row)
 	local prev_sel = selected_row
 	selected_row = row
 	if selected_row > 0 then
-		MarkTable:Invalidate(selected_row)	
+		MarkTable:Invalidate(selected_row)
 	end
 	if prev_sel > 0 then
-		MarkTable:Invalidate(prev_sel)	
+		MarkTable:Invalidate(prev_sel)
 	end
 end
 
@@ -133,7 +127,7 @@ end
 -- проходит по всем фильтрам, строит список групп
 local function fetch_groups()
 	local lst = {}
-	
+
 	for _, filter in ipairs(Filters) do
 		local g = filter.group
 		local f = filter.name
@@ -145,7 +139,7 @@ local function fetch_groups()
 			end
 		end
 	end
-	
+
 	local groups = {}
 	for _, v in ipairs(lst) do
 		local g, f = table.unpack(v)
@@ -154,7 +148,7 @@ local function fetch_groups()
 		end
 		groups[g][f] = true
 	end
-	
+
 	return groups
 end
 
@@ -170,21 +164,9 @@ local function delete_mark(row)
 	end
 end
 
--- сделать видеограмму
-local function videogram_mark(row, col)
-	local mark = work_marks_list[row]
-	if mark and mark.prop and mark.ext then -- проверим что объект является именно специальной пользовательской отметкой
-		my_dofile "sum_videogram.lua"
-		local defect_codes = work_filter and work_filter.videogram_defect_codes
-		local videogram_direct_set_defect = work_filter and work_filter.videogram_direct_set_defect
-		MakeVideogram('mark', {mark=mark, defect_codes=defect_codes, direct_set_defect=videogram_direct_set_defect})
-	end
-end
-
-
 -- дефолтный обработчик ПКМ
 local function default_mark_contextmenu(row, col)
-	package.loaded.sum_context_menu = nil -- для перезагрузки 
+	package.loaded.sum_context_menu = nil -- для перезагрузки
 	local sum_context_menu = require 'sum_context_menu'
 	local RETURN_STATUS = sum_context_menu.RETURN_STATUS
 	local GetMenuItems = sum_context_menu.GetMenuItems
@@ -197,7 +179,7 @@ local function default_mark_contextmenu(row, col)
 			Driver:RedrawView()
 			MarkTable:Invalidate(row)
 		end
-		if status == RETURN_STATUS.REMOVE_MARK then 
+		if status == RETURN_STATUS.REMOVE_MARK then
 			work_mark_ids[mark.prop.ID] = nil
 			table.remove(work_marks_list, row)
 			MarkTable:SetItemCount(#work_marks_list)
@@ -205,7 +187,7 @@ local function default_mark_contextmenu(row, col)
 		end
 		if status == RETURN_STATUS.UPDATE_ALL then -- перезагрузка списка
 			Driver:RedrawView()
-			if work_filter then	
+			if work_filter then
 				local cur_filter_name = work_filter.name
 				InitMark("")
 				MarkTable:SetItemCount(0)
@@ -221,8 +203,8 @@ end
 -- прыгнуть на отметку в указанной строке
 local function jump_mark(row)
 	local mark = work_marks_list[row]	-- если row за пределами массива, то вернется nil
-	if mark and mark.prop and mark.prop.ID then 
-		Driver:JumpMark(mark.prop.ID)	
+	if mark and mark.prop and mark.prop.ID then
+		Driver:JumpMark(mark.prop.ID)
 	end
 end
 
@@ -234,7 +216,7 @@ local function clear_lists()
 	work_sort_param = {0, 0}
 end
 
--- ======================================================================= -- 
+-- ======================================================================= --
 
 -- функция вызывается из программы, для получения списка имен доступных фильтров
 function GetGroupNames()
@@ -249,15 +231,15 @@ end
 function GetFilterNames(group_name)
 	local names = {}						-- объявляем массив для названий
 	local group = nil
-	
+
 	if group_name and group_name ~= '' then
 		local groups = fetch_groups()
 		group = groups[group_name] or {}
 	end
-		
+
 	for _, filter in ipairs(Filters) do		-- проходим по всем фильтрам
 		if not group or group[filter.name] then
-			table.insert(names, filter.name)	-- и их названия добавляем в массив 
+			table.insert(names, filter.name)	-- и их названия добавляем в массив
 		end
 	end
 
@@ -270,7 +252,7 @@ function GetColumnDescription(name)
 	return filter and filter.columns or {}
 end
 
--- функция вызывается из программы, при выборе пользователем одного из фильтров, 
+-- функция вызывается из программы, при выборе пользователем одного из фильтров,
 -- тут следует сформировать список отметок, и вернуть его длинну
 function InitMark(name, fnContinueCalc)
 	fnContinueCalc = fnContinueCalc or function (p) return true end
@@ -359,7 +341,7 @@ function SortMarks(col, inc)
 		local column = work_filter.columns[col]
 		local fn = column.sorter
 		if fn then
-			if work_sort_param[0] ~= col then 
+			if work_sort_param[0] ~= col then
 				work_marks_list = sort_stable(work_marks_list, fn, inc)
 			elseif work_sort_param[1] ~= inc then
 				reverse_array(work_marks_list)
@@ -447,7 +429,7 @@ function OnKey(key, down, flags)
 
 	if down and selected_row > 0 then
 		-- спрятать отметку
-		if key == 'H' then	
+		if key == 'H' then
 			local mark = work_marks_list[selected_row]
 			work_mark_ids[mark.prop.ID] = nil
 			table.remove(work_marks_list, selected_row)
@@ -502,7 +484,7 @@ function GetMarkID(row)
 	-- print (row, col, #work_marks_list, #work_columns)
 	if row > 0 and row <= #work_marks_list then
 		local mark = work_marks_list[row]
-		if mark and mark.prop then 
+		if mark and mark.prop then
 			return mark.prop.ID
 		end
 	end
@@ -521,7 +503,7 @@ function GetFilterGuids(filter_name)
 	if name then
 		filter = get_filter_by_name(name)	-- ищем фильтр по имени
 	end
-	
+
 	if filter then
 		return filter.GUIDS or {}
 	end
@@ -532,7 +514,7 @@ end
 -- ============================================================= --
 
 if not ATAPE then
-	-- for _, g in ipairs(GetGroupNames()) do 
+	-- for _, g in ipairs(GetGroupNames()) do
 	-- 	print(g .. ':')
 	-- 	for _, n in ipairs(GetFilterNames(g)) do
 	-- 		print('\t' .. n)
@@ -540,14 +522,15 @@ if not ATAPE then
 	-- end
 
 	local test_report  = require('local_data_driver')
-	--local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+	local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
 
 	-- local psp_path = 'D:/Downloads/932/31883/[507]_2022_04_14_04.xml'
-	local psp_path = "D:/Downloads/1006/123/[500]_2020_03_05_01(1 км 754 м 679 мм - 5 км 765 м 763 мм).xml"
+	--local psp_path = "D:/Downloads/1006/123/[500]_2020_03_05_01(1 км 754 м 679 мм - 5 км 765 м 763 мм).xml"
 
-	test_report.Driver(psp_path, nul) -- ,  , {0, 1000000}
+	test_report.Driver(psp_path, nil, {0, 200000}) -- ,  , 
 
-	local name = 'УЗ дефекты Шейка\\подошва Все'
+	-- local name = 'III Cоединители и перемычки'
+	local name = 'III Устройства ЖАТ'
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}
 	local col_names = {}

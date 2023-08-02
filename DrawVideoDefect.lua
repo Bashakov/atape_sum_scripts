@@ -1,8 +1,8 @@
+-- require('mobdebug').start()
+
 package.loaded.sumPOV = nil -- для перезагрузки в дебаге
 
 local sumPOV = require "sumPOV"
-
-local function errorf(s,...)  error(string.format(s, ...)) end
 
 -- ================= математика =================
 
@@ -28,15 +28,6 @@ end
 local function starts_with(input, prefix)
 	return string.sub(input, 1, #prefix) == prefix
 end
-
-local function save_and_show(str)
-	local file_name = 'c:\\1.xml'
-	local dst_file = assert(io.open(file_name, 'w+'))
-	dst_file:write(str)
-	dst_file:close()
-	os.execute("start " .. file_name)
-end
-
 
 -- ================= XML =================
 
@@ -323,18 +314,34 @@ function make_recog_mark(name, objects, driver, defect)
 end
 
 
+local function _create_simple_mark(driver, object, guid)
+	local rmask, chmask = get_rail_channel_mask({object})
+	local points_on_frame, _ = rect2corners(object, "ltrtrblb") -- left, top, right, top, right, bottom, left, bottom
+
+	local mark = driver:NewMark()
+	mark.prop.SysCoord = get_common_system_coord({object})
+	mark.prop.Len = 1
+	mark.prop.RailMask = rmask + 8   -- video_mask_bit
+	mark.prop.ChannelMask = chmask
+	mark.prop.Guid = guid
+	mark.prop.MarkFlags = MarkFlags.eIgnoreShift
+
+	mark.ext.VIDEOIDENTCHANNEL = object.area.channel
+	mark.ext.VIDEOFRAMECOORD = object.center_frame
+	mark.ext.UNSPCOBJPOINTS = string.format("%d,%d %d,%d %d,%d %d,%d", table.unpack(points_on_frame))
+
+	return mark
+end
+
 --[[ постановка отметки по типу "Ненормативный объект"]]
 function make_simple_defect(name, objects, driver, defect)
-	local reability = 101
 	local marks = {}
 	for i, object in ipairs(objects) do
-		local rmask, chmask = get_rail_channel_mask({object})
-		local points_on_frame, _ = rect2corners(object, "ltrtrblb") -- left, top, right, top, right, bottom, left, bottom
-
-		local mark = driver:NewMark()
+		local mark = _create_simple_mark(driver, object, defect.guid)
 
 		if defect.add_width_from_user_rect then
-			local w = tonumber(points_on_frame[3] - points_on_frame[1])
+			local points_on_frame, _ = rect2corners(object, "rl") -- right, left
+			local w = tonumber(points_on_frame[1] - points_on_frame[2])
 			--object.options.joint_width = w
 			mark.ext.VIDEOIDENTGWT = w
 			mark.ext.VIDEOIDENTGWS = w
@@ -344,24 +351,22 @@ function make_simple_defect(name, objects, driver, defect)
 		for n, v in sorted(object.options) do table.insert(tbl_options, string.format("%s:%s", n, v)) end
 		local str_options = table.concat(tbl_options, "\n")
 
-		mark.prop.SysCoord = get_common_system_coord({object})
-		mark.prop.Len = 1
-		mark.prop.RailMask = rmask + 8   -- video_mask_bit
-		mark.prop.ChannelMask = chmask
-		mark.prop.Guid = defect.guid
-		mark.prop.MarkFlags = MarkFlags.eIgnoreShift
 		mark.prop.Description = defect.name .. '\nЕКАСУИ = ' .. defect.ekasui_code .. (#str_options == 0 and "" or "\n") .. str_options
 
 		mark.ext.VIDEOIDENTRLBLT = 101
-		mark.ext.VIDEOIDENTCHANNEL = object.area.channel
-		mark.ext.VIDEOFRAMECOORD = object.center_frame
 		mark.ext.CODE_EKASUI = defect.ekasui_code
 		if str_options and # str_options ~= 0 then
 			mark.ext.DEFECT_OPTIONS = str_options
 		end
-		mark.ext.UNSPCOBJPOINTS = string.format("%d,%d %d,%d %d,%d %d,%d", table.unpack(points_on_frame))
 		if defect.speed_limit then
 			mark.ext.USER_SPEED_LIMIT = tostring(defect.speed_limit)
+		end
+
+		for _, attr_name in ipairs{"RAILWAY_HOUSE", "RAILWAY_TYPE"} do
+			local val = defect[attr_name]
+			if val then
+				mark.ext[attr_name] = tostring(val)
+			end
 		end
 
 		marks[i] = mark
@@ -370,6 +375,33 @@ function make_simple_defect(name, objects, driver, defect)
 	sumPOV.UpdateMarks(marks, false)
 
 	--error('make_simple_defect error') -- testing
+	return marks
+end
+
+
+--[[ постановка отметки ЖАТ ]]
+function make_jat_defect(name, objects, driver, defect)
+	local marks = {}
+	for i, object in ipairs(objects) do
+		local mark = _create_simple_mark(driver, object, defect.guid)
+
+		for ti, tool in ipairs(defect.tools) do
+			if tool.sign == object.sign then
+				mark.ext.CODE_EKASUI = defect.ekasui_code_list[ti]
+				for n, val in pairs(tool.static_options) do
+					mark.ext[n] = val
+				end
+
+				for n, v in sorted(object.options) do 
+					mark.ext[n] = v
+				end
+			end
+		end
+		mark.prop.Description = defect.desc
+		marks[i] = mark
+	end
+
+	sumPOV.UpdateMarks(marks, false)
 	return marks
 end
 
@@ -414,6 +446,13 @@ function make_group_defect(name, objects, driver, defect)
 
 	sumPOV.UpdateMarks({mark}, false)
 
+	for _, attr_name in ipairs{"RAILWAY_HOUSE", "RAILWAY_TYPE"} do
+		local val = defect[attr_name]
+		if val then
+			mark.ext[attr_name] = tostring(val)
+		end
+	end
+
 	--error('make_group_defect error') -- testing
 	return {mark}
 end
@@ -455,7 +494,7 @@ end
 --[[ Функция вызывается программой, для определения списка доступных инструментов для рисования
 
 Функция должна вернуть массив с описанием, каждый элемент описания это таблица с полями:
-- draw_sign идентификатор (передается в функцию генерации XML)
+- sign идентификатор (передается в функцию генерации XML)
 - draw_fig тип (rect, ellipse, line)
 - name: имя инструмента, отображается в панели инструментов
 - tooltip: подсказка
@@ -475,7 +514,7 @@ end
 
 - сигнатура дефекта (третий элемент возвращаемый GetDefects)
 - список объектов, нарисованных пользователем. Каждый объект содержит поля:
-    - draw_sign: описание фигуры.
+    - sign: описание фигуры.
     - points: массив длинной 2N, описывающий N точек (координаты x,y),
       выбранных пользователем (в экранных координатах),
       например прямоугольник описывается 8 числами (4 угла).

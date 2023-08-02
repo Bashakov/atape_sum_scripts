@@ -1,6 +1,6 @@
 require "luacom"
 
-
+local TYPES = require "sum_types"
 
 local sprintf = function(s,...)	return s:format(...) end
 local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
@@ -665,7 +665,8 @@ local function ProcessMarkRawXml(mark)
 end
 
 local function ProcessUnspecifiedObject(mark)
-	local color = {r=67, g=149, b=209}
+	local color_line = {r=67, g=149, b=209, a=250}
+	local color_fill = {r=67, g=149, b=209, a=50}
 
 	local cur_frame_coord = Frame.coord.raw
 	local prop, ext = mark.prop, mark.ext
@@ -674,7 +675,7 @@ local function ProcessUnspecifiedObject(mark)
 		local points = parse_polygon(ext.UNSPCOBJPOINTS, cur_frame_coord, ext.VIDEOFRAMECOORD)
 
 		if #points == 8 then
-			drawPolygon(points, 1, color, color)
+			drawPolygon(points, 1, color_line, color_fill)
 
 			--drawer.fig:rectangle(points[1], points[2], points[5], points[6])
 			local text = prop.Description
@@ -765,6 +766,12 @@ local recorn_guids =
 	["{3601038C-A561-46BB-8B0F-F896C2130004}"] = {ProcessUnspecifiedObject}, -- Дефекты рельсов(Пользователь)
 	["{3601038C-A561-46BB-8B0F-F896C2130005}"] = {ProcessUnspecifiedObject}, -- Балласт(Пользователь)
 	["{3601038C-A561-46BB-8B0F-F896C2130006}"] = {ProcessUnspecifiedObject}, -- Бесстыковой путь(Пользователь)
+
+	[TYPES.JAT_RAIL_CONN_CHOKE] 			   = {ProcessUnspecifiedObject},
+	[TYPES.JAT_RAIL_CONN_PLUG] 				   = {ProcessUnspecifiedObject},
+	[TYPES.JAT_RAIL_CONN_WELDED] 			   = {ProcessUnspecifiedObject},
+	[TYPES.JAT_SCB_CRS_ABCS] 			       = {ProcessUnspecifiedObject},
+	[TYPES.JAT_SCB_CRS_RSCMD]			       = {ProcessUnspecifiedObject},
 
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = {ProcessMarkRawXml}, -- Стык(Видео)
 	["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = {ProcessMarkRawXml}, -- Стык(Видео)
