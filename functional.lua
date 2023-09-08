@@ -1,4 +1,5 @@
 
+-- конвератция генератора в список
 local function list(gen)
     local res = {}
     while true do
@@ -9,6 +10,7 @@ local function list(gen)
     return res
 end
 
+-- генератор применяет функцию к каэдому элементу массива
 local function imap(fn, array)
     local i = 0
     return function ()
@@ -20,6 +22,7 @@ local function imap(fn, array)
     end
 end
 
+-- применяет функцию к каэдому элементу массива и возвращает новый массив
 local function map(fn, array)
     return list(imap(fn, array))
 end
@@ -37,32 +40,48 @@ local function ifilter(fn, array)
     end
 end
 
+-- возвращает элементы удовлетворяющие фильтру
 local function filter(fn, array)
     return list(ifilter(fn, array))
 end
 
-local function izip(...)
+local function zip_impl(...)
     local arrays = {...}
     local i = 0
     return function ()
         i = i + 1
         local row = {}
-        for _, array in arrays do
+        for j, array in ipairs(arrays) do
             local obj = array[i]
             if type(obj) == "nil" then
                 return
             end
-            table.insert(row)
+            row[j] = obj
         end
-        if not row then
-            return
-        end
-        return table.unpack(row)
+        return row
     end
 end
 
+--[[
+объединение элементов списков, для совместного прохода
+    for a, b in izip({1, 2}, {'a', 'b'}) do
+        print(a, b)
+    end
+]]
+local function izip(...)
+    local gen = zip_impl(...)
+    return function ()
+        local r = gen()
+        if r then
+            return table.unpack(r)
+        end
+    end
+end
+
+-- объединение элементов списков в новый список 
+-- zip({1,2,3}, {'a', 'b', 'c'}) -> {{1, 'a'}, {2, 'b'}, {3, 'c'}}
 local function zip(...)
-    return list(izip(...))
+    return list(zip_impl(...))
 end
 
 -- ============================================================= --
