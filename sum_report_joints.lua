@@ -74,7 +74,7 @@ local function get_mark_gap_width_defect_code(mark)
 	local function width2speed(gap_width)
 		if gap_width <= 26 then return '100' end
 		if gap_width <= 30 then	return '60'	 end
-		if gap_width <= 35 then	return '25'	 end
+		if gap_width <= 35 then	return '40'	 end
 		return 'Движение закрывается'
 	end
 
