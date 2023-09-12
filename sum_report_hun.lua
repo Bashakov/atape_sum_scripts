@@ -261,7 +261,7 @@ local function report_Simple()
 			insert_frame(excel, data_range.Cells(line, 6+cn), mark, channel)
 		end
 		
-		if line % 3 == 0 and not dlg:step(1.0 * line / #auto_marks, stuff.sprintf('Process %d / %d mark, found %d', line, #auto_marks, found_manuals)) then 
+		if line % 3 == 0 and not dlg:step(1.0 * line / #auto_marks, string.format('Process %d / %d mark, found %d', line, #auto_marks, found_manuals)) then 
 			break 
 		end
 	end

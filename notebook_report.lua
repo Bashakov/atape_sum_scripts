@@ -13,9 +13,9 @@ excel_helper = require 'excel_helper'
 mark_helper = require 'sum_mark_helper'
 require 'ExitScope'
 
-local stuff = require 'stuff'
-local sprintf = stuff.sprintf
-local printf = stuff.printf
+local function errorf(s, ...)     
+	error(string.format(s, ...))
+end
 
 local function make_filter_progress_fn(dlg)
 	return function(all, checked, accepted)
@@ -70,7 +70,7 @@ end
 
 local function format_path_coord(record)
 	local km, m, mm = Driver:GetPathCoord(record.MARK_COORD)
-	local res = sprintf('%d км %.1f м', km, m + mm/1000)
+	local res = string.format('%d км %.1f м', km, m + mm/1000)
 	return res
 end
 
@@ -198,7 +198,7 @@ local function vedomost_with_US_images_excel(records)
 			InsertVideoFrame(excel, data_range.Cells(line, 19), record)
 		end
 
-		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then
+		if not dlg:step(line / #records, string.format(' Process %d / %d mark', line, #records)) then
 			break
 		end
 	end
@@ -385,7 +385,7 @@ table.DataDesc {
 	local filtred_records = {}
 	for _, record in ipairs(records) do
 		if is_record_included(record) then
-			local img_path = sprintf('%sultrasound_%s.png', folter, record.SYST)
+			local img_path = string.format('%sultrasound_%s.png', folter, record.SYST)
 			record.img_path = Driver:GetUltrasoundImage{note_rec=record, file_path=img_path, width=800, height=600}
 			table.insert(filtred_records, record)
 		end
@@ -398,26 +398,6 @@ table.DataDesc {
 	dst_file:close()
 
 	os.execute("start " .. file_name)
-end
-
-local function report_make_dump(records)
-	local filedlg = iup.filedlg{
-		dialogtype = "dir",
-		title = "Select dir for dump mark",
-		directory = "c:\\out",
-	}
-	filedlg:popup (iup.ANYWHERE, iup.ANYWHERE)
-	if filedlg.status == -1 then
-		return
-	end
-
-	local out_dir = filedlg.value .. '\\' .. Passport.NAME
-	os.execute('mkdir ' .. out_dir)
-
-	local prev_output = io.output()
-	io.output(out_dir .. "\\dump.lua")
-	stuff.save("data", {records=records, Passport=Passport})
-	io.output(prev_output)
 end
 
 
@@ -489,7 +469,7 @@ local function excel_defectogram(records, params)
 			dst_tbl.Cells(12, 1).RowHeight = 1
 		end
 
-		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then
+		if not dlg:step(line / #records, string.format(' Process %d / %d mark', line, #records)) then
 			break
 		end
 	end
@@ -530,7 +510,7 @@ local function report_EKSUI(records)
 
 	local mark_processed = 0
 	local function get_encoded_frame(record)
-		if not dlg:step(mark_processed / #records, stuff.sprintf(' Process %d / %d mark', mark_processed, #records)) then
+		if not dlg:step(mark_processed / #records, string.format(' Process %d / %d mark', mark_processed, #records)) then
 			error("Прервано пользователем")
 		end
 		mark_processed = mark_processed + 1
@@ -642,7 +622,7 @@ local function report_videogram(records)
 			end
 		end
 
-		if not dlg:step(line / #records, stuff.sprintf(' Process %d / %d mark', line, #records)) then
+		if not dlg:step(line / #records, string.format(' Process %d / %d mark', line, #records)) then
 			break
 		end
 
@@ -683,14 +663,14 @@ function UserSelectRange(name)
 		end
 	end
 
-	stuff.errorf('can not find report [%s] [%s]', name, REPORTS[2].name)
+	errorf('can not find report [%s] [%s]', name, REPORTS[2].name)
 end
 
 function MakeReport(name, records) -- exported
 	for _, n in ipairs(REPORTS) do
 		if n.name == name then
 			if not n.fn then
-				stuff.errorf('report function (%s) not defined', name)
+				errorf('report function (%s) not defined', name)
 			end
 			name = nil
 			n.fn(records, n)
@@ -698,7 +678,7 @@ function MakeReport(name, records) -- exported
 	end
 
 	if name then -- if reporn not found
-		stuff.errorf('can not find report [%s]', name)
+		errorf('can not find report [%s]', name)
 	end
 end
 
