@@ -615,6 +615,23 @@ local filters =
 			return marks	-- возвращаем список для отображения
 		end,
 	},
+	{
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ', 'Групповые дефекты'},
+		name = 'Групповые дефекты',
+		columns = {
+			column_num,
+			column_path_coord_begin_end,
+			column_length,
+			column_rail,
+			column_group_defect_count,
+			column_ekasui_code,
+			column_ekasui_code_speed_limit_tbl,
+			column_mark_type_name,
+			column_pov_common,
+		},
+		GUIDS = group_defects,
+		hide = true,
+	},
 }
 
 

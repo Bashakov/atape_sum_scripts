@@ -110,11 +110,14 @@ if not ATAPE then
 
 	local test_report  = require('local_data_driver')
 	-- test_report.Driver('D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2022_02_04_01.xml', nil) --
-	test_report.Driver("D:\\ATapeXP\\Main\\494\\video\\[494]_2017_06_08_12.xml")
+	-- test_report.Driver("D:\\ATapeXP\\Main\\494\\video\\[494]_2017_06_08_12.xml")
+	local d = test_report.Driver("C:\\Avikon\\CheckAvikonReports\\data\\data_npu.xml")
 
-	report_NPU(cur_reports[1].params)
+	local report = cur_reports[2]
+
+	d:SetListGuids(report.guids)
+	report_NPU(report.params)
 	--ekasui_rails()
-	
 end
 
 return {

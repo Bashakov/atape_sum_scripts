@@ -304,19 +304,17 @@ local SumMarks = OOP.class
 		assert(string.sub(file_path, -4) == '.sum')
 		self:_load_types(file_path)
 		self._sys_range = sys_range or {}
+		self._list_guids = {}
 	end,
 
 	GetMarks = function(self, filter)
 		local tids
-		if filter and filter.GUIDS then
-			tids = {}
-			for _, g in ipairs(filter.GUIDS) do
-				local tid = self._guid2tid[g]
-				if tid then
-					table.insert(tids, tid)
-				end
+		if filter then
+			if filter.ListType == 'list' then
+				tids = self:_get_tids(self._list_guids)
+			elseif filter.GUIDS then
+				tids = self:_get_tids(filter.GUIDS)
 			end
-			tids = table.concat(tids, ',')
 		end
 		local FromSys = filter and filter.FromSys or self._sys_range[1]
 		local ToSys = filter and filter.ToSys or self._sys_range[2]
@@ -330,6 +328,25 @@ local SumMarks = OOP.class
 			res[#res+1] = mark
 		end
 		return res
+	end,
+
+	SetListGuids = function (self, guids)
+		self._list_guids = guids or {}
+	end,
+
+	_get_tids = function (self, guids)
+		local tids
+		if guids then
+			tids = {}
+			for _, g in ipairs(guids) do
+				local tid = self._guid2tid[g]
+				if tid then
+					table.insert(tids, tid)
+				end
+			end
+			tids = table.concat(tids, ',')
+		end
+		return tids
 	end,
 
 	_read_marks = function (self, db, marks, tids, mark_id, sys_range)
@@ -599,7 +616,12 @@ local Driver = OOP.class
 	MarkNtbIDsAsReported = function (self, ntb_ids)
 		local s = table.concat(functional.map(function (id) return tostring(id) end, ntb_ids), ",")
 		print("MarkNtbIDsAsReported: ", s)
-	end
+	end,
+
+	-- установить список гуидов для выдачи GetMarks с типом list
+	SetListGuids = function (self, guids)
+		self._sum:SetListGuids(guids)
+	end,
 }
 
 Driver.GUID = GUID

@@ -239,7 +239,9 @@ function GetFilterNames(group_name)
 
 	for _, filter in ipairs(Filters) do		-- проходим по всем фильтрам
 		if not group or group[filter.name] then
-			table.insert(names, filter.name)	-- и их названия добавляем в массив
+			if not filter.hide then					-- проверим что фильтр не скрытый
+				table.insert(names, filter.name)	-- и их названия добавляем в массив
+			end
 		end
 	end
 

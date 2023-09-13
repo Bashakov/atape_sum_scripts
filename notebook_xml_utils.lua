@@ -1,5 +1,6 @@
 ﻿require "luacom"
 local OOP = require "OOP"
+local utils = require 'utils'
 
 local NoteRec = OOP.class
 {
@@ -123,6 +124,9 @@ end
 
 local function load_file(path_psp)
 	local path_ntb = string.gsub(path_psp, '%.xml$', '.ntb')
+	if not utils.is_file_exists(path_ntb) then
+		return {}
+	end
 	local xmlDom = make_dom()
 	assert(xmlDom:load(path_ntb), "can not open xml file: " .. path_ntb)
     return xml2ntb(xmlDom)

@@ -1015,6 +1015,9 @@ local function report_show_passport()
 	os.execute("mkdir " .. TEST_EKASUI_OUT_PREFIX)
 	local file = assert(io.open(TEST_EKASUI_OUT_PREFIX .. "\\psp.csv", 'w+'))
 	for name, value in mark_helper.sorted(Passport) do
+		if name == 'CHANNELS' then
+			value = 'skip in report source'
+		end
 		file:write(string.format("%s;%s;\n", name, value))
 	end
 	for name, value in mark_helper.sorted(EKASUI_PARAMS) do

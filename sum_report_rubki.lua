@@ -855,14 +855,14 @@ local cur_reports =
 -- тестирование
 if not ATAPE then
 
-	local test_report = require('test_report')
+	local test_report  = require('local_data_driver')
+	local d = test_report.Driver("C:\\Avikon\\CheckAvikonReports\\data\\data_27_long.xml")
+
 	--local data_path = 'D:/ATapeXP/Main/494/video_recog/2019_05_17/Avikon-03M/30346/[494]_2019_03_15_01.xml'
 	local data_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
 	-- local data_path = 'D:\\Downloads\\722\\492 dlt xml sum\\[492]_2021_03_16_01.xml'
 	--local data_path = 'D:\\d-drive\\ATapeXP\\Main\\test\\1\\[987]_2020_11_30_01.xml'
 	-- local data_path = 'D:\\Downloads\\742\\[498]_2021_04_29_38.xml'
-
-	test_report(data_path, nil, {0, 500000})
 
 	-- отчет ЕКАСУИ
 	if  1 == 1 then
