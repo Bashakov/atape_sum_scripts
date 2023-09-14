@@ -6,14 +6,16 @@ local resty = require "resty.template"
 local OOP = require 'OOP'
 local EKASUI = require "sum_report_ekasui"
 local TYPES = require 'sum_types'
+local utils = require 'utils'
+local xml_utils = require 'xml_utils'
 
 if iup then
 	iup.SetGlobal('UTF8MODE', 1)
 end
 
-local printf  = mark_helper.printf
-local sprintf = mark_helper.sprintf
-local table_find = mark_helper.table_find
+local printf  = utils.printf
+local sprintf = utils.sprintf
+
 
 -- =============================================== --
 
@@ -548,7 +550,7 @@ local SaverEkasui = OOP.class
 		if true then
 			-- with formation
 			local f = io.open(path_dst, 'w+b')
-			f:write(mark_helper.msxml_node_to_string(self.dom))
+			f:write(xml_utils.msxml_node_to_string(self.dom))
 			f:close()
 		elseif true then
 			-- no format (one line)

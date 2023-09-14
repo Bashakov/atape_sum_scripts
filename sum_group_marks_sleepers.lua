@@ -3,6 +3,8 @@ local OOP = require 'OOP'
 local mark_helper = require 'sum_mark_helper'
 local DEFECT_CODES = require 'report_defect_codes'
 local group_utils = require 'sum_group_marks_utils'
+local utils = require 'utils'
+local algorithm = require 'algorithm'
 
 local CHECK = group_utils.CHECK
 
@@ -35,8 +37,8 @@ local SleeperMarkCache = OOP.class{
     end,
 
     get_material = function (self, group)
-        local i1 = mark_helper.lower_bound(self._sleepers, {group[1] - EPUR, 0}, self._cmp)
-        local i2 = mark_helper.lower_bound(self._sleepers, {group[#group] + EPUR, 0}, self._cmp)
+        local i1 = algorithm.lower_bound(self._sleepers, {group[1] - EPUR, 0}, self._cmp)
+        local i2 = algorithm.lower_bound(self._sleepers, {group[#group] + EPUR, 0}, self._cmp)
 
         for i = i1,i2 do
             local sleeper_mark = self._sleepers[i][2]

@@ -19,11 +19,12 @@ mark_helper = require 'sum_mark_helper'
 luaiup_helper = require 'luaiup_helper'
 excel_helper = require 'excel_helper'
 local TYPES = require 'sum_types'
+local utils = require 'utils'
+local algorithm = require 'algorithm'
 
-local table_find = mark_helper.table_find
-local sprintf = mark_helper.sprintf
-local printf = mark_helper.printf
-local errorf = mark_helper.errorf
+local table_find = algorithm.table_find
+local sprintf = utils.sprintf
+local errorf = utils.errorf
 
 get_rail_name = mark_helper.GetRailName -- non local for html template work https://bt.abisoft.spb.ru/view.php?id=935#c4802
 make_mark_uri = mark_helper.MakeMarkUri
@@ -31,8 +32,6 @@ make_mark_uri = mark_helper.MakeMarkUri
 if not ShowVideo then
 	ShowVideo = 1
 end
-
-local SelectNodes = mark_helper.SelectNodes
 
 
 local gap_rep_filter_guids = 

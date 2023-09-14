@@ -1,14 +1,16 @@
 local mark_helper = require 'sum_mark_helper'
+local utils = require 'utils'
+local algorithm = require 'algorithm'
 
 local prev_atape = ATAPE
 ATAPE = true -- disable debug code while load scripts
 	local sum_report_joints = require "sum_report_joints"
 ATAPE = prev_atape
 
-local sprintf = mark_helper.sprintf
-local table_find = mark_helper.table_find
+local sprintf = utils.sprintf
+local shallowcopy = utils.shallowcopy
+local table_find = algorithm.table_find
 
-local shallowcopy = mark_helper.shallowcopy
 
 local DEFECT_CODES = require 'report_defect_codes'
 local sumPOV = require "sumPOV"
@@ -352,7 +354,7 @@ column_recogn_video_channel =
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
-		local channels = mark_helper.GetSelectedBits(mark.prop.ChannelMask)
+		local channels = utils.GetSelectedBits(mark.prop.ChannelMask)
 		return table.concat(channels, ',')
 	end,
 	sorter = function(mark)

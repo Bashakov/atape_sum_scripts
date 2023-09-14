@@ -16,6 +16,8 @@ local AVIS_REPORT = require 'sum_report_avis'
 local sumPOV = require "sumPOV"
 local OOP = require 'OOP'
 local TYPES = require 'sum_types'
+local utils = require 'utils'
+local algorithm = require 'algorithm'
 
 local printf = mark_helper.printf
 local sprintf = mark_helper.sprintf
@@ -168,8 +170,8 @@ local SearchMissingBeacons = OOP.class
 	get_beacon = function (self, sys, rail, dist)
 		for r, marks in ipairs(self.beacons) do
 			if bit32.btest(rail, r) then
-				local i1 = mark_helper.lower_bound(marks, sys-dist)
-				local i2 = mark_helper.lower_bound(marks, sys+dist)
+				local i1 = algorithm.lower_bound(marks, sys-dist)
+				local i2 = algorithm.lower_bound(marks, sys+dist)
 				if i1 ~= i2 then
 					return true
 				end

@@ -1,244 +1,19 @@
 require "luacom"
 local DEFECT_CODES = require 'report_defect_codes'
 local TYPES = require 'sum_types'
+local utils = require 'utils'
+local algorithm = require 'algorithm'
+local xml_utils = require 'xml_utils'
 
-local function printf (s,...) return print(s:format(...)) end
-local function sprintf (s, ...)
-	assert(s)
-	local args = {...}
-	local ok, res = pcall(string.format, s, table.unpack(args))
-	if  not ok then
-		assert(false, res)  -- place for setup breakpoint
-	end
-	return res
-end
-local function errorf(s,...)  error(string.format(s, ...)) end
+local printf = utils.printf
+local sprintf = utils.sprintf
+local errorf = utils.errorf
 
-local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-if not xmlDom then
-	error("no Msxml2.DOMDocument: " .. luacom.config.last_error)
-end
+local xmlDom = xml_utils.xmlDom
+local SelectNodes = xml_utils.SelectNodes
+
 
 local GetGapType -- definition
-
--- итератор по нодам xml
-local function SelectNodes(xml, xpath)
-	return function(nodes)
-		return nodes:nextNode()
-	end, xml:SelectNodes(xpath)
-end
-
--- конвертировать MSXML ноду в строку с форматированием
-local function msxml_node_to_string(node)
-	local oWriter = luacom.CreateObject("Msxml2.MXXMLWriter")
-	local oReader =  luacom.CreateObject("Msxml2.SAXXMLReader")
-	assert(oWriter)
-	assert(oReader)
-
-	oWriter.standalone = 0
-    oWriter.omitXMLDeclaration = 1
-    oWriter.indent = 1
-	oWriter.encoding = 'utf-8'
-
-	oReader:setContentHandler(oWriter)
-	oReader:putProperty("http://xml.org/sax/properties/lexical-handler", oWriter)
-	oReader:putProperty("http://xml.org/sax/properties/declaration-handler", oWriter)
-
-	local unk1 = luacom.GetIUnknown(node)
-    oReader:parse(unk1)
-
-	local res = oWriter.output
-	return res
-end
-
-local function round(num, idp)
-	local mult = 10^(idp or 0)
-	return math.floor(num * mult + 0.5) / mult
-end
-
-local function xml_attr(node, name, def)
-	if type(name) == 'table' then
-		local res = {}
-		for i, n in ipairs(name) do
-			res[i] = xml_attr(node, n, def)
-		end
-		return table.unpack(res)
-	else
-		local a = node.attributes:getNamedItem(name)
-		return a and a.nodeValue or def
-	end
-end
-
-
--- получить номера установленных битов, вернуть массив с номерами
-local function GetSelectedBits(mask)
-	local res = {}
-	for i = 1, 32 do
-		local t = bit32.lshift(1, i)
-		if bit32.btest(mask, t) then
-			table.insert(res, i)
-		end
-	end
-	return res
-end
-
--- разбивает массив на переекающиеся отрезки указанной длинны. enum_group({1,2,3,4,5}, 3) ->  {1,2,3}, {2,3,4}, {3,4,5}
-local function enum_group(arr, len)
-	local i = 0
-	return function()
-		i = i + 1
-		if i + len <= #arr+1 then
-			return table.unpack(arr, i, i + len)
-		end
-	end
-end
-
--- итератор разбивающий входной массив на массив массивов заданной длинны, последний может быть короче
--- split_chunks_iter(3, {1,2,3,4,5,6,6,7}) -> 1, {1,2,3}; 2, {4,5,6}; 3, {7}
-local function split_chunks_iter(chunk_len, arr)
-	assert(chunk_len > 0)
-	local i = 0
-	local n = 0
-	return function()
-		if i > #arr - 1 then
-			return nil
-		end
-
-		local t = {}
-		for j = 1, chunk_len do
-			t[j] = arr[j+i]
-		end
-		i = i + chunk_len
-		n = n + 1
-		return n, t
-	end
-end
-
- -- разбивает входной массив на массив массивов заданной длинны, последний может быть короче
-local function split_chunks(chunk_len, arr)
-	assert(chunk_len > 0)
-	local res = {}
-	for i = 0, #arr - 1, chunk_len do
-		local t = {}
-		for j = 1, chunk_len do
-			t[j] = arr[j+i]
-		end
-		res[#res + 1] = t
-	end
-	return res
-end
-
-local function lower_bound(array, value, pred)
-	if not pred then
-		pred = function(a,b) return a < b end
-	end
-    local count = #array
-	local first = 1
-    while count > 0 do
-        local step = math.floor(count / 2)
-		local i = first + step
-        if pred(array[i], value) then
-            first = i+1
-            count = count - (step + 1)
-        else
-            count = step
-		end
-    end
-    return first
-end
-
-local function upper_bound(array, value, pred)
-	if not pred then
-		pred = function(a,b) return a < b end
-	end
-    local count = #array
-	local first = 1
-    while count > 0 do
-        local step = math.floor(count / 2)
-		local i = first + step
-        if not pred(value, array[i]) then
-            first = i+1
-            count = count - (step + 1)
-        else
-            count = step
-		end
-    end
-    return first
-end
-
-local function equal_range(array, value, pred)
-	return lower_bound(array, value, pred), upper_bound(array, value, pred)
-end
-
--- поверхностное копирование
-local function shallowcopy(orig)
-    local orig_type = type(orig)
-    local copy
-    if orig_type == 'table' then
-        copy = {}
-        for orig_key, orig_value in pairs(orig) do
-            copy[orig_key] = orig_value
-        end
-    else -- number, string, boolean, etc
-        copy = orig
-    end
-    return copy
-end
-
--- глубоукое копирование
-local function deepcopy(orig)
-    local orig_type = type(orig)
-    local copy
-    if orig_type == 'table' then
-        copy = {}
-        for orig_key, orig_value in next, orig, nil do
-            copy[deepcopy(orig_key)] = deepcopy(orig_value)
-        end
-        setmetatable(copy, deepcopy(getmetatable(orig)))
-    else -- number, string, boolean, etc
-        copy = orig
-    end
-    return copy
-end
-
--- поиск элемента в таблице
-local function table_find(tbl, val)
-	for i = 1, #tbl do
-		if tbl[i] == val then
-			return i
-		end
-	end
-end
-
--- создать таблицу из переданных аргументов, если аргумент таблица, то она распаковывается рекурсивно
-local function table_merge(...)
-	local res = {}
-
-	for _, item in ipairs{...} do
-		if type(item) == 'table' then
-			local v = table_merge(table.unpack(item))
-			for _, i in ipairs(v) do
-				res[#res+1] = i
-			end
-		else
-			res[#res+1] = item
-		end
-	end
-
-	return res
-end
-
--- проход по таблице в сортированном порядке
-local function sorted(tbl)
-	local keys = {}
-	for n, _ in pairs(tbl) do table.insert(keys, n) end
-	table.sort(keys)
-	local i = 0
-	return function()
-		i = i + 1
-		return keys[i], tbl[keys[i]]
-	end
-end
 
 -- =================== ШИРИНА ЗАЗОРА ===================
 
@@ -296,7 +71,7 @@ local function SelectWidthFromChannelsWidths(channel_widths, mark)
 		-- а потом хоть какой нибудь
 		for n, width in pairs(channel_widths) do
 			if n == 0 and mark then
-				n = GetSelectedBits(mark.prop.ChannelMask)
+				n = utils.GetSelectedBits(mark.prop.ChannelMask)
 				n = n and n[1]
 				return width, n
 			end
@@ -347,7 +122,7 @@ local function GetGapWidthName(mark, name)
 			if w[17] then return w[17], 17 end
 			if w[18] then return w[18], 18 end
 			if w[0] then
-				local video_channel = GetSelectedBits(mark.prop.ChannelMask)
+				local video_channel = utils.GetSelectedBits(mark.prop.ChannelMask)
 				video_channel = video_channel and video_channel[1]
 				return w[0], video_channel
 			end
@@ -378,7 +153,7 @@ local function GetRailGapStep(mark)
 		/PARAM[@name="FrameNumber" and @value and @coord]\z
 		/PARAM[@name="Result" and @value="main"]\z
 		/PARAM[@name="RailGapStepWidth" and @value]/@value')
-	return node and round(tonumber(node.nodeValue)/1000, 0)
+	return node and utils.round(tonumber(node.nodeValue)/1000, 0)
 end
 
 
@@ -550,7 +325,7 @@ local function GetFastenetParams(mark)
 		for node_frame in SelectNodes(xmlDom, '/ACTION_RESULTS/PARAM[@value="Fastener"]/PARAM[@name="FrameNumber" and @value="0" and @coord]') do
 			res['frame_coord'] = tonumber(node_frame:SelectSingleNode('@coord').nodeValue)
 			for node_param in SelectNodes(node_frame, 'PARAM/PARAM[@name and @value]') do
-				local name, value = xml_attr(node_param, {'name', 'value'})
+				local name, value = xml_utils.xml_attr(node_param, {'name', 'value'})
 				res[name] = tonumber(value) or value
 			end
 		end
@@ -579,7 +354,7 @@ local function GetSurfDefectPrm(mark)
 		/PARAM[@name="Result" and @value="main"]\z
 		/PARAM[@name and @value]'
 		for node_param in SelectNodes(xmlDom, req) do
-			local name, value = xml_attr(node_param, {'name', 'value'})
+			local name, value = xml_utils.xml_attr(node_param, {'name', 'value'})
 			if value and name and name:find('Surface') then
 				value = tonumber(value)
 			end
@@ -737,7 +512,7 @@ local function GetSleeperFault(mark)
 			//PARAM[@name="SleeperFault"]\z
 			/PARAM[@name and @value]'
 		for node in SelectNodes(xmlDom, req) do
-			local name, value = xml_attr(node, {'name', 'value'})
+			local name, value = xml_utils.xml_attr(node, {'name', 'value'})
 			res[name] = tonumber(value) or value
 		end
 	end
@@ -894,16 +669,6 @@ local function sort_marks(marks, fn, inc, progress_callback)
 end
 
 
-
-local function reverse_array(arr)
-	local i, j = 1, #arr
-	while i < j do
-		arr[i], arr[j] = arr[j], arr[i]
-		i = i + 1
-		j = j - 1
-	end
-end
-
 -- другой способ сортировки, должен быть быстрее чем sort_marks
 local function sort_stable(marks, fn, inc, progress_callback)
 	local start_time = os.clock()
@@ -960,7 +725,7 @@ local function sort_stable(marks, fn, inc, progress_callback)
 	local sort_time = os.clock()
 
 	if inc == false or inc == 0 then
-		reverse_array(keys)
+		algorithm.reverse_array(keys)
 	end
 	local rev_time = os.clock()
 
@@ -1190,7 +955,7 @@ local function MakeMarkImage(mark, video_channel, show_range, base64)
 		local prop = mark.prop
 
 		if not video_channel then
-			local recog_video_channels = GetSelectedBits(prop.ChannelMask)
+			local recog_video_channels = utils.GetSelectedBits(prop.ChannelMask)
 			video_channel = recog_video_channels and recog_video_channels[1]
 		end
 
@@ -1271,22 +1036,10 @@ return {
 	sort_stable = sort_stable,
 	filter_marks = filter_marks,
 	SelectNodes = SelectNodes,
-	msxml_node_to_string=msxml_node_to_string,
-	GetSelectedBits = GetSelectedBits,
 	filter_user_accept = filter_user_accept,
-	reverse_array = reverse_array,
-	enum_group = enum_group,
-	split_chunks = split_chunks,
-	split_chunks_iter = split_chunks_iter,
-	shallowcopy = shallowcopy,
-	deepcopy = deepcopy,
-	table_find = table_find,
-	table_merge = table_merge,
-	lower_bound = lower_bound,
-	upper_bound = upper_bound,
-	equal_range = equal_range,
-	round = round,
-	sorted = sorted,
+	table_find = algorithm.table_find,
+	table_merge = algorithm.table_merge,
+	sorted = algorithm.sorted,
 
 	sort_mark_by_coord = sort_mark_by_coord,
 	format_path_coord = format_path_coord,

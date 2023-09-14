@@ -18,9 +18,11 @@ local sumPOV = require "sumPOV"
 local EKASUI = require "sum_report_ekasui"
 local remove_grouped_marks = require "sum_report_group_scanner"
 require 'ExitScope'
+local utils = require 'utils'
+local algorithm = require 'algorithm'
 
-local printf = mark_helper.printf
-local sprintf = mark_helper.sprintf
+local printf = utils.printf
+local sprintf = utils.sprintf
 
 local guigs_sleepers =
 {
@@ -108,15 +110,15 @@ local function generate_rows_sleeper_dist(marks, dlgProgress, pov_filter)
 
 	local user_and_groups = mark_helper.table_merge({"{3601038C-A561-46BB-8B0F-F896C2130002}"}, guigs_sleepers_group)
 
-	for _, cur, right in mark_helper.enum_group(marks, 3) do
+	for _, cur, right in algorithm.enum_group(marks, 3) do
 		i = i + 1
 
 		if i % 10 == 0 and not dlgProgress:step(i / #marks, sprintf('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
 			return
 		end
 		if pov_filter(cur) then
-			if mark_helper.table_find(user_and_groups, cur.prop.Guid) and
-			   mark_helper.table_find(dist_defect_codes, cur.ext.CODE_EKASUI) then
+			if algorithm.table_find(user_and_groups, cur.prop.Guid) and
+			   algorithm.table_find(dist_defect_codes, cur.ext.CODE_EKASUI) then
 				-- установлена пользователем или групповая
 				local row = MakeSleeperMarkRow(cur, cur.ext.CODE_EKASUI)
 				table.insert(report_rows, row)
@@ -288,10 +290,10 @@ local function sleeper_SDMI()
 
 		for i, mark in ipairs(marks) do
 			local center = mark.prop.SysCoord + mark.prop.Len / 2
-			center = mark_helper.round(center, 0)
+			center = utils.round(center, 0)
 			local km, m, mm = Driver:GetPathCoord(center)
 
-			writer:add_floor({km=km, m=m, sm=mark_helper.round(mm / 10, 0), syskoor=center})
+			writer:add_floor({km=km, m=m, sm=utils.round(mm / 10, 0), syskoor=center})
 			if i%100 == 0 and not dlg:step(i / #marks, sprintf('Сохранение шпал %d / %d', i, #marks)) then
 				return
 			end
@@ -349,7 +351,7 @@ local function make_report_videogram(...)
 
 	local function gen(mark)
 		local report_rows = {}
-		if mark and mark_helper.table_find(guigs_sleepers, mark.prop.Guid) then
+		if mark and algorithm.table_find(guigs_sleepers, mark.prop.Guid) then
 			for _, fn_gen in ipairs(row_generators) do
 				local cur_rows = fn_gen({mark}, nil)
 				for _, row in ipairs(cur_rows) do
@@ -408,7 +410,7 @@ local function PrepareSleepers()
 		local marks = Driver:GetMarks{GUIDS=gg, ListType="all"}
 		marks = mark_helper.sort_mark_by_coord(marks)
 		local i = 0
-		for cur, right in mark_helper.enum_group(marks, 2) do
+		for cur, right in algorithm.enum_group(marks, 2) do
 			i = i + 1
 			if i % 43 == 0 and not dlg:step(i / #marks, sprintf('Обработка %d / %d', i, #marks)) then
 				return

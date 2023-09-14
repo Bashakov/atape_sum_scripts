@@ -16,7 +16,7 @@ local DEFECT_CODES = require 'report_defect_codes'
 local EKASUI_REPORT = require 'sum_report_ekasui'
 local AVIS_REPORT = require 'sum_report_avis'
 local sumPOV = require "sumPOV"
-local functional = require "functional"
+local algorithm = require "algorithm"
 local remove_grouped_marks = require "sum_report_group_scanner"
 local ErrorUserAborted = require "UserAborted"
 local TYPES = require 'sum_types'
@@ -164,7 +164,7 @@ local function igen_adapter(fn)
 		local args = {...}
 		return ErrorUserAborted.skip(function ()
 			local g = fn(table.unpack(args))
-			local rows = functional.list(g)
+			local rows = algorithm.list(g)
 			rows = remove_grouped_marks(rows, guids_fasteners_groups, false)
 			return rows
 		end)

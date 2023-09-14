@@ -7,10 +7,11 @@ local OOP = require 'OOP'
 local mark_helper = require 'sum_mark_helper'
 local luaiup_helper = require 'luaiup_helper'
 require "ExitScope"
+local utils = require 'utils'
+local algorithm = require 'algorithm'
 
-local printf = mark_helper.printf
-local sprintf = mark_helper.sprintf
-local errorf = mark_helper.errorf
+local sprintf = utils.sprintf
+local errorf = utils.errorf
 
 -- ========================================
 
@@ -212,7 +213,7 @@ local function make_ekasui_generator(getMarks, ...)
 
 		local first_file
 		local str_msg = 'Сохренено'
-        for n, group in mark_helper.split_chunks_iter(100, report_rows) do
+        for n, group in algorithm.split_chunks_iter(100, report_rows) do
 			--print(#group)
 			local path = export_ekasui_xml(n, group, export_id, pghlp, pathType)
 			str_msg = str_msg .. sprintf('\n%d отметок в файл: %s', #group, path)

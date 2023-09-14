@@ -4,6 +4,7 @@ local defect_codes = require 'report_defect_codes'
 local table_merge = mark_helper.table_merge
 local TYPES = require 'sum_types'
 local TYPE_GROUPS = require "sum_list_pane_guids"
+local algorithm = require 'algorithm'
 
 local prev_atape = ATAPE
 ATAPE = true -- disable debug code while load scripts
@@ -399,7 +400,7 @@ local filters =
 			marks = mark_helper.sort_mark_by_coord(marks)
 			local res = {}
 			local i = 1
-			for mark, right in mark_helper.enum_group(marks, 2) do
+			for mark, right in algorithm.enum_group(marks, 2) do
 				local cp, np = mark.prop.SysCoord, right.prop.SysCoord
 				mark.user.dist_next = np - cp
 				local material = mark_helper.GetSleeperMeterial(mark)
@@ -597,7 +598,7 @@ local filters =
 		end,
 		post_load = function(marks, fnContinueCalc)
 			local prev_pos = {} -- координата пред стыка (по рельсам)
-			marks = sort_stable(marks, column_sys_coord.sorter, true)	-- сортируем отметки от драйвера по координате
+			marks = mark_helper.sort_stable(marks, column_sys_coord.sorter, true)	-- сортируем отметки от драйвера по координате
 			for i, mark in ipairs(marks) do	-- проходим по отметкам
 				local r = bit32.band(mark.prop.RailMask, 3)	-- получаем номер рельса
 				if prev_pos[r] then	-- если есть коордиана предыдущей

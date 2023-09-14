@@ -5,9 +5,6 @@ local TYPES = require 'sum_types'
 require 'ExitScope'
 
 local sprintf = mark_helper.sprintf
-local printf = mark_helper.printf
-local errorf = mark_helper.errorf
-local table_find = mark_helper.table_find
 
 -- =============================================================================
 

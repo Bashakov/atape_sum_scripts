@@ -3,27 +3,14 @@
 package.loaded.sumPOV = nil -- для перезагрузки в дебаге
 
 local sumPOV = require "sumPOV"
+local utils = require 'utils'
+local functiional = require 'algorithm'
 
--- ================= математика =================
 
--- округление до idp значащих цифр после запятой
-local function round(num, idp)
-	local mult = 10^(idp or 0)
-	return math.floor(num * mult + 0.5) / mult
-end
 
 -- ================= вспомогательные =================
 
-local function sorted(src, cmp)
-	local keys = {}
-	for n in pairs(src) do table.insert(keys, n) end
-	table.sort(keys, cmp)
-	local i = 0
-	return function ()
-		i = i + 1
-		return keys[i], src[keys[i]]
-	end
-end
+local sorted = functiional.sorted
 
 local function starts_with(input, prefix)
 	return string.sub(input, 1, #prefix) == prefix
@@ -116,7 +103,7 @@ local function get_common_system_coord(objects)
 		local c = object.center_system - object.area.video_offset
 		mark_coord = mark_coord + c / #objects
 	end
-	return round(mark_coord)
+	return utils.round(mark_coord)
 end
 
 
@@ -158,7 +145,7 @@ local function make_gape_node(nodeRoot, object, action_result)
 	local nodeFrame  = make_node(nodeActRes, "PARAM", {name="FrameNumber", value="0", coord=object.center_frame})
 	local nodeResult = make_node(nodeFrame , "PARAM", {name="Result", value="main"})
 	make_node(nodeResult, "PARAM", {name="Coord", ['type']="polygon", value=strRect})
-	make_node(nodeResult, "PARAM", {name="RailGapWidth_mkm", value=round((frame_src[3] - frame_src[1]) * 1000)})
+	make_node(nodeResult, "PARAM", {name="RailGapWidth_mkm", value=utils.round((frame_src[3] - frame_src[1]) * 1000)})
 end
 
 -- сформировать xml с описание поверхностного дефекта

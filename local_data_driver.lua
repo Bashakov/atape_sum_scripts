@@ -3,7 +3,7 @@ local sqlite3 = require "lsqlite3"
 local OOP = require "OOP"
 local GUID = require "guids"
 local ntb = require 'notebook_xml_utils'
-local functional = require "functional"
+local algorithm = require "algorithm"
 
 local printf  = function(fmt, ...)	print(string.format(fmt, ...)) end
 local sprintf = function(fmt, ...) return string.format(fmt, ...)  end
@@ -614,7 +614,7 @@ local Driver = OOP.class
 	end,
 
 	MarkNtbIDsAsReported = function (self, ntb_ids)
-		local s = table.concat(functional.map(function (id) return tostring(id) end, ntb_ids), ",")
+		local s = table.concat(algorithm.map(function (id) return tostring(id) end, ntb_ids), ",")
 		print("MarkNtbIDsAsReported: ", s)
 	end,
 

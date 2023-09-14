@@ -11,7 +11,7 @@ local OOP = require "OOP"
 local mark_helper = require "sum_mark_helper"
 local luaiup_helper = require 'luaiup_helper'
 local GUIDS = require "sum_types"
-local functional = require "functional"
+local algorithm = require "algorithm"
 require "ExitScope"
 require "luacom"
 local ext_obj_utils = require 'list_ext_obj_utils'
@@ -506,7 +506,7 @@ local function get_parameters()
     local function get_fmt(row)
         local s = row.desc .. ": "
         if row.dict then
-            s = s .. "%l|" .. table.concat(functional.map(function (d) return d.desc end, row.dict), "|") .. "|"
+            s = s .. "%l|" .. table.concat(algorithm.map(function (d) return d.desc end, row.dict), "|") .. "|"
         elseif row.bool then
             s = s .. "%b[No,Yes]"
         else
@@ -519,8 +519,8 @@ local function get_parameters()
         {name="Wonum", desc="Код раб.задания в ЕКАСУИ ДМ НК (Wonum)", value=Passport.WONUM or "", },
         {name="show_npu", desc="Выводить НПУ", value=false, bool=true},
     }
-    local sfmt = functional.map( get_fmt, rows)
-    local values = functional.map(prep_val, rows)
+    local sfmt = algorithm.map( get_fmt, rows)
+    local values = algorithm.map(prep_val, rows)
     local res
     if true then -- !!!!!
         res = {iup.GetParam("Параметры генерации отчета", nil,
@@ -581,7 +581,7 @@ local function report_EKASUI_US()
         w:add_workorders(make_item_gen(dlgProgress, "Workorder", {other_ntb, npu}))
 		w:add_defects(make_item_gen(dlgProgress, "ОДР", {odr}))
 		w:close()
-        Driver:MarkNtbIDsAsReported(functional.map(function (d) return d:GetNoteID() end, ntb))
+        Driver:MarkNtbIDsAsReported(algorithm.map(function (d) return d:GetNoteID() end, ntb))
         dlgProgress:Hide()
 
         local anwser = iup.Alarm("EKASUI", sformat("Сохранен файл: %s", path_dst), "Показать расположение", "Закрыть")

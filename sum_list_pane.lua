@@ -3,9 +3,9 @@ if not ATAPE then
 end
 
 mark_helper = require 'sum_mark_helper'
+local algorithm = require 'algorithm'
 
-local reverse_array = mark_helper.reverse_array
-local sort_stable = mark_helper.sort_stable
+
 local sprintf = mark_helper.sprintf
 
 local sumPOV = require "sumPOV"
@@ -344,9 +344,9 @@ function SortMarks(col, inc)
 		local fn = column.sorter
 		if fn then
 			if work_sort_param[0] ~= col then
-				work_marks_list = sort_stable(work_marks_list, fn, inc)
+				work_marks_list = mark_helper.sort_stable(work_marks_list, fn, inc)
 			elseif work_sort_param[1] ~= inc then
-				reverse_array(work_marks_list)
+				algorithm.reverse_array(work_marks_list)
 			end
 		end
 	end

@@ -1,8 +1,9 @@
 local mark_helper = require 'sum_mark_helper'
-local funcional = require 'functional'
+local funcional = require 'algorithm'
 local OOP = require 'OOP'
 local TYPES = require 'sum_types'
-
+local utils = require 'utils'
+local algorithm = require 'algorithm'
 
 local function make_progress_cb(dlg, title, step)
     step = step or 1
@@ -168,8 +169,8 @@ local Switchers = OOP.class
     overalped = function(self, c1, c2)
         assert(c1 <= c2)
 
-        local i1 = mark_helper.lower_bound(self._items, {from=c1}, self._cmp)
-        local i2 = mark_helper.lower_bound(self._items, {from=c2}, self._cmp)
+        local i1 = algorithm.lower_bound(self._items, {from=c1}, self._cmp)
+        local i2 = algorithm.lower_bound(self._items, {from=c2}, self._cmp)
         for i = i1-1, i2 do
             local switch = self._items[i]
             if switch then
@@ -213,8 +214,8 @@ local Joints =  OOP.class{
     check_group = function (self, group)
         local c1 = group[1] - self._scan_dist
         local c2 = group[#group] + self._scan_dist
-        local i1 = mark_helper.lower_bound(self._coords, c1)
-        local i2 = mark_helper.lower_bound(self._coords, c2)
+        local i1 = algorithm.lower_bound(self._coords, c1)
+        local i2 = algorithm.lower_bound(self._coords, c2)
         return i1 < i2
     end,
 }

@@ -16,8 +16,8 @@ local EKASUI_REPORT = require 'sum_report_ekasui'
 local AVIS_REPORT = require 'sum_report_avis'
 local sumPOV = require "sumPOV"
 local TYPES = require 'sum_types'
-
-local table_find = mark_helper.table_find
+local utils = require 'utils'
+local algorithm = require 'algorithm'
 
 -- ==================================================================
 
@@ -31,7 +31,7 @@ local guid_surface_user =
 	"{3601038C-A561-46BB-8B0F-F896C2130004}", 	-- Дефекты рельсов(Пользователь)
 }
 
-local filter_juids = mark_helper.table_merge(guid_surface_defects, guid_surface_user)
+local filter_juids = algorithm.table_merge(guid_surface_defects, guid_surface_user)
 
 
 local function get_user_filter_surface()
@@ -75,7 +75,7 @@ local function generate_rows_rails(marks, dlgProgress)
 
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
-		if table_find(guid_surface_defects, mark.prop.Guid) and mark.ext.RAWXMLDATA then
+		if algorithm.table_find(guid_surface_defects, mark.prop.Guid) and mark.ext.RAWXMLDATA then
 			local surf_prm = mark_helper.GetSurfDefectPrm(mark)
 			if surf_prm then
 
@@ -101,7 +101,7 @@ local function generate_rows_rails(marks, dlgProgress)
 			end
 		end
 
-		if table_find(guid_surface_user, mark.prop.Guid) and mark.ext.CODE_EKASUI == DEFECT_CODES.RAIL_SURF_DEFECT[1] then
+		if algorithm.table_find(guid_surface_user, mark.prop.Guid) and mark.ext.CODE_EKASUI == DEFECT_CODES.RAIL_SURF_DEFECT[1] then
 			local row = mark_helper.MakeCommonMarkTemplate(mark)
 			row.DEFECT_CODE = mark.ext.CODE_EKASUI
 			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
@@ -122,7 +122,7 @@ local function generate_rows_rails_user(marks, dlgProgress)
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
 
-		if table_find(guid_surface_user, mark.prop.Guid) and mark.ext.CODE_EKASUI then
+		if algorithm.table_find(guid_surface_user, mark.prop.Guid) and mark.ext.CODE_EKASUI then
 			local row = mark_helper.MakeCommonMarkTemplate(mark)
 			row.DEFECT_CODE = mark.ext.CODE_EKASUI
 			row.DEFECT_DESC = DEFECT_CODES.code2desc(mark.ext.CODE_EKASUI)
@@ -156,7 +156,7 @@ local function make_report_videogram(...)
 
 	local function gen(mark)
 		local report_rows = {}
-		if mark and mark_helper.table_find(filter_juids, mark.prop.Guid) then
+		if mark and algorithm.table_find(filter_juids, mark.prop.Guid) then
 			for _, fn_gen in ipairs(row_generators) do
 				local cur_rows = fn_gen({mark}, nil)
 				for _, row in ipairs(cur_rows) do
