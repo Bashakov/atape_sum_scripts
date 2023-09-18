@@ -1,0 +1,18 @@
+﻿<ACTION_RESULTS version="1.4">
+<PARAM name="ACTION_RESULTS" channel="17" value="Fastener" readable_name="">
+<PARAM name="FrameNumber" value="0" coord="1993805" _value="    : 0-(), [-N]-,, [+N]-">
+<PARAM name="Result" value="main" _value="  ">
+<PARAM name="FastenerType" value="0" value_="0-65, 1-apc, 2-do, 3-65"></PARAM>
+<PARAM name="Coord" type="polygon" value="863,0,863,214,1013,214,1013,0" _value="{0,0}-   "></PARAM>
+<PARAM name="FastenerFault" value="1" _value="0- , 1-   kb65, 2-  apc"></PARAM>
+<PARAM name="Reliability" value="95"></PARAM>
+</PARAM>
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="17" value="Common">
+<PARAM name="Reliability" value="95"></PARAM>
+<PARAM name="RecogObjCoord" value="1994743" _desc="  "></PARAM>
+<PARAM name="MULTIBIT" value="1" _value="1 - , 0 -   8-"></PARAM>
+</PARAM>
+</PARAM>
+</ACTION_RESULTS>

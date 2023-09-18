@@ -1,0 +1,27 @@
+﻿<ACTION_RESULTS version="1.4">
+<PARAM name="ACTION_RESULTS" channel="17" value="Beacon_Web" readable_name="Маячная отметка на подошве- ОБЯЗАТЕЛЬНЫЙ ПАРАМЕТР">
+<PARAM name="FrameNumber" value="0" coord="3810632">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="rect" value="711,739,712,361" _value="X0,Y0,X1,Y1[pix]; {0,0}-левый нижний край кадра"></PARAM>
+<PARAM name="Shift" value="-11" _value="Смещение относительно Beacon_Fastener"></PARAM>
+<PARAM name="Shift_mkm" value="-11000" _value="Значение Shift в микронах на основании входных метрических данных"></PARAM>
+<PARAM name="Reliability" value="100"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="17" value="Beacon_Fastener" readable_name="Маячная отметка на скреплении- ОБЯЗАТЕЛЬНЫЙ ПАРАМЕТР">
+<PARAM name="FrameNumber" value="0" coord="3810632">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="rect" value="722,361,723,324" _value="X0,Y0,X1,Y1[pix]; {0,0}-левый нижний край кадра"></PARAM>
+<PARAM name="Shift" value="11" _value="Смещение относительно Beacon_Fastener"></PARAM>
+<PARAM name="Shift_mkm" value="11000" _value="Значение Shift в микронах на основании входных метрических данных"></PARAM>
+<PARAM name="Reliability" value="100"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="ACTION_RESULTS" channel="17" value="Common" _value="Общие параметры для всех результатов">
+<PARAM name="Reliability" value="100"></PARAM>
+<PARAM name="RecogObjCoord" value="3811343" _desc="координата найденного объекта"></PARAM>
+</PARAM>
+</ACTION_RESULTS>

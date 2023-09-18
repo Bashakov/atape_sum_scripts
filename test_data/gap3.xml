@@ -1,0 +1,186 @@
+﻿<ACTION_RESULTS version="1.4">
+<PARAM name="ACTION_RESULTS" channel="18" value="CalcRailGap_Head_Top">
+<PARAM name="FrameNumber" value="0" coord="2187341">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="polygon" value="160,462 160,412 170,412 170,462"></PARAM>
+<PARAM name="RailGapWidth_mkm" value="10000"></PARAM>
+</PARAM>
+</PARAM>
+
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="18" value="CalcRailGap_Head_Side">
+<PARAM name="FrameNumber" value="0" coord="2187341">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="polygon" value="163,412 163,387 172,387 172,412"></PARAM>
+<PARAM name="RailGapWidth_mkm" value="9000"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+
+<PARAM name="ACTION_RESULTS" channel="18" value="Fishplate">
+<PARAM name="FrameNumber" value="-1" coord="2186317">
+<PARAM name="Result" value="main">
+<PARAM name="FishplateEdge" value="1">
+<PARAM name="Coord" type="polygon" value="779,412 779,224"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="FrameNumber" value="0" coord="2187341">
+<PARAM name="Result" value="main">
+<PARAM name="FishplateEdge" value="2">
+<PARAM name="Coord" type="polygon" value="575,412 575,224"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="18" value="CrewJoint">
+<PARAM name="FrameNumber" value="-1" coord="2186317">
+<PARAM name="Result" value="main">
+<PARAM name="JointNumber" value="0">
+<PARAM name="Coord" type="ellipse" value="862,291,26,39"></PARAM>
+<PARAM name="CrewJointSafe" value="2" _value="-1(), 2(), 3()"></PARAM>
+</PARAM>
+
+</PARAM>
+</PARAM>
+<PARAM name="FrameNumber" value="0" coord="2187341">
+<PARAM name="Result" value="main">
+<PARAM name="JointNumber" value="1">
+<PARAM name="Coord" type="ellipse" value="68,295,32,39"></PARAM>
+<PARAM name="CrewJointSafe" value="3" _value="-1(), 2(), 3()"></PARAM>
+</PARAM>
+<PARAM name="JointNumber" value="2">
+<PARAM name="Coord" type="ellipse" value="264,292,28,45"></PARAM>
+<PARAM name="CrewJointSafe" value="2" _value="-1(), 2(), 3()"></PARAM>
+</PARAM>
+<PARAM name="JointNumber" value="3">
+<PARAM name="Coord" type="ellipse" value="485,297,25,43"></PARAM>
+<PARAM name="CrewJointSafe" value="3" _value="-1(), 2(), 3()"></PARAM>
+</PARAM>
+
+</PARAM>
+</PARAM>
+
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="18" value="Connector">
+<PARAM name="FrameNumber" value="-1" coord="2186317">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="ellipse" value="574,318,26,43"></PARAM>
+<PARAM name="ConnectorFault" value="0" value_="0-, 1-"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="ACTION_RESULTS" channel="18" value="Connector">
+<PARAM name="FrameNumber" value="0" coord="2187341">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="ellipse" value="764,321,26,43"></PARAM>
+<PARAM name="ConnectorFault" value="0" value_="0-, 1-"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+
+
+<PARAM name="ACTION_RESULTS" channel="20" value="CalcRailGap_Head_Top">
+<PARAM name="FrameNumber" value="0" coord="2186317">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="polygon" value="882,391 882,339 893,339 893,391"></PARAM>
+<PARAM name="RailGapWidth_mkm" value="11000"></PARAM>
+</PARAM>
+</PARAM>
+
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="20" value="CalcRailGap_Head_Side">
+<PARAM name="FrameNumber" value="0" coord="2186317">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="polygon" value="882,339 882,313 893,313 893,339"></PARAM>
+<PARAM name="RailGapWidth_mkm" value="11000"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+
+<PARAM name="ACTION_RESULTS" channel="20" value="Fishplate">
+<PARAM name="FrameNumber" value="0" coord="2186317">
+<PARAM name="Result" value="main">
+<PARAM name="FishplateEdge" value="1">
+<PARAM name="Coord" type="polygon" value="487,339 487,172"></PARAM>
+</PARAM>
+<PARAM name="FishplateState">
+<PARAM name="FishplateFault" value="4" value_="0-, 1-, 3-, 4-"></PARAM>
+<PARAM name="Coord" type="polygon" value="968,295 968,200 1032,200 1032,295"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="FrameNumber" value="1" coord="2187341">
+<PARAM name="Result" value="main">
+<PARAM name="FishplateEdge" value="2">
+<PARAM name="Coord" type="polygon" value="263,339 263,172"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="20" value="CrewJoint">
+<PARAM name="FrameNumber" value="0" coord="2186317">
+<PARAM name="Result" value="main">
+<PARAM name="JointNumber" value="0">
+<PARAM name="Coord" type="ellipse" value="566,248,30,39"></PARAM>
+<PARAM name="CrewJointSafe" value="3" _value="-1(), 2(), 3()"></PARAM>
+</PARAM>
+<PARAM name="JointNumber" value="1">
+<PARAM name="Coord" type="ellipse" value="784,239,28,45"></PARAM>
+<PARAM name="CrewJointSafe" value="2" _value="-1(), 2(), 3()"></PARAM>
+</PARAM>
+<PARAM name="JointNumber" value="2">
+<PARAM name="Coord" type="ellipse" value="996,237,24,37"></PARAM>
+<PARAM name="CrewJointSafe" value="3" _value="-1(), 2(), 3()"></PARAM>
+</PARAM>
+
+</PARAM>
+</PARAM>
+<PARAM name="FrameNumber" value="1" coord="2187341">
+<PARAM name="Result" value="main">
+<PARAM name="JointNumber" value="3">
+<PARAM name="Coord" type="ellipse" value="186,241,26,45"></PARAM>
+<PARAM name="CrewJointSafe" value="2" _value="-1(), 2(), 3()"></PARAM>
+</PARAM>
+
+</PARAM>
+</PARAM>
+
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="20" value="Connector">
+<PARAM name="FrameNumber" value="1" coord="2187341">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="ellipse" value="466,265,26,43"></PARAM>
+<PARAM name="ConnectorFault" value="0" value_="0-, 1-"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="20" value="WeldedBond">
+  <PARAM name="FrameNumber" value="0" coord="2186317">
+    <PARAM name="Result" value="main">
+      <PARAM name="Coord" type="polygon" value="812,266 812,346 980,346 980,266"></PARAM>
+      <PARAM name="ConnectorFault" value="1" value_="0-, 1-"></PARAM>
+    </PARAM>
+  </PARAM>
+</PARAM>
+
+
+<PARAM name="ACTION_RESULTS" value="Common">
+<PARAM name="Reliability" value="100"></PARAM>
+<PARAM name="RecogObjCoord" value="2187486" _desc="  "></PARAM>
+<PARAM name="MULTIBIT" value="1" _value="1 - , 0 -   8-"></PARAM>
+<PARAM name="JointType" value="0" _value="0 - std, 1 - iso  , 2 - ats"></PARAM>
+</PARAM>
+
+
+</ACTION_RESULTS>

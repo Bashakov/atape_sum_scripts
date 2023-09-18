@@ -494,8 +494,9 @@ local function GetSleeperAngle(mark)
 
 	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
 		local req = '\z
-			/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Sleepers"]\z
-			/PARAM[@name="Angle_mrad" and @value]'
+			/ACTION_RESULTS\z
+			/PARAM[@name="ACTION_RESULTS" and @value="Sleepers"]\z
+			/PARAM[@name="Angle_mrad" and @value]/@value'
 		local node = xmlDom:SelectSingleNode(req)
 		return node and tonumber(node.nodeValue)
 	end
@@ -531,7 +532,7 @@ local function GetSleeperMeterial(mark)
 	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
 		local req = '\z
 			/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Sleepers"]\z
-			/PARAM[@name="Material" and @value]'
+			/PARAM[@name="Material" and @value]/@value'
 		local node = xmlDom:SelectSingleNode(req)
 		return node and tonumber(node.nodeValue)
 	end
@@ -780,8 +781,9 @@ local function GetRailName(mark)
 	else
 		errorf('type of mark must be number or Mark(table), got %s', type(mark))
 	end
+	mark_rail = bit32.band(mark_rail, 0x03)
 
-	if bit32.btest(mark_rail, 0x03) then
+	if mark_rail == 0x03 then
 		return "Оба"
 	end
 
@@ -791,13 +793,22 @@ end
 
 -- определяет рельсовое расположение отметки. возвращает: -1 = левый, 0 = оба, 1 = правый
 local function GetMarkRailPos(mark)
-	local rail_mask = bit32.band(mark.prop.RailMask, 0x3)
-	if rail_mask == 3 then
+	local mark_rail = mark
+	if type(mark_rail) == 'table' or type(mark_rail) == 'userdata' then
+		mark_rail = mark.prop.RailMask
+	elseif type(mark_rail) == 'number' then
+		-- ok
+	else
+		errorf('type of mark must be number or Mark(table), got %s', type(mark))
+	end
+
+	mark_rail = bit32.band(mark_rail, 0x3)
+	if mark_rail == 3 then
 		return 0
 	end
 
 	local left_mask = tonumber(Passport.FIRST_LEFT) + 1
-	return left_mask == rail_mask and 1 or -1
+	return left_mask == mark_rail and 1 or -1
 end
 
 -- получить температуру у отметки
@@ -1046,7 +1057,6 @@ return {
 	format_sys_coord = format_sys_coord,
 	GetMarkRailPos = GetMarkRailPos,
 	GetRailName = GetRailName,
-	MakeCommonMarkTemaple = MakeCommonMarkTemplate,
 	MakeCommonMarkTemplate = MakeCommonMarkTemplate,
 	GetTemperature = GetTemperature,
 	GetRecognitionStartInfo = GetRecognitionStartInfo,

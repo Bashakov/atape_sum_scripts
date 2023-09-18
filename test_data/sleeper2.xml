@@ -1,0 +1,27 @@
+﻿<ACTION_RESULTS version="1.4">
+	<PARAM name="ACTION_RESULTS" channel="21" value="Sleeper">
+		<PARAM name="FrameNumber" value="0" coord="2284621">
+			<PARAM name="Result" value="main"><PARAM name="SleeperFault">
+					<PARAM name="Coord" type="polygon" value="348,444,572,444,572,397,348,397"></PARAM>
+					<PARAM name="Material" value="1" _value="0 - undef, 1 - ferroconcrete, 2 - wood"></PARAM>
+					<PARAM name="FaultType" value="2" _value="0 - undef, 1- fracture(ferroconcrete),  2 - chip(ferroconcrete), 3 - crack(wood) ,  4 - rottenness(wood)"></PARAM>
+				</PARAM>
+				
+				
+				<PARAM name="Angle_mrad" value="999"></PARAM>
+				<PARAM name="AxisSysCoord_mm" value="2284796"></PARAM>
+			</PARAM>
+		</PARAM>
+	</PARAM>
+
+
+	<PARAM name="ACTION_RESULTS" value="Sleepers">
+		<PARAM name="Angle_mrad" value="999"></PARAM>
+		<PARAM name="AxisSysCoord_mm" value="2284796"></PARAM>
+		<PARAM name="Material" value="0" _value="0 - undef, 1 - ferroconcrete, 2 - wood"></PARAM>
+	</PARAM>
+	<PARAM name="ACTION_RESULTS" value="Common">
+		<PARAM name="Reliability" value="100"></PARAM>
+		<PARAM name="RecogObjCoord" value="2284796"></PARAM>
+	</PARAM>
+</ACTION_RESULTS>

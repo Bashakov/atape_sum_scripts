@@ -1,0 +1,51 @@
+﻿<ACTION_RESULTS version="1.4">
+<PARAM name="ACTION_RESULTS" channel="17" value="Sleeper">
+<PARAM name="FrameNumber" value="0" coord="2344013">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="line" value="313,208,463,208"></PARAM>
+<PARAM name="Coord" type="line" value="388,208,388,7"></PARAM>
+<PARAM name="Angle_mrad" value="-104"></PARAM>
+<PARAM name="AxisSysCoord_mm" value="2344401"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="ACTION_RESULTS" channel="19" value="Sleeper">
+<PARAM name="FrameNumber" value="0" coord="2344013">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="line" value="3,177,153,177"></PARAM>
+<PARAM name="Coord" type="line" value="78,177,78,7"></PARAM>
+<PARAM name="Angle_mrad" value="-104"></PARAM>
+<PARAM name="AxisSysCoord_mm" value="2344376"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="ACTION_RESULTS" channel="18" value="Sleeper">
+<PARAM name="FrameNumber" value="0" coord="2344013">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="line" value="205,222,355,222"></PARAM>
+<PARAM name="Coord" type="line" value="280,222,280,7"></PARAM>
+<PARAM name="Angle_mrad" value="-104"></PARAM>
+<PARAM name="AxisSysCoord_mm" value="2344293"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="ACTION_RESULTS" channel="20" value="Sleeper">
+<PARAM name="FrameNumber" value="0" coord="2342989">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="line" value="896,177,1046,177"></PARAM>
+<PARAM name="Coord" type="line" value="971,177,971,7"></PARAM>
+<PARAM name="Angle_mrad" value="-104"></PARAM>
+<PARAM name="AxisSysCoord_mm" value="2344242"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="ACTION_RESULTS" value="Sleepers">
+<PARAM name="Angle_mrad" value="-104"></PARAM>
+<PARAM name="AxisSysCoord_mm" value="2344347"></PARAM>
+<PARAM name="Material" value="1" _value="0-, 1-, 2-"></PARAM></PARAM>
+<PARAM name="ACTION_RESULTS" value="Common">
+<PARAM name="Reliability" value="100"></PARAM>
+<PARAM name="RecogObjCoord" value="2344347" _desc="  "></PARAM>
+</PARAM>
+
+</ACTION_RESULTS>

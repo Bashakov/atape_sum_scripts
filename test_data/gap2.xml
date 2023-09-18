@@ -1,0 +1,226 @@
+<ACTION_RESULTS version="1.4">
+<PARAM name="ACTION_RESULTS" channel="18" value="CalcRailGap_Head_Top">
+<PARAM name="FrameNumber" value="0" coord="438777">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="polygon" value="273,852 273,707 296,707 296,852"></PARAM>
+<PARAM name="RailGapWidth_mkm" value="23000"></PARAM>
+</PARAM>
+</PARAM>
+
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="18" value="CalcRailGap_Head_Side">
+<PARAM name="FrameNumber" value="0" coord="438777">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="polygon" value="273,707 273,636 296,636 296,707"></PARAM>
+<PARAM name="RailGapWidth_mkm" value="23000"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+
+<PARAM name="ACTION_RESULTS" channel="18" value="Fishplate">
+<PARAM name="FrameNumber" value="-1" coord="437753">
+<PARAM name="Result" value="main">
+<PARAM name="FishplateEdge" value="1">
+<PARAM name="Coord" type="polygon" value="791,602 791,355"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="FrameNumber" value="0" coord="438777">
+<PARAM name="Result" value="main">
+<PARAM name="FishplateEdge" value="2">
+<PARAM name="Coord" type="polygon" value="787,602 787,355"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="18" value="CrewJoint">
+<PARAM name="FrameNumber" value="-1" coord="437753">
+<PARAM name="Result" value="main">
+<PARAM name="JointNumber" value="0">
+<PARAM name="Coord" type="ellipse" value="847,489,26,43"></PARAM>
+<PARAM name="CrewJointSafe" value="3" _value="-1(нет), 0(болтается), 1(есть)"></PARAM>
+</PARAM>
+<PARAM name="JointNumber" value="1">
+<PARAM name="Coord" type="ellipse" value="981,457,26,43"></PARAM>
+<PARAM name="CrewJointSafe" value="2" _value="-1(нет), 0(болтается), 1(есть)"></PARAM>
+</PARAM>
+
+</PARAM>
+</PARAM>
+<PARAM name="FrameNumber" value="0" coord="438777">
+<PARAM name="Result" value="main">
+<PARAM name="JointNumber" value="2">
+<PARAM name="Coord" type="ellipse" value="178,466,22,22"></PARAM>
+<PARAM name="CrewJointSafe" value="-1" _value="-1(нет), 0(болтается), 1(есть)"></PARAM>
+</PARAM>
+<PARAM name="JointNumber" value="3">
+<PARAM name="Coord" type="ellipse" value="384,471,22,22"></PARAM>
+<PARAM name="CrewJointSafe" value="-1" _value="-1(нет), 0(болтается), 1(есть)"></PARAM>
+</PARAM>
+<PARAM name="JointNumber" value="4">
+<PARAM name="Coord" type="ellipse" value="614,470,26,43"></PARAM>
+<PARAM name="CrewJointSafe" value="3" _value="-1(нет), 0(болтается), 1(есть)"></PARAM>
+</PARAM>
+<PARAM name="JointNumber" value="5">
+<PARAM name="Coord" type="ellipse" value="740,465,26,43"></PARAM>
+<PARAM name="CrewJointSafe" value="2" _value="-1(нет), 0(болтается), 1(есть)"></PARAM>
+</PARAM>
+
+</PARAM>
+</PARAM>
+
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="18" value="Connector">
+<PARAM name="FrameNumber" value="-1" coord="437753">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="ellipse" value="738,544,26,43"></PARAM>
+<PARAM name="ConnectorFault" value="1" value_="0-исправен, 1-неисправен"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="ACTION_RESULTS" channel="18" value="Connector">
+<PARAM name="FrameNumber" value="-1" coord="437753">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="ellipse" value="458,552,26,43"></PARAM>
+<PARAM name="ConnectorFault" value="0" value_="0-исправен, 1-неисправен"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="ACTION_RESULTS" channel="18" value="Connector">
+<PARAM name="FrameNumber" value="0" coord="438777">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="ellipse" value="880,560,26,43"></PARAM>
+<PARAM name="ConnectorFault" value="1" value_="0-исправен, 1-неисправен"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+
+<PARAM name="ACTION_RESULTS" channel="20" value="CalcRailGap_Head_Top">
+<PARAM name="FrameNumber" value="0" coord="437753">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="polygon" value="993,830 993,707 1015,707 1015,830"></PARAM>
+<PARAM name="RailGapWidth_mkm" value="22000"></PARAM>
+</PARAM>
+</PARAM>
+
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="20" value="CalcRailGap_Head_Side">
+<PARAM name="FrameNumber" value="0" coord="437753">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="polygon" value="993,707 993,622 1015,622 1015,707"></PARAM>
+<PARAM name="RailGapWidth_mkm" value="22000"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="20" value="CalcRailGapStep">
+<PARAM name="FrameNumber" value="0" coord="437753">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="line" value="993,838 1015,829 "></PARAM>
+<PARAM name="RailGapStepWidth" value="-5487" value_="mkm"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="20" value="Fishplate">
+<PARAM name="FrameNumber" value="0" coord="437753">
+<PARAM name="Result" value="main">
+<PARAM name="FishplateEdge" value="1">
+<PARAM name="Coord" type="polygon" value="491,613 491,386"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="FrameNumber" value="1" coord="438777">
+<PARAM name="Result" value="main">
+<PARAM name="FishplateEdge" value="2">
+<PARAM name="Coord" type="polygon" value="487,613 487,386"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="20" value="CrewJoint">
+<PARAM name="FrameNumber" value="0" coord="437753">
+<PARAM name="Result" value="main">
+<PARAM name="JointNumber" value="0">
+<PARAM name="Coord" type="ellipse" value="541,451,26,43"></PARAM>
+<PARAM name="CrewJointSafe" value="2" _value="-1(нет), 0(болтается), 1(есть)"></PARAM>
+</PARAM>
+<PARAM name="JointNumber" value="1">
+<PARAM name="Coord" type="ellipse" value="681,498,26,43"></PARAM>
+<PARAM name="CrewJointSafe" value="3" _value="-1(нет), 0(болтается), 1(есть)"></PARAM>
+</PARAM>
+<PARAM name="JointNumber" value="2">
+<PARAM name="Coord" type="ellipse" value="923,542,22,22"></PARAM>
+<PARAM name="CrewJointSafe" value="-1" _value="-1(нет), 0(болтается), 1(есть)"></PARAM>
+</PARAM>
+
+</PARAM>
+</PARAM>
+<PARAM name="FrameNumber" value="1" coord="438777">
+<PARAM name="Result" value="main">
+<PARAM name="JointNumber" value="3">
+<PARAM name="Coord" type="ellipse" value="84,489,22,22"></PARAM>
+<PARAM name="CrewJointSafe" value="-1" _value="-1(нет), 0(болтается), 1(есть)"></PARAM>
+</PARAM>
+<PARAM name="JointNumber" value="4">
+<PARAM name="Coord" type="ellipse" value="305,455,26,43"></PARAM>
+<PARAM name="CrewJointSafe" value="2" _value="-1(нет), 0(болтается), 1(есть)"></PARAM>
+</PARAM>
+<PARAM name="JointNumber" value="5">
+<PARAM name="Coord" type="ellipse" value="440,496,26,43"></PARAM>
+<PARAM name="CrewJointSafe" value="3" _value="-1(нет), 0(болтается), 1(есть)"></PARAM>
+</PARAM>
+
+</PARAM>
+</PARAM>
+
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="20" value="Connector">
+<PARAM name="FrameNumber" value="0" coord="437753">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="ellipse" value="438,552,26,43"></PARAM>
+<PARAM name="ConnectorFault" value="0" value_="0-исправен, 1-неисправен"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="ACTION_RESULTS" channel="20" value="Connector">
+<PARAM name="FrameNumber" value="0" coord="437753">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="ellipse" value="158,552,26,43"></PARAM>
+<PARAM name="ConnectorFault" value="0" value_="0-исправен, 1-неисправен"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+<PARAM name="ACTION_RESULTS" channel="20" value="Connector">
+<PARAM name="FrameNumber" value="1" coord="438777">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="ellipse" value="580,552,26,43"></PARAM>
+<PARAM name="ConnectorFault" value="0" value_="0-исправен, 1-неисправен"></PARAM>
+</PARAM>
+</PARAM>
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="19" value="WeldedBond">
+  <PARAM name="FrameNumber" value="0" coord="1976397">
+    <PARAM name="Result" value="main">
+      <PARAM name="Coord" type="polygon" value="428,256 428,340 580,340 580,256"></PARAM>
+      <PARAM name="ConnectorFault" value="0" value_="0-, 1-"></PARAM>
+    </PARAM>
+  </PARAM>
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" value="Common">
+<PARAM name="Reliability" value="100"></PARAM>
+<PARAM name="RecogObjCoord" value="439061" _desc="координата найденного объекта"></PARAM>
+</PARAM>
+
+
+</ACTION_RESULTS>
