@@ -669,10 +669,22 @@ local excel_helper = OOP.class
 
 -- ======================TEST ============================= --
 
-if false and not ATAPE then
-	_G.TEST_EXCEL_DST_PATH = "c:\\1"
-	local excel = excel_helper('C:\\Users\\abashak\\ATapeReport\\220413-113905_.xls', nil, true)
-	excel:ApplyPassportValues({})
+if not ATAPE then
+	local test_report  = require('local_data_driver')
+	local mark_helper = require 'sum_mark_helper'
+
+	local d = test_report.Driver("test_data\\data_27_short.xml")
+	local marks = d:GetMarks({ListType="all", GUIDS={"{CBD41D28-9308-4FEC-A330-35EAED9FC802}"}})
+	local report_rows = {}
+	for _, mark in ipairs(marks) do
+		local row = mark_helper.MakeCommonMarkTemplate(mark)
+		table.insert(report_rows, row)
+	end
+
+	local excel = excel_helper('ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ БЕССТЫКОВОГО ПУТИ.xlsm', 'В6 БП', true)
+	excel:ApplyPassportValues(d._passport)
+	excel:ApplyRows(report_rows, nil, dlgProgress)
+	excel:AppendTemplateSheet(d._passport, report_rows, nil, 3)
 
 	excel:SaveAndShow()
 	print('Bye')
