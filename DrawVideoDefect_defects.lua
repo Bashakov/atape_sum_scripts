@@ -234,6 +234,8 @@ DRAW_TOOL.rect_defect_rail_joint = copy_update(DRAW_TOOL.rect_defect, {options={
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004012058", name="Вертикальная ступенька в стыке"}))
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004012059", name="Горизонтальная ступенька в стыке"}))
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000474", name="Изломанная или дефектная стыковая накладка", tools={RAIL_JOINT_TOOL.fishplate_defect}, speed_limit="0"}))
+--!!! добавлен 1 инцидент, код сохранен, а скорость и название изменены
+table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000474", name="Дефект 4-х дырной стыковой накладки: мост/тоннель", tools={RAIL_JOINT_TOOL.fishplate_defect}, speed_limit=""}))
 -- https://bt.abisoft.spb.ru/view.php?id=765
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000475", name="Излом одной  накладки в стыке", tools={RAIL_JOINT_TOOL.fishplate_defect}, speed_limit="0"}))
 table.insert(DEFECTS, copy_update(rail_joint_template, {ekasui_code="090004000476", name="Излом 2-х накладок в стыке", tools={RAIL_JOINT_TOOL.fishplate_defect}, speed_limit="0"}))
@@ -260,8 +262,9 @@ table.insert(DEFECTS,  {guid=GUIDS.RAIL_DEFECTS_USER, group="Дефекты ре
 table.insert(DEFECTS,  {guid=GUIDS.RAIL_DEFECTS_USER, group="Дефекты рельсов", ekasui_code="090004012004", name="Излом рельса", fn=make_simple_defect, tools = {DRAW_TOOL.rect_defect}, "0"})
 table.insert(DEFECTS,  {guid=GUIDS.RAIL_DEFECTS_USER, group="Дефекты рельсов", ekasui_code="090004012001", name="Поверхностный дефект рельса", fn=make_simple_defect, tools = {DRAW_TOOL.rect_defect}})
 table.insert(DEFECTS,  {guid=GUIDS.RAIL_DEFECTS_USER, group="Дефекты рельсов", ekasui_code="090004012008", name="Поперечные трещины головки рельса", fn=make_simple_defect, tools = {DRAW_TOOL.rect_defect}, speed_limit="15"})
+--!!! добавлен 1 инцидент, код сохранен, а скорость и название изменены
+table.insert(DEFECTS,  {guid=GUIDS.RAIL_DEFECTS_USER, group="Дефекты рельсов", ekasui_code="090004012008", name="Трещина головки у приварного соединителя", fn=make_simple_defect, tools = {DRAW_TOOL.rect_defect}, speed_limit="25"})
 table.insert(DEFECTS,  {guid=GUIDS.RAIL_DEFECTS_USER, group="Дефекты рельсов", ekasui_code="090004012009", name="Продольные трещины головки рельса", fn=make_simple_defect, tools = {DRAW_TOOL.rect_defect}, speed_limit="15"})
-
 --!!! изменен код table.insert(DEFECTS,  {guid=GUIDS.BALLAST_USER, group="Балласт", ekasui_code="090004000482", name="Выплеск", fn=make_simple_defect, tools = {DRAW_TOOL.rect_defect}, ""})   зависит от длины выплеска 2,5-5 метров "60" и "40" на стыке; 5-7,5 "40" и "25" на стыке; более 7,5 "25" в обычном пути и "15" на стыке;
 table.insert(DEFECTS,  {guid=GUIDS.BALLAST_USER, group="Балласт", ekasui_code="090004017135", name="Выплеск в плети 2,5-5 метров", fn=make_simple_defect, tools = {DRAW_TOOL.rect_defect}, speed_limit="60"})
 table.insert(DEFECTS,  {guid=GUIDS.BALLAST_USER, group="Балласт", ekasui_code="090004017135", name="Выплеск в плети 5-7,5 метров", fn=make_simple_defect, tools = {DRAW_TOOL.rect_defect}, speed_limit="40"})
@@ -336,6 +339,7 @@ local group_defect_desc = {
 	{GUIDS.GROUP_FSTR_USER, 3, '090004017106', 'Скрепления', 'Деф.скр.стрелка: 3 шп.: одна нить', "40/25"},  --Отсутствует или дефектное скрепление скрепление на рамном рельсе, в крестовине или контррельсовом рельсе стрелочного перевода по одной нити  на 3-х брусьях подряд по одной нити
 	{GUIDS.GROUP_FSTR_USER, 4, '090004017107', 'Скрепления', 'Деф.скр.стрелка: 4 шп.: одна нить', "25/15"},  --Отсутствует или дефектное скрепление скрепление на рамном рельсе, в крестовине или контррельсовом рельсе стрелочного перевода по одной нити  на 4-х брусьях подряд по одной нити
 	{GUIDS.GROUP_FSTR_USER, 5, '090004017108', 'Скрепления', 'Деф.скр.стрелка: 5 шп. и более: одна нить', "15/0"},  --Отсутствует или дефектное скрепление скрепление на рамном рельсе, в крестовине или контррельсовом рельсе стрелочного перевода по одной нити  на 5 и более брусьях подряд
+	{GUIDS.GROUP_FSTR_USER, 3, '090004017102', 'Скрепления', 'Контруголок: нет накладок или крепления на 3-х брусьях', "40"},  --Отсутствует или дефектное скрепление скрепление на бесподкладочных скреплениях  на 3-х шпалах подряд по одной нити
 }
 
 for _, gd in ipairs(group_defect_desc) do
