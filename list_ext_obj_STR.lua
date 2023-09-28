@@ -123,7 +123,7 @@ local STR = OOP.class
 		for i, obj in ipairs(self.objects) do
 			res[i] = {
 				path={obj.KM, obj.M},
-				description = string.format("стрелка: %s\n%d км %d м", obj.TYPE, obj.KM, obj.M),
+				description = string.format("стрелка: %s\n%d км %d м", obj.NOM, obj.KM, obj.M),
 				vert_line = 1,
 				icon_file = 'Images/SUM.bmp',
 				icon_rect = {16, 32, 16, 16},

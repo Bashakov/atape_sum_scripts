@@ -49,23 +49,25 @@ local function GetMarks()
 	return marks
 end
 
-
-local function MakeJointMarkRow(mark, defect_code, gap_width)
-	local row = mark_helper.MakeCommonMarkTemplate(mark)
-
-	row.SPEED_LIMIT = ''
-	row.GAP_WIDTH = gap_width or mark_helper.GetGapWidth(mark)
-	row.BLINK_GAP_COUNT = ''
-
+local function setRowDefectCode(row, defect_code)
 	if defect_code then
 		if type(defect_code) == 'table' then defect_code = defect_code[1] end
 		assert(type(defect_code) == 'string')
 		row.DEFECT_CODE = defect_code
 		row.DEFECT_DESC = DEFECT_CODES.code2desc(defect_code)
 	end
-	return row
 end
 
+local function MakeJointMarkRow(mark, defect_code, args)
+	args = args or {}
+	local row = mark_helper.MakeCommonMarkTemplate(mark)
+
+	row.SPEED_LIMIT = mark.ext.USER_SPEED_LIMIT or args.speed_limit or ''
+	row.GAP_WIDTH = args.gap_width or mark_helper.GetGapWidth(mark)
+	row.BLINK_GAP_COUNT = ''
+	setRowDefectCode(row, defect_code)
+	return row
+end
 
 -- ============================================================================= --
 
@@ -74,7 +76,7 @@ local function get_mark_gap_width_defect_code(mark)
 	local function width2speed(gap_width)
 		if gap_width <= 26 then return '100' end
 		if gap_width <= 30 then	return '60'	 end
-		if gap_width <= 35 then	return '25'	 end
+		if gap_width <= 35 then	return '40'	 end
 		return 'Движение закрывается'
 	end
 
@@ -113,8 +115,7 @@ end
 local function make_mark_gap_width_exceed(mark)
 	local defect_code, speed_limit, gap_width = get_mark_gap_width_defect_code(mark)
 	if defect_code then
-		local row = MakeJointMarkRow(mark, defect_code, gap_width)
-		row.SPEED_LIMIT = speed_limit
+		local row = MakeJointMarkRow(mark, defect_code, {gap_width=gap_width, speed_limit=speed_limit})
 		assert(row.GAP_WIDTH == gap_width)
 		return row
 	end
@@ -296,11 +297,8 @@ local function generate_rows_neigh_blind_joint(marks, dlgProgress, pov_filter)
 	end
 
 	for group, defect_code, speed_limit in iter_blind_group_defect_code(marks, pov_filter, fnProgress) do
-		local row = MakeJointMarkRow(group[1], defect_code)
+		local row = MakeJointMarkRow(group[1], defect_code, {speed_limit=speed_limit})
 		row.BLINK_GAP_COUNT = #group
-		if speed_limit then
-			row.SPEED_LIMIT = speed_limit
-		end
 		table.insert(report_rows, row)
 	end
 
@@ -339,10 +337,7 @@ local function generate_rows_joint_step(marks, dlgProgress, pov_filter)
 		if pov_filter(mark) then
 			local defect_code, speed_limit = get_joint_step_defect_code(mark)
 			if defect_code then
-				local row = MakeJointMarkRow(mark, defect_code)
-				if speed_limit then
-					row.SPEED_LIMIT = speed_limit
-				end
+				local row = MakeJointMarkRow(mark, defect_code, {speed_limit=speed_limit})
 				table.insert(report_rows, row)
 			end
 		end
@@ -407,10 +402,7 @@ local function generate_rows_fishplate(marks, dlgProgress, pov_filter)
 		if pov_filter(mark) then
 			local defect_code, speed_limit = get_fishplate_defect_code(mark)
 			if defect_code then
-				local row = MakeJointMarkRow(mark, defect_code)
-				if speed_limit then
-					row.SPEED_LIMIT = speed_limit
-				end
+				local row = MakeJointMarkRow(mark, defect_code, {speed_limit=speed_limit})
 				table.insert(report_rows, row)
 			end
 		end
@@ -451,10 +443,9 @@ local function generate_rows_missing_bolt(marks, dlgProgress, pov_filter)
 				local row = MakeJointMarkRow(mark, mark.ext.CODE_EKASUI)
 				table.insert(report_rows, row)
 			else
-				local code, limit = bolt2defect_limit(mark)
+				local code, speed_limit = bolt2defect_limit(mark)
 				if code then
-					local row = MakeJointMarkRow(mark, code)
-					row.SPEED_LIMIT = limit
+					local row = MakeJointMarkRow(mark, code, {speed_limit=speed_limit})
 					table.insert(report_rows, row)
 				end
 			end
@@ -638,10 +629,10 @@ end
 if not ATAPE then
 	_G.ShowVideo = 0
 	local test_report  = require('local_data_driver')
-	test_report.Driver('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 100000000})
-	--test_report('C:\\Avikon\\CheckAvikonReports\\data\\data_27_short.xml')
-    --test_report('D:/ATapeXP/Main/TEST/ZeroGap/2019_06_13/Avikon-03M/6284/[494]_2017_06_14_03.xml')
-
+	-- p = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+	local p = 'D:\\Downloads\\redmine\\57\\Ограничения скорости\\9005\\[498]_2023_09_07_02.xml'
+	test_report.Driver(p, nil, {0, 100000000})
+	
 	-- local report = reports[1]
 	-- print(report.name)
 	-- report.fn()
