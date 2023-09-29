@@ -219,7 +219,6 @@ local filters =
 			column_rail,
 			column_recogn_bolt,
 			column_gap_type,
-			--column_recogn_reability,
 			column_recogn_video_channel,
 			},
 		GUIDS = recognition_guids,
@@ -227,6 +226,25 @@ local filters =
 			local join_type = mark_helper.GetGapType(mark)
 			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
 			return valid_on_half and valid_on_half < 2 and join_type ~= 2
+		end,
+	},
+	{
+		group = {'Тест:видео'},
+		name = 'Тест нетиповые болты',
+		columns = {
+			column_num,
+			column_path_coord,
+			column_pov_common,
+			column_joint_speed_limit,
+			column_rail,
+			column_recogn_bolt,
+			column_gap_type,
+			column_recogn_video_channel,
+			},
+		GUIDS = recognition_guids,
+		filter = function(mark)
+			local _,_, atypical = mark_helper.GetCrewJointCount(mark)
+			return atypical > 0
 		end,
 	},
 	{

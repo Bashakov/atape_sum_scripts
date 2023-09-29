@@ -209,18 +209,21 @@ local function GetCrewJointArray(mark)
 end
 
 
--- посчитать количество нормальных и дефектных болтов в массиве в заданном диапазоне
+-- посчитать количество нормальных дефектных и нетиповых болтов в массиве в заданном диапазоне
 local function CalcJointDefectInRange(joints, first, last)
-	local defects, valid = 0, 0
+	local defects, valid, atypical = 0, 0, 0
 	for i = first or 1, last or #joints do
 		local safe = joints[i]
 		if safe > 0 then
+			if safe == 4 then
+				atypical = atypical + 1
+			end
 			valid = valid + 1
 		else
 			defects = defects + 1
 		end
 	end
-	return valid, defects
+	return valid, defects, atypical
 end
 
 
@@ -228,8 +231,8 @@ end
 local function GetCrewJointCount(mark)
 	local joints = GetCrewJointArray(mark)
 	if joints then
-		local valid, defects = CalcJointDefectInRange(joints)
-		return #joints, defects
+		local valid, defects, atypical = CalcJointDefectInRange(joints)
+		return #joints, defects, atypical
 	end
 end
 

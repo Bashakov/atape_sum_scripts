@@ -365,12 +365,19 @@ column_recogn_video_channel =
 column_recogn_bolt = 
 {
 	name = 'Б/Д', 
-	width = 30, 
+	width = 40, 
 	align = 'c', 
 	text = function(row)
 		local mark = work_marks_list[row]
-		local all, defect = mark_helper.GetCrewJointCount(mark)
-		return all and all ~=0 and sprintf('%d/%d', all, defect) or ''
+		local all, defect, atypical = mark_helper.GetCrewJointCount(mark)
+		local msg = '' 
+		if all and all ~=0 then
+			msg = sprintf('%d/%d', all, defect)
+			if atypical ~= 0 then
+				msg = msg .. sprintf('/%d', atypical)
+			end
+		end 
+		return msg
 	end,
 	sorter = function(mark)
 		local all, defect = mark_helper.GetCrewJointCount(mark)

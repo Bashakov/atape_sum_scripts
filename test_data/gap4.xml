@@ -1,0 +1,24 @@
+﻿<ACTION_RESULTS version="1.4">
+    <PARAM name="ACTION_RESULTS" channel="19" value="CrewJoint">
+        <PARAM name="FrameNumber" value="0" coord="225952">
+            <PARAM name="Result" value="main">
+                <PARAM name="JointNumber" value="0">
+                    <PARAM name="Coord" type="ellipse" value="212,251,28,37"></PARAM>
+                    <PARAM name="CrewJointSafe" value="-1"></PARAM>
+                </PARAM>
+                <PARAM name="JointNumber" value="0">
+                    <PARAM name="Coord" type="ellipse" value="212,251,28,37"></PARAM>
+                    <PARAM name="CrewJointSafe" value="1"></PARAM>
+                </PARAM>
+                <PARAM name="JointNumber" value="0">
+                    <PARAM name="Coord" type="ellipse" value="212,251,28,37"></PARAM>
+                    <PARAM name="CrewJointSafe" value="4"></PARAM>
+                </PARAM>
+                <PARAM name="JointNumber" value="0">
+                    <PARAM name="Coord" type="ellipse" value="212,251,28,37"></PARAM>
+                    <PARAM name="CrewJointSafe" value="2"></PARAM>
+                </PARAM>
+            </PARAM>
+        </PARAM>
+    </PARAM>
+</ACTION_RESULTS>

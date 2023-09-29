@@ -529,10 +529,10 @@ if not ATAPE then
 	-- local psp_path = 'D:/Downloads/932/31883/[507]_2022_04_14_04.xml'
 	--local psp_path = "D:/Downloads/1006/123/[500]_2020_03_05_01(1 км 754 м 679 мм - 5 км 765 м 763 мм).xml"
 
-	test_report.Driver(psp_path, nil, {0, 200000}) -- ,  , 
+	test_report.Driver(psp_path, nil, {0, 200000})
 
 	-- local name = 'III Cоединители и перемычки'
-	local name = 'III Устройства ЖАТ'
+	local name = 'Тест нетиповые болты'
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}
 	local col_names = {}

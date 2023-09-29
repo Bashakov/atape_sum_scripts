@@ -133,11 +133,15 @@ function TestGetCrewJoint()
 
     mark.ext.RAWXMLDATA = read_file('test_data/gap1.xml')
     lu.assertEquals(mark_helper.GetCrewJointArray(mark), {2, 3, 2, 3, 2, 3})
-    lu.assertEquals({mark_helper.GetCrewJointCount(mark)}, {6, 0})
+    lu.assertEquals({mark_helper.GetCrewJointCount(mark)}, {6, 0, 0})
 
     mark.ext.RAWXMLDATA = read_file('test_data/gap2.xml')
     lu.assertEquals(mark_helper.GetCrewJointArray(mark), {3, 2, -1, -1, 3, 2})
-    lu.assertEquals({mark_helper.GetCrewJointCount(mark)}, {6, 2})
+    lu.assertEquals({mark_helper.GetCrewJointCount(mark)}, {6, 2, 0})
+
+    mark.ext.RAWXMLDATA = read_file('test_data/gap4.xml')
+    lu.assertEquals(mark_helper.GetCrewJointArray(mark), {-1, 1, 4, 2})
+    lu.assertEquals({mark_helper.GetCrewJointCount(mark)}, {4, 1, 1})
 
     mark.ext.RAWXMLDATA = read_file('test_data/beacon1.xml')
     lu.assertIsNil(mark_helper.GetCrewJointArray(mark))
@@ -395,7 +399,7 @@ function TestMakeCommonMarkTemplate()
             return g .. g
         end,
         GetGPS = function (self, c)
-            return (c % 180.1 - 90), (c % 360.1-180)
+            return (c % 180.2 - 90), (c % 360.2-180)
         end,
         GetPathCoord = function (self, coord)
             return
@@ -445,10 +449,10 @@ function TestMakeCommonMarkTemplate()
         RAIL_POS=1,
         RAIL_NAME="прав.",
         RAIL_TEMP="+15.0",
-        LAT="-45 29' 60.000''",
-        LAT_RAW="-45.50000000",
-        LON="-37 48' 0.000''",
-        LON_RAW="-37.80000000",
+        LAT="-60 23' 60.000''",
+        LAT_RAW="-60.40000000",
+        LON="44 35' 60.000''",
+        LON_RAW="44.60000000",
         DEFECT_CODE="",
         DEFECT_DESC="",
     })
