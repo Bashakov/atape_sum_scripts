@@ -82,6 +82,7 @@ local function igenerate_rows_fastener(marks, dlgProgress)
 		[1] = 'Аpc',
 		[2] = 'ДО', -- скрепление на деревянной шпале на костылях
 		[3] = 'КД', -- скрепление на деревянной шпале как КБ-65 но на двух шурупах
+		[4] = 'Pandrol'
 	}
 
 	local defect_codes =
@@ -239,11 +240,11 @@ end
 
 -- тестирование
 if not ATAPE then
-	local test_report  = require('test_report')
-	test_report('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 1000000})
+	local test_report  = require('local_data_driver')
+	test_report.Driver('D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml', nil, {0, 150000})
 
-	--report_fastener()
-	ekasui_fastener()
+	report_fastener()
+	--ekasui_fastener()
 	-- report_fastener_user()
 end
 

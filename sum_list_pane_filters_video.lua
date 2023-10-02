@@ -506,8 +506,6 @@ local filters =
 			column_rail,
 			column_fastener_type,
 			column_recogn_video_channel,
---			column_recogn_reability,
---			column_fastener_width,
 			},
 		GUIDS = {
 			TYPES.FASTENER,

@@ -311,9 +311,13 @@ end
 -- =================== Скрепления ===================
 
 local function IsFastenerDefect(mark)
+	local xpath = '\z
+		/ACTION_RESULTS\z
+		/PARAM[@name="ACTION_RESULTS" and @value="Fastener"]\z
+		//PARAM[@name="FastenerFault" and @value]/@value'
 	local ext = mark.ext
 	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
-		local node = xmlDom:SelectSingleNode('/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Fastener"]//PARAM[@name="FastenerFault" and @value]/@value')
+		local node = xmlDom:SelectSingleNode(xpath)
 		if node then
 			node = tonumber(node.nodeValue)
 			return node ~= 0
