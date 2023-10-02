@@ -314,7 +314,8 @@ local function drawSimpleResult(resultType, points, params, mark)
 			[ 0] = {r=255, g=255, b=0},  	-- болтается
 			[ 1] = {r=128, g=128, b=255},  	-- есть
 			[ 2] = {r=128, g=192, b=255},   -- болт
-			[ 3] = {r=128, g=64, b=255},    -- гайка
+			[ 3] = {r=128, g=64,  b=255},   -- гайка
+			[ 4] = {r=255, g=255, b=0},     -- Нетиповые болты
 		}
 
 		local color = colors[tonumber(params.CrewJointSafe)] or {r=128, g=128, b=128}
