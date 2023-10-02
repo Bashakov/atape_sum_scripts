@@ -3,44 +3,15 @@ local sumPOV = require "sumPOV"
 local rubki = require "sum_report_rubki"
 local mark_helper = require 'sum_mark_helper'
 local TYPES = require 'sum_types'
+local alg = require 'algorithm'
+local xml = require 'xml_utils'
 
 -- =========== stuff ============== --
-
-local function find(array, elem)
-	for i, val in ipairs(array) do
-		if val == elem then return i end
-	end
-end
-
-local function create_document()
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	if not xmlDom then error("no Msxml2.DOMDocument: " .. luacom.config.last_error) end
-	return xmlDom
-end
-
-local function load_xml(path)
-	local xmlDom = create_document()
-	if not xmlDom:load(path) then error(string.format("Msxml2.DOMDocument load(%s) failed with: %s", path, xmlDom.parseError.reason)) end
-	return xmlDom
-end
-
-local function parse_xml(strXml)
-	local xmlDom = create_document()
-	if not xmlDom:loadXml(strXml) then error(string.format("Msxml2.DOMDocument parse failed with: %s", xmlDom.parseError.reason)) end
-	return xmlDom
-end
-
-local function select_nodes(xml, xpath)
-	return function(nodes)
-		return nodes:nextNode()
-	end, xml:SelectNodes(xpath)
-end
-
 
 local function clear_desc_attrib(xml)
 	local names = {'_value', 'value_', '_desc'}
 	for _,name in ipairs(names) do
-		for n in select_nodes(xml, "//*[@" .. name .. "]") do
+		for n in xml.SelectNodes(xml, "//*[@" .. name .. "]") do
 			n:removeAttribute(name)
 		end
 	end
@@ -63,7 +34,7 @@ end
 
 local function edit_width(obj)
 	local mark = obj.mark
-	local recog_xml = parse_xml(mark.ext.RAWXMLDATA or '<a/>')
+	local recog_xml = xml.load_xml_str(mark.ext.RAWXMLDATA or '<a/>')
 
 	local function gw(propExt, xmlAttr)
 		if mark.ext[propExt] then
@@ -98,9 +69,9 @@ end
 local function edit_bolts(obj)
 	local function read_bolts(recog_xml)
 		local bolts = {}
-		for nodeCrewJoint in select_nodes(recog_xml, "//PARAM[@name='ACTION_RESULTS' and @value='CrewJoint']") do
+		for nodeCrewJoint in xml.SelectNodes(recog_xml, "//PARAM[@name='ACTION_RESULTS' and @value='CrewJoint']") do
 			local nodeCh = nodeCrewJoint.attributes:getNamedItem('channel')
-			for nodeJoint in select_nodes(nodeCrewJoint, "PARAM/PARAM/PARAM[@name='JointNumber']") do
+			for nodeJoint in xml.SelectNodes(nodeCrewJoint, "PARAM/PARAM/PARAM[@name='JointNumber']") do
 				local num = nodeJoint.attributes:getNamedItem('value').nodeValue
 				local nodeState = nodeJoint:selectSingleNode("PARAM[@name='CrewJointSafe']/@value")
 				local state = tonumber(nodeState.nodeValue)
@@ -112,7 +83,7 @@ local function edit_bolts(obj)
 		return bolts
 	end
 	local mark = obj.mark
-	local recog_xml = parse_xml(mark.ext.RAWXMLDATA)
+	local recog_xml = xml.load_xml_str(mark.ext.RAWXMLDATA)
 	local bolts = read_bolts(recog_xml)
 	local fmt = ''
 	local states = {}
@@ -214,8 +185,8 @@ local function mark_accept_width_checker(menu_items, mark)
 				sumPOV.UpdateMarks(mark, false)
 
 				if mark.ext.RAWXMLDATA then
-					local recog_xml = parse_xml(mark.ext.RAWXMLDATA)
-					for node_width in select_nodes(recog_xml, "//PARAM[@name='RailGapWidth_mkm' and @value]") do
+					local recog_xml = xml.load_xml_str(mark.ext.RAWXMLDATA)
+					for node_width in xml.SelectNodes(recog_xml, "//PARAM[@name='RailGapWidth_mkm' and @value]") do
 						local cur_width = tonumber(node_width:SelectSingleNode("@value").nodeValue) / 1000
 						if cur_width ~= width then
 							local node_result = node_width.parentNode        -- оставить только подтвержденный зазор и
@@ -315,7 +286,7 @@ function GetMenuItems(mark)
 		table.insert(menu_items, {name="Показать XML распознавания", fn=show_mark_xml, mark=mark})
 	end
 
-	if find(GUIDS.recognition_guids, mark_guid) then
+	if alg.table_find(GUIDS.recognition_guids, mark_guid) then
 		table.insert(menu_items, {name='Редактировать ширину зазора', fn=edit_width, mark=mark})
 		if recog_xml and #recog_xml > 0 then
 			table.insert(menu_items, {name="Редактировать наличие болтов", fn=edit_bolts, mark=mark})
@@ -356,5 +327,6 @@ end
 -- для загрузки как пакета в sum_list_pane.lua
 return {
 	GetMenuItems = GetMenuItems,
+	EditBold = function (mark) return edit_bolts({mark=mark}) end,
 	RETURN_STATUS = RETURN_STATUS
 }

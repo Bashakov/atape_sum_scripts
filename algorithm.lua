@@ -191,10 +191,8 @@ end
 
 -- поиск элемента в таблице
 local function table_find(tbl, val)
-	for i = 1, #tbl do
-		if tbl[i] == val then
-			return i
-		end
+    for i, item in ipairs(tbl) do
+		if val == item then return i end
 	end
 end
 
@@ -267,6 +265,10 @@ local function equal_range(array, value, pred)
 	return lower_bound(array, value, pred), upper_bound(array, value, pred)
 end
 
+local function starts_with(input, prefix)
+	return #input >= #prefix and string.sub(input, 1, #prefix) == prefix
+end
+
 -- ============================================================= --
 
 return
@@ -289,4 +291,5 @@ return
     lower_bound = lower_bound,
     upper_bound = upper_bound,
     equal_range = equal_range,
+    starts_with = starts_with,
 }

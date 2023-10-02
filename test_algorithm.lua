@@ -126,7 +126,7 @@ function TestReverseArray()
     lu.assertEquals(a, {3, 1, 2})
 end
 
-function testEqualRange1()
+function TestEqualRange1()
     local src = {10, -20, 30, 40, -50}
     local pred = function (a, b) return math.abs(a) < math.abs(b) end
     local er = function (x) return {algorithm.equal_range(src, x, pred)} end
@@ -139,7 +139,7 @@ function testEqualRange1()
     lu.assertEquals(er(55), {6, 6})
 end
 
-function testEqualRange2()
+function TestEqualRange2()
     local er = function(a, v, p) local l, b = algorithm.equal_range(a, v, p) return {l, b} end
 
     local a = {10,20,}
@@ -157,6 +157,17 @@ function testEqualRange2()
     for i,_ in ipairs(l) do
         lu.assertEquals({i, i+1}, er(l, i))
     end
+end
+
+function TestStartsWith()
+    lu.assertIsTrue(algorithm.starts_with("", ""))
+    lu.assertIsTrue(algorithm.starts_with("12", "12"))
+    lu.assertIsTrue(algorithm.starts_with("123", "12"))
+    lu.assertIsTrue(algorithm.starts_with("1", ""))
+    lu.assertIsFalse(algorithm.starts_with("", "1"))
+    lu.assertIsFalse(algorithm.starts_with("12", "123"))
+    lu.assertIsTrue(algorithm.starts_with("абс", "аб"))
+    lu.assertIsFalse(algorithm.starts_with("абс", "ас"))
 end
 
 -- =====================================================  --
