@@ -448,6 +448,11 @@ local function generate_rows_missing_bolt(marks, dlgProgress, pov_filter)
 					local row = MakeJointMarkRow(mark, code, {speed_limit=speed_limit})
 					table.insert(report_rows, row)
 				end
+				local _, _, atypical = mark_helper.GetCrewJointCount(mark)
+				if atypical and atypical > 0 then
+					local row = MakeJointMarkRow(mark, DEFECT_CODES.JOINT_ATYPICAL)
+					table.insert(report_rows, row)
+				end
 			end
 		end
 
@@ -629,15 +634,15 @@ end
 if not ATAPE then
 	_G.ShowVideo = 0
 	local test_report  = require('local_data_driver')
-	-- p = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-	local p = 'D:\\Downloads\\redmine\\57\\Ограничения скорости\\9005\\[498]_2023_09_07_02.xml'
-	test_report.Driver(p, nil, {0, 100000000})
+	local p = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+	-- local p = 'D:\\Downloads\\redmine\\57\\Ограничения скорости\\9005\\[498]_2023_09_07_02.xml'
+	test_report.Driver(p, nil, {0, 200000})
 	
 	-- local report = reports[1]
 	-- print(report.name)
 	-- report.fn()
 
-	ekasui_fishplate()
+	ekasui_missing_bolt()
 	--report_ALL()
 end
 

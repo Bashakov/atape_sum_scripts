@@ -364,7 +364,7 @@ column_recogn_video_channel =
 
 column_recogn_bolt = 
 {
-	name = 'Б/Д', 
+	name = 'Б/Д/Н', 
 	width = 40, 
 	align = 'c', 
 	text = function(row)
