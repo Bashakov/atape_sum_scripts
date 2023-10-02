@@ -26,7 +26,7 @@ end
 function TestItems()
     local mark = {
         prop = {Guid = TYPES.VID_INDT_1},
-        ext = {RAWXMLDATA = read_file('test_data/gap4.xml')}
+        ext = {RAWXMLDATA = read_file('test_data/gap4.xml')},
     }
     local items = context_menu.GetMenuItems(mark)
     local names = algorithm.map(function (item) return type(item) == "table" and item.name or '' end, items)
@@ -46,10 +46,13 @@ function TestItems()
     })
 end
 
-function Te1stEditBolt()
+function Tes1tEditBolt()
     local mark = {
         prop = {Guid = TYPES.VID_INDT_1},
-        ext = {RAWXMLDATA = read_file('test_data/gap2.xml')}
+        ext = {RAWXMLDATA = read_file('test_data/gap2.xml')},
+        Save = function (self)
+            print(self.ext.RAWXMLDATA)
+        end,
     }
     context_menu.EditBold(mark)
     -- lu.assertEquals(1,1)

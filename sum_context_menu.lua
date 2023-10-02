@@ -8,11 +8,111 @@ local xml = require 'xml_utils'
 
 -- =========== stuff ============== --
 
-local function clear_desc_attrib(xml)
+local function clear_desc_attrib(root)
 	local names = {'_value', 'value_', '_desc'}
-	for _,name in ipairs(names) do
-		for n in xml.SelectNodes(xml, "//*[@" .. name .. "]") do
+	for _, name in ipairs(names) do
+		for n in xml.SelectNodes(root, "//*[@" .. name .. "]") do
 			n:removeAttribute(name)
+		end
+	end
+end
+
+local function showJointEditDlg(bolts)
+	local result = false
+	local toggles = {}
+	for num, joint_state in alg.sorted(bolts) do
+		local title = string.format("Болтовое отверстие %d", num+1)
+		local value
+		if joint_state < 0 then -- defect
+			value = "OFF"
+		elseif joint_state == 0 or joint_state == 4 then -- болтается или нетиповой
+			value = "NOTDEF"
+		elseif joint_state == 1 or joint_state == 2 or joint_state == 3 then -- есть|болт|гайка
+			value = "ON"
+		end
+
+		if value then
+			toggles[#toggles+1] = iup.toggle{title = title, ["3STATE"] = "YES", value=value, action=action_toggle}
+		end
+	end
+
+	if #toggles > 0 then
+		local save = function (self)
+			result = true
+			local tbl = {["OFF"] = -1, ["NOTDEF"] = 0, ["ON"] = 1}
+			local i = 1
+			for num, prev_state in alg.sorted(bolts) do
+				local new_state = tbl[toggles[i].value]
+				result = result or prev_state ~= new_state
+				bolts[num] = new_state
+				i = i+1
+			end
+			return iup.CLOSE
+		end
+
+		local label = iup.label {
+			title = "\z
+				Корректировка наличия болтов:\n\z
+				Галочка отмечена -  есть.\n\z
+				Галочка отмечена(серая) - ослаблен или нетиповой.\nГалочка снята - нет."
+		}
+		local btn_size="60x15"
+		local button_ok = iup.button{title="Сохранить", size=btn_size, action=save}
+		local button_cancel = iup.button{title="Отмена", size=btn_size, action = function() return iup.CLOSE end}
+
+		local layout = iup.vbox {
+			label,
+			iup.vbox(toggles),
+			iup.hbox{
+					iup.fill{},
+					button_ok,
+					button_cancel
+			}
+		}
+		local dlg = iup.dialog{
+			layout,
+			title = "Редактирование болтов",
+			margin="19x5",
+			gap="5",
+			resize="NO",
+			defaultenter = button_ok,
+			defaultesc = button_cancel,
+		}
+		dlg:popup()
+	end
+	return result
+end
+
+local function enum_joints(root)
+	return coroutine.wrap(function ()
+		local xpathJoints = "//PARAM[@name='ACTION_RESULTS' and @value='CrewJoint']/PARAM/PARAM/PARAM[@name='JointNumber']"
+		for nodeJoint in xml.SelectNodes(root, xpathJoints) do
+			local nodeNum = nodeJoint.attributes:getNamedItem('value')
+			local nodeState = nodeJoint:selectSingleNode("PARAM[@name='CrewJointSafe']/@value")
+			if nodeNum and nodeState then
+				local num = tonumber(nodeNum.nodeValue)
+				local state = tonumber(nodeState.nodeValue)
+				if -1 <= state and state <= 4 then
+					coroutine.yield(num, state, nodeState)
+				end
+			end
+		end
+	end)
+end
+
+local function read_bolts(root)
+	local bolts = {}
+	for num, state in enum_joints(root) do
+		bolts[num] = state
+	end
+	return bolts
+end
+
+local function save_bolts(root, bolts)
+	-- local xpathJointsTmpt = "//PARAM[@name='ACTION_RESULTS' and @value='CrewJoint']/PARAM/PARAM/PARAM[@name='JointNumber' and @value='%d']/PARAM[@name='CrewJointSafe']/@value"
+	for num, _, nodeState in enum_joints(root) do
+		if bolts[num] then
+			nodeState.nodeValue = tostring(bolts[num])
 		end
 	end
 end
@@ -67,37 +167,12 @@ local function edit_width(obj)
 end
 
 local function edit_bolts(obj)
-	local function read_bolts(recog_xml)
-		local bolts = {}
-		for nodeCrewJoint in xml.SelectNodes(recog_xml, "//PARAM[@name='ACTION_RESULTS' and @value='CrewJoint']") do
-			local nodeCh = nodeCrewJoint.attributes:getNamedItem('channel')
-			for nodeJoint in xml.SelectNodes(nodeCrewJoint, "PARAM/PARAM/PARAM[@name='JointNumber']") do
-				local num = nodeJoint.attributes:getNamedItem('value').nodeValue
-				local nodeState = nodeJoint:selectSingleNode("PARAM[@name='CrewJointSafe']/@value")
-				local state = tonumber(nodeState.nodeValue)
-				if -1 <= state and state <= 3 then
-					table.insert(bolts, {ch=nodeCh and tostring(nodeCh.nodeValue) or '', num=num, nodeState=nodeState, state=state+1})
-				end
-			end
-		end
-		return bolts
-	end
 	local mark = obj.mark
 	local recog_xml = xml.load_xml_str(mark.ext.RAWXMLDATA)
 	local bolts = read_bolts(recog_xml)
-	local fmt = ''
-	local states = {}
-	for i, bolt in ipairs(bolts) do
-		fmt = fmt .. string.format('Канал %s отв. %s: %%o|нет|болтается|есть|болт|гайка|\n', bolt.ch, bolt.num)
-		states[i] = bolt.state
-	end
-
-	local res = {iup.GetParam("Редактирование болтов", nil, fmt, table.unpack(states))}
-	if res[1] then
-		for i, bolt in ipairs(bolts) do
-			print(res[i+1])
-			bolt.nodeState.nodeValue = res[i+1] - 1
-		end
+	 
+	if  showJointEditDlg(bolts) then
+		save_bolts(recog_xml, bolts)
 		clear_desc_attrib(recog_xml)
 		mark.ext.RAWXMLDATA = recog_xml.xml
 		sumPOV.UpdateMarks(mark, false)
