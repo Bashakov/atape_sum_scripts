@@ -628,5 +628,6 @@ Driver.GUID = GUID
 
 return
 {
-	Driver = Driver
+	Driver = Driver,
+	read_EKASUI_cfg = read_EKASUI_cfg,
 }

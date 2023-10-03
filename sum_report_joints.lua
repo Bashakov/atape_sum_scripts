@@ -642,7 +642,7 @@ if not ATAPE then
 	-- print(report.name)
 	-- report.fn()
 
-	ekasui_missing_bolt()
+	report_missing_bolt()
 	--report_ALL()
 end
 

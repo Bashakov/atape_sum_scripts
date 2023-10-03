@@ -1,4 +1,5 @@
 local sqlite3 = require "lsqlite3"
+local apbase = require "ApBaze"
 
 if iup then
 	iup.SetGlobal('UTF8MODE', 1)
@@ -56,46 +57,6 @@ local function jump_path(path)
 	end
 end
 
-local function get_db_path()
-	local path = EKASUI_PARAMS.ApBAZE or "D:/ATapeXP/Tools/GBPD/ApBAZE.db"
-	return path
-end
-
-local function is_file_exists(path)
-	local f = io.open(path, 'rb')
-	if f then f:close() end
-	return f
-end
-
-local function open_db()
-	local path = get_db_path()
-	if not is_file_exists(path) then
-		local msg = string.format("file [%s] not exist", path)
-		error(msg)
-	end
-
-	local flags = sqlite3.SQLITE_OPEN_READONLY
-	local db = assert(sqlite3.open(path, flags))
-	return db
-end
-
-local function load_objects(sql, bind_values, filter_row)
-	local db = open_db()
-	local stmt = db:prepare(sql)
-	if not stmt then
-		local msg = string.format('%s(%s) on %s', db:errcode(), db:errmsg(), sql)
-		error(msg)
-	end
-	stmt:bind_names(bind_values)
-	local res = {}
-	for row in stmt:nrows() do
-		if not filter_row or filter_row(row) then
-			table.insert(res, row)
-		end
-	end
-	db:close()
-	return res
-end
 
 -- ========================================================= --
 
@@ -103,7 +64,6 @@ return
 {
 	get_data_kms = get_data_kms,
 	jump_path = jump_path,
-	get_db_path = get_db_path,
-	open_db = open_db,
-	load_objects = load_objects,
+	open_db = apbase.open_db,
+	load_objects = apbase.load_objects,
 }

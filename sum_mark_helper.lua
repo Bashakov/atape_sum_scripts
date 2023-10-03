@@ -4,6 +4,7 @@ local TYPES = require 'sum_types'
 local utils = require 'utils'
 local algorithm = require 'algorithm'
 local xml_utils = require 'xml_utils'
+local apbase = require 'ApBaze'
 
 local printf = utils.printf
 local sprintf = utils.sprintf
@@ -842,6 +843,7 @@ local function prepare_row_path(row, prefix, coord)
 		row[prefix .. 'PK'] = sprintf('%d', m/100+1)
 		row[prefix .. 'PATH'] = sprintf('%d км %.1f м', km, m + mm/1000)
 	end
+	return km, m
 end
 
 local function prepare_row_gps(row, mark)
@@ -871,6 +873,15 @@ local function prepare_row_gps(row, mark)
 	row.LON_RAW = fmt_row(lon)
 end
 
+local vel_table
+local function get_preset_velocity(km, m)
+	if not vel_table and EKASUI_PARAMS then
+		vel_table = apbase.VelocityTable()
+		vel_table:loadPsp(Passport)
+	end
+	return vel_table and vel_table:format(km, m)
+end
+
 -- создание таблицы подстановок с общими параметрами отметки
 local function MakeCommonMarkTemplate(mark)
 	local rails_names = {
@@ -885,7 +896,7 @@ local function MakeCommonMarkTemplate(mark)
 	local temperature = GetTemperature(mark)
 
 	prepare_row_path(row, "BEGIN_", 	sys_center-inc_offset)
-	prepare_row_path(row, "", 		sys_center)
+	local km, m = prepare_row_path(row, "", 		sys_center)
 	prepare_row_path(row, "END_", 	sys_center+inc_offset)
 
 	row.mark_id = prop.ID
@@ -904,6 +915,8 @@ local function MakeCommonMarkTemplate(mark)
 
 	row.DEFECT_CODE = ''
 	row.DEFECT_DESC = ''
+
+	row.PRESET_VELOCITY = get_preset_velocity(km, m)
 
 	return row
 end
