@@ -69,17 +69,6 @@ local function drawPolygon(points, lineWidth, line_color, fill_color)
 	Drawer.fig:polygon(points)
 end
 
-local function drawPolyline(points, lineWidth, line_color, fill_color)
-	if points and #points ~= 0 and #points % 2 == 0 then
-		if not fill_color then fill_color = line_color end
-
-		Drawer.prop:lineWidth(lineWidth)
-		Drawer.prop:fillColor(fill_color.r, fill_color.g, fill_color.b, fill_color.a or   0)
-		Drawer.prop:lineColor(line_color.r, line_color.g, line_color.b, line_color.a or 200)
-		Drawer.fig:polyline(points)
-	end
-end
-
 local function drawLines(points, lineWidth, line_color, fill_color)
 	-- print("drawLines", #points / 4)
 	if points and #points ~= 0 and #points % 4 == 0 then
@@ -265,7 +254,7 @@ local function drawSimpleResult(resultType, points, params, mark)
 					width = tonumber(params.RailGapWidth_mkm) / 1000
 				end
 			elseif resultType == "CalcRailGap_Head_Side" then
-				width = mark.ext.VIDEOIDENTGWS 
+				width = mark.ext.VIDEOIDENTGWS
 				if not width and not mark.ext.VIDEOIDENTGWT and params.RailGapWidth_mkm then
 					width = tonumber(params.RailGapWidth_mkm) / 1000
 				end
@@ -348,7 +337,7 @@ local function drawSimpleResult(resultType, points, params, mark)
 					local tcx = (c1[1] + c1[3] + c2[1] + c2[3]) / 4
 					local tcy = (c1[4] + c2[2]) / 2
 
-					local text = "Требуется обновление атейпа"
+					local text = "Требуется обновление ATapeXP"
 					if Passport then
 						local show_shift = beacon_shifts.Beacon_Web.shift
 						if show_shift and Passport.INCREASE == '1' then
@@ -383,19 +372,19 @@ local function drawSimpleResult(resultType, points, params, mark)
 
 
 		if #points == 8 then --[[and params.FastenerFault == 0]]
-			
+
 			if fastener_fault_names[tonumber(params.FastenerFault)] == 'норм.' then
 				drawPolygon(points, 1, color, color)
 				else
 				drawPolygon(points, 2, colorFault, colorFault)
 			end
-			
+
 			local strText = sprintf('тип..:  %s\nсост.:  %s\n',
 				params.FastenerType and (fastener_type_names[tonumber(params.FastenerType)] or params.FastenerType) or '',
 				params.FastenerFault and (fastener_fault_names[tonumber(params.FastenerFault)] or params.FastenerFault) or '')
 
 			textOut(points, strText, {height=11})
-		
+
 		end
 	end
 
@@ -489,7 +478,7 @@ local function drawFishplate(points, faults)
 	local color_fishplate = {r=0, g=255, b=0}
 
 	local color_fault = {r=128, g=0, b=0}
-	local fishpalte_fault_str = {
+	local fishplate_fault_str = {
 		[0] = 'испр.',
 		[1] = 'ндp.',
 		[3] = 'тре.',
@@ -504,7 +493,7 @@ local function drawFishplate(points, faults)
 	for _, fault in ipairs(faults) do
 		drawPolygon(fault.points, 1, color_fault, color_fault)
 
-		local text = fishpalte_fault_str[fault.code] or fault.code
+		local text = fishplate_fault_str[fault.code] or fault.code
 		local tcx, tcy = get_center_point(fault.points)
 		textOut(fault.points, text, {fill_color=color_fault, line_color={r=128, g=128, b=0}})
 	end
@@ -549,7 +538,7 @@ local function processSimpleResult(nodeActRes, resultType, mark)
 
 			local params = getParameters(nodeFigure, params_common)
 			local points = getDrawFig(nodeFigure)
-			print("processSimpleResult", resultType, #points)
+			-- print("processSimpleResult", resultType, #points)
 			if #points > 0 then
 				drawSimpleResult(resultType, points, params, mark)
 			end
@@ -602,9 +591,9 @@ local function processFishplate(nodeActionResFishplate, mark)
 		PARAM[@name="FrameNumber" and @coord]/\z
 		PARAM[@name="Result" and @value="main"]/\z
 		PARAM[@name="FishplateState"]'
-	for nodeParamFpltState in SelectNodes(nodeActionResFishplate, reqFault) do
-		local points = getDrawFig(nodeParamFpltState)
-		local nodeFaultCode = nodeParamFpltState:SelectSingleNode('PARAM[@name="FishplateFault" and @value]/@value')
+	for nodeParamFishplateState in SelectNodes(nodeActionResFishplate, reqFault) do
+		local points = getDrawFig(nodeParamFishplateState)
+		local nodeFaultCode = nodeParamFishplateState:SelectSingleNode('PARAM[@name="FishplateFault" and @value]/@value')
 		if #points > 0 and nodeFaultCode then
 			faults[#faults+1] = {points = points, code=tonumber(nodeFaultCode.nodeValue)}
 		end
@@ -757,7 +746,7 @@ end
 
 -- ==================== MARK TYPES ====================
 
-local recorn_guids =
+local recognition_guids =
 {
 	["{0860481C-8363-42DD-BBDE-8A2366EFAC90}"] = {ProcessUnspecifiedObject}, -- Ненормативный объект
 
@@ -816,7 +805,7 @@ function Draw(drawer, frame, marks)
 	-- print('Draw ', #marks)
 	for _, mark in ipairs(marks) do
 		-- print('Draw mark', mark.prop.Guid)
-		local fns = recorn_guids[mark.prop.Guid] or {}
+		local fns = recognition_guids[mark.prop.Guid] or {}
 		for _, fn in ipairs(fns) do
 			fn(mark)
 		end
@@ -826,7 +815,7 @@ end
 -- запрос какие отметки следует загружать для отображения
 function GetMarkGuids()
 	local res = {}
-	for g, _ in pairs(recorn_guids) do
+	for g, _ in pairs(recognition_guids) do
 		table.insert(res, g)
 	end
 	return res
