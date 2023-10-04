@@ -8,7 +8,7 @@ local function _load_str(fnContinueCalc, kms)
 	end
 	local sql = [[
 			SELECT
-				s.KM, s.M, t.TYPE, p.TYPE as POSH, s.ID_OB, s.NOM
+				s.KM, s.M, t.TYPE, p.TYPE as POSH, s.ID_OB, s.NOM, t.LENGT
 			FROM
 				STR as s
 			JOIN
@@ -88,6 +88,16 @@ local COL_ID_OB  =
 	end,
 }
 
+local COL_LEN =
+{
+	name = "Длина",
+	align = 'l',
+	width = 40,
+	get_text = function(row_n, obj)
+		return obj.LENGT
+	end,
+}
+
 
 local STR = OOP.class
 {
@@ -100,6 +110,7 @@ local STR = OOP.class
 		COL_POSH,
 		COL_NOM,
 		COL_ID_OB,
+		COL_LEN,
 	},
 	ctor = function (self, fnContinueCalc)
 		local kms = ext_obj_utils.get_data_kms(fnContinueCalc)
