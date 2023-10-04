@@ -748,51 +748,51 @@ end
 
 local recognition_guids =
 {
-	["{0860481C-8363-42DD-BBDE-8A2366EFAC90}"] = {ProcessUnspecifiedObject}, -- Ненормативный объект
+	[TYPES.UNSPC_OBJ]                       = {ProcessUnspecifiedObject}, -- Ненормативный объект
 
-	["{3601038C-A561-46BB-8B0F-F896C2130001}"] = {ProcessUnspecifiedObject}, -- Скрепления(Пользователь)
-	["{3601038C-A561-46BB-8B0F-F896C2130002}"] = {ProcessUnspecifiedObject}, -- Шпалы(Пользователь)
-	["{3601038C-A561-46BB-8B0F-F896C2130003}"] = {ProcessUnspecifiedObject}, -- Рельсовые стыки(Пользователь)
-	["{3601038C-A561-46BB-8B0F-F896C2130004}"] = {ProcessUnspecifiedObject}, -- Дефекты рельсов(Пользователь)
-	["{3601038C-A561-46BB-8B0F-F896C2130005}"] = {ProcessUnspecifiedObject}, -- Балласт(Пользователь)
-	["{3601038C-A561-46BB-8B0F-F896C2130006}"] = {ProcessUnspecifiedObject}, -- Бесстыковой путь(Пользователь)
+	[TYPES.FASTENER_USER]                   = {ProcessUnspecifiedObject}, -- Скрепления(Пользователь)
+	[TYPES.SLEEPER_USER]                    = {ProcessUnspecifiedObject}, -- Шпалы(Пользователь)
+	[TYPES.RAIL_JOINT_USER]                 = {ProcessUnspecifiedObject}, -- Рельсовые стыки(Пользователь)
+	[TYPES.RAIL_DEFECTS_USER]               = {ProcessUnspecifiedObject}, -- Дефекты рельсов(Пользователь)
+	[TYPES.BALLAST_USER]                    = {ProcessUnspecifiedObject}, -- Балласт(Пользователь)
+	[TYPES.USER_JOINTLESS_DEFECT]           = {ProcessUnspecifiedObject}, -- Бесстыковой путь(Пользователь)
 
-	[TYPES.JAT_RAIL_CONN_CHOKE] 			   = {ProcessUnspecifiedObject},
-	[TYPES.JAT_RAIL_CONN_PLUG] 				   = {ProcessUnspecifiedObject},
-	[TYPES.JAT_RAIL_CONN_WELDED] 			   = {ProcessUnspecifiedObject},
-	[TYPES.JAT_SCB_CRS_ABCS] 			       = {ProcessUnspecifiedObject},
-	[TYPES.JAT_SCB_CRS_RSCMD]			       = {ProcessUnspecifiedObject},
+	[TYPES.JAT_RAIL_CONN_CHOKE]             = {ProcessUnspecifiedObject},
+	[TYPES.JAT_RAIL_CONN_PLUG]              = {ProcessUnspecifiedObject},
+	[TYPES.JAT_RAIL_CONN_WELDED]            = {ProcessUnspecifiedObject},
+	[TYPES.JAT_SCB_CRS_ABCS]                = {ProcessUnspecifiedObject},
+	[TYPES.JAT_SCB_CRS_RSCMD]               = {ProcessUnspecifiedObject},
 
-	["{CBD41D28-9308-4FEC-A330-35EAED9FC801}"] = {ProcessMarkRawXml}, -- Стык(Видео)
-	["{CBD41D28-9308-4FEC-A330-35EAED9FC802}"] = {ProcessMarkRawXml}, -- Стык(Видео)
-	["{CBD41D28-9308-4FEC-A330-35EAED9FC803}"] = {ProcessMarkRawXml}, -- СтыкЗазор(Пользователь)
-	["{CBD41D28-9308-4FEC-A330-35EAED9FC804}"] = {ProcessMarkRawXml}, -- АТСтык(Видео)
-	["{CBD41D28-9308-4FEC-A330-35EAED9FC805}"] = {ProcessMarkRawXml}, -- АТСтык(Пользователь)
-	["{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}"] = {ProcessMarkRawXml}, -- ИзоСтык(Видео)
-	["{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}"] = {ProcessMarkRawXml}, -- Маячная
-	["{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}"] = {ProcessMarkRawXml}, -- Маячная(Пользователь)
-	["{D3736670-0C32-46F8-9AAF-3816DE00B755}"] = {ProcessMarkRawXml}, -- Маячная Ёлка
-	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}"] = {ProcessMarkRawXml}, -- Скрепление
-	["{28C82406-2773-48CB-8E7D-61089EEB86ED}"] = {ProcessMarkRawXml}, -- Болты(Пользователь)
-	["{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}"] = {ProcessMarkRawXml}, -- Поверх.(Видео)
-	["{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}"] = {ProcessSleeper},    -- Шпалы
-	["{1DEFC4BD-FDBB-4AC7-9008-BEEB56048131}"] = {ProcessMarkRawXml}, -- Дефекты шпал
-	["{53987511-8176-470D-BE43-A39C1B6D12A3}"] = {ProcessMarkRawXml}, -- SleeperTop
-	["{DE548D8F-4E0C-4644-8DB3-B28AE8B17431}"] = {ProcessMarkRawXml}, -- UIC_227
-	["{BB144C42-8D1A-4FE1-9E84-E37E0A47B074}"] = {ProcessMarkRawXml}, -- BELGROSPI
-	["{EBAB47A8-0CDC-4102-B21F-B4A90F9D873A}"] = {ProcessMarkRawXml}, -- UIC_2251
-	["{54188BA4-E88A-4B6E-956F-29E8035684E9}"] = {ProcessMarkRawXml}, -- UIC_2252
-	["{7EF92845-226D-4D07-AC50-F23DD8D53A19}"] = {ProcessMarkRawXml}, -- HC
-	["{41486CAC-EBE9-46FF-ACCA-041AFAFFC531}"] = {ProcessMarkRawXml}, -- UIC_2251 (user)
-	["{3401C5E7-7E98-4B4F-A364-701C959AFE99}"] = {ProcessMarkRawXml}, -- UIC_2252 (user)
-	["{13A7906C-BBFB-4EB3-86FA-FA74B77F5F35}"] = {ProcessMarkRawXml}, -- UIC_227 (user)
+	[TYPES.VID_INDT_1]                      = {ProcessMarkRawXml}, -- Стык(Видео)
+	[TYPES.VID_INDT_2]                      = {ProcessMarkRawXml}, -- Стык(Видео)
+	[TYPES.VID_INDT_3]                      = {ProcessMarkRawXml}, -- СтыкЗазор(Пользователь)
+	[TYPES.VID_INDT_ATS]                    = {ProcessMarkRawXml}, -- АТСтык(Видео)
+	[TYPES.VID_INDT_ATS_USER]               = {ProcessMarkRawXml}, -- АТСтык(Пользователь)
+	[TYPES.VID_ISO]                         = {ProcessMarkRawXml}, -- ИзоСтык(Видео)
+	[TYPES.VID_BEACON_INDT]                 = {ProcessMarkRawXml}, -- Маячная
+	[TYPES.M_SPALA]                         = {ProcessMarkRawXml}, -- Маячная(Пользователь)
+	[TYPES.VID_BEACON_FIRTREE_MARK]         = {ProcessMarkRawXml}, -- Маячная Ёлка
+	[TYPES.FASTENER]                        = {ProcessMarkRawXml}, -- Скрепление
+	[TYPES.VID_CREWJOINT_MANUAL]            = {ProcessMarkRawXml}, -- Болты(Пользователь)
+	[TYPES.VID_SURF]                        = {ProcessMarkRawXml}, -- Поверх.(Видео)
+	[TYPES.SLEEPER]                         = {ProcessSleeper},    -- Шпалы
+	[TYPES.SLEEPER_DEFECT]                  = {ProcessMarkRawXml}, -- Дефекты шпал
+	[TYPES.SLEEPER_TOP]                     = {ProcessMarkRawXml}, -- SleeperTop
+	[TYPES.SQUAT]                           = {ProcessMarkRawXml}, -- UIC_227
+	[TYPES.BELGROSPI]                       = {ProcessMarkRawXml}, -- BELGROSPI
+	[TYPES.SLEEPAGE_SKID_1]                 = {ProcessMarkRawXml}, -- UIC_2251
+	[TYPES.SLEEPAGE_SKID_2]                 = {ProcessMarkRawXml}, -- UIC_2252
+	[TYPES.HC]                              = {ProcessMarkRawXml}, -- HC
+	[TYPES.SLEEPAGE_SKID_1_USER]            = {ProcessMarkRawXml}, -- UIC_2251 (user)
+	[TYPES.SLEEPAGE_SKID_2_USER]            = {ProcessMarkRawXml}, -- UIC_2252 (user)
+	[TYPES.SQUAT_USER]                      = {ProcessMarkRawXml}, -- UIC_227 (user)
 
-	["{B6BAB49E-4CEC-4401-A106-355BFB2E0001}"] = {ProcessGroupDefectObject}, -- GROUP_GAP_AUTO
-	["{B6BAB49E-4CEC-4401-A106-355BFB2E0002}"] = {ProcessGroupDefectObject}, -- GROUP_GAP_USER
-	["{B6BAB49E-4CEC-4401-A106-355BFB2E0011}"] = {ProcessGroupDefectObject}, -- GROUP_SPR_AUTO
-	["{B6BAB49E-4CEC-4401-A106-355BFB2E0012}"] = {ProcessGroupDefectObject}, -- GROUP_SPR_USER
-	["{B6BAB49E-4CEC-4401-A106-355BFB2E0021}"] = {ProcessGroupDefectObject}, -- GROUP_FSTR_AUTO
-	["{B6BAB49E-4CEC-4401-A106-355BFB2E0022}"] = {ProcessGroupDefectObject}, -- GROUP_FSTR_USER
+	[TYPES.GROUP_GAP_AUTO]                  = {ProcessGroupDefectObject}, -- GROUP_GAP_AUTO
+	[TYPES.GROUP_GAP_USER]                  = {ProcessGroupDefectObject}, -- GROUP_GAP_USER
+	[TYPES.GROUP_SPR_AUTO]                  = {ProcessGroupDefectObject}, -- GROUP_SPR_AUTO
+	[TYPES.GROUP_SPR_USER]                  = {ProcessGroupDefectObject}, -- GROUP_SPR_USER
+	[TYPES.GROUP_FSTR_AUTO]                 = {ProcessGroupDefectObject}, -- GROUP_FSTR_AUTO
+	[TYPES.GROUP_FSTR_USER]                 = {ProcessGroupDefectObject}, -- GROUP_FSTR_USER
 }
 
 -- ================= EXPORT FUNCTION ================
