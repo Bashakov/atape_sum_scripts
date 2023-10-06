@@ -1,0 +1,25 @@
+Convertor.ScalePoint: 711 739
+Convertor.ScalePoint: 712 361
+prop.lineWidth: 1
+prop.fillColor: {1=67,2=149,3=209,4=0}
+prop.lineColor: {1=67,2=149,3=209,4=255}
+fig.polygon: 706 739 717 361
+
+Convertor.ScalePoint: 722 361
+Convertor.ScalePoint: 723 324
+prop.lineWidth: 1
+prop.fillColor: {1=0,2=169,3=157,4=0}
+prop.lineColor: {1=0,2=169,3=157,4=255}
+fig.polygon: 717 361 728 324
+
+text.font: {bold=0,height=13,name=Tahoma,render=VectorFontCache}
+text.alignment: AlignLeft AlignBottom
+text.calcSize: -11.0 mm
+prop.lineWidth: 3
+prop.fillColor: {a=225,b=0,g=0,r=0}
+prop.lineColor: {a=225,b=0,g=0,r=0}
+text.multiline: {str=-11.0 mm,x=712,y=356}
+prop.lineWidth: 1
+prop.fillColor: {a=225,b=255,g=255,r=255}
+prop.lineColor: {a=225,b=255,g=255,r=255}
+text.multiline: {str=-11.0 mm,x=712,y=356}
