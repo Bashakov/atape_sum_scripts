@@ -1,12 +1,12 @@
-Convertor.GetPointOnFrame: 3811632 3810632, 711 739
-Convertor.GetPointOnFrame: 3811632 3810632, 712 361
+Convertor.GetPointOnFrame: 3811632 3810632, 711 739 -> -289
+Convertor.GetPointOnFrame: 3811632 3810632, 712 361 -> -288
 prop.lineWidth: 1
 prop.fillColor: {1=67,2=149,3=209,4=0}
 prop.lineColor: {1=67,2=149,3=209,4=255}
 fig.polygon: -294 739 -283 361
 
-Convertor.GetPointOnFrame: 3811632 3810632, 722 361
-Convertor.GetPointOnFrame: 3811632 3810632, 723 324
+Convertor.GetPointOnFrame: 3811632 3810632, 722 361 -> -278
+Convertor.GetPointOnFrame: 3811632 3810632, 723 324 -> -277
 prop.lineWidth: 1
 prop.fillColor: {1=0,2=169,3=157,4=0}
 prop.lineColor: {1=0,2=169,3=157,4=255}

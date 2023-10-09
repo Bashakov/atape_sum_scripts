@@ -1,0 +1,19 @@
+Convertor.SysCoordToOffset: 2344013 2344247 -> 234
+Convertor.SysCoordToOffset: 2344013 2344447 -> 434
+prop.lineWidth: 1
+prop.fillColor: {1=250,2=0,3=0,4=255}
+prop.lineColor: {1=250,2=0,3=0,4=255}
+fig.line: 234 128 434 128
+fig.line: 334 0 334 128
+
+text.font: {bold=0,height=13,name=Tahoma,render=VectorFontCache}
+text.alignment: AlignLeft AlignBottom
+text.calcSize: <- 0 mm
+prop.lineWidth: 3
+prop.fillColor: {a=255,b=0,g=0,r=250}
+prop.lineColor: {a=255,b=0,g=0,r=250}
+text.multiline: {str=<- 0 mm,x=329,y=133}
+prop.lineWidth: 1
+prop.fillColor: {a=225,b=255,g=255,r=255}
+prop.lineColor: {a=225,b=255,g=255,r=255}
+text.multiline: {str=<- 0 mm,x=329,y=133}

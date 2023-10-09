@@ -85,13 +85,6 @@ local function drawLines(points, lineWidth, line_color, fill_color)
 	end
 end
 
-local function drawMultiline(x, y, text, lineWidth, color)
-	Drawer.prop:lineWidth(lineWidth)
-	Drawer.prop:fillColor{r=color.r, g=color.g, b=color.b, a=color.a or 225}
-	Drawer.prop:lineColor{r=color.r, g=color.g, b=color.b, a=color.a or 225}
-	Drawer.text:multiline{x=x, y=y, str=text}
-end
-
 local function OutlineTextOut(x, y, text, params)
 	local drawer = Drawer
 	params = params or {}
@@ -109,8 +102,17 @@ local function OutlineTextOut(x, y, text, params)
 	x = x - tw/2 + ox
 	y = y - th/2 + oy
 
-	drawMultiline(x, y, text, 3, line_color)
-	drawMultiline(x, y, text, 1, fill_color)
+	local function setTextStyle(lineWidth, color)
+		drawer.prop:lineWidth(lineWidth)
+		drawer.prop:fillColor{r=color.r, g=color.g, b=color.b, a=color.a or 225}
+		drawer.prop:lineColor{r=color.r, g=color.g, b=color.b, a=color.a or 225}
+	end
+
+	setTextStyle(3, line_color)
+	drawer.text:multiline{x=x, y=y, str=text}
+
+	setTextStyle(1, fill_color)
+	drawer.text:multiline{x=x, y=y, str=text}
 end
 
 local function textOut(center, text, params)
@@ -118,7 +120,9 @@ local function textOut(center, text, params)
 	if #center > 2 then
 		tcx, tcy = get_center_point(center)
 	end
-	if true then -- https://bt.abisoft.spb.ru/view.php?id=642
+	if true then
+		-- https://bt.abisoft.spb.ru/view.php?id=642
+		-- расположение надписи не внутри фигуры, а сразу за правой границей. 
 		tcx = center[1]
 		for i = 3, #center, 2 do
 			tcx = math.max(tcx, center[i])
@@ -126,7 +130,6 @@ local function textOut(center, text, params)
 	end
 	OutlineTextOut(tcx, tcy, text, params)
 end
-
 
 local function showError(text)
 	print(text)
@@ -183,8 +186,7 @@ local function getParameters(nodeResult, parameters_common)
 		local attrib = nodeParam.attributes
 		local name = attrib:getNamedItem('name').nodeValue
 		local value = attrib:getNamedItem('value').nodeValue
-		local num = tonumber(value)
-		res[name] = num or value
+		res[name] = tonumber(value) or value
 	end
 	return res
 end
@@ -629,6 +631,11 @@ local ActionResTypes =
 	["Surface_SLEEPAGE_SKID_UIC_2251_USER"] = {processSimpleResult},
 	["Surface_SLEEPAGE_SKID_UIC_2252_USER"] = {processSimpleResult},
 	["Common"]	 	 				= {},
+	["Turnout_StartGap"]			= {},
+	["Turnout_PointRail"]			= {},
+	["Turnout_PointRail_Gap"]		= {},
+	["Turnout_PointFrog"]			= {},
+	["Turnout_EndGap"]				= {},
 }
 
 local function ProcessMarkRawXml(mark)
@@ -786,6 +793,8 @@ local recognition_guids =
 	[TYPES.SLEEPAGE_SKID_1_USER]            = {ProcessMarkRawXml}, -- UIC_2251 (user)
 	[TYPES.SLEEPAGE_SKID_2_USER]            = {ProcessMarkRawXml}, -- UIC_2252 (user)
 	[TYPES.SQUAT_USER]                      = {ProcessMarkRawXml}, -- UIC_227 (user)
+	[TYPES.GROUP_FSTR_USER]                 = {ProcessGroupDefectObject}, -- GROUP_FSTR_USER
+	[TYPES.TURNOUT]							= {ProcessMarkRawXml},
 
 	[TYPES.GROUP_GAP_AUTO]                  = {ProcessGroupDefectObject}, -- GROUP_GAP_AUTO
 	[TYPES.GROUP_GAP_USER]                  = {ProcessGroupDefectObject}, -- GROUP_GAP_USER

@@ -40,51 +40,51 @@ prop.fillColor: {a=225,b=255,g=255,r=255}
 prop.lineColor: {a=225,b=255,g=255,r=255}
 text.multiline: {str=9 mm,x=167,y=394.5}
 
-Convertor.GetPointOnFrame: 2187341 2186317, 779 412
-Convertor.GetPointOnFrame: 2187341 2186317, 779 224
-Convertor.GetPointOnFrame: 2187341 2187341, 575 412
-Convertor.GetPointOnFrame: 2187341 2187341, 575 224
+Convertor.GetPointOnFrame: 2187341 2186317, 779 412 -> -245
+Convertor.GetPointOnFrame: 2187341 2186317, 779 224 -> -245
+Convertor.GetPointOnFrame: 2187341 2187341, 575 412 -> 575
+Convertor.GetPointOnFrame: 2187341 2187341, 575 224 -> 575
 prop.lineWidth: 1
 prop.fillColor: {1=0,2=255,3=0,4=0}
 prop.lineColor: {1=0,2=255,3=0,4=200}
 fig.polygon: -245,412,-245,224,575,224,575,412
 
-Convertor.GetPointOnFrame: 2187341 2186317, 862 291
+Convertor.GetPointOnFrame: 2187341 2186317, 862 291 -> -162
 Convertor.ScalePoint: 26 39
 prop.lineWidth: 1
 prop.fillColor: {1=128,2=192,3=255,4=0}
 prop.lineColor: {1=128,2=192,3=255,4=255}
 fig.ellipse: -162 291 26 39
 
-Convertor.GetPointOnFrame: 2187341 2187341, 68 295
+Convertor.GetPointOnFrame: 2187341 2187341, 68 295 -> 68
 Convertor.ScalePoint: 32 39
 prop.lineWidth: 1
 prop.fillColor: {1=128,2=64,3=255,4=0}
 prop.lineColor: {1=128,2=64,3=255,4=255}
 fig.ellipse: 68 295 32 39
 
-Convertor.GetPointOnFrame: 2187341 2187341, 264 292
+Convertor.GetPointOnFrame: 2187341 2187341, 264 292 -> 264
 Convertor.ScalePoint: 28 45
 prop.lineWidth: 1
 prop.fillColor: {1=128,2=192,3=255,4=0}
 prop.lineColor: {1=128,2=192,3=255,4=255}
 fig.ellipse: 264 292 28 45
 
-Convertor.GetPointOnFrame: 2187341 2187341, 485 297
+Convertor.GetPointOnFrame: 2187341 2187341, 485 297 -> 485
 Convertor.ScalePoint: 25 43
 prop.lineWidth: 1
 prop.fillColor: {1=128,2=64,3=255,4=0}
 prop.lineColor: {1=128,2=64,3=255,4=255}
 fig.ellipse: 485 297 25 43
 
-Convertor.GetPointOnFrame: 2187341 2186317, 574 318
+Convertor.GetPointOnFrame: 2187341 2186317, 574 318 -> -450
 Convertor.ScalePoint: 26 43
 prop.lineWidth: 1
 prop.fillColor: {1=0,2=192,3=128,4=0}
 prop.lineColor: {1=0,2=192,3=128,4=255}
 fig.ellipse: -450 318 26 43
 
-Convertor.GetPointOnFrame: 2187341 2187341, 764 321
+Convertor.GetPointOnFrame: 2187341 2187341, 764 321 -> 764
 Convertor.ScalePoint: 26 43
 prop.lineWidth: 1
 prop.fillColor: {1=0,2=192,3=128,4=0}

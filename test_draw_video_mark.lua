@@ -44,7 +44,7 @@ local function obj2str(obj, sep)
     return '{' .. table.concat(r, sep or ',') .. '}'
 end
 
-local function clr2str(...)
+local function color2str(...)
     local clr = {...}
     if type(clr[1]) == "table" then
         return obj2str(clr[1], ',')
@@ -58,10 +58,11 @@ local function addAction(fmt, ...) table.insert(actions, string.format(fmt, ...)
 Drawer = OOP.class{
     prop = {
         lineWidth = function (self, lineWidth) addAction("prop.lineWidth: %d", lineWidth) end,
-        fillColor = function (self, ...) addAction("prop.fillColor: %s", clr2str(...)) end,
-        lineColor = function (self, ...) addAction("prop.lineColor: %s", clr2str(...)) end,
+        fillColor = function (self, ...) addAction("prop.fillColor: %s", color2str(...)) end,
+        lineColor = function (self, ...) addAction("prop.lineColor: %s", color2str(...)) end,
     },
     fig = {
+        line = function (self, x1, y1, x2, y2) addAction("fig.line: %d %d %d %d", x1, y1, x2, y2) end,
         polygon = function (self, points) addAction("fig.polygon: %s", table.concat(points, ",")) end,
         rectangle = function (self, x1, y1, x2, y2) addAction("fig.polygon: %d %d %d %d", x1, y1, x2, y2) end,
         ellipse = function (self, cx, cy, rx, ry) addAction("fig.ellipse: %d %d %d %d",  cx, cy, rx, ry) end,
@@ -79,18 +80,28 @@ Drawer = OOP.class{
 
 Convertor = {
     GetPointOnFrame = function (self, cur_frame_coord, item_frame, x, y)
-        addAction("Convertor.GetPointOnFrame: %d %d, %d %d", cur_frame_coord, item_frame, x, y)
-        return x + (item_frame-cur_frame_coord), y
+        local r = x + (item_frame-cur_frame_coord)
+        addAction("Convertor.GetPointOnFrame: %d %d, %d %d -> %d", cur_frame_coord, item_frame, x, y, r)
+        return r, y
     end,
     ScalePoint = function (self, x, y)
         addAction("Convertor.ScalePoint: %d %d", x, y)
         return x, y
-    end
+    end,
+    SysCoordToOffset = function (self, frame, coord)
+        local r = coord - frame
+        addAction("Convertor.SysCoordToOffset: %d %d -> %d", frame, coord, r)
+        return r
+    end,
 }
 
 local function draw(ch_num, frame_coord, mark)
     actions = {}
-    local frame = {channel = ch_num, coord = {raw=frame_coord,},}
+    local frame = {
+        channel = ch_num, 
+        coord = {raw=frame_coord,},
+        size = {current = {x=512, y = 512}, }
+    }
     Draw(nil, frame, {mark})
     return actions
 end
@@ -98,7 +109,7 @@ end
 local function checkActions(expt_file)
     local expected_actions = file2array(expt_file)
     if table.concat(expected_actions, '') ~= table.concat(actions, '') then
-        array2file(expt_file, actions)
+        array2file(expt_file .. '.actual', actions)
         lu.assertEquals(expected_actions, actions)
     end
 end
@@ -162,13 +173,13 @@ function TestDrawBeacon()
     _G.Passport= {INCREASE == '1'}
 
     draw(17, 3810632, mark)
-    checkActions("test_data/draw/beacon1.17.3810632.xml")
+    checkActions("test_data/draw/beacon1.17.3810632.txt")
 
     draw(17, 3811632, mark)
-    checkActions("test_data/draw/beacon1.17.3811632.xml")
+    checkActions("test_data/draw/beacon1.17.3811632.txt")
 
     draw(18, 3810632, mark)
-    checkActions("test_data/draw/beacon1.18.3810632.xml")
+    checkActions("test_data/draw/beacon1.18.3810632.txt")
     lu.assertEquals(actions, {})
 end
 
@@ -178,8 +189,39 @@ function TestDrawRailGap()
         ext = {RAWXMLDATA = read_file("test_data/gap3.xml")},
     }
     draw(18, 2187341, mark)
-    checkActions("test_data/draw/gap3.18.2187341.xml")
+    checkActions("test_data/draw/gap3.18.2187341.txt")
+end
 
+function  TestSleeper1()
+    local mark = {
+        prop = {
+            Guid=TYPES.SLEEPER, 
+            ChannelMask=0,
+            SysCoord=2344347},
+        ext = {
+            RAWXMLDATA = read_file("test_data/sleeper1.xml"),
+            DEFECT_CODES='DEFECT_CODES'
+        },
+    }
+    draw(17, 2344013, mark)
+    checkActions("test_data/draw/sleeper1.17.2344013.txt")
+    draw(19, 2344013, mark)
+    checkActions("test_data/draw/sleeper1.19.2344013.txt")
+end
+
+function  TestSleeper2()
+    local mark = {
+        prop = {
+            Guid=TYPES.SLEEPER, 
+            ChannelMask=0,
+            SysCoord=2344347},
+        ext = {
+            RAWXMLDATA = read_file("test_data/sleeper2.xml"),
+            DEFECT_CODES='DEFECT_CODES'
+        },
+    }
+    draw(17, 2344013, mark)
+    checkActions("test_data/draw/sleeper2.21.2284621.txt")
 end
 
 os.exit( lu.LuaUnit.run() )
