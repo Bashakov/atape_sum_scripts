@@ -451,6 +451,7 @@ local function generate_rows_missing_bolt(marks, dlgProgress, pov_filter)
 				local _, _, atypical = mark_helper.GetCrewJointCount(mark)
 				if atypical and atypical > 0 then
 					local row = MakeJointMarkRow(mark, DEFECT_CODES.JOINT_ATYPICAL)
+					row.ATYPICAL_COUNT = atypical
 					table.insert(report_rows, row)
 				end
 			end
@@ -642,7 +643,7 @@ if not ATAPE then
 	-- print(report.name)
 	-- report.fn()
 
-	report_missing_bolt()
+	ekasui_missing_bolt()
 	--report_ALL()
 end
 
