@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<ACTION_RESULTS version="5.181">
+
+	<!-- включает: 2 стыка вначале + 2 остряка + крестовина + 2 стыка в конце -->
+	
+	<!-- 2 стыка в начале -->
+
+	<PARAM value="Turnout_StartGap" channel="17" name="ACTION_RESULTS"> <!-- заполняется ближайший стык перед остряком или крестовиной в пределах 10 метров -->
+		<PARAM value="1" name="FrameNumber" coord="40992755">
+			<PARAM value="main" name="Result">
+				<PARAM value="846" name="Coord" type="polygon"/> <!-- абсцисса стыка в кадре по зазору -->
+			</PARAM>
+		</PARAM>
+	</PARAM>
+	<PARAM value="Turnout_StartGap" channel="18" name="ACTION_RESULTS"> <!-- заполняется ближайший стык перед остряком или крестовиной в пределах 10 метров -->
+		<PARAM value="1" name="FrameNumber" coord="40992755">
+			<PARAM value="main" name="Result">
+				<PARAM value="846" name="Coord" type="polygon"/> <!-- абсцисса стыка в кадре по зазору -->
+			</PARAM>
+		</PARAM>
+	</PARAM>
+	
+	<!-- 2 остряка -->
+	
+	<PARAM value="Turnout_PointRail" channel="17" name="ACTION_RESULTS"> 
+		<PARAM value="0" name="FrameNumber" coord="40993779">
+			<PARAM value="main" name="Result">
+				<PARAM value="322,420 322,394" name="Coord" type="polygon"/> <!-- абсцисса остряка в кадре, в прямоугольник остряк не обводим, нужна координата начала остряка -->
+				<PARAM value="0" name="Turnout_PointRail_Safe" _value="-1(fault), 2(correct)"/>
+			</PARAM>
+		</PARAM>
+	</PARAM>
+	<PARAM value="Turnout_PointRail_Gap" channel="17" name="ACTION_RESULTS"> <!-- координата зазора в корне остряка, на будущее -->
+		<PARAM value="0" name="FrameNumber" coord="40993779">
+			<PARAM value="main" name="Result">
+				<PARAM value="322,420 322,394 328,394 328,420" name="Coord" type="polygon"/> 
+				<PARAM value="5000" name="Turnout_PointRail_Gap_mkm"/> <!-- величина зазора в корне остряка -->
+			</PARAM>
+		</PARAM>
+	</PARAM>
+	
+	<PARAM value="Turnout_PointRail" channel="18" name="ACTION_RESULTS"> 
+		<PARAM value="0" name="FrameNumber" coord="40993779">
+			<PARAM value="main" name="Result">
+				<PARAM value="322,420 322,394" name="Coord" type="polygon"/> <!-- абсцисса остряка в кадре, в прямоугольник остряк не обводим, нужна координата начала остряка -->
+				<PARAM value="0" name="Turnout_PointRail_Safe" _value="-1(fault), 2(correct)"/>
+			</PARAM>
+		</PARAM>
+	</PARAM>
+	<PARAM value="Turnout_PointRail_Gap" channel="18" name="ACTION_RESULTS"> <!-- координата зазора в корне остряка, на будущее -->
+		<PARAM value="0" name="FrameNumber" coord="40993779">
+			<PARAM value="main" name="Result">
+				<PARAM value="322,420 322,394 328,394 328,420" name="Coord" type="polygon"/> 
+				<PARAM value="5000" name="Turnout_PointRail_Gap_mkm"/> <!-- величина зазора в корне остряка -->
+			</PARAM>
+		</PARAM>
+	</PARAM>
+	
+	<!-- крестовина -->
+	
+	<PARAM value="Turnout_PointFrog" channel="17" name="ACTION_RESULTS">
+		<PARAM value="0" name="FrameNumber" coord="40993779">
+			<PARAM value="main" name="Result">
+				<PARAM value="322,420 322,394 328,394 328,420" name="Coord" type="polygon"/> <!-- абсцисса крестовины в кадре, в прямоугольник крестовину не обводим, нужна координата середины крестовины -->
+				<PARAM value="2" name="Turnout_PointFrog_Safe" _value="-1(fault), 2(correct)"/>
+			</PARAM>
+		</PARAM>
+	</PARAM>
+	
+	<!-- контррельс -->
+	<!-- 2 стыка в конце -->
+	
+	<PARAM value="Turnout_EndGap" channel="17" name="ACTION_RESULTS"> <!-- заполняется ближайший стык после перед остряком или крестовиной в пределах 10 метров -->
+		<PARAM value="1" name="FrameNumber" coord="40992755">
+			<PARAM value="main" name="Result">
+				<PARAM value="322" name="Coord" type="polygon"/> <!-- абсцисса стыка в кадре по зазору -->
+			</PARAM>
+		</PARAM>
+	</PARAM>
+	<PARAM value="Turnout_EndGap" channel="18" name="ACTION_RESULTS"> <!-- заполняется ближайший стык перед остряком или крестовиной в пределах 10 метров -->
+		<PARAM value="1" name="FrameNumber" coord="40992755">
+			<PARAM value="main" name="Result">
+				<PARAM value="322" name="Coord" type="polygon"/> <!-- абсцисса стыка в кадре по зазору -->
+			</PARAM>
+		</PARAM>
+	</PARAM>
+
+	<PARAM value="Common" name="ACTION_RESULTS">
+		<PARAM value="100" name="Reliability"/>
+		<PARAM value="40994122" name="RecogObjCoord" _desc=" "/>
+		<PARAM value="1" name="MULTIBIT" _value="1 - , 0 - 8-"/>
+	</PARAM>
+</ACTION_RESULTS>

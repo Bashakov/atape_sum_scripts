@@ -461,6 +461,24 @@ local function drawSimpleResult(resultType, points, params, mark)
 		end
 	end
 
+	if resultType == 'Turnout_PointRail' or resultType == 'Turnout_PointFrog' then
+		local color_line = {r=255, g=0, b=0}
+		--print(resultType, #points, points[1], points[2], Frame.size.current.y)
+		if #points > 2 then
+			Drawer.prop:lineWidth(1)
+			Drawer.prop:fillColor(color_line.r, color_line.g, color_line.b, 200)
+			Drawer.prop:lineColor(color_line.r, color_line.g, color_line.b, 255)
+			Drawer.fig:line(points[1], 0, points[1], Frame.size.current.y)
+		end
+		if true then
+			local color_polygon = {r=0,   g=255, b=255}
+			drawPolygon(points, 1, color_polygon, color_polygon)
+		end
+		if true then
+			textOut(points, resultType)
+		end
+	end
+
 	local hun_act_types_color = {
 		["Surface_SQUAT_UIC_227"] 				= {r=0,   g=255, b=0    }, -- зеленый
 		["Surface_SLEEPAGE_SKID_UIC_2251"] 		= {r=0,   g=255, b=255  }, -- циан
@@ -632,9 +650,9 @@ local ActionResTypes =
 	["Surface_SLEEPAGE_SKID_UIC_2252_USER"] = {processSimpleResult},
 	["Common"]	 	 				= {},
 	["Turnout_StartGap"]			= {},
-	["Turnout_PointRail"]			= {},
+	["Turnout_PointRail"]			= {processSimpleResult},
 	["Turnout_PointRail_Gap"]		= {},
-	["Turnout_PointFrog"]			= {},
+	["Turnout_PointFrog"]			= {processSimpleResult},
 	["Turnout_EndGap"]				= {},
 }
 

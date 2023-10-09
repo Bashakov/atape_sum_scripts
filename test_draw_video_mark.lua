@@ -224,4 +224,17 @@ function  TestSleeper2()
     checkActions("test_data/draw/sleeper2.21.2284621.txt")
 end
 
+function  TestTurnout()
+    local mark = {
+        prop = {
+            Guid=TYPES.TURNOUT,
+        },
+        ext = {
+            RAWXMLDATA = read_file("test_data/Turnout.xml"),
+        },
+    }
+    draw(17, 40993779, mark)
+    checkActions("test_data/draw/Turnout.17.40993779.txt")
+end
+
 os.exit( lu.LuaUnit.run() )

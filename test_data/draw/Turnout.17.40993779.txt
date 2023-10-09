@@ -1,0 +1,13 @@
+Convertor.ScalePoint: 322 420
+Convertor.ScalePoint: 322 394
+prop.lineWidth: 1
+prop.fillColor: {1=255,2=0,3=0,4=200}
+fig.line: 322 0 322 512
+
+Convertor.ScalePoint: 322 420
+Convertor.ScalePoint: 322 394
+Convertor.ScalePoint: 328 394
+Convertor.ScalePoint: 328 420
+prop.lineWidth: 1
+prop.fillColor: {1=255,2=0,3=0,4=200}
+fig.line: 322 0 322 512
