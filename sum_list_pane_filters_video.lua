@@ -1,5 +1,6 @@
 local mark_helper = require 'sum_mark_helper'
 local defect_codes = require 'report_defect_codes'
+local list_ext_obj_str = require "list_ext_obj_STR"
 
 local table_merge = mark_helper.table_merge
 local TYPES = require 'sum_types'
@@ -648,6 +649,46 @@ local filters =
 		},
 		GUIDS = group_defects,
 		hide = true,
+	},
+	{
+		group = {'Тест:видео'},
+		name = 'Стрелочные переводы',
+		columns = {
+			column_num,
+			columns_turnout_ebpd,
+			columns_turnout_pointrail,
+			columns_turnout_pointfrog,
+			columns_turnout_startgap,
+			columns_turnout_endgap,
+		},
+		GUIDS = {TYPES.TURNOUT},
+		post_load = function (marks, fnContinueCalc)
+			local strelki = list_ext_obj_str.LoadStr(fnContinueCalc, nil)
+
+			for i, mark in ipairs(marks) do 
+				local c = mark.ext.TRNOUTPNTRAILCOORD
+				if c then 
+					local km, m = Driver:GetPathCoord(c)
+					if km then
+						local strdist = {}
+						for _, strl in ipairs(strelki) do
+							local dist = math.abs((km-strl.KM) * 1000 + (m - strl.M))
+							strdist[dist] = strl
+						end
+						for d, strl in algorithm.sorted(strdist) do
+							if d < 20 then
+								mark.user.strelka = strl
+							end
+							break
+						end
+						if fnContinueCalc and not fnContinueCalc(i / #marks) then
+							return {}
+						end
+					end
+				end
+			end
+			return marks
+		end,
 	},
 }
 

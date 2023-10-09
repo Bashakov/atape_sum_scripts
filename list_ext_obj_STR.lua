@@ -149,5 +149,6 @@ return
 {
     filters = {
         STR,
-    }
+    },
+	LoadStr = _load_str,
 }

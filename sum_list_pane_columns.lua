@@ -2,6 +2,7 @@ local mark_helper = require 'sum_mark_helper'
 local utils = require 'utils'
 local algorithm = require 'algorithm'
 
+
 local prev_atape = ATAPE
 ATAPE = true -- disable debug code while load scripts
 	local sum_report_joints = require "sum_report_joints"
@@ -15,6 +16,7 @@ local table_find = algorithm.table_find
 local DEFECT_CODES = require 'report_defect_codes'
 local sumPOV = require "sumPOV"
 local read_csv = require 'read_csv'
+local xml = require "xml_utils"
 
 local TYPES = require "sum_types"
 local TYPE_GROUPS = require "sum_list_pane_guids"
@@ -109,6 +111,16 @@ function get_mark_ekasui_speed_limit(mark)
 	return speed_limit
 end
 
+local function format_path_coord(sys_coord)
+	if sys_coord then
+		local km, m, mm = Driver:GetPathCoord(sys_coord)
+		if km then
+			return string.format('%3d км %05.1f', km, m + mm/1000.0)
+		end
+	end
+	return '<*****>'
+end
+
 -- =====================================================================
 
 
@@ -149,11 +161,7 @@ column_path_coord =
 	text = function(row)
 		local mark = work_marks_list[row]
 		local prop = mark.prop
-		local km, m, mm = Driver:GetPathCoord(prop.SysCoord)
-		if km then
-			return string.format('%3d км %05.1f', km, m + mm/1000.0)
-		end
-		return '<*****>'
+		return format_path_coord(prop.SysCoord)
 	end,
 	sorter = function(mark)
 		return mark.prop.SysCoord
@@ -1215,4 +1223,78 @@ column_jat_value = {
 		local mark = work_marks_list[row]
 		return mark.ext.JAT_VALUE or ""
 	end,
+}
+
+local function get_turnout_element_coord(mark, node_name, param_name)
+	local c = param_name and mark.ext[param_name]
+	if c then
+		return c
+	end
+	local ext = mark.ext
+	if ext.RAWXMLDATA  then
+		local dom = xml.load_xml_str(ext.RAWXMLDATA)
+		if dom then
+			local xpath = sprintf('ACTION_RESULTS/\z
+				PARAM[@value="%s" and @channel and @name="ACTION_RESULTS"]/\z
+				PARAM[@name="FrameNumber" and @coord]/\z
+				PARAM[@value="main" and @name="Result"]/\z
+				PARAM[@value and @name="Coord" and @type="polygon"]', node_name)
+			local node_polygon = dom:SelectSingleNode(xpath)
+			if node_polygon then
+				local offset = node_polygon.attributes:getNamedItem("value").nodeValue
+				local frame_coord = node_polygon:SelectSingleNode("../../@coord").nodeValue
+				if offset and frame_coord then
+					return tonumber(frame_coord) + tonumber(offset)
+				end
+			end
+		end
+	end
+end
+
+local function make_turnout_columns(name, node_name, param_name)
+	local res = {
+		name = name,
+		width = 80,
+		align = 'c',
+		text = function(row)
+			local mark = work_marks_list[row]
+			local c = get_turnout_element_coord(mark, node_name, param_name)
+			return format_path_coord(c)
+		end,
+		sorter = function(mark)
+			return get_turnout_element_coord(mark, node_name, param_name)
+		end,
+		jump = function (params)
+			local c = get_turnout_element_coord(params.mark, node_name, param_name)
+			if c then
+				Driver:JumpSysCoord(c)
+			end
+		end
+	}
+	return res
+end
+
+columns_turnout_pointrail = make_turnout_columns("К. остр.", "Turnout_PointRail", "TRNOUTPNTRAILCOORD")
+columns_turnout_pointfrog = make_turnout_columns("К. крест.", "Turnout_PointFrog", "TRNOUTPNTFROGCOORD")
+columns_turnout_startgap = make_turnout_columns("К.нач.стык", "Turnout_StartGap", nil)
+columns_turnout_endgap = make_turnout_columns("К.кон.стык", "Turnout_EndGap", nil)
+
+columns_turnout_ebpd = {
+	name = "По ЕБПД",
+	width = 80,
+	align = 'c',
+	text = function(row)
+		local strelka = work_marks_list[row].user.strelka
+		if strelka then
+			return string.format('%3d км %05.1f', strelka.KM, strelka.M)
+		else
+			return '--'
+		end
+	end,
+	jump = function (params)
+		local strelka = params.mark.user.strelka
+		if strelka then
+			Driver:JumpPath({strelka.KM, strelka.M, 0})
+		end
+	end
 }
