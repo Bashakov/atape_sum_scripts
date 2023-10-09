@@ -2,12 +2,43 @@ Convertor.ScalePoint: 322 420
 Convertor.ScalePoint: 322 394
 prop.lineWidth: 1
 prop.fillColor: {1=255,2=0,3=0,4=200}
+prop.lineColor: {1=255,2=0,3=0,4=255}
 fig.line: 322 0 322 512
-
+prop.lineWidth: 1
+prop.fillColor: {1=0,2=255,3=255,4=0}
+prop.lineColor: {1=0,2=255,3=255,4=200}
+fig.polygon: 322,420,322,394
+text.font: {bold=0,height=13,name=Tahoma,render=VectorFontCache}
+text.alignment: AlignLeft AlignBottom
+text.calcSize: Turnout_PointRail
+prop.lineWidth: 3
+prop.fillColor: {a=225,b=0,g=0,r=0}
+prop.lineColor: {a=225,b=0,g=0,r=0}
+text.multiline: {str=Turnout_PointRail,x=317,y=402}
+prop.lineWidth: 1
+prop.fillColor: {a=225,b=255,g=255,r=255}
+prop.lineColor: {a=225,b=255,g=255,r=255}
+text.multiline: {str=Turnout_PointRail,x=317,y=402}
 Convertor.ScalePoint: 322 420
 Convertor.ScalePoint: 322 394
 Convertor.ScalePoint: 328 394
 Convertor.ScalePoint: 328 420
 prop.lineWidth: 1
 prop.fillColor: {1=255,2=0,3=0,4=200}
+prop.lineColor: {1=255,2=0,3=0,4=255}
 fig.line: 322 0 322 512
+prop.lineWidth: 1
+prop.fillColor: {1=0,2=255,3=255,4=0}
+prop.lineColor: {1=0,2=255,3=255,4=200}
+fig.polygon: 322,420,322,394,328,394,328,420
+text.font: {bold=0,height=13,name=Tahoma,render=VectorFontCache}
+text.alignment: AlignLeft AlignBottom
+text.calcSize: Turnout_PointFrog
+prop.lineWidth: 3
+prop.fillColor: {a=225,b=0,g=0,r=0}
+prop.lineColor: {a=225,b=0,g=0,r=0}
+text.multiline: {str=Turnout_PointFrog,x=323,y=402}
+prop.lineWidth: 1
+prop.fillColor: {a=225,b=255,g=255,r=255}
+prop.lineColor: {a=225,b=255,g=255,r=255}
+text.multiline: {str=Turnout_PointFrog,x=323,y=402}

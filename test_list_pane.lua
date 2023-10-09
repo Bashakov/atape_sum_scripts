@@ -44,6 +44,7 @@ function TestGetFilterNames()
         "Поверхностные дефекты",
         "Запуски распознавания",
         "Слепые зазоры",
+        "Стрелочные переводы",
         "Магнитные Стыки",
         "Нпу",
         "Глобальный фильтр",
@@ -105,6 +106,7 @@ function TestGetFilterNames()
     })
     lu.assertEquals(GetFilterNames("Тест:видео"),  {
         "Тест нетиповые болты",
+        "Стрелочные переводы",
     })
     lu.assertEquals(GetFilterNames("Шпалы"),  {
         "III Шпалы: эпюра",
