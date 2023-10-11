@@ -8,17 +8,22 @@ local function create_dom()
     return dom 
 end
 
-local function load_xml_str(str_xml)
+local function load_xml_str(str_xml, no_throw)
     local dom = create_dom()
-	if not dom:loadXML(str_xml) then
-		local msg = string.format('Error parse XML: 0x%08X (%d) %s\n%s',
-            0x100000000 + dom.parseError.errorCode,
-            dom.parseError.errorCode,
-            dom.parseError.reason,
-			str_xml)
-		error(msg)
+	if dom:loadXML(str_xml) then
+		return dom
 	end
-	return dom
+
+	local msg = string.format('Error parse XML: 0x%08X (%d) %s\n%s',
+		0x100000000 + dom.parseError.errorCode,
+		dom.parseError.errorCode,
+		dom.parseError.reason,
+		str_xml)
+
+	if no_throw then
+		return nil, msg
+	end
+	error(msg)
 end
 
 -- итератор по нодам xml
@@ -65,11 +70,8 @@ local function xml_attr(node, name, def)
 	end
 end
 
-local xmlDom = create_dom()
-
 return
 {
-    xmlDom = xmlDom,
     create_dom = create_dom,
     load_xml_str = load_xml_str,
     SelectNodes = SelectNodes,

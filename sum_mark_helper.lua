@@ -5,16 +5,18 @@ local utils = require 'utils'
 local algorithm = require 'algorithm'
 local xml_utils = require 'xml_utils'
 local apbase = require 'ApBaze'
+local mark_xml_cache = require "mark_xml_cache"
+
 
 local printf = utils.printf
 local sprintf = utils.sprintf
 local errorf = utils.errorf
 
-local xmlDom = xml_utils.xmlDom
 local SelectNodes = xml_utils.SelectNodes
 
-
 local GetGapType -- definition
+
+local xml_cache = mark_xml_cache.MarkXmlCache(100)
 
 -- =================== ШИРИНА ЗАЗОРА ===================
 
@@ -31,7 +33,8 @@ local function GetAllGapWidth(mark)
 		end
 	end
 
-	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
+	local nodeRoot = xml_cache:get(mark)
+	if nodeRoot then
 		local req = '\z
 		/ACTION_RESULTS\z
 		/PARAM[@name="ACTION_RESULTS" and starts-with(@value, "CalcRailGap")]\z
@@ -39,7 +42,7 @@ local function GetAllGapWidth(mark)
 		/PARAM[@name="Result" and @value="main"]\z
 		/PARAM[@name="RailGapWidth_mkm" and @value]/@value'
 
-		for node in SelectNodes(xmlDom, req) do
+		for node in SelectNodes(nodeRoot, req) do
 			local node_gap_type =  node:SelectSingleNode("../../../../@value").nodeValue
 			local width = tonumber(node.nodeValue) / 1000
 
@@ -144,11 +147,8 @@ end
 
 -- получить высоты ступеньки на стыке
 local function GetRailGapStep(mark)
-	local ext = mark.ext
-	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA) then
-		return nil
-	end
-	local node = xmlDom:SelectSingleNode('\z
+	local nodeRoot = xml_cache:get(mark)
+	local node = nodeRoot and nodeRoot:SelectSingleNode('\z
 		/ACTION_RESULTS\z
 		/PARAM[@name="ACTION_RESULTS" and @value="CalcRailGapStep"]\z
 		/PARAM[@name="FrameNumber" and @value and @coord]\z
@@ -162,8 +162,8 @@ end
 
 --получить смещенеи маячной отметки
 local function GetBeaconOffset(mark)
-	local ext = mark.ext
-	local node = ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) and xmlDom:SelectSingleNode('\z
+	local nodeRoot = xml_cache:get(mark)
+	local node = nodeRoot and nodeRoot:SelectSingleNode('\z
 		/ACTION_RESULTS\z
 		/PARAM[@name="ACTION_RESULTS" and @value="Beacon_Web"]\z
 		/PARAM[@name="FrameNumber" and @value and @coord]\z
@@ -180,8 +180,8 @@ end
 
 -- получить массив с качествами болтов
 local function GetCrewJointArray(mark)
-	local ext = mark.ext
-	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA)	then
+	local nodeRoot = xml_cache:get(mark)
+	if not nodeRoot	then
 		return nil
 	end
 
@@ -193,7 +193,7 @@ local function GetCrewJointArray(mark)
 
 	local res = {}
 
-	for nodeCrewJoint in SelectNodes(xmlDom, '/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="CrewJoint"]') do
+	for nodeCrewJoint in SelectNodes(nodeRoot, '/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="CrewJoint"]') do
 		local video_channel = nodeCrewJoint:SelectSingleNode("@channel")
 		video_channel = video_channel and tonumber(video_channel.nodeValue) or 0
 
@@ -287,9 +287,9 @@ end
 local function GetFishplateState(mark)
 	local res = -1
 	local cnt = 0
-	local ext = mark.ext
-	if ext and ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
 
+	local nodeRoot = xml_cache:get(mark)
+	if nodeRoot then
 		local req = '\z
 			ACTION_RESULTS\z
 			/PARAM[@name="ACTION_RESULTS" and @value="Fishplate"]\z
@@ -298,7 +298,7 @@ local function GetFishplateState(mark)
 			/PARAM[@name="FishplateState"]\z
 			/PARAM[@name="FishplateFault" and @value]/@value'
 
-		for nodeFault in SelectNodes(xmlDom, req) do
+		for nodeFault in SelectNodes(nodeRoot, req) do
 			local fault = tonumber(nodeFault.nodeValue)
 			res = math.max(res, fault)
 			if fault > 0 then
@@ -316,9 +316,9 @@ local function IsFastenerDefect(mark)
 		/ACTION_RESULTS\z
 		/PARAM[@name="ACTION_RESULTS" and @value="Fastener"]\z
 		//PARAM[@name="FastenerFault" and @value]/@value'
-	local ext = mark.ext
-	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
-		local node = xmlDom:SelectSingleNode(xpath)
+	local nodeRoot = xml_cache:get(mark)
+	if nodeRoot then
+		local node = nodeRoot:SelectSingleNode(xpath)
 		if node then
 			node = tonumber(node.nodeValue)
 			return node ~= 0
@@ -327,10 +327,10 @@ local function IsFastenerDefect(mark)
 end
 
 local function GetFastenetParams(mark)
-	local ext = mark.ext
-	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA)	then
+	local nodeRoot = xml_cache:get(mark)
+	if nodeRoot	then
 		local res = {}
-		for node_frame in SelectNodes(xmlDom, '/ACTION_RESULTS/PARAM[@value="Fastener"]/PARAM[@name="FrameNumber" and @value="0" and @coord]') do
+		for node_frame in SelectNodes(nodeRoot, '/ACTION_RESULTS/PARAM[@value="Fastener"]/PARAM[@name="FrameNumber" and @value="0" and @coord]') do
 			res['frame_coord'] = tonumber(node_frame:SelectSingleNode('@coord').nodeValue)
 			for node_param in SelectNodes(node_frame, 'PARAM/PARAM[@name and @value]') do
 				local name, value = xml_utils.xml_attr(node_param, {'name', 'value'})
@@ -339,7 +339,7 @@ local function GetFastenetParams(mark)
 		end
 
 		local roc = 'RecogObjCoord'
-		local node = xmlDom:SelectSingleNode('//PARAM[@name="' .. roc .. '" and @value]/@value')
+		local node = nodeRoot:SelectSingleNode('//PARAM[@name="' .. roc .. '" and @value]/@value')
 		if node then
 			res[roc] = tonumber(node.nodeValue)
 		end
@@ -353,15 +353,15 @@ end
 local function GetSurfDefectPrm(mark)
 	local res = {}
 
-	local ext = mark.ext
-	if ext and ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
+	local nodeRoot = xml_cache:get(mark)
+	if nodeRoot then
 		local req = '\z
 		/ACTION_RESULTS\z
 		/PARAM[starts-with(@value, "Surface")]\z
 		/PARAM[@name="FrameNumber" and @value and @coord]\z
 		/PARAM[@name="Result" and @value="main"]\z
 		/PARAM[@name and @value]'
-		for node_param in SelectNodes(xmlDom, req) do
+		for node_param in SelectNodes(nodeRoot, req) do
 			local name, value = xml_utils.xml_attr(node_param, {'name', 'value'})
 			if value and name and name:find('Surface') then
 				value = tonumber(value)
@@ -393,8 +393,8 @@ end
 
 -- получить массив коннекторов болтов (если распз по неск каналам, то данные берутся последовательно из 17/18 потом из 19/20)
 local function GetConnectorsArray(mark)
-	local ext = mark.ext
-	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA)	then
+	local nodeRoot = xml_cache:get(mark)
+	if not nodeRoot	then
 		return nil
 	end
 
@@ -406,7 +406,7 @@ local function GetConnectorsArray(mark)
 
 	local res = {}
 
-	for node in SelectNodes(xmlDom, req) do
+	for node in SelectNodes(nodeRoot, req) do
 		local video_channel = node:SelectSingleNode("../../../../@channel")
 		video_channel = video_channel and tonumber(video_channel.nodeValue) or 0
 		local fault = tonumber(node.nodeValue)
@@ -439,8 +439,8 @@ end
 
 -- получить статус конектора (WeldedBond) из описания стыка
 local function GetWeldedBondStatus(mark)
-	local ext = mark.ext
-	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
+	local nodeRoot = xml_cache:get(mark)
+	if nodeRoot then
 		local req = '\z
 			/ACTION_RESULTS\z
 			/PARAM[@name="ACTION_RESULTS" and @value="WeldedBond"]\z
@@ -449,7 +449,7 @@ local function GetWeldedBondStatus(mark)
 			/PARAM[@name="ConnectorFault" and @value]\z
 			/@value'
 
-		local nodeFault = xmlDom:SelectSingleNode(req)
+		local nodeFault = nodeRoot:SelectSingleNode(req)
 		return nodeFault and tonumber(nodeFault.nodeValue)
 	end
 end
@@ -471,9 +471,8 @@ end
 
 -- получить параметры шпалы
 local function GetSleeperParam(mark)
-
-	local ext = mark.ext
-	if not ext.RAWXMLDATA or not xmlDom:loadXML(ext.RAWXMLDATA)	then
+	local nodeRoot = xml_cache:get(mark)
+	if not nodeRoot	then
 		return nil
 	end
 
@@ -483,7 +482,7 @@ local function GetSleeperParam(mark)
 
 	local res = {}
 
-	for node in SelectNodes(xmlDom, req) do
+	for node in SelectNodes(nodeRoot, req) do
 		local name = node:SelectSingleNode("@name").nodeValue
 		local val = node:SelectSingleNode("@value").nodeValue
 		res[name] = tonumber(val)
@@ -500,12 +499,13 @@ local function GetSleeperAngle(mark)
 		return ext.SLEEPERS_ANGLE
 	end
 
-	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
+	local nodeRoot = xml_cache:get(mark)
+	if nodeRoot then
 		local req = '\z
 			/ACTION_RESULTS\z
 			/PARAM[@name="ACTION_RESULTS" and @value="Sleepers"]\z
 			/PARAM[@name="Angle_mrad" and @value]/@value'
-		local node = xmlDom:SelectSingleNode(req)
+		local node = nodeRoot:SelectSingleNode(req)
 		return node and tonumber(node.nodeValue)
 	end
 end
@@ -515,12 +515,13 @@ local function GetSleeperFault(mark)
 	local res = {}
 	local ext = mark.ext
 
-	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
+	local nodeRoot = xml_cache:get(mark)
+	if nodeRoot then
 		local req = '\z
 			/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Sleeper"]\z
 			//PARAM[@name="SleeperFault"]\z
 			/PARAM[@name and @value]'
-		for node in SelectNodes(xmlDom, req) do
+		for node in SelectNodes(nodeRoot, req) do
 			local name, value = xml_utils.xml_attr(node, {'name', 'value'})
 			res[name] = tonumber(value) or value
 		end
@@ -537,11 +538,12 @@ local function GetSleeperMeterial(mark)
 		return ext.SLEEPERS_METERIAL
 	end
 
-	if ext.RAWXMLDATA and xmlDom:loadXML(ext.RAWXMLDATA) then
+	local nodeRoot = xml_cache:get(mark)
+	if nodeRoot then
 		local req = '\z
 			/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Sleepers"]\z
 			/PARAM[@name="Material" and @value]/@value'
-		local node = xmlDom:SelectSingleNode(req)
+		local node = nodeRoot:SelectSingleNode(req)
 		return node and tonumber(node.nodeValue)
 	end
 end
@@ -622,7 +624,7 @@ local function filter_user_accept(marks, values, progress_callback)
 		if values[ua] then
 			res[#res+1] = mark
 		end
-		print(i, mark.prop.dwID, ua, #res)
+		--print(i, mark.prop.dwID, ua, #res)
 		if progress_callback then
 			progress_callback(#marks, i, #res)
 		end
@@ -1060,6 +1062,8 @@ end
 -- =================== ЭКПОРТ ===================
 
 return {
+	xml_cache = xml_cache,
+
 	errorf = errorf,
 	printf = printf,
 	sprintf = sprintf,
