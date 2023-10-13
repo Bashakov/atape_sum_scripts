@@ -197,6 +197,7 @@ local function make_joint_node(nodeRoot, joints)
 			local frame_offset = joints[1].area:frame_offset(fc, ffc)
 			local nodeFrame  = make_node(nodeActRes, "PARAM", {name="FrameNumber", value=frame_offset, coord=fc})
 			local nodeResult = make_node(nodeFrame , "PARAM", {name="Result", value="main"})
+			table.sort(joints, function (a, b) return a.points[1] < b.points[1] end) -- http://84.201.134.151/issues/65
 			for _, joint in ipairs(joints) do
 				local nodeJoint  = make_node(nodeResult , "PARAM", {name="JointNumber", value=n})
 				n = n + 1
@@ -339,7 +340,7 @@ function make_simple_defect(name, objects, driver, defect)
 	for i, object in ipairs(objects) do
 		local mark = _create_simple_mark(driver, object, defect.guid)
 
-		if defect.add_width_from_user_rect then
+	if defect.add_width_from_user_rect then
 			local points_on_frame, _ = rect2corners(object, "rl") -- right, left
 			local w = tonumber(points_on_frame[1] - points_on_frame[2])
 			--object.options.joint_width = w
