@@ -19,7 +19,7 @@ local TYPE_GROUPS = require "sum_list_pane_guids"
 
 local jat_guids = mark_helper.table_merge(TYPE_GROUPS.recognition_guids, TYPE_GROUPS.JAT)
 
-
+local markid2defectcodes = {}
 
 -- =========================================
 
@@ -28,12 +28,17 @@ local function filter_mark(mark)
     if mark_helper.table_find(TYPE_GROUPS.JAT, g) then
         return true
     else
-        local code = mark_helper.GetWeldedBondDefectCode(mark)
-        return code
+        local codes = mark_helper.GetJoinConnectorDefectCodes(mark)
+        if codes and #codes > 0 then
+			markid2defectcodes[mark.prop.ID] = codes
+			return true
+		end
     end
 end
 
-local function GetMarks(params)
+local function GetMarks(params, dlgProgress)
+	markid2defectcodes = {}
+
     local t = params and params.filter or 'all'
     local g = {}
 
@@ -45,7 +50,11 @@ local function GetMarks(params)
     end
 
     local marks = Driver:GetMarks{GUIDS=g}
-    marks = mark_helper.filter_marks(marks, filter_mark)
+    marks = mark_helper.filter_marks(marks, filter_mark, function (all, cur, accept)
+		if dlgProgress and cur % 31 == 1 then
+			dlgProgress:step(cur / all, string.format('Подготовка %d / %d', cur, all))
+		end
+	end)
     marks = mark_helper.sort_mark_by_coord(marks)
     return marks
 end
@@ -84,23 +93,22 @@ local function generate_rows_jat(marks, dlgProgress, pov_filter)
 
 	local report_rows = {}
 	for i, mark in ipairs(marks) do
-        local row
+        
 		if pov_filter(mark) then
             local g = mark.prop.Guid
             if mark_helper.table_find(TYPE_GROUPS.JAT, g) then
-                row = MakeJatMarkRow(mark, mark.ext.CODE_EKASUI)
+                local row = MakeJatMarkRow(mark, mark.ext.CODE_EKASUI)
+				table.insert(report_rows, row)
             else
-                local code = mark_helper.GetWeldedBondDefectCode(mark)
-                if code then
-                    row = MakeJatMarkRow(mark, code)
-                    row.GAP_TYPE = getGapType(mark)
+				local gap_type = getGapType(mark)
+                local codes = markid2defectcodes[mark.prop.ID]
+                for _, code in ipairs(codes) do
+                    local row = MakeJatMarkRow(mark, code)
+                    row.GAP_TYPE = gap_type
+					table.insert(report_rows, row)
                 end
             end
         end
-
-        if row then
-			table.insert(report_rows, row)
-		end
 
 		if i % 31 == 0 and not dlgProgress:step(i / #marks, string.format('Сканирование %d / %d, найдено %d', i, #marks, #report_rows)) then
 			return
@@ -147,7 +155,7 @@ local function make_report_generator(...)
 
 		generators = make_gen_pov_filter(generators, pov_filter)
 		return AVIS_REPORT.make_report_generator(
-            function() return GetMarks(params) end,
+            function(dlgProgress) return GetMarks(params, dlgProgress) end,
 			report_template_name,
             sheet_name,
             table.unpack(generators))()
@@ -163,7 +171,7 @@ local function make_html_report_generator(...)
 		generators = make_gen_pov_filter(generators, pov_filter)
 
 		local gen = AVIS_REPORT.make_html_generator(
-            function() return GetMarks(params) end,
+            function(dlgProgress) return GetMarks(params, dlgProgress) end,
 			"jat_report_template.html",
             "jat_",
 			"ВЕДОМОСТЬ ОТСТУПЛЕНИЙ В СОДЕРЖАНИИ УСТРОЙСТВ ЖАТ",
@@ -178,25 +186,24 @@ local jat_ekasui = make_report_ekasui(generate_rows_jat)
 local jat_report = make_report_generator(generate_rows_jat)
 local jat_html = make_html_report_generator(generate_rows_jat)
 
+local name_pref = 'Ведомость отступлений в содержании устройств ЖАТ|'
+
+local jat_reports =
+{
+	{name = name_pref..'все',            		fn=jat_report, 	params = {filter="all" }, },
+	{name = name_pref..'пользователь',   		fn=jat_report, 	params = {filter="user"}, },
+	{name = name_pref..'автоматические', 		fn=jat_report, 	params = {filter="auto"}, },
+
+	{name = name_pref..'ЕКАСУИ все',            fn=jat_ekasui, 	params = {filter="all" }, },
+	{name = name_pref..'ЕКАСУИ пользователь',   fn=jat_ekasui, 	params = {filter="user"}, },
+	{name = name_pref..'ЕКАСУИ автоматические', fn=jat_ekasui, 	params = {filter="auto"}, },
+
+	{name = name_pref..'HTML все',            	fn=jat_html, 	params = {filter="all" }, },
+	{name = name_pref..'HTML пользователь',   	fn=jat_html, 	params = {filter="user"}, },
+	{name = name_pref..'HTML автоматические', 	fn=jat_html, 	params = {filter="auto"}, },
+}
 
 local function AppendReports(reports)
-	local name_pref = 'Ведомость отступлений в содержании устройств ЖАТ|'
-
-	local jat_reports =
-	{
-		{name = name_pref..'все',            		fn=jat_report, 	params = {filter="all" }, },
-		{name = name_pref..'пользователь',   		fn=jat_report, 	params = {filter="user"}, },
-		{name = name_pref..'автоматические', 		fn=jat_report, 	params = {filter="auto"}, },
-
-		{name = name_pref..'ЕКАСУИ все',            fn=jat_ekasui, 	params = {filter="all" }, },
-		{name = name_pref..'ЕКАСУИ пользователь',   fn=jat_ekasui, 	params = {filter="user"}, },
-		{name = name_pref..'ЕКАСУИ автоматические', fn=jat_ekasui, 	params = {filter="auto"}, },
-
-		{name = name_pref..'HTML все',            	fn=jat_html, 	params = {filter="all" }, },
-		{name = name_pref..'HTML пользователь',   	fn=jat_html, 	params = {filter="user"}, },
-		{name = name_pref..'HTML автоматические', 	fn=jat_html, 	params = {filter="auto"}, },
-    }
-
     for _, report in ipairs(jat_reports) do
 		if report.fn then
 			report.guids = jat_guids
@@ -215,7 +222,9 @@ if not ATAPE then
 	--test_report('C:\\Avikon\\CheckAvikonReports\\data\\data_27_short.xml')
     --test_report('D:/ATapeXP/Main/TEST/ZeroGap/2019_06_13/Avikon-03M/6284/[494]_2017_06_14_03.xml')
 
-	ekasui_user()
+	local report = jat_reports[6]
+	report.fn(report.params)
+
 	--report_ALL()
 end
 

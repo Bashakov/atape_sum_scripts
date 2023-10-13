@@ -70,7 +70,7 @@
 <PARAM name="FrameNumber" value="-1" coord="2186317">
 <PARAM name="Result" value="main">
 <PARAM name="Coord" type="ellipse" value="574,318,26,43"></PARAM>
-<PARAM name="ConnectorFault" value="0" value_="0-, 1-"></PARAM>
+<PARAM name="ConnectorType" value="4"></PARAM>
 </PARAM>
 </PARAM>
 </PARAM>
@@ -78,7 +78,7 @@
 <PARAM name="FrameNumber" value="0" coord="2187341">
 <PARAM name="Result" value="main">
 <PARAM name="Coord" type="ellipse" value="764,321,26,43"></PARAM>
-<PARAM name="ConnectorFault" value="0" value_="0-, 1-"></PARAM>
+<PARAM name="ConnectorType" value="2"></PARAM>
 </PARAM>
 </PARAM>
 </PARAM>

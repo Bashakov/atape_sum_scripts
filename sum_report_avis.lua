@@ -41,7 +41,7 @@ end
 local function make_rows(getMarks, dlgProgress, row_generators)
 	local code2marks = {} -- убрать дублирование отметок полученных через стандартную функцию отчетов (включающую пользовательские отметки с опр. гуидом) и пользовательскую функцию отчетов
 	local report_rows = {}
-	local marks = getMarks()
+	local marks = getMarks(dlgProgress)
 
 	for _, fn_gen in ipairs(row_generators) do
 		local cur_rows = fn_gen(marks, dlgProgress)

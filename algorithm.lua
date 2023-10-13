@@ -269,6 +269,18 @@ local function starts_with(input, prefix)
 	return #input >= #prefix and string.sub(input, 1, #prefix) == prefix
 end
 
+local function clean_array_dup_stable(arr)
+	local res = {}
+	local known = {}
+	for _, val in pairs(arr) do
+		if not known[val] then
+			table.insert(res, val)
+			known[val] = true
+		end
+	end
+	return res
+end
+
 -- ============================================================= --
 
 return
@@ -292,4 +304,5 @@ return
     upper_bound = upper_bound,
     equal_range = equal_range,
     starts_with = starts_with,
+    clean_array_dup_stable = clean_array_dup_stable,
 }

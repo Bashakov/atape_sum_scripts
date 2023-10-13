@@ -7,6 +7,9 @@ local mark_helper = require 'sum_mark_helper'
 local xml_utils = require "xml_utils"
 local algorithm = require 'algorithm'
 
+local CONNECTOR_TYPE = mark_helper.CONNECTOR_TYPE
+local WELDEDBOND_TYPE = mark_helper.WELDEDBOND_TYPE
+
 local function read_file(path)
     local f = assert(io.open(path, 'rb'))
     local res = f:read('*a')
@@ -186,7 +189,7 @@ end
 -- =================== Поверхностные дефекты ===================
 
 function TestGetSurfDefectPrm()
-    
+
     local mark = make_mark('test_data/fastener1.xml')
     lu.assertEquals(mark_helper.GetSurfDefectPrm(mark), {})
 
@@ -200,31 +203,86 @@ function TestGetSurfDefectPrm()
         SurfaceWidth=15.8})
 end
 
--- =================== Коннекторы ===================
+-- =================== Штепсельный соединитель ===================
 
 function TestConnectors()
     local mark = make_mark('test_data/gap1.xml')
-    lu.assertEquals(mark_helper.GetConnectorsArray(mark), {0, 0})
     lu.assertEquals({mark_helper.GetConnectorsCount(mark)}, {2, 0})
 
     mark = make_mark('test_data/gap2.xml')
-    lu.assertEquals(mark_helper.GetConnectorsArray(mark), {1, 0, 1})
     lu.assertEquals({mark_helper.GetConnectorsCount(mark)}, {3, 2})
 end
 
+-- =================== Приварной соединитель ===================
+
 function TestWeldedBond()
     local mark = make_mark('test_data/gap1.xml')
-    lu.assertIsNil(mark_helper.GetWeldedBondStatus(mark))
-    lu.assertEquals(mark_helper.GetWeldedBondDefectCode(mark), "090004000521")
+    lu.assertEquals(mark_helper.GetWeldedBondStatus(mark), WELDEDBOND_TYPE.MISSING)
+    lu.assertEquals(mark_helper.GetWeldedBondDefectCode(mark), "090004004928")
 
     mark = make_mark('test_data/gap2.xml')
     mark.ext.RAWXMLDATA = read_file('test_data/gap2.xml')
-    lu.assertEquals(mark_helper.GetWeldedBondStatus(mark), 0)
+    lu.assertEquals(mark_helper.GetWeldedBondStatus(mark), WELDEDBOND_TYPE.GOOD)
     lu.assertIsNil(mark_helper.GetWeldedBondDefectCode(mark))
 
     mark = make_mark('test_data/gap3.xml')
-    lu.assertEquals(mark_helper.GetWeldedBondStatus(mark), 1)
-    lu.assertEquals(mark_helper.GetWeldedBondDefectCode(mark), "090004000521")
+    lu.assertEquals(mark_helper.GetWeldedBondStatus(mark), WELDEDBOND_TYPE.DEFECT)
+    lu.assertEquals(mark_helper.GetWeldedBondDefectCode(mark), "090004004928")
+end
+
+function TestGetJoinConnectors()
+    local mark = make_mark('test_data/gap1.xml')
+    local connectors, defect = mark_helper.GetJoinConnectors(mark)
+    lu.assertIs(defect, true)
+    lu.assertEquals(connectors, {
+        privarnoy=WELDEDBOND_TYPE.MISSING,
+        shtepselmii={CONNECTOR_TYPE.BOLT, CONNECTOR_TYPE.BOLT}
+    })
+    local codes = mark_helper.GetJoinConnectorDefectCodes(mark)
+    lu.assertEquals(codes,  {"090004004928"})
+
+    mark = make_mark('test_data/gap2.xml')
+    connectors, defect = mark_helper.GetJoinConnectors(mark)
+    lu.assertIs(defect, true)
+    lu.assertEquals(connectors, {
+        privarnoy=WELDEDBOND_TYPE.GOOD,
+        shtepselmii={CONNECTOR_TYPE.MIS_SCREW, CONNECTOR_TYPE.BOLT, CONNECTOR_TYPE.MIS_SCREW}
+    })
+    codes = mark_helper.GetJoinConnectorDefectCodes(mark)
+    lu.assertEquals(codes, {"090004000520"})
+
+
+    mark = make_mark('test_data/gap3.xml')
+    connectors, defect = mark_helper.GetJoinConnectors(mark)
+    lu.assertIs(defect, true)
+    lu.assertEquals(connectors, {
+        privarnoy=WELDEDBOND_TYPE.DEFECT,
+        shtepselmii={CONNECTOR_TYPE.HOLE, CONNECTOR_TYPE.MIS_SCREW}
+    })
+    codes = mark_helper.GetJoinConnectorDefectCodes(mark)
+    lu.assertEquals(codes, {"090004004928", "090004004927", "090004000520"})
+
+
+    mark = make_mark('test_data/gap4.xml')
+    connectors, defect = mark_helper.GetJoinConnectors(mark)
+    lu.assertIs(defect, true)
+    lu.assertEquals(connectors, {
+        privarnoy=WELDEDBOND_TYPE.MISSING,
+        shtepselmii={CONNECTOR_TYPE.MISSING}
+    })
+    codes = mark_helper.GetJoinConnectorDefectCodes(mark)
+    lu.assertEquals(codes, {"090004004928", "090004004927"})
+
+
+    mark = make_mark('test_data/gap_user.xml')
+    connectors, defect = mark_helper.GetJoinConnectors(mark)
+    lu.assertIs(defect, true)
+    lu.assertEquals(connectors, {
+        privarnoy=WELDEDBOND_TYPE.MISSING,
+        shtepselmii={CONNECTOR_TYPE.MISSING}
+    })
+    codes = mark_helper.GetJoinConnectorDefectCodes(mark)
+    lu.assertEquals(codes, {"090004004928", "090004004927"})
 end
 
 -- =================== Шпалы ===================
@@ -453,7 +511,7 @@ function TestGetRecognitionStartInfo()
     }
     lu.assertEquals(mark_helper.GetRecognitionStartInfo(), {
         {RECOGNITION_DLL_CTIME="1551361609", RECOGNITION_DLL_VERSION="2.8.9.2", RECOGNITION_MODE="ONLINE", RECOGNITION_START="1626438103", RECOGNITION_TYPE="EXPRESS" },
-        {RECOGNITION_DLL_CTIME="1528904526", RECOGNITION_DLL_VERSION="3.0.0.3", RECOGNITION_MODE="OFFLINE", RECOGNITION_START="1574944589", RECOGNITION_TYPE="FULL" },   
+        {RECOGNITION_DLL_CTIME="1528904526", RECOGNITION_DLL_VERSION="3.0.0.3", RECOGNITION_MODE="OFFLINE", RECOGNITION_START="1574944589", RECOGNITION_TYPE="FULL" },
         {RECOGNITION_DLL_CTIME="1551361609", RECOGNITION_DLL_VERSION="2.8.9.2", RECOGNITION_MODE="OFFLINE", RECOGNITION_START="1626438103", RECOGNITION_TYPE="EXPRESS" },
     })
 end

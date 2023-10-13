@@ -18,6 +18,22 @@ local GetGapType -- definition
 
 local xml_cache = mark_xml_cache.MarkXmlCache(100)
 
+local function readParam(parent)
+	local res = {}
+	for node in SelectNodes(parent, "PARAM[@name and @value and not(@type)]") do
+		local name = node.attributes:getNamedItem("name").nodeValue
+		local value = node.attributes:getNamedItem("value").nodeValue
+		res[name] = tonumber(value) or value
+	end
+	return res
+end
+
+local RAILWAY_TYPES = {
+	WAY = "путь",
+	JOINT = "стрелка",
+	SCB = "СЦБ",
+}
+
 -- =================== ШИРИНА ЗАЗОРА ===================
 
 -- получить все ширины из отметки
@@ -391,80 +407,256 @@ end
 
 -- =================== Коннекторы ===================
 
--- получить массив коннекторов болтов (если распз по неск каналам, то данные берутся последовательно из 17/18 потом из 19/20)
-local function GetConnectorsArray(mark)
-	local nodeRoot = xml_cache:get(mark)
-	if not nodeRoot	then
-		return nil
-	end
+local CONNECTOR_TYPE = {
+	GOOD 		= -2,
+	MISSING     = -1,	-- defect
+	BOLT 		= 0,	-- good
+	KLIN 		= 1,	-- good
+	MIS_SCREW 	= 2,	-- defect
+	TWO_SCREW 	= 3,	-- good
+	HOLE  		= 4,	-- defect
+	UNDEFINED 	= 100,	-- defect
+}
 
+--[[
+	+----------------+--------------------------------------------------------------+
+	| ConnectorFault |                        ConnectorType                         |
+	+----------------+--------------------------------------------------------------+
+	| 0-исправен     | 0-болт, 1-клин, 3-есть две гайки                             |
+	| 1-неисправен   | 2-отсутствие 1 или 2 гайки, 4-дырка, 100-не определено       |
+	+----------------+--------------------------------------------------------------+
+]]
+local CONNECTOR_TYPE_DEFECT = {
+	[CONNECTOR_TYPE.MISSING] 	= true,
+	[CONNECTOR_TYPE.MIS_SCREW] 	= true,
+	[CONNECTOR_TYPE.HOLE] 		= true,
+	[CONNECTOR_TYPE.UNDEFINED] 	= true,
+}
+
+local WELDEDBOND_TYPE = {
+	MISSING 	= -1,
+	GOOD 		= 0,
+	DEFECT 		= 1,
+	BAD_CABLE 	= 2,
+}
+
+local function GetConnecterType(mark)
+	local res = {}
 	local req = '\z
 		/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Connector"]\z
 		/PARAM[@name="FrameNumber" and @value]\z
-		/PARAM[@name="Result" and @value="main"]\z
-		/PARAM[@name="ConnectorFault" and @value]/@value'
+		/PARAM[@name="Result" and @value="main"]'
 
-	local res = {}
+	local nodeRoot = xml_cache:get(mark)
+	if nodeRoot	then
+		for node in SelectNodes(nodeRoot, req) do
+			local node_video_channel = node:SelectSingleNode("../../@channel")
+			local video_channel_num = node_video_channel and tonumber(node_video_channel.nodeValue)
+			if video_channel_num then
+				if not res[video_channel_num] then res[video_channel_num] = {} end
 
-	for node in SelectNodes(nodeRoot, req) do
-		local video_channel = node:SelectSingleNode("../../../../@channel")
-		video_channel = video_channel and tonumber(video_channel.nodeValue) or 0
-		local fault = tonumber(node.nodeValue)
+				local params = readParam(node)
+				if not params.ConnectorType then
+					params.ConnectorType = (params.ConnectorFault == 0) and CONNECTOR_TYPE.BOLT or CONNECTOR_TYPE.MIS_SCREW
+				end
 
-		if not res[video_channel] then
-			res[video_channel] = {}
+				table.insert(res[video_channel_num], params.ConnectorType)
+			end
 		end
-		table.insert(res[video_channel], fault)
 	end
 
-	res = res[17] or res[18] or res[19] or res[20] or res[0]
-	return res
+	local function is_defect(arr)
+		for _, t in ipairs(arr or {}) do
+			if CONNECTOR_TYPE_DEFECT[t] then
+				return true
+			end
+		end
+	end
+
+	if res[17] then
+		return res[17], res[19], is_defect(res[17]) or is_defect(res[19])
+	elseif res[18] then
+		return res[18], res[20], is_defect(res[18]) or is_defect(res[20])
+	else
+		return {CONNECTOR_TYPE.MISSING}, {CONNECTOR_TYPE.MISSING}, true
+	end
 end
 
 -- получить полное количество, колич. дефектных
 local function GetConnectorsCount(mark)
-
-	local arr = GetConnectorsArray(mark)
-	if not arr then
-		return nil
+	local types = GetConnecterType(mark)
+	if #types == 1 and types[1] == CONNECTOR_TYPE.MISSING then
+		return 0, 0
 	end
-	local all, fault = #arr, 0
-	for _, f in ipairs(arr) do
-		if f ~= 0 then
+
+	local fault = 0
+	for _, t in ipairs(types) do
+		if CONNECTOR_TYPE_DEFECT[t] then
 			fault = fault + 1
 		end
 	end
-	return all, fault
+	return #types, fault
 end
+
+-- =================== Приварной соединитель ===================
 
 -- получить статус конектора (WeldedBond) из описания стыка
 local function GetWeldedBondStatus(mark)
-	local nodeRoot = xml_cache:get(mark)
-	if nodeRoot then
-		local req = '\z
-			/ACTION_RESULTS\z
-			/PARAM[@name="ACTION_RESULTS" and @value="WeldedBond"]\z
-			/PARAM[@name="FrameNumber" and @value]\z
-			/PARAM[@name="Result" and @value="main"]\z
-			/PARAM[@name="ConnectorFault" and @value]\z
-			/@value'
+	local req = '\z
+		/ACTION_RESULTS\z
+		/PARAM[@name="ACTION_RESULTS" and @value="WeldedBond"]\z
+		/PARAM[@name="FrameNumber" and @value]\z
+		/PARAM[@name="Result" and @value="main"]\z
+		/PARAM[@name="ConnectorFault" and @value]\z
+		/@value'
 
-		local nodeFault = nodeRoot:SelectSingleNode(req)
-		return nodeFault and tonumber(nodeFault.nodeValue)
+	local nodeRoot = xml_cache:get(mark)
+	local nodeFault = nodeRoot and nodeRoot:SelectSingleNode(req)
+	return nodeFault and tonumber(nodeFault.nodeValue) or WELDEDBOND_TYPE.MISSING
+end
+
+local function getPrivarnoyDefectCode(privarnoy, railway_type)
+	if privarnoy == WELDEDBOND_TYPE.BAD_CABLE then
+		local codes = {
+			[RAILWAY_TYPES.WAY] 	= DEFECT_CODES.JOINT_WELDED_BOND_FAULT_WAY[1],
+			[RAILWAY_TYPES.JOINT] 	= DEFECT_CODES.JOINT_WELDED_BOND_FAULT_JOINT[1],
+			[RAILWAY_TYPES.SCB]   	= DEFECT_CODES.JOINT_WELDED_BOND_FAULT_SCB[1],
+		}
+		return codes[railway_type]
+	end
+
+	if privarnoy == WELDEDBOND_TYPE.MISSING or
+	   privarnoy == WELDEDBOND_TYPE.DEFECT then
+		local codes = {
+			[RAILWAY_TYPES.WAY] 	= DEFECT_CODES.JOINT_WELDED_BOND_MISSING_WAY[1],
+			[RAILWAY_TYPES.JOINT] 	= DEFECT_CODES.JOINT_WELDED_BOND_MISSING_JOINT[1],
+			[RAILWAY_TYPES.SCB]   	= DEFECT_CODES.JOINT_WELDED_BOND_MISSING_SCB[1],
+		}
+		return codes[railway_type]
 	end
 end
 
 -- получить Код дефекта конектора (WeldedBond) из описания стыка
 local function GetWeldedBondDefectCode(mark)
-	local gap_type = GetGapType(mark) -- 0 - болтовой, 1 - изолированный, 2 - сварной
-	-- дефект необходимо выдавать на болтовых стыках (кроме АТС и изостыков) на которых нет приварного соединителя,
-	-- на которых оборван приварной соединитель https://bt.abisoft.spb.ru/view.php?id=765#c3706
+	local gap_type = GetGapType(mark)
 	if not gap_type or gap_type == 0 then
-		local status = GetWeldedBondStatus(mark) -- <PARAM name='ConnectorFault' value='1' value_='0-исправен, 1-неисправен'/>
-		if not status or status == 1 then
-			return DEFECT_CODES.JOINT_WELDED_BOND_FAULT[1]
+		local railway_type = mark.ext.RAILWAY_TYPE or RAILWAY_TYPES.WAY
+		local status = GetWeldedBondStatus(mark)
+		return getPrivarnoyDefectCode(status, railway_type)
+	end
+end
+
+--[[
+	+------------------------+------------+------------+------------------------+-------------------+
+	| Тип перемычки/         | Где        | Имя ноды   | Атрибут                | Название в списке |
+	| соединителя            | расположен |            |                        |                   |
+	+========================+============+============+========================+===================+
+	| Приварной              | Болтовой   | WeldedBond | ConnectorFault=1       | Оборван           |
+	| (Основной)             | стык       |            | ConnectorFault=2       | Поврежден трос    |
+	+------------------------+------------+------------+------------------------+-------------------+
+	| Штепсельный            | Болтовой   | Connector  | Нет блока              | Нет отверстия     |
+	| (Дублирующий)          | стык       |            | ConnectorType=2        | Нет гаек          |
+	|                        |            |            | ConnectorType=4        | Отверстие         |
+	|                        |            |            | ConnectorType=100      | Нет отверстия     |
+	+------------------------+------------+------------+------------------------+-------------------+
+	| Дроссельная перемычка  | изостык    | Connector  | Нет блока              | Нет отверстия     |
+	| (Дроссель)             |            |            | ConnectorType=2        | Нет гаек          |
+	|                        |            |            | ConnectorType=4        | Отверстие         |
+	|                        |            |            | ConnectorType=100      | Нет отверстия     |
+	+------------------------+------------+------------+------------------------+-------------------+
+	| Бутлежная перемычка    | Признака   |            | CableConnector         | «Расположение     |
+	| (Тросовая перемычка)   | стыка нет  |            | CableConnectorBothRail | объекта»          |
+	+------------------------+------------+------------+------------------------+-------------------+
+]]
+local function GetJoinConnectors(mark)
+	local gap_type = GetGapType(mark)
+	local connector, _, connector_defected = GetConnecterType(mark)
+	
+	local defected = false
+	local res = {}
+
+	if not gap_type or gap_type == 0 then -- болтовой
+		res.privarnoy = GetWeldedBondStatus(mark)
+		res.shtepselmii = connector
+		defected = connector_defected or res.privarnoy ~= WELDEDBOND_TYPE.GOOD
+	elseif gap_type == 1 then -- изолированный
+		res.drossel = connector
+		defected = connector_defected
+	end
+	return res, defected, gap_type
+end
+
+local function GetJoinConnectorDefected(mark)
+	local connectors = GetJoinConnectors(mark)
+	if connectors.privarnoy == WELDEDBOND_TYPE.GOOD then
+		connectors.privarnoy = nil
+	end
+
+	local function clean_good_connector(arr)
+		local res = {}
+		for _, val in ipairs(arr) do
+			if CONNECTOR_TYPE_DEFECT[val] then
+				table.insert(res, val)
+			end
+		end
+		return #res > 0 and res
+	end
+
+	if connectors.drossel then
+		connectors.drossel = clean_good_connector(connectors.drossel)
+	end
+
+	if connectors.shtepselmii then
+		connectors.shtepselmii = clean_good_connector(connectors.shtepselmii)
+	end
+
+	return connectors
+end
+
+local function GetJoinConnectorDefectCodes(mark)
+	local connectors = GetJoinConnectorDefected(mark)
+	local railway_type = mark.ext.RAILWAY_TYPE or RAILWAY_TYPES.WAY
+	local res = {}
+
+	local privarnoy_defect_code = getPrivarnoyDefectCode(connectors.privarnoy, railway_type)
+	table.insert(res, privarnoy_defect_code)
+
+	for _, shtepselmii in ipairs(connectors.shtepselmii or {}) do
+		if shtepselmii == CONNECTOR_TYPE.MIS_SCREW then
+			local codes = {
+				[RAILWAY_TYPES.WAY]		= DEFECT_CODES.JOINT_CONNECTOR_SCREW_FAULT_WAY[1],
+				[RAILWAY_TYPES.JOINT] 	= DEFECT_CODES.JOINT_CONNECTOR_SCREW_FAULT_JOINT[1],
+				[RAILWAY_TYPES.SCB]   	= DEFECT_CODES.JOINT_CONNECTOR_SCREW_FAULT_SCB[1],
+			}
+			table.insert(res, codes[railway_type])
+		elseif shtepselmii == CONNECTOR_TYPE.HOLE or 
+			   shtepselmii == CONNECTOR_TYPE.MISSING then
+			local codes = {
+				[RAILWAY_TYPES.WAY] 	= DEFECT_CODES.JOINT_CONNECTOR_FAULT_WAY[1],
+				[RAILWAY_TYPES.JOINT] 	= DEFECT_CODES.JOINT_CONNECTOR_FAULT_JOINT[1],
+				[RAILWAY_TYPES.SCB]   	= DEFECT_CODES.JOINT_CONNECTOR_FAULT_SCB[1],
+			}
+			table.insert(res, codes[railway_type])
+		elseif shtepselmii == CONNECTOR_TYPE.UNDEFINED then
+			local codes = {
+				[RAILWAY_TYPES.WAY] 	= DEFECT_CODES.JOINT_CONNECTOR_HOLE_MISSING_WAY[1],
+			}
+			table.insert(res, codes[railway_type])
 		end
 	end
+
+	for _, drossel in ipairs(connectors.drossel or {}) do
+		if drossel == CONNECTOR_TYPE.MIS_SCREW then
+			local codes = {
+				[RAILWAY_TYPES.WAY] 	= DEFECT_CODES.ISO_CONNECTOR_INSUFFICIENCY_WAY[1],
+				[RAILWAY_TYPES.JOINT] 	= DEFECT_CODES.ISO_CONNECTOR_INSUFFICIENCY_JOINT[1],
+				[RAILWAY_TYPES.SCB]   	= DEFECT_CODES.ISO_CONNECTOR_INSUFFICIENCY_SCB[1],
+			}
+			table.insert(res, codes[railway_type])
+		end
+	end
+
+	return algorithm.clean_array_dup_stable(res)
 end
 
 -- =================== Шпалы ===================
@@ -1036,25 +1228,25 @@ local table_gap_types = {
 	[TYPES.VID_INDT_1] = 0, 	-- Стык(Видео)
 	[TYPES.VID_INDT_2] = 0, 	-- Стык(Видео)
 	[TYPES.VID_INDT_3] = 0, 	-- СтыкЗазор(Пользователь)
-	[TYPES.VID_ISO] = 1, 	-- ИзоСтык(Видео)
+	[TYPES.VID_ISO]    = 1, 	-- ИзоСтык(Видео)
 	[TYPES.VID_INDT_ATS] = 2, 	-- АТСтык(Видео)
-	["{CBD41D28-9308-4FEC-A330-35EAED9FC805}"] = 2, 	-- АТСтык(Пользователь)
+	[TYPES.VID_INDT_ATS_USER] = 2, 	-- АТСтык(Пользователь)
 }
 
 --[[ получить тип стыка
 (0 - болтовой, 1 - изолированный, 2 - сварной)]]
 GetGapType = function (mark)
 	-- 	https://bt.abisoft.spb.ru/view.php?id=743
-	local dom = assert(luacom.CreateObject("Msxml2.DOMDocument.6.0"))
-	if mark and mark.ext and mark.ext.RAWXMLDATA and dom:loadXML(mark.ext.RAWXMLDATA)	then
-		local node = dom:SelectSingleNode('//PARAM[@name="ACTION_RESULTS" and @value="Common"]/PARAM[@name="JointType"]/@value')
+
+	local nodeRoot = xml_cache:get(mark)
+	if nodeRoot then
+		local node = nodeRoot:SelectSingleNode('//PARAM[@name="ACTION_RESULTS" and @value="Common"]/PARAM[@name="JointType"]/@value')
 		if node then
 			return tonumber(node.nodeValue)
 		end
 	end
 
-	local t = mark and mark.prop and table_gap_types[mark.prop.Guid]
-	return t or -1
+	return mark and mark.prop and table_gap_types[mark.prop.Guid]
 end
 
 
@@ -1101,11 +1293,15 @@ return {
 
 	GetSurfDefectPrm = GetSurfDefectPrm,
 
-	GetConnectorsArray = GetConnectorsArray,
 	GetConnectorsCount = GetConnectorsCount,
-
+	GetConnecterType = GetConnecterType,
 	GetWeldedBondStatus = GetWeldedBondStatus,
 	GetWeldedBondDefectCode = GetWeldedBondDefectCode,
+	GetJoinConnectors = GetJoinConnectors,
+	GetJoinConnectorDefectCodes = GetJoinConnectorDefectCodes,
+	GetJoinConnectorDefected = GetJoinConnectorDefected,
+	CONNECTOR_TYPE = CONNECTOR_TYPE,
+	WELDEDBOND_TYPE = WELDEDBOND_TYPE,
 
 	GetCrewJointArray = GetCrewJointArray,
 	GetCrewJointCount = GetCrewJointCount,

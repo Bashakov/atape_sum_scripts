@@ -5,7 +5,7 @@ local algorithm = require 'algorithm'
 
 local prev_atape = ATAPE
 ATAPE = true -- disable debug code while load scripts
-	local sum_report_joints = require "sum_report_joints"
+local sum_report_joints = require "sum_report_joints"
 ATAPE = prev_atape
 
 local sprintf = utils.sprintf
@@ -666,28 +666,12 @@ column_connections_all =
 	align = 'r',
 	text = function(row)
 		local mark = work_marks_list[row]
-		local all, fault = mark_helper.GetConnectorsCount(mark)
-		return all or '0'
+		local all = mark_helper.GetConnectorsCount(mark)
+		return all
 	end,
 	sorter = function(mark)
-		local all, fault = mark_helper.GetConnectorsCount(mark)
-		return all or 0
-	end
-}
-
-column_connections_defect = 
-{
-	name = 'Дефек.', 
-	width = 60, 
-	align = 'r',
-	text = function(row)
-		local mark = work_marks_list[row]
-		local all, fault = mark_helper.GetConnectorsCount(mark)
-		return fault  or ''
-	end,
-	sorter = function(mark)
-		local all, fault = mark_helper.GetConnectorsCount(mark)
-		return fault or 0
+		local all = mark_helper.GetConnectorsCount(mark)
+		return all
 	end
 }
 
@@ -1149,6 +1133,19 @@ column_speed_limit_list =
 	end,
 }
 
+local privarnoy_error_desc = {
+	[mark_helper.WELDEDBOND_TYPE.MISSING] 	= 'Отсутствует',
+	[mark_helper.WELDEDBOND_TYPE.DEFECT] 	= 'Оборван',
+	[mark_helper.WELDEDBOND_TYPE.BAD_CABLE] = 'Поврежден трос',
+}
+
+local connector_error_desc = {
+	[mark_helper.CONNECTOR_TYPE.MISSING] 	= 'Отсутствует',
+	[mark_helper.CONNECTOR_TYPE.MIS_SCREW] 	= 'Нет гаек',
+	[mark_helper.CONNECTOR_TYPE.HOLE] 		= 'Отверстие',
+	[mark_helper.CONNECTOR_TYPE.UNDEFINED] 	= 'Нет отверстия',
+}
+
 column_jat_defect = {
 
 	name = 'Неисправность',
@@ -1166,10 +1163,16 @@ column_jat_defect = {
 		if table_find(TYPE_GROUPS.JAT, g) then
 			return mark.prop.Description
 		end
-	
-		local ecasui_code = mark_helper.GetWeldedBondDefectCode(mark)
-		local desc = ecasui_code and DEFECT_CODES.code2desc(ecasui_code)
-		return desc or ""
+
+		local msg = {}
+		local connector = mark_helper.GetJoinConnectors(mark)
+		table.insert(msg, connector.privarnoy and privarnoy_error_desc[connector.privarnoy])
+		for _, t in ipairs(connector.shtepselmii or connector.drossel) do
+			table.insert(msg, connector_error_desc[t])
+		end
+
+		msg = algorithm.clean_array_dup_stable(msg)
+		return table.concat(msg, ',')
 	end
 }
 
@@ -1193,11 +1196,15 @@ column_jat_object = {
 		if g == TYPES.JAT_SCB_CRS_ABCS     then return "САУТ" end
 		if g == TYPES.JAT_SCB_CRS_RSCMD    then return "УКСПС" end
 
-		-- local ecasui_code = mark_helper.GetWeldedBondDefectCode(mark)
-		-- if ecasui_code == DEFECT_CODES.JOINT_WELDED_BOND_FAULT[1] then
-		-- 	return "Приварной"
-		-- end
-		return ""
+		if g == TYPES.CABLE_CONNECTOR      then return "Тросовая" end
+
+		local msg = {}
+		local connector = mark_helper.GetJoinConnectorDefected(mark)
+		if connector.privarnoy 		then table.insert(msg, "Основной") 		end
+		if connector.shtepselmii 	then table.insert(msg, "Дублирующий") 	end
+		if connector.drossel 		then table.insert(msg, "Дроссель")		end
+
+		return table.concat(msg, ',')
 	end
 }
 

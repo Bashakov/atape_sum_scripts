@@ -535,15 +535,14 @@ if not ATAPE then
 	-- end
 
 	local test_report  = require('local_data_driver')
-	--local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
-	local psp_path = 'D:/d-drive/ATapeXP/Main/498/Рыбинск-Псков/1/2021_11_25/Avikon-03M/3068/[498]_2021_09_17_35.xml'
-	-- local psp_path = 'D:/Downloads/932/31883/[507]_2022_04_14_04.xml'
+	local psp_path = 'D:/ATapeXP/Main/494/video/[494]_2017_06_08_12.xml'
+	--local psp_path = 'D:/d-drive/ATapeXP/Main/498/Рыбинск-Псков/1/2021_11_25/Avikon-03M/3068/[498]_2021_09_17_35.xml'
+	--local psp_path = 'D:/Downloads/932/31883/[507]_2022_04_14_04.xml'
 	--local psp_path = "D:/Downloads/1006/123/[500]_2020_03_05_01(1 км 754 м 679 мм - 5 км 765 м 763 мм).xml"
 
-	test_report.Driver(psp_path, nil)
+	test_report.Driver(psp_path, nil, {1,1000000})
 
-	-- local name = 'III Cоединители и перемычки'
-	local name = 'Стрелочные переводы'
+	local name = 'III Соединители и перемычки'
 	local columns = GetColumnDescription(name)
 	local col_fmt = {}
 	local col_names = {}

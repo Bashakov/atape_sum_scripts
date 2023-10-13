@@ -329,7 +329,6 @@ local filters =
 			column_rail_lr,
 			column_gap_type,
 			column_connections_all,
-			--column_connections_defect,
 			column_recogn_video_channel,
 			column_rail,
 			},
@@ -361,7 +360,7 @@ local filters =
 	{
 		-- 84.201.134.151/issues/31
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "ЖАТ"},
-		name = 'III Cоединители и перемычки',
+		name = 'III Соединители и перемычки',
 		columns = {
 			column_path_coord,
 			column_rail_lr,
@@ -372,14 +371,20 @@ local filters =
 			column_gap_type,
 			column_pov_common,
 		},
-		GUIDS =  table_merge(TYPE_GROUPS.recognition_guids, TYPE_GROUPS.JAT_CONN),
+		GUIDS =  table_merge(TYPE_GROUPS.recognition_guids, TYPE_GROUPS.JAT_CONN, TYPE_GROUPS.CABLE_CONNECTOR),
 		filter = function(mark)
 			local g = mark.prop.Guid
+			if g == TYPE_GROUPS.CABLE_CONNECTOR then
+				return true
+			end
 			if mark_helper.table_find(TYPE_GROUPS.JAT_CONN, g) then
 				return true
-			else
-				local code = mark_helper.GetWeldedBondDefectCode(mark)
-				return code
+			end
+			if mark_helper.table_find(TYPE_GROUPS.recognition_guids, g) then
+				local _, defected = mark_helper.GetJoinConnectors(mark)
+				if defected then
+					return true
+				end
 			end
 		end,
 	},

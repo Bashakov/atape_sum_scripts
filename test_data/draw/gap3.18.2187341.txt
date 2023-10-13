@@ -80,13 +80,13 @@ fig.ellipse: 485 297 25 43
 Convertor.GetPointOnFrame: 2187341 2186317, 574 318 -> -450
 Convertor.ScalePoint: 26 43
 prop.lineWidth: 1
-prop.fillColor: {1=0,2=192,3=128,4=0}
-prop.lineColor: {1=0,2=192,3=128,4=255}
+prop.fillColor: {1=128,2=128,3=128,4=0}
+prop.lineColor: {1=128,2=128,3=128,4=255}
 fig.ellipse: -450 318 26 43
 
 Convertor.GetPointOnFrame: 2187341 2187341, 764 321 -> 764
 Convertor.ScalePoint: 26 43
 prop.lineWidth: 1
-prop.fillColor: {1=0,2=192,3=128,4=0}
-prop.lineColor: {1=0,2=192,3=128,4=255}
+prop.fillColor: {1=128,2=128,3=128,4=0}
+prop.lineColor: {1=128,2=128,3=128,4=255}
 fig.ellipse: 764 321 26 43
