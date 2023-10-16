@@ -666,7 +666,7 @@ local filters =
 			columns_turnout_startgap,
 			columns_turnout_endgap,
 		},
-		GUIDS = {TYPES.TURNOUT},
+		GUIDS = {TYPES.TURNOUT_VIDEO},
 		post_load = function (marks, fnContinueCalc)
 			local strelki = list_ext_obj_str.LoadStr(fnContinueCalc, nil)
 
@@ -694,6 +694,19 @@ local filters =
 			end
 			return marks
 		end,
+	},
+	{
+		group = {'Тест:видео'},
+		name = 'Тест УКСПС',
+		columns = {
+			column_path_coord,
+			column_rail_lr,
+			column_jat_defect,
+			column_jat_object,
+			column_jat_value,
+			column_pov_common,
+		},
+		GUIDS = {TYPES.UKSPS_VIDEO},
 	},
 }
 

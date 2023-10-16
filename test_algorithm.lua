@@ -170,6 +170,18 @@ function TestStartsWith()
     lu.assertIsFalse(algorithm.starts_with("абс", "ас"))
 end
 
+function TestEndsWith()
+    lu.assertIsTrue(algorithm.ends_with("", ""))
+    lu.assertIsTrue(algorithm.ends_with("12", "12"))
+    lu.assertIsTrue(algorithm.ends_with("123", "23"))
+    lu.assertIsTrue(algorithm.ends_with("1", ""))
+    lu.assertIsFalse(algorithm.ends_with("", "1"))
+    lu.assertIsFalse(algorithm.ends_with("23", "123"))
+    lu.assertIsTrue(algorithm.ends_with("абс", "бс"))
+    lu.assertIsFalse(algorithm.ends_with("абс", "ас"))
+end
+
+
 -- =====================================================  --
 
 os.exit(lu.LuaUnit.run())

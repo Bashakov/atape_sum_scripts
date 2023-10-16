@@ -269,6 +269,10 @@ local function starts_with(input, prefix)
 	return #input >= #prefix and string.sub(input, 1, #prefix) == prefix
 end
 
+local function ends_with(input, suffix)
+	return #suffix ==0 or (#input >= #suffix and string.sub(input, -#suffix) == suffix)
+end
+
 local function clean_array_dup_stable(arr)
 	local res = {}
 	local known = {}
@@ -304,5 +308,6 @@ return
     upper_bound = upper_bound,
     equal_range = equal_range,
     starts_with = starts_with,
+    ends_with = ends_with,
     clean_array_dup_stable = clean_array_dup_stable,
 }

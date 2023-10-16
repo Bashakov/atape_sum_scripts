@@ -1160,18 +1160,21 @@ column_jat_defect = {
 	end,
 	_impl_text = function (mark)
 		local g = mark.prop.Guid
+		local msg = {}
+
 		if table_find(TYPE_GROUPS.JAT, g) then
 			return mark.prop.Description
+		elseif table_find(TYPE_GROUPS.recognition_guids, g) then
+			local connector = mark_helper.GetJoinConnectors(mark)
+			table.insert(msg, connector.privarnoy and privarnoy_error_desc[connector.privarnoy])
+			for _, t in ipairs(connector.shtepselmii or connector.drossel) do
+				table.insert(msg, connector_error_desc[t])
+			end
+			msg = algorithm.clean_array_dup_stable(msg)
+		elseif g == TYPES.UKSPS_VIDEO then
+			-- pass
 		end
 
-		local msg = {}
-		local connector = mark_helper.GetJoinConnectors(mark)
-		table.insert(msg, connector.privarnoy and privarnoy_error_desc[connector.privarnoy])
-		for _, t in ipairs(connector.shtepselmii or connector.drossel) do
-			table.insert(msg, connector_error_desc[t])
-		end
-
-		msg = algorithm.clean_array_dup_stable(msg)
 		return table.concat(msg, ',')
 	end
 }
@@ -1195,6 +1198,7 @@ column_jat_object = {
 
 		if g == TYPES.JAT_SCB_CRS_ABCS     then return "САУТ" end
 		if g == TYPES.JAT_SCB_CRS_RSCMD    then return "УКСПС" end
+		if g == TYPES.UKSPS_VIDEO		   then return "УКСПС" end
 
 		if g == TYPES.CABLE_CONNECTOR      then return "Тросовая" end
 
@@ -1228,7 +1232,11 @@ column_jat_value = {
 	align = 'r',
 	text = function(row)
 		local mark = work_marks_list[row]
-		return mark.ext.JAT_VALUE or ""
+		if g == TYPES.UKSPS_VIDEO then
+			return mark.ext.UKSPS_LENGTH
+		else
+			return mark.ext.JAT_VALUE or ""
+		end
 	end,
 }
 

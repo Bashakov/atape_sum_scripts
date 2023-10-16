@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<ACTION_RESULTS version="1.4">
+	<PARAM name='ACTION_RESULTS' channel='21' value="Uksps">
+		<PARAM name="FrameNumber" value="0" coord="7511856">
+			<PARAM name="Result" value="main">
+				<PARAM name="SleeperUksps">
+					<PARAM name="Coord" type="polygon" value="816,493,854,493,854,-1,816,-1"/>
+				</PARAM>
+				<PARAM name="UkspsGapRG">
+					<PARAM name="Coord" type="polygon" value="808,1023,856,1023,856,735,808,735"/>
+					<PARAM name="Length" value="83" _value="Расстояние до рельса в пикселях"/>
+				</PARAM>
+				<PARAM name="UkspsGapNG">
+					<PARAM name="Coord" type="polygon" value="816,493,854,493,854,-1,816,-1"/>
+					<PARAM name="Length" value="84" _value="Расстояние до рельса в пикселях"/>
+				</PARAM>
+				<PARAM name='UkspsFault' value='0' value_='0-исправен, 1-неисправен'/>
+				<PARAM name="Angle_mrad" value="999"/>
+				<PARAM name="AxisSysCoord_mm" value="7512649"/>
+			</PARAM>
+		</PARAM>
+	</PARAM>
+	<PARAM name='ACTION_RESULTS' channel='22' value="Uksps">
+		<PARAM name="FrameNumber" value="0" coord="7511856">
+			<PARAM name="Result" value="main">
+				<PARAM name="SleeperUksps">
+					<PARAM name="Coord" type="polygon" value="816,493,854,493,854,-1,816,-1"/>
+				</PARAM>
+				<PARAM name="UkspsGapRG">
+					<PARAM name="Coord" type="polygon" value="808,1023,856,1023,856,735,808,735"/>
+					<PARAM name="Length" value="83" _value="Расстояние до рельса в пикселях"/>
+				</PARAM>
+				<PARAM name="UkspsGapNG">
+					<PARAM name="Coord" type="polygon" value="816,493,854,493,854,-1,816,-1"/>
+					<PARAM name="Length" value="84" _value="Расстояние до рельса в пикселях"/>
+				</PARAM>
+				<PARAM name='UkspsFault' value='1' value_='0-исправен, 1-неисправен'/>
+				<PARAM name="Angle_mrad" value="999"/>
+				<PARAM name="AxisSysCoord_mm" value="7512649"/>
+			</PARAM>
+		</PARAM>
+	</PARAM>
+	<PARAM name="ACTION_RESULTS" value="Uksps">
+		<PARAM name="Angle_mrad" value="123"/>
+		<PARAM name="AxisSysCoord_mm" value="7512649"/>
+	</PARAM>
+	<PARAM name="ACTION_RESULTS" value="Common">
+		<PARAM name="Reliability" value="100"/>
+		<PARAM name="RecogObjCoord" value="7512649"/>
+	</PARAM>
+</ACTION_RESULTS>

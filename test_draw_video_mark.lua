@@ -142,6 +142,7 @@ function TestGetMarkGuids()
         "{53987511-8176-470D-BE43-A39C1B6D12A3}",
         "{54188BA4-E88A-4B6E-956F-29E8035684E9}",
         "{64B5F99E-75C8-4386-B191-98AD2D1EEB1A}",
+        "{75F1CB97-7BE2-4A00-9E90-6B183DDF8B9C}",
         "{7EF92845-226D-4D07-AC50-F23DD8D53A19}",
         "{B6BAB49E-4CEC-4401-A106-355BFB2E0001}",
         "{B6BAB49E-4CEC-4401-A106-355BFB2E0002}",
@@ -161,7 +162,7 @@ function TestGetMarkGuids()
         "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE0}",
         "{E3B72025-A1AD-4BB5-BDB8-7A7B977AFFE1}",
         "{EBAB47A8-0CDC-4102-B21F-B4A90F9D873A}",
-        "{EE2FD277-0776-429F-87C4-F435B9A6F760}",
+        "{EE2FD277-0776-429F-87C4-F435B9A6F760}"
     })
 end
 
@@ -227,7 +228,7 @@ end
 function  TestTurnout()
     local mark = {
         prop = {
-            Guid=TYPES.TURNOUT,
+            Guid=TYPES.TURNOUT_VIDEO,
         },
         ext = {
             RAWXMLDATA = read_file("test_data/Turnout.xml"),
@@ -235,6 +236,21 @@ function  TestTurnout()
     }
     draw(17, 40993779, mark)
     checkActions("test_data/draw/Turnout.17.40993779.txt")
+end
+
+function  TestUKSPS()
+    local mark = {
+        prop = {
+            Guid=TYPES.TURNOUT_VIDEO,
+        },
+        ext = {
+            RAWXMLDATA = read_file("test_data/uksps.xml"),
+        },
+    }
+    draw(21, 7511856, mark)
+    checkActions("test_data/draw/uksps.21.7511856.txt")
+    draw(22, 7511856, mark)
+    checkActions("test_data/draw/uksps.22.7511856.txt")
 end
 
 os.exit( lu.LuaUnit.run() )

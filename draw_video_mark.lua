@@ -1,6 +1,7 @@
 require "luacom"
 
 local TYPES = require "sum_types"
+local alg = require "algorithm"
 
 local sprintf = function(s,...)	return s:format(...) end
 local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
@@ -461,6 +462,23 @@ local function drawSimpleResult(resultType, points, params, mark)
 		end
 	end
 
+	if resultType == 'SleeperUksps' then
+		local color = {r=192, g=0, b=192}
+		if #points == 8 then
+			drawPolygon(points, 1, color, color)
+		end
+	end
+
+	if alg.starts_with(resultType, 'UkspsGap') then
+		local color = params.UkspsFault == 0 and {r=255, g=201, b=14} or {r=255, g=51, b=14}
+		local rg = alg.ends_with(resultType, "RG")
+		if #points == 8 then
+			drawPolygon(points, 1, color, color)
+			local strText = sprintf('УКСПС %s грань: зазор %d', (rg and "Рабочая" or "Нерабочая"), params.Length or 0)
+			textOut(points, strText, {offset={0, 20}})
+		end
+	end
+
 	if resultType == 'Turnout_PointRail' or resultType == 'Turnout_PointFrog' then
 		local color_line = {r=255, g=0, b=0}
 		--print(resultType, #points, points[1], points[2], Frame.size.current.y)
@@ -654,6 +672,7 @@ local ActionResTypes =
 	["Turnout_PointRail_Gap"]		= {},
 	["Turnout_PointFrog"]			= {processSimpleResult},
 	["Turnout_EndGap"]				= {},
+	["Uksps"]						= {processSimpleResult},
 }
 
 local function ProcessMarkRawXml(mark)
@@ -812,7 +831,8 @@ local recognition_guids =
 	[TYPES.SLEEPAGE_SKID_2_USER]            = {ProcessMarkRawXml}, -- UIC_2252 (user)
 	[TYPES.SQUAT_USER]                      = {ProcessMarkRawXml}, -- UIC_227 (user)
 	[TYPES.GROUP_FSTR_USER]                 = {ProcessGroupDefectObject}, -- GROUP_FSTR_USER
-	[TYPES.TURNOUT]							= {ProcessMarkRawXml},
+	[TYPES.TURNOUT_VIDEO]					= {ProcessMarkRawXml},
+	[TYPES.UKSPS_VIDEO]						= {ProcessMarkRawXml},
 
 	[TYPES.GROUP_GAP_AUTO]                  = {ProcessGroupDefectObject}, -- GROUP_GAP_AUTO
 	[TYPES.GROUP_GAP_USER]                  = {ProcessGroupDefectObject}, -- GROUP_GAP_USER
