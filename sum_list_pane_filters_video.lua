@@ -671,7 +671,7 @@ local filters =
 			local strelki = list_ext_obj_str.LoadStr(fnContinueCalc, nil)
 
 			for i, mark in ipairs(marks) do 
-				local c = mark.ext.TRNOUTPNTRAILCOORD
+				local c = mark.ext.STRLK_OSTR_COORD
 				if c then 
 					local km, m = Driver:GetPathCoord(c)
 					if km then

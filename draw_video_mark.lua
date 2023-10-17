@@ -479,7 +479,7 @@ local function drawSimpleResult(resultType, points, params, mark)
 		end
 	end
 
-	if resultType == 'Turnout_PointRail' or resultType == 'Turnout_PointFrog' then
+	if resultType == 'Strelka_Ostryak' or resultType == 'Strelka_Krestovina' then
 		local color_line = {r=255, g=0, b=0}
 		--print(resultType, #points, points[1], points[2], Frame.size.current.y)
 		if #points > 2 then
@@ -667,11 +667,12 @@ local ActionResTypes =
 	["Surface_SLEEPAGE_SKID_UIC_2251_USER"] = {processSimpleResult},
 	["Surface_SLEEPAGE_SKID_UIC_2252_USER"] = {processSimpleResult},
 	["Common"]	 	 				= {},
-	["Turnout_StartGap"]			= {},
-	["Turnout_PointRail"]			= {processSimpleResult},
-	["Turnout_PointRail_Gap"]		= {},
-	["Turnout_PointFrog"]			= {processSimpleResult},
-	["Turnout_EndGap"]				= {},
+	["Strelka_StartStyk"]			= {},
+	["Strelka_Ostryak"]				= {processSimpleResult},
+	["Strelka_Ostryak_Gap"]			= {},
+	["Strelka_Krestovina"]			= {processSimpleResult},
+	["Strelka_EndStyk"]				= {},
+	["Strelka_ZazorInKorenOstryaka"]= {},
 	["Uksps"]						= {processSimpleResult},
 }
 

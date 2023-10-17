@@ -1289,10 +1289,10 @@ local function make_turnout_columns(name, node_name, param_name)
 	return res
 end
 
-columns_turnout_pointrail = make_turnout_columns("К. остр.", "Turnout_PointRail", "TRNOUTPNTRAILCOORD")
-columns_turnout_pointfrog = make_turnout_columns("К. крест.", "Turnout_PointFrog", "TRNOUTPNTFROGCOORD")
-columns_turnout_startgap = make_turnout_columns("К.нач.стык", "Turnout_StartGap", nil)
-columns_turnout_endgap = make_turnout_columns("К.кон.стык", "Turnout_EndGap", nil)
+columns_turnout_pointrail = make_turnout_columns("К. остр.", "Strelka_Ostryak", "STRLK_OSTR_COORD")
+columns_turnout_pointfrog = make_turnout_columns("К. крест.", "Strelka_Krestovina", "STRLK_KRST_COORD")
+columns_turnout_startgap = make_turnout_columns("К.нач.стык", "Strelka_StartStyk", nil)
+columns_turnout_endgap = make_turnout_columns("К.кон.стык", "Strelka_EndStyk", nil)
 
 columns_turnout_ebpd = {
 	name = "По ЕБПД",
