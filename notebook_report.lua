@@ -460,7 +460,7 @@ local function excel_defectogram(records, params)
 
 			local us_img_path = Driver:GetUltrasoundImage(params)
 			if us_img_path and #us_img_path then
-				excel:InsertImage(dst_tbl.Cells(11, 1), us_img_path)
+				excel:InsertImage(dst_tbl.Cells(12, 1), us_img_path)
 			end
 			-- https://bt.abisoft.spb.ru/view.php?id=727
 			-- https://bt.abisoft.spb.ru/view.php?id=749
@@ -470,7 +470,7 @@ local function excel_defectogram(records, params)
 				params.length =  second_length
 				local us_img_path = Driver:GetUltrasoundImage(params)
 				if us_img_path and #us_img_path then
-					excel:InsertImage(dst_tbl.Cells(12, 1), us_img_path)
+					excel:InsertImage(dst_tbl.Cells(14, 1), us_img_path)
 				end
 			end
 		else
