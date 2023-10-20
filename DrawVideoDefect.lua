@@ -2,40 +2,18 @@
 
 package.loaded.sumPOV = nil -- для перезагрузки в дебаге
 
+local TYPES = require 'sum_types'
 local sumPOV = require "sumPOV"
 local utils = require 'utils'
-local functiional = require 'algorithm'
-
+local alg = require 'algorithm'
+local xml_utils = require 'xml_utils'
 
 
 -- ================= вспомогательные =================
 
-local sorted = functiional.sorted
+local sorted = alg.sorted
+local starts_with = alg.starts_with
 
-local function starts_with(input, prefix)
-	return string.sub(input, 1, #prefix) == prefix
-end
-
--- ================= XML =================
-
-local function create_document()
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	if not xmlDom then
-		error("no Msxml2.DOMDocument: " .. luacom.config.last_error)
-	end
-	return xmlDom
-end
-
-local function load_xml(path)
-	local xmlDom = luacom.CreateObject("Msxml2.DOMDocument.6.0")
-	if not xmlDom then
-		error("no Msxml2.DOMDocument: " .. luacom.config.last_error)
-	end
-	if not xmlDom:load(path) then
-		error(string.format("Msxml2.DOMDocument load(%s) failed with: %s", path, xmlDom.parseError.reason))
-	end
-	return xmlDom
-end
 
 local function make_node(parent, name, attrib)
 	local parentIsNode = parent.nodeType == 1  -- tagDOMNodeType.NODE_ELEMENT
@@ -49,7 +27,6 @@ local function make_node(parent, name, attrib)
 	end
 	return node
 end
-
 
 -- ================= массивы =================
 
@@ -234,10 +211,15 @@ local function make_beacons_node(nodeRoot, beacon)
 	end
 end
 
+local function make_xml_node_common(nodeRoot, reliability, objects)
+	local nodeCommon = make_node(nodeRoot, "PARAM", {name="ACTION_RESULTS", value="Common"})
+	make_node(nodeCommon, "PARAM", {name="Reliability", value=reliability})
+	make_node(nodeCommon, "PARAM", {name="RecogObjCoord", value=get_common_system_coord(objects)})
+end
 
 -- построение xml описания дефекта
 local function make_recog_xml(objects, action_result, reliability)
-	local dom = create_document()
+	local dom = xml_utils.create_dom()
 
 	local joints = {}
 
@@ -261,12 +243,11 @@ local function make_recog_xml(objects, action_result, reliability)
 	end
 
 	make_joint_node(nodeRoot, joints)
-
-	local nodeCommon = make_node(nodeRoot, "PARAM", {name="ACTION_RESULTS", value="Common"})
-	make_node(nodeCommon, "PARAM", {name="Reliability", value=reliability})
-	make_node(nodeCommon, "PARAM", {name="RecogObjCoord", value=get_common_system_coord(objects)})
+	make_xml_node_common(nodeRoot, reliability, objects)
 	return nodeRoot
 end
+
+
 
 -- ================== MARK GENERATION ===================== --
 
@@ -278,46 +259,80 @@ local MarkFlags = {
 	eShiftOnAsIs	= 0x08,		-- смещение применяется с др знаком, то есть при выключенном сведении рамка рисуется сдвинутая относительно координаты отметки, а при включении сведения на своей координате (объект)
 }
 
-
-function make_recog_mark(name, objects, driver, defect)
-	local reability = 101
-	local mark = driver:NewMark()
-	local nodeRoot = make_recog_xml(objects, defect.action_result, reability)
+local function _make_common_mark(driver, objects, guid)
 	local rmask, chmask = get_rail_channel_mask(objects)
 
+	local mark = driver:NewMark()
 	mark.prop.SysCoord = get_common_system_coord(objects)
 	mark.prop.Len = 1
 	mark.prop.RailMask = rmask + 8   -- video_mask_bit
-	mark.prop.Guid = defect.guid
+	if guid then
+		mark.prop.Guid = guid
+	end
 	mark.prop.ChannelMask = chmask
 	mark.prop.MarkFlags = MarkFlags.eIgnoreShift
+
+	sumPOV.UpdateMarks(mark, false)
+
+	return mark
+end
+
+local function loadMarks(driver, guids, center, max_dist)
+	return driver:GetMarks{
+		GUIDS=guids,
+		ListType='all',
+		FromSys = center - max_dist,
+		FromTo = center + max_dist
+		}
+end
+
+function make_recog_mark(name, objects, driver, defect)
+	local mark = _make_common_mark(driver, objects, defect.guid)
+
+	local reability = 101
+	local nodeRoot = make_recog_xml(objects, defect.action_result, reability)
 
 	mark.ext.RAWXMLDATA = nodeRoot.xml
 	mark.ext.VIDEOIDENTRLBLT = reability
 	mark.ext.VIDEOFRAMECOORD = objects[1].center_frame
 
-	sumPOV.UpdateMarks(mark, false)
+	if name == "Маячная отметка" then
+		local old_beacon = loadMarks(driver, {TYPES.VID_BEACON_INDT, TYPES.M_SPALA}, mark.prop.SysCoord, 200)
+		local to_remove = {}
+		for i, m in ipairs(old_beacon) do
+			if m.prop.RailMask == mark.prop.RailMask then
+				table.insert(to_remove, m)
+			end
+		end
+		if #to_remove > 0 then
+			local msg = {"Найдены старые отметки:"}
+			for i, m in ipairs(to_remove) do
+				local kor = bit32.btest(m.prop.RailMask, 1) and "Коридорном" or "Купейном"
+				local km, m, mm = driver:GetPathCoord(m.prop.SysCoord)
+				table.insert(msg, string.format("\t - %d км %.1f м на %s рельсе", km, m + mm/1000, kor))
+			end
+			table.insert(msg, "Подтвердите удаление")
+			msg = table.concat(msg, '\n')
+			if 1 == iup.Alarm("ATape", msg, "Да", "Нет") then
+				for i, m in ipairs(to_remove) do
+					m:Delete()
+					m:Save()
+				end
+			end
+		end
+	end
 
 	return {mark}
 end
 
 
 local function _create_simple_mark(driver, object, guid)
-	local rmask, chmask = get_rail_channel_mask({object})
 	local points_on_frame, _ = rect2corners(object, "ltrtrblb") -- left, top, right, top, right, bottom, left, bottom
 
-	local mark = driver:NewMark()
-	mark.prop.SysCoord = get_common_system_coord({object})
-	mark.prop.Len = 1
-	mark.prop.RailMask = rmask + 8   -- video_mask_bit
-	mark.prop.ChannelMask = chmask
-	mark.prop.Guid = guid
-	mark.prop.MarkFlags = MarkFlags.eIgnoreShift
-
+	local mark = _make_common_mark(driver, {object}, guid)
 	mark.ext.VIDEOIDENTCHANNEL = object.area.channel
 	mark.ext.VIDEOFRAMECOORD = object.center_frame
 	mark.ext.UNSPCOBJPOINTS = string.format("%d,%d %d,%d %d,%d %d,%d", table.unpack(points_on_frame))
-
 	return mark
 end
 
@@ -394,13 +409,8 @@ function make_jat_defect(name, objects, driver, defect)
 end
 
 function make_group_defect(name, objects, driver, defect)
-	local mark = driver:NewMark()
+	local mark = _make_common_mark(driver, objects, defect.guid)
 
-	local rmask, chmask = get_rail_channel_mask(objects)
-	mark.prop.RailMask = rmask + 8   -- video_mask_bit
-	mark.prop.ChannelMask = chmask
-	mark.prop.Guid = defect.guid
-	mark.prop.MarkFlags = MarkFlags.eIgnoreShift
 	mark.prop.Description = defect.name .. '\nЕКАСУИ = ' .. defect.ekasui_code
 	mark.ext.CODE_EKASUI = defect.ekasui_code
 	mark.ext.GROUP_DEFECT_COUNT = defect.objects_count
@@ -441,7 +451,6 @@ function make_group_defect(name, objects, driver, defect)
 		end
 	end
 
-	--error('make_group_defect error') -- testing
 	return {mark}
 end
 
