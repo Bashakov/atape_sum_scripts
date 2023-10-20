@@ -55,7 +55,7 @@ local DRAW_TOOL =
 	},
 	beacon = {
 		sign = "beacon",
-		fig  = "rect",
+		fig  = "vertical2markers",
 		line_color = {r=67, g=149, b=209},
 		name = 'Маячная отметка',
 		tooltip = 'Установка маячной отметки',

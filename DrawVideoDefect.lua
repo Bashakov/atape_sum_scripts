@@ -201,34 +201,37 @@ local function make_joint_node(nodeRoot, joints)
 	end
 end
 
-local function make_beacons_node(nodeRoot, beacons)
-	if #beacons == 0 then return end
+local function make_beacons_node(nodeRoot, beacon)
+	local pt1 = {beacon.points[1], beacon.points[2]}
+	local pt2 = {beacon.points[3], beacon.points[4]}
 
-	if #beacons ~=2 then
-		error('Для установки Маячной отметки слеудет поставить 2 объекта: метку на рельсе и метку на накладке')
-	end
 	-- упорядочим по высоте
-	if (beacons[1].points[2] + beacons[1].points[4]/2) <
-	   (beacons[2].points[2] + beacons[2].points[4]/2) then
-			beacons = {beacons[2], beacons[1]} -- swap
+	if pt1[2] > pt2[2] then
+		pt1, pt2 = pt2, pt1
 	end
 
-	local shift = beacons[1].center_system - beacons[2].center_system
-	for i, object in pairs(beacons) do
-		local tps = {'Beacon_Web', 'Beacon_Fastener'}
-		local nodeActRes = make_node(nodeRoot, "PARAM", {name="ACTION_RESULTS", channel=object.area.channel, value=tps[i]})
-		local nodeFrame  = make_node(nodeActRes, "PARAM", {name="FrameNumber", value='0', coord=object.center_frame})
+	local pos1 = beacon.area:draw2frame(pt1, beacon.center_frame)
+	local pos2 = beacon.area:draw2frame(pt2, beacon.center_frame)
+	local shift = pos1[1] - pos2[1]
+	if Passport.INCREASE == '1' then
+		shift = -shift
+	end
+
+	local w, h = 10, 100
+	local tps = {'Beacon_Web', 'Beacon_Fastener'}
+	for i, pos in ipairs{pos1, pos2} do
+		local nodeActRes = make_node(nodeRoot, "PARAM", {name="ACTION_RESULTS", channel=beacon.area.channel, value=tps[i]})
+		local nodeFrame  = make_node(nodeActRes, "PARAM", {name="FrameNumber", value='0', coord=beacon.center_frame})
 		local nodeResult = make_node(nodeFrame , "PARAM", {name="Result", value="main"})
 
-		local frame_src = rect2corners(object, "ltrb")
-		local strRect = string.format("%d,%d,%d,%d", table.unpack(frame_src))
+		local strRect = string.format("%d,%d,%d,%d", pos[1]-w, pos[2], pos[1]+w, pos[2]+h)
 		make_node(nodeResult, "PARAM", {name="Coord", ['type']="rect", value=strRect})
 
-		local sign = k == 1 and 1 or -1
-		make_node(nodeResult, "PARAM", {name="Shift", value=sign*shift})
-		make_node(nodeResult, "PARAM", {name="Shift_mkm", value=sign*shift*1000})
+		make_node(nodeResult, "PARAM", {name="Shift", value=shift})
+		make_node(nodeResult, "PARAM", {name="Shift_mkm", value=shift*1000})
+		h = -h
+		shift = -shift
 	end
-
 end
 
 
@@ -237,7 +240,6 @@ local function make_recog_xml(objects, action_result, reliability)
 	local dom = create_document()
 
 	local joints = {}
-	local beacons = {}
 
 	local nodeRoot = dom:createElement("ACTION_RESULTS")
 	for _, object in ipairs(objects) do
@@ -250,7 +252,7 @@ local function make_recog_xml(objects, action_result, reliability)
 		elseif starts_with(object.sign, 'joint') then
 			table.insert(joints, object)
 		elseif object.sign == "beacon" then
-			table.insert(beacons, object)
+			make_beacons_node(nodeRoot, object)
 		elseif object.sign == 'fishplate_fault' then
 			make_fishplate_fault_node(nodeRoot, object)
 		else
@@ -259,7 +261,6 @@ local function make_recog_xml(objects, action_result, reliability)
 	end
 
 	make_joint_node(nodeRoot, joints)
-	make_beacons_node(nodeRoot, beacons)
 
 	local nodeCommon = make_node(nodeRoot, "PARAM", {name="ACTION_RESULTS", value="Common"})
 	make_node(nodeCommon, "PARAM", {name="Reliability", value=reliability})
