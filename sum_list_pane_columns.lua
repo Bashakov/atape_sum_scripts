@@ -740,8 +740,8 @@ column_sleeper_angle =
 sleeperfault2text =
 {
 	[0] = "undef",
-	[1] = "fracture(ferroconcrete)",
-	[2] = "chip(ferroconcrete)",
+	[1] = "трещина (ЖБ)",
+	[2] = "скол (ЖБ)",
 	[3] = "crack(wood)",
 	[4] = "rottenness(wood)",
 }

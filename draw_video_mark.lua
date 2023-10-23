@@ -438,8 +438,8 @@ local function drawSimpleResult(resultType, points, params, mark)
 		local fault2text =
 		{
 			[0] = "undef",
-			[1] = "fracture(ferroconcrete)",
-			[2] = "chip(ferroconcrete)",
+			[1] = "трещина (жб)",
+			[2] = "скол (жб)",
 			[3] = "crack(wood)",
 			[4] = "rottenness(wood)",
 		}
