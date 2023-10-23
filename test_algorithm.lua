@@ -181,6 +181,15 @@ function TestEndsWith()
     lu.assertIsFalse(algorithm.ends_with("абс", "ас"))
 end
 
+function TestMinElement()
+    lu.assertIsNil(algorithm.min_element({}))
+    lu.assertIs(1, algorithm.min_element({1}))
+    lu.assertIs(1, algorithm.min_element({1, 4, 1}))
+    lu.assertIs(3, algorithm.min_element({2, 4, 1}))
+    lu.assertIs(2, algorithm.min_element({2, -4, 1}))
+    lu.assertIs(3, algorithm.min_element({2, -4, 1, 5}, function (a, b) return math.abs(a) < math.abs(b) end))
+    lu.assertIs(4, algorithm.min_element({2, -4, 1, 5, 2}, function (a, b) return a > b end))
+end
 
 -- =====================================================  --
 

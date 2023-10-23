@@ -285,6 +285,18 @@ local function clean_array_dup_stable(arr)
 	return res
 end
 
+local function min_element(array, pred)
+    if not pred then
+        pred = function (a, b) return a < b end
+    end
+    local found
+    for i = 1, #array do
+        if not found or pred(array[i], array[found]) then
+            found = i
+        end
+    end
+    return found
+end
 -- ============================================================= --
 
 return
@@ -310,4 +322,5 @@ return
     starts_with = starts_with,
     ends_with = ends_with,
     clean_array_dup_stable = clean_array_dup_stable,
+    min_element = min_element,
 }
