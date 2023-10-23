@@ -190,7 +190,7 @@ local function make_beacons_node(nodeRoot, beacon)
 	local pos1 = beacon.area:draw2frame(pt1, beacon.center_frame)
 	local pos2 = beacon.area:draw2frame(pt2, beacon.center_frame)
 	local shift = pos1[1] - pos2[1]
-	if Passport.INCREASE == '1' then
+	if Passport.INCREASE == '0' then
 		shift = -shift
 	end
 
@@ -247,7 +247,100 @@ local function make_recog_xml(objects, action_result, reliability)
 	return nodeRoot
 end
 
+local function loadMarks(driver, guids, center, max_dist, rail_mask)
+	return driver:GetMarks{
+		GUIDS=guids,
+		ListType='all',
+		FromSys = center - max_dist,
+		ToSys = center + max_dist,
+		RailMask = rail_mask,
+	}
+end
 
+local function formatMarkPos(driver, mark)
+	local rail_names = {
+		[1] = "Купейном рельсе",
+		[2] = "Коридорном рельсе",
+		[3] = "Двух рельсах"
+	}
+	local rail_name = rail_names[bit32.band(mark.prop.RailMask, 3)] or ""
+	local km, m, mm = driver:GetPathCoord(mark.prop.SysCoord)
+	return string.format("%d км %.1f м на %s рельсе", km, m + mm/1000, rail_name)
+end
+
+local function remove_old_beacons(driver, new_mark)
+	local old_beacon = loadMarks(driver, {TYPES.VID_BEACON_INDT, TYPES.M_SPALA}, new_mark.prop.SysCoord, 5000, bit32.band(new_mark.prop.RailMask, 3))
+	local to_remove = {}
+	for _, m in ipairs(old_beacon) do
+		if m.prop.RailMask == new_mark.prop.RailMask then
+			table.insert(to_remove, m)
+		end
+	end
+	if #to_remove > 0 then
+		local msg = {"Найдены старые маячные отметки:"}
+		for i, m in ipairs(to_remove) do
+			table.insert(msg, string.format("\t - %s", formatMarkPos(driver, m)))
+		end
+		table.insert(msg, "Подтвердите удаление")
+		if 1 == iup.Alarm("ATape", table.concat(msg, '\n'), "Да", "Нет") then
+			for i, m in ipairs(to_remove) do
+				m:Delete()
+				m:Save()
+			end
+		end
+	end
+end
+
+function replace_joint_gap_xml(old_xml, new_xml)
+	local xpathGap = "//PARAM[@name='ACTION_RESULTS' and descendant::node()/@name='RailGapWidth_mkm']"
+	for nodeGapOld in xml_utils.SelectNodes(old_xml, xpathGap) do
+		nodeGapOld:getParentNode():removeChild(nodeGapOld)
+	end
+	local old_root = old_xml:selectSingleNode("/ACTION_RESULTS")
+	for nodeGapNew in xml_utils.SelectNodes(new_xml, xpathGap) do
+		old_root:appendChild(nodeGapNew)
+	end
+end
+
+local function process_old_joint(driver, new_mark)
+	local video_joints_guids =
+	{
+		TYPES.VID_INDT_1,	-- Стык(Видео)
+		TYPES.VID_INDT_2,	-- Стык(Видео)
+		TYPES.VID_INDT_3,	-- СтыкЗазор(Пользователь)
+		TYPES.VID_INDT_ATS,	-- АТСтык(Видео)
+		TYPES.RAIL_JOINT_USER,	-- Рельсовые стыки(Пользователь)
+		TYPES.VID_ISO,   -- ИзоСтык(Видео)
+	}
+
+	local old_marks = loadMarks(driver, video_joints_guids, new_mark.prop.SysCoord, 5000, bit32.band(new_mark.prop.RailMask, 3))
+	local distances = alg.map(function (m) return math.abs(m.prop.SysCoord - new_mark.prop.SysCoord) end, old_marks)
+	local i = alg.min_element(distances)
+	if i then
+		local nearest_old_joint = old_marks[i]
+		local old_xml = xml_utils.load_xml_str(nearest_old_joint.ext.RAWXMLDATA, true)
+		if old_xml then
+			local new_xml = xml_utils.load_xml_str(new_mark.ext.RAWXMLDATA)
+			local nodeNewGape = new_xml:selectSingleNode("//PARAM[@name='RailGapWidth_mkm']")
+			if nodeNewGape then
+				local msg = string.format("Обнаружен стык %s,", formatMarkPos(driver, nearest_old_joint))
+				local action = iup.Alarm("ATape", msg, "Удалить", "Переписать зазор", "Оставить оба")
+				if 1 == action then
+					nearest_old_joint:Delete()
+					nearest_old_joint:Save()
+				elseif 2 == action then
+					replace_joint_gap_xml(old_xml, new_xml)
+					nearest_old_joint.ext.RAWXMLDATA = old_xml.xml
+					sumPOV.UpdateMarks({nearest_old_joint})
+					nearest_old_joint:Save()
+					driver:JumpMark(nearest_old_joint)
+					return -- nothing, reject new mark
+				end
+			end
+		end
+	end
+	return new_mark
+end
 
 -- ================== MARK GENERATION ===================== --
 
@@ -271,19 +364,7 @@ local function _make_common_mark(driver, objects, guid)
 	end
 	mark.prop.ChannelMask = chmask
 	mark.prop.MarkFlags = MarkFlags.eIgnoreShift
-
-	sumPOV.UpdateMarks(mark, false)
-
 	return mark
-end
-
-local function loadMarks(driver, guids, center, max_dist)
-	return driver:GetMarks{
-		GUIDS=guids,
-		ListType='all',
-		FromSys = center - max_dist,
-		FromTo = center + max_dist
-		}
 end
 
 function make_recog_mark(name, objects, driver, defect)
@@ -297,29 +378,10 @@ function make_recog_mark(name, objects, driver, defect)
 	mark.ext.VIDEOFRAMECOORD = objects[1].center_frame
 
 	if name == "Маячная отметка" then
-		local old_beacon = loadMarks(driver, {TYPES.VID_BEACON_INDT, TYPES.M_SPALA}, mark.prop.SysCoord, 200)
-		local to_remove = {}
-		for i, m in ipairs(old_beacon) do
-			if m.prop.RailMask == mark.prop.RailMask then
-				table.insert(to_remove, m)
-			end
-		end
-		if #to_remove > 0 then
-			local msg = {"Найдены старые отметки:"}
-			for i, m in ipairs(to_remove) do
-				local kor = bit32.btest(m.prop.RailMask, 1) and "Коридорном" or "Купейном"
-				local km, m, mm = driver:GetPathCoord(m.prop.SysCoord)
-				table.insert(msg, string.format("\t - %d км %.1f м на %s рельсе", km, m + mm/1000, kor))
-			end
-			table.insert(msg, "Подтвердите удаление")
-			msg = table.concat(msg, '\n')
-			if 1 == iup.Alarm("ATape", msg, "Да", "Нет") then
-				for i, m in ipairs(to_remove) do
-					m:Delete()
-					m:Save()
-				end
-			end
-		end
+		remove_old_beacons(driver, mark)
+	end
+	if name == "Стык" then
+		mark = process_old_joint(driver, mark)
 	end
 
 	return {mark}
@@ -375,8 +437,6 @@ function make_simple_defect(name, objects, driver, defect)
 		marks[i] = mark
 	end
 
-	sumPOV.UpdateMarks(marks, false)
-
 	--error('make_simple_defect error') -- testing
 	return marks
 end
@@ -404,7 +464,6 @@ function make_jat_defect(name, objects, driver, defect)
 		marks[i] = mark
 	end
 
-	sumPOV.UpdateMarks(marks, false)
 	return marks
 end
 
@@ -441,8 +500,6 @@ function make_group_defect(name, objects, driver, defect)
 
 	mark.prop.SysCoord = math.floor(l + 0.5)
 	mark.prop.Len = math.floor(r - l + 0.5)
-
-	sumPOV.UpdateMarks({mark}, false)
 
 	for _, attr_name in ipairs{"RAILWAY_HOUSE", "RAILWAY_TYPE"} do
 		local val = defect[attr_name]
@@ -549,7 +606,10 @@ end
 function MakeMark(name, objects, driver)
 	local defect = find_defect(name)
 	local marks = defect.fn(name, objects, driver, defect)
-	for _, m in ipairs(marks) do
-		m:Save()
+	sumPOV.UpdateMarks(marks, true)
+
+	local lm = marks[#marks]
+	if lm and lm.prop and lm.prop.ID then
+		driver:JumpMark(lm.prop.ID)
 	end
 end

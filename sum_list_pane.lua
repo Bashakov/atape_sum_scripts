@@ -264,6 +264,7 @@ function InitMark(name, fnContinueCalc)
 		return #work_marks_list
 	end
 	clear_lists()
+	mark_helper.xml_cache:clear()
 
 	if filter then
 		work_filter = filter						-- делаем найденный фильтр - рабочим
