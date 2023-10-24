@@ -178,25 +178,21 @@ local function make_joint_node(nodeRoot, joints)
 	end
 end
 
+
 local function make_beacons_node(nodeRoot, beacon)
-	local pt1 = {beacon.points[1], beacon.points[2]}
-	local pt2 = {beacon.points[3], beacon.points[4]}
-
+	local pos_web = beacon.area:draw2frame({beacon.points[1], beacon.points[2]}, beacon.center_frame)
+	local pos_fst = beacon.area:draw2frame({beacon.points[3], beacon.points[4]}, beacon.center_frame)
+	
 	-- упорядочим по высоте
-	if pt1[2] > pt2[2] then
-		pt1, pt2 = pt2, pt1
+	if pos_web[2] < pos_fst[2] then
+		pos_web, pos_fst = pos_fst, pos_web
 	end
 
-	local pos1 = beacon.area:draw2frame(pt1, beacon.center_frame)
-	local pos2 = beacon.area:draw2frame(pt2, beacon.center_frame)
-	local shift = pos1[1] - pos2[1]
-	if Passport.INCREASE == '0' then
-		shift = -shift
-	end
+	local shift = pos_fst[1] - pos_web[1]
 
 	local w, h = 10, 100
 	local tps = {'Beacon_Web', 'Beacon_Fastener'}
-	for i, pos in ipairs{pos1, pos2} do
+	for i, pos in ipairs{pos_web, pos_fst} do
 		local nodeActRes = make_node(nodeRoot, "PARAM", {name="ACTION_RESULTS", channel=beacon.area.channel, value=tps[i]})
 		local nodeFrame  = make_node(nodeActRes, "PARAM", {name="FrameNumber", value='0', coord=beacon.center_frame})
 		local nodeResult = make_node(nodeFrame , "PARAM", {name="Result", value="main"})
