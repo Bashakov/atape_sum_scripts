@@ -142,7 +142,7 @@ local DEFECTS =
 		group = "Видео",
 		name = "Маячная отметка",
 		tools = {DRAW_TOOL.beacon},
-		fn = make_recog_mark,
+		fn = make_beacon_marks,
 		guid = GUIDS.M_SPALA,
 	},
 

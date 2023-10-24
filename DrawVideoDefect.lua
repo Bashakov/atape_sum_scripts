@@ -179,7 +179,7 @@ local function make_joint_node(nodeRoot, joints)
 end
 
 
-local function make_beacons_node(nodeRoot, beacon)
+local function make_beacon_node(nodeRoot, beacon)
 	local pos_web = beacon.area:draw2frame({beacon.points[1], beacon.points[2]}, beacon.center_frame)
 	local pos_fst = beacon.area:draw2frame({beacon.points[3], beacon.points[4]}, beacon.center_frame)
 	
@@ -229,8 +229,6 @@ local function make_recog_xml(objects, action_result, reliability)
 			make_surface_node(nodeRoot, object, action_result)
 		elseif starts_with(object.sign, 'joint') then
 			table.insert(joints, object)
-		elseif object.sign == "beacon" then
-			make_beacons_node(nodeRoot, object)
 		elseif object.sign == 'fishplate_fault' then
 			make_fishplate_fault_node(nodeRoot, object)
 		else
@@ -366,16 +364,13 @@ end
 function make_recog_mark(name, objects, driver, defect)
 	local mark = _make_common_mark(driver, objects, defect.guid)
 
-	local reability = 101
-	local nodeRoot = make_recog_xml(objects, defect.action_result, reability)
+	local reliability = 101
+	local nodeRoot = make_recog_xml(objects, defect.action_result, reliability)
 
 	mark.ext.RAWXMLDATA = nodeRoot.xml
-	mark.ext.VIDEOIDENTRLBLT = reability
+	mark.ext.VIDEOIDENTRLBLT = reliability
 	mark.ext.VIDEOFRAMECOORD = objects[1].center_frame
 
-	if name == "Маячная отметка" then
-		remove_old_beacons(driver, mark)
-	end
 	if name == "Стык" then
 		mark = process_old_joint(driver, mark)
 	end
@@ -383,6 +378,28 @@ function make_recog_mark(name, objects, driver, defect)
 	return {mark}
 end
 
+function make_beacon_marks(name, objects, driver, defect)
+	local marks = {}
+	local reliability = 101
+	for _, beacon in ipairs(objects) do
+		assert(beacon.sign == "beacon")
+		local mark = _make_common_mark(driver, {beacon}, defect.guid)
+
+		local dom = xml_utils.create_dom()
+		local nodeRoot = dom:createElement("ACTION_RESULTS")
+		make_beacon_node(nodeRoot, beacon)
+		make_xml_node_common(nodeRoot, reliability, {beacon})
+
+		mark.ext.RAWXMLDATA = nodeRoot.xml
+		mark.ext.VIDEOIDENTRLBLT = reliability
+		mark.ext.VIDEOFRAMECOORD = beacon.center_frame
+
+		remove_old_beacons(driver, mark)
+		table.insert(marks, mark)
+	end
+
+	return marks
+end
 
 local function _create_simple_mark(driver, object, guid)
 	local points_on_frame, _ = rect2corners(object, "ltrtrblb") -- left, top, right, top, right, bottom, left, bottom
