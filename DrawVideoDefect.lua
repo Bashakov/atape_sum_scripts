@@ -315,8 +315,9 @@ local function process_old_joint(driver, new_mark)
 		local old_xml = xml_utils.load_xml_str(nearest_old_joint.ext.RAWXMLDATA, true)
 		if old_xml then
 			local new_xml = xml_utils.load_xml_str(new_mark.ext.RAWXMLDATA)
-			local nodeNewGape = new_xml:selectSingleNode("//PARAM[@name='RailGapWidth_mkm']")
+			local nodeNewGape = new_xml:selectSingleNode("//PARAM[@name='RailGapWidth_mkm']/@value")
 			if nodeNewGape then
+				local width = tonumber(nodeNewGape.nodeValue) / 1000
 				local msg = string.format("Обнаружен стык %s,", formatMarkPos(driver, nearest_old_joint))
 				local action = iup.Alarm("ATape", msg, "Удалить", "Переписать зазор", "Оставить оба")
 				if 1 == action then
@@ -325,6 +326,11 @@ local function process_old_joint(driver, new_mark)
 				elseif 2 == action then
 					replace_joint_gap_xml(old_xml, new_xml)
 					nearest_old_joint.ext.RAWXMLDATA = old_xml.xml
+					for _, user_name in ipairs{"VIDEOIDENTGWT", "VIDEOIDENTGWS"} do
+						if nearest_old_joint.ext[user_name] then
+							nearest_old_joint.ext[user_name] = width
+						end
+					end
 					sumPOV.UpdateMarks({nearest_old_joint})
 					nearest_old_joint:Save()
 					driver:JumpMark(nearest_old_joint)
