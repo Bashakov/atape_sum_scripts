@@ -283,7 +283,7 @@ local filters =
 		end,
 	},
 	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		group = {'Тест:видео'},
 		name = 'II Маячные отметки',
 		--videogram_defect_codes = {'000000000000'},
 		columns = {
@@ -320,7 +320,7 @@ local filters =
 		end,
 	},
 	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		group = {'Тест:видео'},
 		name = 'III Соединитель: штепсельный',
 		columns = {
 			column_num,
@@ -335,7 +335,7 @@ local filters =
 		GUIDS = recognition_guids,
 	},
 	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		group = {'Тест:видео'},
 		name = 'III Соединитель: приварной',  -- Приварные соединители https://bt.abisoft.spb.ru/view.php?id=834#c4240
 		--videogram_defect_codes = {'000000000001'},
 		columns = {
@@ -533,7 +533,7 @@ local filters =
 		},
 	},
 	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		group = {'Тест:видео'},
 		name = 'Горизонтальные уступы',
 		--videogram_defect_codes = {'090004012059'},
 		columns = {
@@ -557,7 +557,7 @@ local filters =
 		end,
 	},
 	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		group = {'Тест:видео'},
 		name = 'Поверхностные дефекты',
 		--videogram_defect_codes = {'090004012001'},
 		columns = {
@@ -574,7 +574,7 @@ local filters =
 		GUIDS = recognition_surface_defects,
 	},
 	{
-		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
+		group = {'Тест:видео'},
 		name = 'Запуски распознавания',
 		columns = {
 			column_num,
