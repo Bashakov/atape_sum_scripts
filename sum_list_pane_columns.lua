@@ -460,14 +460,14 @@ column_firtree_beacon =
 	align = 'r', 
 	text = function(row)
 		local mark = work_marks_list[row]
-		if mark.prop.Guid == "{D3736670-0C32-46F8-9AAF-3816DE00B755}" then
+		if mark.prop.Guid == TYPES.VID_BEACON_FIRTREE_MARK then
 			local found = mark.user.correspond_beacon_found
 			return found and 'Да' or 'нет'
 		end
 		return ''
 	end,
 	sorter = function(mark)
-		if mark.prop.Guid == "{D3736670-0C32-46F8-9AAF-3816DE00B755}" then
+		if mark.prop.Guid == TYPES.VID_BEACON_FIRTREE_MARK then
 			local found = mark.user.correspond_beacon_found
 			return found and 1 or 0
 		end
@@ -475,7 +475,7 @@ column_firtree_beacon =
 	end,
 	get_color = function(row)
 		local mark = work_marks_list[row]
-		if mark.prop.Guid == "{D3736670-0C32-46F8-9AAF-3816DE00B755}" then
+		if mark.prop.Guid == TYPES.VID_BEACON_FIRTREE_MARK then
 			local found = mark.user.correspond_beacon_found
 			--return found and {0x00FF00, 0xFFFFFF} or {0xFF0000, 0xFFFFFF}
 			return found and {0x000000, 0xCCFFCC} or {0x000000, 0xFFCCCC}

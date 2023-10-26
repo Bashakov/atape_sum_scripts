@@ -283,7 +283,7 @@ local filters =
 		end,
 	},
 	{
-		group = {'Тест:видео'},
+		group = {'ВИДЕОРАСПОЗНАВАНИЕ'},
 		name = 'II Маячные отметки',
 		--videogram_defect_codes = {'000000000000'},
 		columns = {
@@ -297,10 +297,10 @@ local filters =
 			column_mark_type_name
 			},
 		GUIDS = {
-			"{DC2B75B8-EEEA-403C-8C7C-212DBBCF23C6}", 	-- Маячная(Пользователь)
-			"{2427A1A4-9AC5-4FE6-A88E-A50618E792E7}",	-- Маячная
-			"{3601038C-A561-46BB-8B0F-F896C2130006}",	-- Бесстыковой путь(Пользователь)
-			"{D3736670-0C32-46F8-9AAF-3816DE00B755}",	-- Маячная Ёлка
+			TYPES.M_SPALA, 					-- Маячная(Пользователь)
+			TYPES.VID_BEACON_INDT,			-- Маячная
+			TYPES.USER_JOINTLESS_DEFECT,	-- Бесстыковой путь(Пользователь)
+			TYPES.VID_BEACON_FIRTREE_MARK,	-- Маячная Ёлка
 		},
 		post_load = function(marks)
 			local beacons = sum_report_beacon.SearchMissingBeacons()
