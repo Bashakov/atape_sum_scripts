@@ -191,6 +191,13 @@ function TestMinElement()
     lu.assertIs(4, algorithm.min_element({2, -4, 1, 5, 2}, function (a, b) return a > b end))
 end
 
+function TestCleanArrayDupStable()
+    lu.assertEquals(algorithm.clean_array_dup_stable({}), {})
+    lu.assertEquals(algorithm.clean_array_dup_stable({1,1,1,1,1,1,}), {1})
+    lu.assertEquals(algorithm.clean_array_dup_stable({1,5,3,3,1,4}), {1,5,3,4})
+    lu.assertEquals(algorithm.clean_array_dup_stable({'a', 'b', 'ab', 'abc', 'rr'}, function (s) return string.len(s) end), {'a', 'ab', 'abc'})
+end
+
 -- =====================================================  --
 
 os.exit(lu.LuaUnit.run())

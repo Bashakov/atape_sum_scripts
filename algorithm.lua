@@ -273,13 +273,16 @@ local function ends_with(input, suffix)
 	return #suffix ==0 or (#input >= #suffix and string.sub(input, -#suffix) == suffix)
 end
 
-local function clean_array_dup_stable(arr)
+local function clean_array_dup_stable(arr, pred)
+    pred = pred or function (a) return a end
+    
 	local res = {}
 	local known = {}
-	for _, val in pairs(arr) do
-		if not known[val] then
-			table.insert(res, val)
-			known[val] = true
+	for _, item in pairs(arr) do
+        local value = pred(item)
+		if not known[value] then
+			table.insert(res, item)
+			known[value] = true
 		end
 	end
 	return res
@@ -297,6 +300,7 @@ local function min_element(array, pred)
     end
     return found
 end
+
 -- ============================================================= --
 
 return

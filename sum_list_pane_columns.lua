@@ -1167,7 +1167,7 @@ column_jat_defect = {
 		elseif table_find(TYPE_GROUPS.recognition_guids, g) then
 			local connector = mark_helper.GetJoinConnectors(mark)
 			table.insert(msg, connector.privarnoy and privarnoy_error_desc[connector.privarnoy])
-			for _, t in ipairs(connector.shtepselmii or connector.drossel) do
+			for _, t in ipairs(connector.shtepselmii_defects or connector.drossel_defects) do
 				table.insert(msg, connector_error_desc[t])
 			end
 			msg = algorithm.clean_array_dup_stable(msg)
@@ -1203,10 +1203,10 @@ column_jat_object = {
 		if g == TYPES.CABLE_CONNECTOR      then return "Тросовая" end
 
 		local msg = {}
-		local connector = mark_helper.GetJoinConnectorDefected(mark)
-		if connector.privarnoy 		then table.insert(msg, "Основной") 		end
-		if connector.shtepselmii 	then table.insert(msg, "Дублирующий") 	end
-		if connector.drossel 		then table.insert(msg, "Дроссель")		end
+		local connector = mark_helper.GetJoinConnectors(mark)
+		if connector.privarnoy ~= mark_helper.WELDEDBOND_TYPE.GOOD 	then table.insert(msg, "Основной") 		end
+		if connector.shtepselmii_defects 				then table.insert(msg, "Дублирующий") 	end
+		if connector.drossel_defects 					then table.insert(msg, "Дроссель")		end
 
 		return table.concat(msg, ',')
 	end
@@ -1232,10 +1232,19 @@ column_jat_value = {
 	align = 'r',
 	text = function(row)
 		local mark = work_marks_list[row]
+		local g = mark.prop.Guid
 		if g == TYPES.UKSPS_VIDEO then
 			return mark.ext.UKSPS_LENGTH
+		elseif mark.ext.JAT_VALUE then
+			return mark.ext.JAT_VALUE
+		elseif table_find(TYPE_GROUPS.recognition_guids, g) then
+			local connector = mark_helper.GetJoinConnectors(mark)
+			return
+				(connector.privarnoy and 1 or 0) +
+				#(connector.shtepselmii or {}) +
+				#(connector.drossel or {})
 		else
-			return mark.ext.JAT_VALUE or ""
+			return ""
 		end
 	end,
 }
