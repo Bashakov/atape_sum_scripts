@@ -399,6 +399,7 @@ local filters =
 		group = {'ВИДЕОРАСПОЗНАВАНИЕ', "ЖАТ"},
 		name = 'III Устройства ЖАТ',
 		columns = {
+			column_num,
 			column_path_coord,
 			column_rail_lr,
 			column_jat_defect,
