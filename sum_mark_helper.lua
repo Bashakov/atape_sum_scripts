@@ -243,10 +243,18 @@ local function CalcJointDefectInRange(joints, first, last)
 	return valid, defects, atypical
 end
 
+local function mark2joints(src)
+	if src and src.prop and src.prop.ID then -- если метка, то считаем
+		return GetCrewJointArray(src)
+	elseif src and src[1] then -- а если уже массив, то его возвращаем
+		return src
+	end
+	assert(0, 'unknown type of src: ' .. type(src))
+end
 
 -- извлечь количество и качество болтов из xml (если распз по неск каналам, то данные берутся последовательно из 17/18 потом из 19/20)
 local function GetCrewJointCount(mark)
-	local joints = GetCrewJointArray(mark)
+	local joints = mark2joints(mark)
 	if joints then
 		local valid, defects, atypical = CalcJointDefectInRange(joints)
 		return #joints, defects, atypical
@@ -255,7 +263,8 @@ end
 
 -- проверить стык на дефектность по наличие болтов (не больше одного плохого в половине накладки)
 local function CalcValidCrewJointOnHalf(mark)
-	local joints = GetCrewJointArray(mark)
+	local joints = mark2joints(mark)
+
 	local valid_on_half = nil
 	local broken_on_half = nil
 

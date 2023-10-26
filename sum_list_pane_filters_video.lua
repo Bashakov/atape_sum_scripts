@@ -224,9 +224,14 @@ local filters =
 			},
 		GUIDS = recognition_guids,
 		filter = function(mark)
-			local join_type = mark_helper.GetGapType(mark)
-			local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
-			return valid_on_half and valid_on_half < 2 and join_type ~= 2
+
+			local gap_type = mark_helper.GetGapType(mark)
+			local crews = mark_helper.GetCrewJointArray(mark)
+			if crews then
+				local _,_, atypical = mark_helper.GetCrewJointCount(crews)
+				local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(crews)
+				return valid_on_half and valid_on_half < 2 and gap_type ~= 2 or atypical > 0
+			end
 		end,
 	},
 	{
