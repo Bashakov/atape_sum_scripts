@@ -194,6 +194,35 @@ end
 
 -- ================================= БОЛТЫ ====================================
 
+CREWJOINT_TYPE = {
+	DEFECT = -1,
+	IMPAIRED = 0,
+	BOLT = 2,
+	SCREW = 3,
+	ATYPICAL = 4,
+}
+
+-- объединить данные распознавания болтов с 2х камер
+local function mergeCrewJointArray(array1, array2)
+	if not array2 then	return array1 end
+	if not array1 then	return array2 end
+
+	local safe_order = {CREWJOINT_TYPE.DEFECT, CREWJOINT_TYPE.ATYPICAL, CREWJOINT_TYPE.IMPAIRED}
+	local res = {}
+	for i = 1, math.max(#array1, #array2) do
+		local c1, c2 = array1[i], array2[i]
+		for _, safe in ipairs(safe_order) do
+			if c1 == safe or c2 == safe then
+				table.insert(res, safe)
+				c1, c2 = nil, nil
+				break
+			end
+		end
+		table.insert(res, c1 or c2)
+	end
+	return res
+end
+
 -- получить массив с качествами болтов
 local function GetCrewJointArray(mark)
 	local nodeRoot = xml_cache:get(mark)
@@ -205,7 +234,8 @@ local function GetCrewJointArray(mark)
 		PARAM[@name="FrameNumber" and @value]\z
 		/PARAM[@name="Result" and @value="main"]\z
 		/PARAM[@name="JointNumber" and @value]\z
-		/PARAM[@name="CrewJointSafe" and @value]/@value'
+		/PARAM[@name="CrewJointSafe" and @value]\z
+		/@value'
 
 	local res = {}
 
@@ -221,14 +251,18 @@ local function GetCrewJointArray(mark)
 		res[video_channel] = cur_safe
 	end
 
-	res = res[17] or res[18] or res[19] or res[20] or res[0]
-	return res
+	if res[17] or res[19] then
+		return mergeCrewJointArray(res[17], res[19])
+	elseif res[18] or res[20] then
+		return mergeCrewJointArray(res[18], res[20])
+	end
+	return res[0]
 end
 
 
 -- посчитать количество нормальных дефектных и нетиповых болтов в массиве в заданном диапазоне
-local function CalcJointDefectInRange(joints, first, last)
-	local defects, valid, atypical = 0, 0, 0
+local function calcJointDefectInRange(joints, first, last)
+	local valid, defects, atypical = 0, 0, 0
 	for i = first or 1, last or #joints do
 		local safe = joints[i]
 		if safe > 0 then
@@ -243,7 +277,8 @@ local function CalcJointDefectInRange(joints, first, last)
 	return valid, defects, atypical
 end
 
-local function mark2joints(src)
+-- вернуть массив болтов, вычислить из отметки или вернуть готовый
+local function mark2crewjoints(src)
 	if src and src.prop and src.prop.ID then -- если метка, то считаем
 		return GetCrewJointArray(src)
 	elseif src and src[1] then -- а если уже массив, то его возвращаем
@@ -252,18 +287,18 @@ local function mark2joints(src)
 	assert(0, 'unknown type of src: ' .. type(src))
 end
 
--- извлечь количество и качество болтов из xml (если распз по неск каналам, то данные берутся последовательно из 17/18 потом из 19/20)
+-- извлечь количество и качество болтов из xml
 local function GetCrewJointCount(mark)
-	local joints = mark2joints(mark)
+	local joints = mark2crewjoints(mark)
 	if joints then
-		local valid, defects, atypical = CalcJointDefectInRange(joints)
+		local _, defects, atypical = calcJointDefectInRange(joints)
 		return #joints, defects, atypical
 	end
 end
 
 -- проверить стык на дефектность по наличие болтов (не больше одного плохого в половине накладки)
 local function CalcValidCrewJointOnHalf(mark)
-	local joints = mark2joints(mark)
+	local joints = mark2crewjoints(mark)
 
 	local valid_on_half = nil
 	local broken_on_half = nil
@@ -290,12 +325,12 @@ local function CalcValidCrewJointOnHalf(mark)
 		end
 
 		if #joints == 6 then
-			local l = CalcJointDefectInRange(joints, 1, 3)
-			local r = CalcJointDefectInRange(joints, 4, 6)
+			local l = calcJointDefectInRange(joints, 1, 3)
+			local r = calcJointDefectInRange(joints, 4, 6)
 			valid_on_half = math.min(l, r)
 		elseif #joints == 4 then
-			local l = CalcJointDefectInRange(joints, 1, 2)
-			local r = CalcJointDefectInRange(joints, 3, 4)
+			local l = calcJointDefectInRange(joints, 1, 2)
+			local r = calcJointDefectInRange(joints, 3, 4)
 			valid_on_half = math.min(l, r)
 		else
 			valid_on_half = 0
@@ -1288,6 +1323,7 @@ return {
 	WELDEDBOND_TYPE = WELDEDBOND_TYPE,
 
 	GetCrewJointArray = GetCrewJointArray,
+	mergeCrewJointArray = mergeCrewJointArray, -- testing
 	GetCrewJointCount = GetCrewJointCount,
 	CalcValidCrewJointOnHalf = CalcValidCrewJointOnHalf,
 

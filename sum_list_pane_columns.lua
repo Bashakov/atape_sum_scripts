@@ -426,8 +426,13 @@ column_joint_speed_limit =
 	align = 'c', 
 	text = function(row)
 		local mark = work_marks_list[row]
-		local _, limit = sum_report_joints.bolt2defect_limit(mark)
-		return limit or ''
+		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)
+		if valid_on_half == 0 then
+			return "Закрытие"
+		elseif valid_on_half == 1 then
+			return "25"
+		end
+		return ''
 	end,
 	sorter = function(mark)
 		local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(mark)

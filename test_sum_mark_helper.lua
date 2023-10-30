@@ -119,6 +119,12 @@ end
 
 -- ================================= БОЛТЫ ====================================
 
+function TestMergeCrewJointArray()
+    lu.assertEquals(mark_helper.mergeCrewJointArray({2,3,2,3,1,-1}), {2,3,2,3,1,-1})
+    lu.assertEquals(mark_helper.mergeCrewJointArray({2,3,2,3,-1,-1}, {3,4,3,2,-1,-1}), {2,4,2,3,-1,-1})
+    lu.assertEquals(mark_helper.mergeCrewJointArray({2,0,4,3,0}, {3,4,4,2,-1,-1}), {2,4,4,3,-1,-1})
+end
+
 function TestGetCrewJoint()
     local mark = make_mark('test_data/gap1.xml')
     lu.assertEquals(mark_helper.GetCrewJointArray(mark), {2, 3, 2, 3, 2, 3})

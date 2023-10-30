@@ -46,6 +46,21 @@ local function get_sleeper_angle_defect(mark, treshold, material)
 	return false
 end
 
+-- разделяем все отметки по типам (selector), причем массив назначения один для нескольких гуидов
+local function split_marks(marks, ...)
+	local dest = {}
+	local selector = {}
+	for i, guids in ipairs{...} do
+		dest[i] = {}
+		for _, g in ipairs(guids) do selector[g] = dest[i] end
+	end
+	for _, mark in ipairs(marks) do
+		local dst = selector[mark.prop.Guid]
+		if dst then table.insert(dst, mark)	end
+	end
+	return table.unpack(dest)
+end
+
 
 local function get_joint_speed_limits(marks, fnContinueCalc)
 	local id2defects = {}
@@ -169,16 +184,9 @@ local filters =
 			TYPES.BALLAST_USER,
 			group_defects),
 		post_load = function(marks, fnContinueCalc)
-			local joints = {}
-			local simple = {}
-			local separator = {}
-			separator[TYPES.BALLAST_USER] = simple
-			for _, g in ipairs(group_defects) do separator[g] = simple end
-			for _, g in ipairs(recognition_guids) do separator[g] = joints end
-			for _, mark in ipairs(marks) do
-				local dst = separator[mark.prop.Guid]
-				if dst then table.insert(dst, mark)	end
-			end
+			-- разделяем все отметки по типам (separator), причем массив назначения один для нескольких гуидов
+			local simple_types = table_merge(group_defects, TYPES.BALLAST_USER)
+			local joints, simple = split_marks(marks, recognition_guids, simple_types)
 			simple = filter_mark_ekasui_speed_limits(simple, fnContinueCalc)
 			joints = get_joint_speed_limits(joints, fnContinueCalc)
 			local res = {}
@@ -224,14 +232,8 @@ local filters =
 			},
 		GUIDS = recognition_guids,
 		filter = function(mark)
-
-			local gap_type = mark_helper.GetGapType(mark)
-			local crews = mark_helper.GetCrewJointArray(mark)
-			if crews then
-				local _,_, atypical = mark_helper.GetCrewJointCount(crews)
-				local valid_on_half = mark_helper.CalcValidCrewJointOnHalf(crews)
-				return valid_on_half and valid_on_half < 2 and gap_type ~= 2 or atypical > 0
-			end
+			local all, defect, atypical = mark_helper.GetCrewJointCount(mark)
+			return all and (all % 2 ~= 0 or defect > 0 or atypical > 0)
 		end,
 	},
 	{
