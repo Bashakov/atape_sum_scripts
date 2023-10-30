@@ -297,6 +297,37 @@ local filters =
 			column_pov_common,
 			column_rail,
 			column_beacon_offset,
+			column_pair_beacon,
+			column_mark_type_name
+			},
+		GUIDS = {
+			TYPES.M_SPALA, 					-- Маячная(Пользователь)
+			TYPES.VID_BEACON_INDT,			-- Маячная
+			TYPES.USER_JOINTLESS_DEFECT,	-- Бесстыковой путь(Пользователь)
+		},
+		post_load = function(marks)
+			local beacons = sum_report_beacon.SearchMissingBeacons()
+			beacons:load_marks(marks, nil)
+
+			for _, mark in ipairs(marks) do
+				local found = not beacons:is_miss_mark(mark)
+				if beacons.is_beacon(mark) then
+					mark.user.pair_beacon_found = found
+				end
+			end
+			return marks
+		end,
+	},
+	{
+		group = {'Тест:видео'},
+		name = 'Маячные шпалы',
+		--videogram_defect_codes = {'000000000000'},
+		columns = {
+			column_num,
+			column_path_coord,
+			column_pov_common,
+			column_rail,
+			column_beacon_offset,
 			column_firtree_beacon,
 			column_pair_beacon,
 			column_mark_type_name
@@ -310,18 +341,15 @@ local filters =
 		post_load = function(marks)
 			local beacons = sum_report_beacon.SearchMissingBeacons()
 			beacons:load_marks(marks, nil)
-
-			-- поиск меток не имеющих парных отметок
+			local firtrees = {}
 			for _, mark in ipairs(marks) do
 				local found = not beacons:is_miss_mark(mark)
 				if beacons.is_firtree(mark) then
 					mark.user.correspond_beacon_found = found
-				end
-				if beacons.is_beacon(mark) then
-					mark.user.pair_beacon_found = found
+					table.insert(firtres, mark)
 				end
 			end
-			return marks
+			return firtrees
 		end,
 	},
 	{
