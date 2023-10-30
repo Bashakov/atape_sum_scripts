@@ -251,7 +251,8 @@ function TestWeldedBond()
 end
 
 function TestGetJoinConnectors()
-    local mark = make_mark('test_data/gap1.xml')
+    local mark
+    mark = make_mark('test_data/gap1.xml')
     local connectors, defect = mark_helper.GetJoinConnectors(mark)
     lu.assertIs(defect, true)
     lu.assertEquals(connectors, {
@@ -307,6 +308,28 @@ function TestGetJoinConnectors()
     })
     codes = mark_helper.GetJoinConnectorDefectCodes(mark)
     lu.assertEquals(codes, {"090004004928", "090004004927"})
+
+
+    mark = make_mark('test_data/gap6.xml')
+    connectors, defect = mark_helper.GetJoinConnectors(mark)
+    lu.assertIs(defect, true)
+    lu.assertEquals(connectors, {
+        drossel={CONNECTOR_TYPE.TWO_SCREW, CONNECTOR_TYPE.TWO_SCREW, CONNECTOR_TYPE.MIS_SCREW, CONNECTOR_TYPE.MIS_SCREW, CONNECTOR_TYPE.KLIN, CONNECTOR_TYPE.KLIN, CONNECTOR_TYPE.KLIN},
+        drossel_defects={CONNECTOR_TYPE.MIS_SCREW, CONNECTOR_TYPE.MISSING},
+    })
+    codes = mark_helper.GetJoinConnectorDefectCodes(mark)
+    lu.assertEquals(codes, {"090004012114"})
+
+    mark = make_mark('test_data/gap7.xml')
+    connectors, defect = mark_helper.GetJoinConnectors(mark)
+    lu.assertIs(defect, true)
+    lu.assertEquals(connectors, {
+        privarnoy=WELDEDBOND_TYPE.BAD_CABLE,
+        shtepselmii={CONNECTOR_TYPE.TWO_SCREW, CONNECTOR_TYPE.TWO_SCREW, CONNECTOR_TYPE.BOLT, CONNECTOR_TYPE.BOLT, CONNECTOR_TYPE.BOLT},
+        shtepselmii_defects={CONNECTOR_TYPE.MISSING},
+    })
+    codes = mark_helper.GetJoinConnectorDefectCodes(mark)
+    lu.assertEquals(codes, {"090004000521", "090004004927"})
 end
 
 -- =================== Шпалы ===================

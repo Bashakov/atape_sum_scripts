@@ -1172,7 +1172,7 @@ column_jat_defect = {
 		elseif table_find(TYPE_GROUPS.recognition_guids, g) then
 			local connector = mark_helper.GetJoinConnectors(mark)
 			table.insert(msg, connector.privarnoy and privarnoy_error_desc[connector.privarnoy])
-			for _, t in ipairs(connector.shtepselmii_defects or connector.drossel_defects) do
+			for _, t in ipairs(connector.shtepselmii_defects or connector.drossel_defects or {}) do
 				table.insert(msg, connector_error_desc[t])
 			end
 			msg = algorithm.clean_array_dup_stable(msg)
@@ -1180,7 +1180,7 @@ column_jat_defect = {
 			-- pass
 		end
 
-		return table.concat(msg, ',')
+		return table.concat(msg, ', ')
 	end
 }
 
@@ -1209,7 +1209,7 @@ column_jat_object = {
 
 		local msg = {}
 		local connector = mark_helper.GetJoinConnectors(mark)
-		if connector.privarnoy ~= mark_helper.WELDEDBOND_TYPE.GOOD 	then table.insert(msg, "Основной") 		end
+		if connector.privarnoy and connector.privarnoy ~= mark_helper.WELDEDBOND_TYPE.GOOD 	then table.insert(msg, "Основной") 		end
 		if connector.shtepselmii_defects 				then table.insert(msg, "Дублирующий") 	end
 		if connector.drossel_defects 					then table.insert(msg, "Дроссель")		end
 
@@ -1245,9 +1245,9 @@ column_jat_value = {
 		elseif table_find(TYPE_GROUPS.recognition_guids, g) then
 			local connector = mark_helper.GetJoinConnectors(mark)
 			return
-				(connector.privarnoy and 1 or 0) +
-				#(connector.shtepselmii or {}) +
-				#(connector.drossel or {})
+				(connector.privarnoy == mark_helper.WELDEDBOND_TYPE.GOOD and 0 or 1) +
+				#(connector.shtepselmii_defects or {}) +
+				#(connector.drossel_defects or {})
 		else
 			return ""
 		end
