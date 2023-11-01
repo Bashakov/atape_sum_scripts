@@ -46,7 +46,7 @@ local function makeCrewJointMark(states)
             '<PARAM name="JointNumber" value="%d">' ..
             '<PARAM name="Coord" type="ellipse" value="981,457,26,43"/>' ..
             '<PARAM name="CrewJointSafe" value="%d"/>' ..
-            '</PARAM>', n, val)
+            '</PARAM>', n-1, val)
     end
     xml = xml .. '</PARAM></PARAM></PARAM>'
     xml = xml .. '</ACTION_RESULTS>'

@@ -6,15 +6,15 @@
                     <PARAM name="Coord" type="ellipse" value="212,251,28,37"></PARAM>
                     <PARAM name="CrewJointSafe" value="-1"></PARAM>
                 </PARAM>
-                <PARAM name="JointNumber" value="0">
+                <PARAM name="JointNumber" value="1">
                     <PARAM name="Coord" type="ellipse" value="212,251,28,37"></PARAM>
                     <PARAM name="CrewJointSafe" value="1"></PARAM>
                 </PARAM>
-                <PARAM name="JointNumber" value="0">
+                <PARAM name="JointNumber" value="2">
                     <PARAM name="Coord" type="ellipse" value="212,251,28,37"></PARAM>
                     <PARAM name="CrewJointSafe" value="4"></PARAM>
                 </PARAM>
-                <PARAM name="JointNumber" value="0">
+                <PARAM name="JointNumber" value="3">
                     <PARAM name="Coord" type="ellipse" value="212,251,28,37"></PARAM>
                     <PARAM name="CrewJointSafe" value="2"></PARAM>
                 </PARAM>

@@ -223,32 +223,49 @@ local function mergeCrewJointArray(array1, array2)
 	return res
 end
 
+local function EnumCrewJoint(nodeRoot)
+	return coroutine.wrap(function ()
+		for nodeCrewJoint in SelectNodes(nodeRoot, '/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="CrewJoint"]') do
+			local video_channel = nodeCrewJoint:SelectSingleNode("@channel")
+			video_channel = video_channel and tonumber(video_channel.nodeValue) or 0
+
+			for nodeJoint in SelectNodes(nodeCrewJoint, "PARAM/PARAM/PARAM[@name='JointNumber']") do
+				local nodeNum = nodeJoint.attributes:getNamedItem('value')
+				local nodeSafe = nodeJoint:selectSingleNode("PARAM[@name='CrewJointSafe']/@value")
+				if nodeNum and nodeSafe then
+					local num_joint = tonumber(nodeNum.nodeValue)
+					local safe = tonumber(nodeSafe.nodeValue)
+					coroutine.yield(video_channel, num_joint, safe, nodeSafe)
+				end
+			end
+		end
+	end)
+end
+
+local function is_xml_node(obj)
+	if obj then
+		local mt = getmetatable(obj)
+		return mt and mt.type == "LuaCOM" and obj.nodeType
+	end
+end
+
 -- получить массив с качествами болтов
 local function GetCrewJointArray(mark)
-	local nodeRoot = xml_cache:get(mark)
+	local nodeRoot
+	if mark and mark.prop and mark.prop.ID then
+		nodeRoot = xml_cache:get(mark)
+	elseif is_xml_node(mark) then
+		nodeRoot = mark -- already xml
+	end
+
 	if not nodeRoot	then
 		return nil
 	end
 
-	local req_safe = '\z
-		PARAM[@name="FrameNumber" and @value]\z
-		/PARAM[@name="Result" and @value="main"]\z
-		/PARAM[@name="JointNumber" and @value]\z
-		/PARAM[@name="CrewJointSafe" and @value]\z
-		/@value'
-
 	local res = {}
-
-	for nodeCrewJoint in SelectNodes(nodeRoot, '/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="CrewJoint"]') do
-		local video_channel = nodeCrewJoint:SelectSingleNode("@channel")
-		video_channel = video_channel and tonumber(video_channel.nodeValue) or 0
-
-		local cur_safe = {}
-		for node in SelectNodes(nodeCrewJoint, req_safe) do
-			local safe = tonumber(node.nodeValue)
-			cur_safe[#cur_safe+1] = safe
-		end
-		res[video_channel] = cur_safe
+	for video_channel, num_joint, safe in EnumCrewJoint(nodeRoot) do
+		if not res[video_channel] then res[video_channel] = {} end
+		res[video_channel][num_joint+1] = safe
 	end
 
 	if res[17] or res[19] then
@@ -1323,6 +1340,7 @@ return {
 	WELDEDBOND_TYPE = WELDEDBOND_TYPE,
 
 	GetCrewJointArray = GetCrewJointArray,
+	EnumCrewJoint = EnumCrewJoint,
 	mergeCrewJointArray = mergeCrewJointArray, -- testing
 	GetCrewJointCount = GetCrewJointCount,
 	CalcValidCrewJointOnHalf = CalcValidCrewJointOnHalf,
