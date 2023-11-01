@@ -191,6 +191,10 @@ function TestDrawRailGap()
     }
     draw(18, 2187341, mark)
     checkActions("test_data/draw/gap3.18.2187341.txt")
+
+    mark.ext.RAWXMLDATA = read_file("test_data/gap8.xml")
+    draw(17, 149166118, mark)
+    checkActions("test_data/draw/gap8.17.149166118.txt")
 end
 
 function  TestSleeper1()

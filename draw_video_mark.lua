@@ -253,16 +253,12 @@ local function drawSimpleResult(resultType, points, params, mark)
 			local width = nil
 			if resultType == "CalcRailGap_Head_Top" then
 				width = mark.ext.VIDEOIDENTGWT
-				if not width and not mark.ext.VIDEOIDENTGWS and params.RailGapWidth_mkm then
-					width = tonumber(params.RailGapWidth_mkm) / 1000
-				end
 			elseif resultType == "CalcRailGap_Head_Side" then
 				width = mark.ext.VIDEOIDENTGWS
-				if not width and not mark.ext.VIDEOIDENTGWT and params.RailGapWidth_mkm then
-					width = tonumber(params.RailGapWidth_mkm) / 1000
-				end
-			else
-				width = mark.ext.VIDEOIDENTGWS or mark.ext.VIDEOIDENTGWT
+			end
+
+			if not width then
+				width = mark.ext.VIDEOIDENTGWS or mark.ext.VIDEOIDENTGWT or (params.RailGapWidth_mkm and tonumber(params.RailGapWidth_mkm) / 1000)
 			end
 
 			if width then
