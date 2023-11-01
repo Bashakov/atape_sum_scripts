@@ -241,7 +241,7 @@ local function drawSimpleResult(resultType, points, params, mark)
 
 	if string.match(resultType, 'CalcRailGap_') then
 		local colorsGap = {
-			["CalcRailGap_Head_Top"] =  {r=255, g=255, b=0  },
+			["CalcRailGap_Head_Top"] =  {r=0,   g=255, b=255},
 			["CalcRailGap_Head_Side"] = {r=0,   g=255, b=255},
 			["CalcRailGap_User"] =      {r=255, g=0,   b=255},
 		}
@@ -279,20 +279,24 @@ local function drawSimpleResult(resultType, points, params, mark)
 
 	if resultType == 'WeldedBond' then
 		local colors = {
-			[0] = {r=0, g=192, b=128}, -- хороший соединитель
-			[1] = {r=255, g=128, b=0},
+			[0] = {r=128, g=128, b=128}, -- хороший соединитель
+			[1] = {r=255, g=255, b=0},
 		}
-		local color = colors[tonumber(params.ConnectorFault)] or {r=128, g=128, b=128}
+		local color = colors[tonumber(params.ConnectorFault)] or {r=255, g=255, b=0}
 		drawPolygon(points, 1, color, color)
 	end
 
 	if resultType == 'Connector' then
 		local colors = {
-			[0] = {r=0, g=192, b=128}, -- хороший соединитель
-			[1] = {r=255, g=128, b=0},
+			[0] = {r=128, g=128, b=128}, -- хороший соединитель
+			[1] = {r=128, g=128, b=128},
+			[2] = {r=255, g=255, b=0},
+			[3] = {r=128, g=128, b=128},
+			[4] = {r=255, g=102, b=0},
+			[100] = {r=255, g=255, b=0},
 		}
 
-		local color = colors[tonumber(params.ConnectorFault)] or {r=128, g=128, b=128}
+		local color = colors[tonumber(params.ConnectorType)] or {r=255, g=255, b=0}
 		drawEllipse(points, color)
 	end
 
@@ -300,9 +304,9 @@ local function drawSimpleResult(resultType, points, params, mark)
 		local colors = {
 			[-1] = {r=255, g=0,   b=0},  	-- отсутствует
 			[ 0] = {r=255, g=255, b=0},  	-- болтается
-			[ 1] = {r=128, g=128, b=255},  	-- есть
-			[ 2] = {r=128, g=192, b=255},   -- болт
-			[ 3] = {r=128, g=64,  b=255},   -- гайка
+			[ 1] = {r=128, g=128, b=128},  	-- есть
+			[ 2] = {r=128, g=128, b=128},   -- болт
+			[ 3] = {r=128, g=128,  b=128},   -- гайка
 			[ 4] = {r=255, g=255, b=0},     -- Нетиповые болты
 		}
 
@@ -509,7 +513,7 @@ local function drawSimpleResult(resultType, points, params, mark)
 end
 
 local function drawFishplate(points, faults)
-	local color_fishplate = {r=0, g=255, b=0}
+	local color_fishplate = {r=128, g=128, b=128}
 
 	local color_fault = {r=128, g=0, b=0}
 	local fishplate_fault_str = {
