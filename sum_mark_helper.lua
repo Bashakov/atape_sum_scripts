@@ -282,8 +282,8 @@ local function calcJointDefectInRange(joints, first, last)
 	local valid, defects, atypical = 0, 0, 0
 	for i = first or 1, last or #joints do
 		local safe = joints[i]
-		if safe > 0 then
-			if safe == 4 then
+		if safe >= 0 then
+			if safe == CREWJOINT_TYPE.IMPAIRED or safe == CREWJOINT_TYPE.ATYPICAL then
 				atypical = atypical + 1
 			end
 			valid = valid + 1
