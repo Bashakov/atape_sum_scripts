@@ -23,7 +23,7 @@ end
 local function file2array(path)
     local lines = {}
     if utils.is_file_exists(path) then
-        for line in io.lines(path) do 
+        for line in io.lines(path) do
             if #line > 0 then
                 lines[#lines + 1] = line
             end
