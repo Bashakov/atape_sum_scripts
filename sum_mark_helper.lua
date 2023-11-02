@@ -501,6 +501,15 @@ local WELDEDBOND_TYPE = {
 	BAD_CABLE 	= 2,
 }
 
+local function pop_good_connector(connectors)
+	for i, connector in ipairs(connectors) do
+		if not CONNECTOR_TYPE_DEFECT[connector] then
+			table.remove(connectors, i)
+			return connector, i
+		end
+	end
+end
+
 -- получить список Connector и их дефекты
 local function GetConnecterType(mark)
 	local ch2connectors = {}
@@ -529,6 +538,11 @@ local function GetConnecterType(mark)
 
 	local all, defects = {}, {}
 	for _, connectors in pairs(ch2connectors) do
+		-- Согласен с вашим предложением: "как тут поступить, игнорировать больше 2х? если да, то нужно не потерять дефекты из отклоненных". 
+		-- Проверяйте на четность ноды с Connector, большей 2-х исключайте из дефектных. 
+		while #connectors > 2 and pop_good_connector(connectors) do
+			-- done
+		end
 		if #connectors % 2 == 1 then
 			table.insert(defects, CONNECTOR_TYPE.MISSING)
 		end
