@@ -1,4 +1,6 @@
-﻿local lu = require("luaunit")
+﻿package.path = package.path  .. ';tests\\?.lua;Scripts\\?.lua'
+
+local lu = require("luaunit")
 
 local algorithm = require 'algorithm'
 

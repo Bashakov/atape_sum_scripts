@@ -1,7 +1,7 @@
+dofile("tests\\setup_test_paths.lua")
+
 local lu = require('luaunit')
 local utils = require('utils')
-
-package.cpath = package.cpath  .. ';D:\\Distrib\\lua\\ZeroBraneStudioEduPack\\bin\\clibs52\\?.dll'
 
 local mark_helper = require 'sum_mark_helper'
 local xml_utils = require "xml_utils"

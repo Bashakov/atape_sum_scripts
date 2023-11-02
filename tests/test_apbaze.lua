@@ -1,6 +1,6 @@
-﻿local lu = require "luaunit"
+﻿dofile("tests\\setup_test_paths.lua")
 
-package.cpath = package.cpath  .. ';D:\\Distrib\\lua\\ZeroBraneStudioEduPack\\bin\\clibs52\\?.dll'
+local lu = require "luaunit"
 
 local apbase = require "ApBaze"
 local local_driver = require "local_data_driver"

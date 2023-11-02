@@ -1,4 +1,6 @@
-﻿local lu = require("luaunit")
+﻿dofile("tests\\setup_test_paths.lua")
+
+local lu = require("luaunit")
 local SaxWriter = require "xml_sax_writer"
 
 

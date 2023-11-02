@@ -1,8 +1,6 @@
-local lu = require('luaunit')
+dofile("tests\\setup_test_paths.lua")
 
---print(package.cpath)
-package.cpath = package.cpath  .. ';D:\\Distrib\\lua\\ZeroBraneStudioEduPack\\bin\\clibs52\\?.dll'
---print(package.cpath)
+local lu = require('luaunit')
 
 local group_utils = require 'sum_group_marks_utils'
 
