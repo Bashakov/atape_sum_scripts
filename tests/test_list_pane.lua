@@ -207,6 +207,10 @@ function TestListData()
         "fragment6.xml",
         "fragment7.xml",
         "fragment8.xml",
+        "data_24_25.xml",
+        "data_27_long.xml",
+        "data_27_short.xml",
+        "data_npu.xml",
     }
     local skip_filters = {
         "Глобальный фильтр",
