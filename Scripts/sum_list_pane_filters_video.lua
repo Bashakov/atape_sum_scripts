@@ -348,7 +348,7 @@ local filters =
 				local found = not beacons:is_miss_mark(mark)
 				if beacons.is_firtree(mark) then
 					mark.user.correspond_beacon_found = found
-					table.insert(firtres, mark)
+					table.insert(firtrees, mark)
 				end
 			end
 			return firtrees
