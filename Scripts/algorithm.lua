@@ -273,6 +273,10 @@ local function ends_with(input, suffix)
 	return #suffix ==0 or (#input >= #suffix and string.sub(input, -#suffix) == suffix)
 end
 
+local function all_trim(s)
+    return s:match( "^%s*(.-)%s*$" )
+end
+
 local function clean_array_dup_stable(arr, pred)
     pred = pred or function (a) return a end
     
@@ -325,6 +329,7 @@ return
     equal_range = equal_range,
     starts_with = starts_with,
     ends_with = ends_with,
+    all_trim = all_trim,
     clean_array_dup_stable = clean_array_dup_stable,
     min_element = min_element,
 }

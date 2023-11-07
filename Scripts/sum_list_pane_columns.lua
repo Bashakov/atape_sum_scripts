@@ -186,7 +186,7 @@ column_path_coord_begin_end =
 		return string.format('%3d.%03d - %3d.%03d', km1, m1, km2, m2)
 	end,
 	sorter = function(mark)
-		return mark.prop.SysCoord + prop.Len/2
+		return mark.prop.SysCoord + mark.prop.Len/2
 	end
 }
 
@@ -1135,18 +1135,7 @@ column_speed_limit_list =
 	end,
 }
 
-local privarnoy_error_desc = {
-	[mark_helper.WELDEDBOND_TYPE.MISSING] 	= 'Отсутствует',
-	[mark_helper.WELDEDBOND_TYPE.DEFECT] 	= 'Оборван',
-	[mark_helper.WELDEDBOND_TYPE.BAD_CABLE] = 'Поврежден трос',
-}
 
-local connector_error_desc = {
-	[mark_helper.CONNECTOR_TYPE.MISSING] 	= 'Отсутствует',
-	[mark_helper.CONNECTOR_TYPE.MIS_SCREW] 	= 'Нет гаек',
-	[mark_helper.CONNECTOR_TYPE.HOLE] 		= 'Отверстие',
-	[mark_helper.CONNECTOR_TYPE.UNDEFINED] 	= 'Нет отверстия',
-}
 
 column_jat_defect = {
 
@@ -1162,22 +1151,14 @@ column_jat_defect = {
 	end,
 	_impl_text = function (mark)
 		local g = mark.prop.Guid
-		local msg = {}
 
 		if table_find(TYPE_GROUPS.JAT, g) then
 			return mark.prop.Description
 		elseif table_find(TYPE_GROUPS.recognition_guids, g) then
-			local connector = mark_helper.GetJoinConnectors(mark)
-			table.insert(msg, connector.privarnoy and privarnoy_error_desc[connector.privarnoy])
-			for _, t in ipairs(connector.shtepselmii_defects or connector.drossel_defects or {}) do
-				table.insert(msg, connector_error_desc[t])
-			end
-			msg = algorithm.clean_array_dup_stable(msg)
+			return mark_helper.GetJointConnectorDefectDesc(mark)
 		elseif g == TYPES.UKSPS_VIDEO then
 			-- pass
 		end
-
-		return table.concat(msg, ', ')
 	end
 }
 
@@ -1240,11 +1221,7 @@ column_jat_value = {
 		elseif mark.ext.JAT_VALUE then
 			return mark.ext.JAT_VALUE
 		elseif table_find(TYPE_GROUPS.recognition_guids, g) then
-			local connector = mark_helper.GetJoinConnectors(mark)
-			return
-				(connector.privarnoy == mark_helper.WELDEDBOND_TYPE.GOOD and 0 or 1) +
-				#(connector.shtepselmii_defects or {}) +
-				#(connector.drossel_defects or {})
+			return mark_helper.GetJointConnectorDefectCount(mark)
 		else
 			return ""
 		end

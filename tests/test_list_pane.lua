@@ -22,9 +22,6 @@ local function make_expected_file_path(list_name, data_name)
     return codecs.utf8_cp1251(path)
 end
 
-local function all_trim(s)
-    return s:match( "^%s*(.-)%s*$" )
-end
 
 local function get_list_data(list_name, data_name)
     local csv_separator = ';'
@@ -40,7 +37,7 @@ local function get_list_data(list_name, data_name)
         local values = {}
         for col = 1, #columns do
             local text = GetItemText(row, col)
-            text = all_trim(tostring(text or ''))
+            text = alg.all_trim(tostring(text or ''))
             values[col] = text
         end
         table.insert(res, table.concat(values, csv_separator))

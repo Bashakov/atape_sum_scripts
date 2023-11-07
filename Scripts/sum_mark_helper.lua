@@ -645,7 +645,7 @@ local function GetJoinConnectors(mark)
 	local connectors, connectors_defects = GetConnecterType(mark)
 
 	local defected = false
-	local res = {}
+	local res = {IS_CONNECTOR_TYPE=true}
 
 	if not gap_type or gap_type == 0 then -- болтовой
 		res.privarnoy = GetWeldedBondStatus(mark)
@@ -664,8 +664,20 @@ local function GetJoinConnectors(mark)
 	return res, defected, gap_type
 end
 
-local function GetJoinConnectorDefectCodes(mark)
-	local connectors = GetJoinConnectors(mark)
+
+-- вернуть описание соединителей, вычислить из отметки или вернуть готовый
+local function mark2connectors(src)
+	if src and src.prop and src.prop.ID then -- если метка, то вычисляем
+		return GetJoinConnectors(src)
+	elseif src and src.IS_CONNECTOR_TYPE then -- а если уже описатель, то его возвращаем
+		return src
+	end
+	assert(0, 'unknown type of src: ' .. type(src))
+end
+
+
+local function GetJoinConnectorDefectCodes(mark, connectors)
+	connectors = connectors or GetJoinConnectors(mark)
 	local railway_type = mark.ext.RAILWAY_TYPE or RAILWAY_TYPES.WAY
 	local res = {}
 
@@ -708,6 +720,38 @@ local function GetJoinConnectorDefectCodes(mark)
 	end
 
 	return algorithm.clean_array_dup_stable(res)
+end
+
+local privarnoy_error_desc = {
+	[WELDEDBOND_TYPE.MISSING] 	= 'Отсутствует',
+	[WELDEDBOND_TYPE.DEFECT] 	= 'Оборван',
+	[WELDEDBOND_TYPE.BAD_CABLE] = 'Поврежден трос',
+}
+
+local connector_error_desc = {
+	[CONNECTOR_TYPE.MISSING] 	= 'Отсутствует',
+	[CONNECTOR_TYPE.MIS_SCREW] 	= 'Нет гаек',
+	[CONNECTOR_TYPE.HOLE] 		= 'Отверстие',
+	[CONNECTOR_TYPE.UNDEFINED] 	= 'Нет отверстия',
+}
+
+local function GetJointConnectorDefectDesc(mark)
+	local connector = mark2connectors(mark)
+	local msg = {}
+	table.insert(msg, connector.privarnoy and privarnoy_error_desc[connector.privarnoy])
+	for _, t in ipairs(connector.shtepselmii_defects or connector.drossel_defects or {}) do
+		table.insert(msg, connector_error_desc[t])
+	end
+	msg = algorithm.clean_array_dup_stable(msg)
+	return #msg > 0 and table.concat(msg, ', ')
+end
+
+local function GetJointConnectorDefectCount(mark)
+	local connector = mark2connectors(mark)
+	return
+		(connector.privarnoy == mark_helper.WELDEDBOND_TYPE.GOOD and 0 or 1) +
+		#(connector.shtepselmii_defects or {}) +
+		#(connector.drossel_defects or {})
 end
 
 -- =================== Шпалы ===================
@@ -1149,7 +1193,7 @@ local function MakeCommonMarkTemplate(mark)
 	row.LENGTH = prop.Len
 	row.GUID = prop.Guid
 	row.TYPE = Driver:GetSumTypeName(prop.Guid)
-	row.DESCRIPTION = prop.Description
+	row.DESCRIPTION = algorithm.all_trim(prop.Description or '')
 
 	row.RAIL_RAW_MASK = prop.RailMask
 	row.RAIL_POS = GetMarkRailPos(mark)
@@ -1350,6 +1394,8 @@ return {
 	GetWeldedBondDefectCode = GetWeldedBondDefectCode,
 	GetJoinConnectors = GetJoinConnectors,
 	GetJoinConnectorDefectCodes = GetJoinConnectorDefectCodes,
+	GetJointConnectorDefectDesc = GetJointConnectorDefectDesc,
+	GetJointConnectorDefectCount = GetJointConnectorDefectCount,
 	CONNECTOR_TYPE = CONNECTOR_TYPE,
 	WELDEDBOND_TYPE = WELDEDBOND_TYPE,
 

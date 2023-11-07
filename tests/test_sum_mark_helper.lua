@@ -256,6 +256,7 @@ function TestGetJoinConnectors()
     local connectors, defect = mark_helper.GetJoinConnectors(mark)
     lu.assertIs(defect, true)
     lu.assertEquals(connectors, {
+        IS_CONNECTOR_TYPE=true,
         privarnoy=WELDEDBOND_TYPE.MISSING,
         shtepselmii={CONNECTOR_TYPE.BOLT, CONNECTOR_TYPE.BOLT, CONNECTOR_TYPE.BOLT, CONNECTOR_TYPE.BOLT}
     })
@@ -266,6 +267,7 @@ function TestGetJoinConnectors()
     connectors, defect = mark_helper.GetJoinConnectors(mark)
     lu.assertIs(defect, true)
     lu.assertEquals(connectors, {
+        IS_CONNECTOR_TYPE=true,
         privarnoy=WELDEDBOND_TYPE.GOOD,
         shtepselmii={CONNECTOR_TYPE.MIS_SCREW, CONNECTOR_TYPE.MIS_SCREW, CONNECTOR_TYPE.BOLT, CONNECTOR_TYPE.BOLT},
         shtepselmii_defects={CONNECTOR_TYPE.MIS_SCREW},
@@ -278,6 +280,7 @@ function TestGetJoinConnectors()
     connectors, defect = mark_helper.GetJoinConnectors(mark)
     lu.assertIs(defect, true)
     lu.assertEquals(connectors, {
+        IS_CONNECTOR_TYPE=true,
         privarnoy=WELDEDBOND_TYPE.DEFECT,
         shtepselmii={CONNECTOR_TYPE.HOLE, CONNECTOR_TYPE.MIS_SCREW, CONNECTOR_TYPE.BOLT},
         shtepselmii_defects={CONNECTOR_TYPE.HOLE, CONNECTOR_TYPE.MIS_SCREW, CONNECTOR_TYPE.MISSING},
@@ -290,6 +293,7 @@ function TestGetJoinConnectors()
     connectors, defect = mark_helper.GetJoinConnectors(mark)
     lu.assertIs(defect, true)
     lu.assertEquals(connectors, {
+        IS_CONNECTOR_TYPE=true,
         privarnoy=WELDEDBOND_TYPE.MISSING,
         shtepselmii={},
         shtepselmii_defects={CONNECTOR_TYPE.MISSING},
@@ -302,6 +306,7 @@ function TestGetJoinConnectors()
     connectors, defect = mark_helper.GetJoinConnectors(mark)
     lu.assertIs(defect, true)
     lu.assertEquals(connectors, {
+        IS_CONNECTOR_TYPE=true,
         privarnoy=WELDEDBOND_TYPE.MISSING,
         shtepselmii={},
         shtepselmii_defects={CONNECTOR_TYPE.MISSING},
@@ -314,6 +319,7 @@ function TestGetJoinConnectors()
     connectors, defect = mark_helper.GetJoinConnectors(mark)
     lu.assertIs(defect, true)
     lu.assertEquals(connectors, {
+        IS_CONNECTOR_TYPE=true,
         drossel={CONNECTOR_TYPE.MIS_SCREW, CONNECTOR_TYPE.MIS_SCREW, CONNECTOR_TYPE.KLIN, CONNECTOR_TYPE.KLIN},
         drossel_defects={CONNECTOR_TYPE.MIS_SCREW},
     })
@@ -324,6 +330,7 @@ function TestGetJoinConnectors()
     connectors, defect = mark_helper.GetJoinConnectors(mark)
     lu.assertIs(defect, true)
     lu.assertEquals(connectors, {
+        IS_CONNECTOR_TYPE=true,
         privarnoy=WELDEDBOND_TYPE.BAD_CABLE,
         shtepselmii={CONNECTOR_TYPE.TWO_SCREW, CONNECTOR_TYPE.TWO_SCREW, CONNECTOR_TYPE.BOLT, CONNECTOR_TYPE.BOLT},
     })

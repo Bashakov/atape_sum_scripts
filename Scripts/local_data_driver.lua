@@ -297,6 +297,27 @@ local function read_temerature(gps)
 	return res
 end
 
+local function make_test_image(width, height, base64, text)
+	local cmd = sprintf('ImageMagick_convert.exe convert -size %dx%d xc:skyblue -fill black -gravity West -annotate 0,0 "%s" ', width, height, text)
+	if base64 then
+		cmd = cmd .. ' INLINE:JPG:-'
+		local f = assert(io.popen(cmd, 'r'))
+		local data = assert(f:read('*a'))
+		f:close()
+		local hdr = 'data:image/jpeg;base64,'
+		if data:sub(1, #hdr) ~= hdr then
+			error( 'bad output file header: [' .. data:sub(1, #hdr) .. ']')
+		end
+		return data:sub(#hdr+1)
+	else
+		local path = os.tmpname() .. ".jpg"
+		cmd = cmd .. path
+		if not os.execute(cmd) then
+			error('command [' .. cmd .. '] failed')
+		end
+		return path
+	end
+end
 
 local SumMarks = OOP.class
 {
@@ -477,7 +498,8 @@ local Driver = OOP.class
 
 	GetAppPath = function(self)
 		local cd = io.popen"cd":read'*l'
-		return cd:match('(.+\\)%S+')
+		--return cd:match('(.+\\)%S+')
+		return cd .. '\\'
 	end,
 
 	GetPathCoord = function(self, sys)
@@ -541,29 +563,15 @@ local Driver = OOP.class
 		for n, v in pairs(params) do
 			text = text .. sprintf('\\n  %s = %s', n, v)
 		end
+		return make_test_image(params.width or 600, params.height or 400,  params.base64, text)
+	end,
 
-		local width = params.width or 600
-		local height = params.height or 400
-
-		local cmd = sprintf('ImageMagick_convert.exe convert -size %dx%d xc:skyblue -fill black -gravity West -annotate 0,0 "%s" ', width, height, text)
-		if params.base64 then
-			cmd = cmd .. ' INLINE:JPG:-'
-			local f = assert(io.popen(cmd, 'r'))
-			local data = assert(f:read('*a'))
-			f:close()
-			local hdr = 'data:image/jpeg;base64,'
-			if data:sub(1, #hdr) ~= hdr then
-				error( 'bad output file header: [' .. data:sub(1, #hdr) .. ']')
-			end
-			return data:sub(#hdr+1)
-		else
-			local path = os.tmpname() .. ".jpg"
-			cmd = cmd .. path
-			if not os.execute(cmd) then
-				error('command [' .. cmd .. '] failed')
-			end
-			return path
+	GetVideoComponentImage = function (self, name, coord, rail, params)
+		local text = sprintf('Test GetVideoComponentImage: %s %s %s\\n', name, coord, rail)
+		for n, v in pairs(params) do
+			text = text .. sprintf('\\n  %s = %s', n, v)
 		end
+		return make_test_image(params.width or 600, params.height or 400,  params.base64, text)
 	end,
 
 	GetRunTime = function(self, sys)

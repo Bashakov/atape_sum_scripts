@@ -9,6 +9,7 @@ require "luacom"
 
 local OOP = require 'OOP'
 local mark_helper = require 'sum_mark_helper'
+local alg = require 'algorithm'
 local DEFECT_CODES = require 'report_defect_codes'
 local EKASUI_REPORT = require 'sum_report_ekasui'
 local AVIS_REPORT = require 'sum_report_avis'
@@ -19,25 +20,28 @@ local TYPE_GROUPS = require "sum_list_pane_guids"
 
 local jat_guids = mark_helper.table_merge(TYPE_GROUPS.recognition_guids, TYPE_GROUPS.JAT)
 
-local markid2defectcodes = {}
+local markid2connector = {}
 
 -- =========================================
 
 local function filter_mark(mark)
     local g = mark.prop.Guid
+	if g == TYPE_GROUPS.CABLE_CONNECTOR then
+		return true
+	end
     if mark_helper.table_find(TYPE_GROUPS.JAT, g) then
         return true
     else
-        local codes = mark_helper.GetJoinConnectorDefectCodes(mark)
-        if codes and #codes > 0 then
-			markid2defectcodes[mark.prop.ID] = codes
+		local connectors, defected = mark_helper.GetJoinConnectors(mark)
+		if defected then
+			markid2connector[mark.prop.ID] = connectors
 			return true
 		end
     end
 end
 
 local function GetMarks(params, dlgProgress)
-	markid2defectcodes = {}
+	markid2connector = {}
 
     local t = params and params.filter or 'all'
     local g = {}
@@ -46,7 +50,7 @@ local function GetMarks(params, dlgProgress)
         g = mark_helper.table_merge(g, TYPE_GROUPS.JAT)
     end
     if t == 'all' or t == 'auto' then
-        g = mark_helper.table_merge(g, TYPE_GROUPS.recognition_guids)
+        g = mark_helper.table_merge(g, TYPE_GROUPS.recognition_guids, TYPE_GROUPS.CABLE_CONNECTOR)
     end
 
     local marks = Driver:GetMarks{GUIDS=g}
@@ -60,17 +64,18 @@ local function GetMarks(params, dlgProgress)
 end
 
 -- сделать из отметки таблицу и подстановками
-local function MakeJatMarkRow(mark, defect_code)
+local function MakeJatMarkRow(mark, defect_code, jat_defect, jat_value)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
 
     if defect_code then
 		row.DEFECT_CODE = defect_code
 	end
 	row.DEFECT_DESC = DEFECT_CODES.code2desc(defect_code)
-    row.JAT_VALUE = mark.ext.JAT_VALUE or ""
-    row.RAILWAY_HOUSE = mark.ext.RAILWAY_HOUSE or ""
-    row.RAILWAY_TYPE = mark.ext.RAILWAY_TYPE or ""
-    row.GAP_TYPE = ""
+	row.JAT_DEFECT = jat_defect or row.DESCRIPTION or row.DEFECT_DESC
+	row.JAT_VALUE = jat_value or mark.ext.JAT_VALUE or ""
+	row.RAILWAY_HOUSE = mark.ext.RAILWAY_HOUSE or ""
+	row.RAILWAY_TYPE = mark.ext.RAILWAY_TYPE or ""
+	row.GAP_TYPE = ""
 	return row
 end
 
@@ -100,13 +105,16 @@ local function generate_rows_jat(marks, dlgProgress, pov_filter)
                 local row = MakeJatMarkRow(mark, mark.ext.CODE_EKASUI)
 				table.insert(report_rows, row)
             else
-				local gap_type = getGapType(mark)
-                local codes = markid2defectcodes[mark.prop.ID]
-                for _, code in ipairs(codes) do
-                    local row = MakeJatMarkRow(mark, code)
-                    row.GAP_TYPE = gap_type
+				local connectors = markid2connector[mark.prop.ID]
+				if connectors then
+					local gap_type = getGapType(mark)
+					local codes = mark_helper.GetJoinConnectorDefectCodes(mark, connectors)
+					local jat_count = mark_helper.GetJointConnectorDefectCount(connectors)
+					local jat_defect = mark_helper.GetJointConnectorDefectDesc(connectors)
+					local row = MakeJatMarkRow(mark, table.concat(codes, ','), jat_defect, jat_count)
+					row.GAP_TYPE = gap_type
 					table.insert(report_rows, row)
-                end
+				end
             end
         end
 
