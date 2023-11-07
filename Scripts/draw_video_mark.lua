@@ -361,12 +361,15 @@ local function drawSimpleResult(resultType, points, params, mark)
 			[1] = 'Аpc',
 			[2] = 'ДО', -- скрепление на деревянной шпале на костылях
 			[3] = 'КД', -- скрепление на деревянной шпале как КБ-65 но на двух шурупах
+			[4] = 'Pandrol',
 		}
 
 		local fastener_fault_names = {
 			[0] = 'норм.',
 			[1] = 'От.КБ',  -- отсутствие клеммного болта kb65
 			[2] = 'От.КЛМ',	-- отсутствие клеммы apc
+			[3] = 'Ослабл.',	-- отсутствие клеммы apc
+			[4] = 'Изл.подкл.',	-- отсутствие клеммы apc
 			[10] = 'От.ЗБ',  -- отсутствие закладного болта kb65
 			[11] = 'От.КЗБ',  -- отсутствие клеммного и закладного болта kb65
 		}
@@ -375,19 +378,13 @@ local function drawSimpleResult(resultType, points, params, mark)
 
 
 		if #points == 8 then --[[and params.FastenerFault == 0]]
-
-			if fastener_fault_names[tonumber(params.FastenerFault)] == 'норм.' then
+			if params.FastenerFault == 0 then
 				drawPolygon(points, 1, color, color)
-				else
+			else
 				drawPolygon(points, 2, colorFault, colorFault)
+				local strText = params.FastenerFault and (fastener_fault_names[params.FastenerFault] or params.FastenerFault) or ''
+				textOut(points, strText, {height=11})
 			end
-
-			local strText = sprintf('тип..:  %s\nсост.:  %s\n',
-				params.FastenerType and (fastener_type_names[tonumber(params.FastenerType)] or params.FastenerType) or '',
-				params.FastenerFault and (fastener_fault_names[tonumber(params.FastenerFault)] or params.FastenerFault) or '')
-
-			textOut(points, strText, {height=11})
-
 		end
 	end
 

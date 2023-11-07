@@ -115,13 +115,19 @@ local function igenerate_rows_fastener(marks, dlgProgress)
 					defect_code = DEFECT_CODES.FASTENER_MISSING_CLAMP_BOLT
 				elseif prm.FastenerFault == 2 then -- отсутствие клеммы apc
 					defect_code = DEFECT_CODES.FASTENER_MISSING_CLAMP
+				elseif prm.FastenerFault == 3 then -- Ослабл
+					defect_code = DEFECT_CODES.FASTENER_MISSING_CLAMP
+				elseif prm.FastenerFault == 4 then -- Изл.подкл.
+					defect_code = DEFECT_CODES.FASTENER_DEFECT_LINING
 				elseif prm.FastenerFault == 10 then -- отсутствие закладного болта kb65
 					defect_code = DEFECT_CODES.FASTENER_MISSING_BOLT
 				elseif prm.FastenerFault == 11 then -- отсутствие клеммного и закладного болта kb65 - имитируем закладной
 					defect_code = DEFECT_CODES.FASTENER_MISSING_BOLT
+				else
+					defect_code = DEFECT_CODES.FASTENER_MISSING_CLAMP -- default
 				end
 
-				local row = MakeFastenerMarkRow(mark, defect_code[1], defect_code[2])
+				local row = MakeFastenerMarkRow(mark, defect_code[1])
 				row.FASTENER_TYPE = fastener_type_names[FastenerType] or ''
 
 				coroutine.yield(row)
