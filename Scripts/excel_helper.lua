@@ -336,7 +336,7 @@ local excel_helper = OOP.class
 		if dlg then
 			fnProgress = function (n, all)
 				return
-					n % 23 ~= 0 or
+					n % 3 ~= 0 or
 					not dlg or
 					dlg:step(n / all, sprintf('Применение глобальных значений %d / %d', n, all))
 			end
@@ -538,6 +538,9 @@ local excel_helper = OOP.class
 
 	-- клонируем шаблонную строку нужное число раз, и вставляем данные
 	ApplyRows = function (self, marks, fn_get_templates_data, dlgProgress)
+		if not dlgProgress then
+			dlgProgress = {step = function (self_, v_, s_) return true end}
+		end
 		local dst_row_count = #marks
 		local data_range, user_range, template_values, marker = self:CloneTemplateRow(dst_row_count, 0, dlgProgress)
 		if dst_row_count == 0 then
@@ -552,24 +555,28 @@ local excel_helper = OOP.class
 					local row_data = fn_get_templates_data and fn_get_templates_data(mark) or mark
 					row_data.N = row_num
 					local res_row = apply_values(template_values, {row_data})
-					if dlgProgress and
-					   row_num % 23 == 1 and
-					   not dlgProgress:step(row_num / #marks, sprintf('Сохранение %d / %d', row_num, dst_row_count)) then
-							return
+					if row_num % 43 == 1 then
+					   dlgProgress:step(row_num / #marks, sprintf('Сохранение %d / %d', row_num, dst_row_count))
 					end
 					return res_row
 				end
 			end)
+			dlgProgress:step(0.5, 'Вставка записей')
 			data_range:CopyFromRecordset(recordset)
+
 			-- восстановим и заполним формулы
-			for c = 1, user_range.Columns.count do
+			dlgProgress:step(0, 'Применение формул')
+			local col_cnt = user_range.Columns.count
+			for c = 1, col_cnt do
 				local cell = user_range.Cells(row_template, c)
 				-- print(c, cell.Value2)
 				if cell.HasFormula then
 					local rng = user_range:Range(cell, cell:Offset(#marks, 0))
 					rng:FillDown()
 				end
+				dlgProgress:step(c / col_cnt, sprintf('Применение формул %d / %d', c, col_cnt))
 			end
+			dlgProgress:step(1, 'Сохранение')
 			user_range.Rows(row_template):Delete()
 		else
 			for line = 1, dst_row_count do
