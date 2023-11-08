@@ -104,7 +104,7 @@ local function export_ekasui_xml(PackageNUM, marks, export_id, progres_dlg, path
 		node_incident:setAttribute("posM", mark.M)
 		node_incident:setAttribute("thread", rail_ekasui_table[mark.RAIL_POS])
 		node_incident:setAttribute("defectID", mark.DEFECT_CODE)
-		node_incident:setAttribute("sizeLength", mark.GAP_WIDTH or mark.BEACON_OFFSET or mark.JAT_VALUE or mark.ATYPICAL_COUNT or "")
+		node_incident:setAttribute("sizeLength", mark.GAP_WIDTH or mark.BEACON_OFFSET or mark.JAT_VALUE or mark.ATYPICAL_COUNT or mark.FASTENER_GROUP_SIZE or "")
 		node_incident:setAttribute("sizeWidth", "")
 		node_incident:setAttribute("sizeDepth", "")
 		node_incident:setAttribute("speedLimitID", mark.SPEED_LIMIT)

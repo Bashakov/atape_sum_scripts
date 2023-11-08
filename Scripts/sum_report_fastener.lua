@@ -52,6 +52,7 @@ end
 
 local function MakeFastenerMarkRow(mark, defect_code, defect_desc)
 	local row = mark_helper.MakeCommonMarkTemplate(mark)
+	row.FASTENER_GROUP_SIZE = mark.ext.GROUP_DEFECT_COUNT or ''
 	row.FASTENER_TYPE = ''
 
 	row.DEFECT_CODE = defect_code or ''
@@ -94,8 +95,8 @@ local function igenerate_rows_fastener(marks, dlgProgress)
 
 	local accepted = 0
 	for i, mark in ipairs(marks) do
-		if (TYPES.FASTENER_USER == mark.prop.Guid and
-		    mark_helper.table_find(defect_codes, mark.ext.CODE_EKASUI)) or
+		if (
+			TYPES.FASTENER_USER == mark.prop.Guid and mark.ext.CODE_EKASUI) or
 			mark_helper.table_find(guids_fasteners_groups, mark.prop.Guid)
 		then
 			local row = MakeFastenerMarkRow(mark, mark.ext.CODE_EKASUI)
@@ -172,7 +173,7 @@ local function igen_adapter(fn)
 		return ErrorUserAborted.skip(function ()
 			local g = fn(table.unpack(args))
 			local rows = algorithm.list(g)
-			rows = remove_grouped_marks(rows, guids_fasteners_groups, false)
+			rows = remove_grouped_marks(rows, guids_fasteners_groups, false) -- удаление шпал попадающих в гграницы кустовых дефектов, для исклучения дублирования
 			return rows
 		end)
 	end
@@ -239,7 +240,7 @@ local function AppendReports(reports)
 	}
 
 	for _, report in ipairs(sleppers_reports) do
-		report.guids=guids_fasteners
+		report.guids = mark_helper.table_merge(guids_fasteners, guids_fasteners_groups)
 		table.insert(reports, report)
 	end
 end
