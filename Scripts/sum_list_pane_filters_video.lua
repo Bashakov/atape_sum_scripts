@@ -705,9 +705,9 @@ local filters =
 		},
 		GUIDS = {TYPES.TURNOUT_VIDEO},
 		post_load = function (marks, fnContinueCalc)
-			local strelki, err = pcall(list_ext_obj_str.LoadStr, fnContinueCalc, nil)
-			if not strelki then
-				print(err)
+			local ok, strelki = pcall(list_ext_obj_str.LoadStr, fnContinueCalc, nil)
+			if not ok then
+				print(strelki)
 				strelki = {}
 			end
 
