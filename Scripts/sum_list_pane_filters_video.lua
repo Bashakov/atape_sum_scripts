@@ -410,7 +410,7 @@ local filters =
 		GUIDS =  table_merge(TYPE_GROUPS.recognition_guids, TYPE_GROUPS.JAT_CONN, TYPE_GROUPS.CABLE_CONNECTOR),
 		filter = function(mark)
 			local g = mark.prop.Guid
-			if g == TYPE_GROUPS.CABLE_CONNECTOR then
+			if g == TYPE_GROUPS.CABLE_CONNECTOR and bit32.btest(mark.prop.RailMask, 0x03) then
 				return true
 			end
 			if mark_helper.table_find(TYPE_GROUPS.JAT_CONN, g) then
@@ -748,6 +748,23 @@ local filters =
 			column_pov_common,
 		},
 		GUIDS = {TYPES.UKSPS_VIDEO},
+	},
+	{
+		-- 84.201.134.151/issues/72
+		group = {'Тест:видео'},
+		name = 'Бутлежные перемычки',
+		columns = {
+			column_num,
+			column_path_coord,
+			column_rail_lr,
+			column_jat_defect,
+			column_jat_object,
+			column_jat_type,
+			column_jat_value,
+			column_gap_type,
+			column_pov_common,
+		},
+		GUIDS =  table_merge(TYPE_GROUPS.CABLE_CONNECTOR),
 	},
 }
 
