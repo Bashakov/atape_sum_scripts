@@ -407,10 +407,10 @@ local filters =
 			column_gap_type,
 			column_pov_common,
 		},
-		GUIDS =  table_merge(TYPE_GROUPS.recognition_guids, TYPE_GROUPS.JAT_CONN, TYPE_GROUPS.CABLE_CONNECTOR),
+		GUIDS =  table_merge(TYPE_GROUPS.recognition_guids, TYPE_GROUPS.JAT_CONN, TYPES.CABLE_CONNECTOR),
 		filter = function(mark)
 			local g = mark.prop.Guid
-			if g == TYPE_GROUPS.CABLE_CONNECTOR and bit32.btest(mark.prop.RailMask, 0x03) then
+			if g == TYPES.CABLE_CONNECTOR and bit32.btest(mark.prop.RailMask, 0x03) then
 				return true
 			end
 			if mark_helper.table_find(TYPE_GROUPS.JAT_CONN, g) then
@@ -764,7 +764,7 @@ local filters =
 			column_gap_type,
 			column_pov_common,
 		},
-		GUIDS =  table_merge(TYPE_GROUPS.CABLE_CONNECTOR),
+		GUIDS =  {TYPES.CABLE_CONNECTOR},
 	},
 }
 

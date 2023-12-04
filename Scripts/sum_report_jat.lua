@@ -26,7 +26,7 @@ local markid2connector = {}
 
 local function filter_mark(mark)
     local g = mark.prop.Guid
-	if g == TYPE_GROUPS.CABLE_CONNECTOR then
+	if g == TYPES.CABLE_CONNECTOR then
 		return true
 	end
     if mark_helper.table_find(TYPE_GROUPS.JAT, g) then
@@ -50,7 +50,7 @@ local function GetMarks(params, dlgProgress)
         g = mark_helper.table_merge(g, TYPE_GROUPS.JAT)
     end
     if t == 'all' or t == 'auto' then
-        g = mark_helper.table_merge(g, TYPE_GROUPS.recognition_guids, TYPE_GROUPS.CABLE_CONNECTOR)
+        g = mark_helper.table_merge(g, TYPE_GROUPS.recognition_guids, TYPES.CABLE_CONNECTOR)
     end
 
     local marks = Driver:GetMarks{GUIDS=g}

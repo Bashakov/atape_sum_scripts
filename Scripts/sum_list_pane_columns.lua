@@ -1151,14 +1151,12 @@ column_jat_defect = {
 	end,
 	_impl_text = function (mark)
 		local g = mark.prop.Guid
-
 		if table_find(TYPE_GROUPS.JAT, g) then
 			return mark.prop.Description
 		elseif table_find(TYPE_GROUPS.recognition_guids, g) then
 			return mark_helper.GetJointConnectorDefectDesc(mark)
-		elseif g == TYPES.UKSPS_VIDEO then
-			-- pass
 		end
+		return ''
 	end
 }
 
