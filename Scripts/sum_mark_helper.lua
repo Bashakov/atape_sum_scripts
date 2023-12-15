@@ -1344,6 +1344,27 @@ GetGapType = function (mark)
 	return mark and mark.prop and table_gap_types[mark.prop.Guid]
 end
 
+local function GetUkspsGap(mark)
+	local res = {}
+	local ext = mark.ext
+	local nodeRoot = xml_cache:get(mark)
+	if nodeRoot then
+		for nodeChannel in SelectNodes(nodeRoot, '/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Uksps" and @channel]') do
+			local video_channel = tonumber(nodeChannel.attributes:getNamedItem("channel").nodeValue)
+
+			for nodeLen in SelectNodes(nodeChannel, '//PARAM[@name="Length"]/@value') do
+				local len = tonumber(nodeLen.nodeValue)
+				local name = nodeLen:selectSingleNode('../../@name').nodeValue
+				if not res[video_channel] then
+					res[video_channel] = {}
+				end
+				res[video_channel][name] = len
+			end
+		end
+	end
+	return res
+end
+
 
 
 -- =================== ЭКПОРТ ===================
@@ -1410,6 +1431,8 @@ return {
 	GetSleeperMeterial = GetSleeperMeterial,
 	GetSleeperFault = GetSleeperFault,
 	CheckSleeperEpure = CheckSleeperEpure,
+
+	GetUkspsGap = GetUkspsGap,
 
 	MakeMarkImage = MakeMarkImage,
 	MakeMarkUri = MakeMarkUri,

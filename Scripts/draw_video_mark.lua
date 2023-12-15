@@ -467,7 +467,7 @@ local function drawSimpleResult(resultType, points, params, mark)
 	end
 
 	if alg.starts_with(resultType, 'UkspsGap') then
-		local color = params.UkspsFault == 0 and {r=255, g=201, b=14} or {r=255, g=51, b=14}
+		local color = params.UKSPSFault == 0 and {r=255, g=201, b=14} or {r=255, g=51, b=14}
 		local rg = alg.ends_with(resultType, "RG")
 		if #points == 8 then
 			drawPolygon(points, 1, color, color)

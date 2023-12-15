@@ -569,4 +569,21 @@ function TestGetRecognitionStartInfo()
     })
 end
 
+
+function TestGetUkspsGap()
+    local mark = make_mark('test_data/uksps_xml.xml')
+    lu.assertEquals({mark_helper.GetUkspsGap(mark)}, {{[21]={UkspsGapNG=84, UkspsGapRG=83}, [22]={UkspsGapNG=84, UkspsGapRG=83}}})
+
+    mark = make_mark('test_data/uksps_xml1.xml')
+    lu.assertEquals({mark_helper.GetUkspsGap(mark)}, {{[21]={UkspsGapNG=92, UkspsGapRG=122}}})
+
+    mark = make_mark('test_data/uksps_xml2.xml')
+    lu.assertEquals({mark_helper.GetUkspsGap(mark)},  {{[21]={UkspsGapNG=86, UkspsGapRG=114}, [22]={UkspsGapNG=86, UkspsGapRG=114}}})
+
+    mark = make_mark('test_data/beacon1.xml')
+    lu.assertEquals({mark_helper.GetUkspsGap(mark)}, {{}})
+end
+
+-- ======================================================
+
 os.exit( lu.LuaUnit.run() )

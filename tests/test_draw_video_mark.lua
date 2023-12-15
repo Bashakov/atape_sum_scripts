@@ -248,7 +248,7 @@ function  TestUKSPS()
             Guid=TYPES.TURNOUT_VIDEO,
         },
         ext = {
-            RAWXMLDATA = read_file("test_data/uksps.xml"),
+            RAWXMLDATA = read_file("test_data/uksps_xml.xml"),
         },
     }
     draw(21, 7511856, mark)
