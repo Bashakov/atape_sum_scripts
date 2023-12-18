@@ -1346,7 +1346,6 @@ end
 
 local function GetUkspsGap(mark)
 	local res = {}
-	local ext = mark.ext
 	local nodeRoot = xml_cache:get(mark)
 	if nodeRoot then
 		for nodeChannel in SelectNodes(nodeRoot, '/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Uksps" and @channel]') do
@@ -1365,6 +1364,40 @@ local function GetUkspsGap(mark)
 	return res
 end
 
+local function GetUkspsParam(mark)
+	local function read_params(pnodeParent, cur_res)
+		for nodeParam in SelectNodes(pnodeParent, "PARAM[@name and not(@type)]") do
+			local name = nodeParam.attributes:getNamedItem("name").nodeValue
+			local value = nodeParam.attributes:getNamedItem("value")
+			if not value then
+				local nv = {}
+				read_params(nodeParam, nv)
+				if next(nv) then
+					cur_res[name] = nv
+				end
+			else
+				value = value.nodeValue
+				value = tonumber(value) or value
+				cur_res[name] = value
+			end
+		end
+	end
+
+	local res = {}
+	local nodeRoot = xml_cache:get(mark)
+	if nodeRoot then
+		for nodeChannel in SelectNodes(nodeRoot, '/ACTION_RESULTS/PARAM[@name="ACTION_RESULTS" and @value="Uksps" and @channel]') do
+			local video_channel = tonumber(nodeChannel.attributes:getNamedItem("channel").nodeValue)
+			local nodeParams = nodeChannel:selectSingleNode('PARAM/PARAM')
+			if video_channel and nodeParams then
+				local params = {}
+				read_params(nodeParams, params)
+				res[video_channel] = params
+			end
+		end
+	end
+	return res
+end
 
 
 -- =================== ЭКПОРТ ===================
@@ -1433,6 +1466,7 @@ return {
 	CheckSleeperEpure = CheckSleeperEpure,
 
 	GetUkspsGap = GetUkspsGap,
+	GetUkspsParam = GetUkspsParam,
 
 	MakeMarkImage = MakeMarkImage,
 	MakeMarkUri = MakeMarkUri,

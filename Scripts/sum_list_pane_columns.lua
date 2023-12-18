@@ -1156,11 +1156,7 @@ column_jat_defect = {
 		elseif table_find(TYPE_GROUPS.recognition_guids, g) then
 			return mark_helper.GetJointConnectorDefectDesc(mark)
 		elseif g == TYPES.UKSPS_VIDEO then
-			if mark.ext.UKSPS_FAULT and mark.ext.UKSPS_FAULT ~= 0 then
-				return "Неисправен"
-			else
-				return "Расстояние между датчиками не по эпюре"
-			end
+			return mark.ext.UKSPS_DEFECT_NAME or ''
 		end
 		return ''
 	end
@@ -1219,24 +1215,17 @@ column_jat_value = {
 	align = 'r',
 	text = function(row)
 		local mark = work_marks_list[row]
+		return column_jat_value._impl_text(mark)
+	end,
+	sorter = function(mark)
+		local t = column_jat_value._impl_text(mark)
+		local v = tonumber(t) or -1
+		print(mark.prop.ID, t, v)
+		return v
+	end,
+	_impl_text = function (mark)
 		local g = mark.prop.Guid
-		if g == TYPES.UKSPS_VIDEO then
-			if mark.ext.UKSPS_FAULT and mark.ext.UKSPS_FAULT == 1 then
-				return '-'
-			else
-				local gaps = mark_helper.GetUkspsGap(mark)
-				local msg = ''
-				for ch, gs in algorithm.sorted(gaps) do
-					msg = msg .. sprintf('%d:(', ch)
-					for n, v in algorithm.sorted(gs) do
-						n = string.gsub(n, 'UkspsGap', '')
-						msg = msg .. sprintf(" %s=%d", n, v)
-					end
-					msg = msg .. ' ) '
-				end
-				return msg
-			end
-		elseif mark.ext.JAT_VALUE then
+		if mark.ext.JAT_VALUE then
 			return mark.ext.JAT_VALUE
 		elseif table_find(TYPE_GROUPS.recognition_guids, g) then
 			return mark_helper.GetJointConnectorDefectCount(mark)

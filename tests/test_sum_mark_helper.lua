@@ -572,16 +572,63 @@ end
 
 function TestGetUkspsGap()
     local mark = make_mark('test_data/uksps_xml.xml')
-    lu.assertEquals({mark_helper.GetUkspsGap(mark)}, {{[21]={UkspsGapNG=84, UkspsGapRG=83}, [22]={UkspsGapNG=84, UkspsGapRG=83}}})
+    lu.assertEquals(mark_helper.GetUkspsGap(mark), {[21]={UkspsGapNG=84, UkspsGapRG=83}, [22]={UkspsGapNG=84, UkspsGapRG=83}})
 
     mark = make_mark('test_data/uksps_xml1.xml')
-    lu.assertEquals({mark_helper.GetUkspsGap(mark)}, {{[21]={UkspsGapNG=92, UkspsGapRG=122}}})
+    lu.assertEquals(mark_helper.GetUkspsGap(mark), {[21]={UkspsGapNG=92, UkspsGapRG=122}})
 
     mark = make_mark('test_data/uksps_xml2.xml')
-    lu.assertEquals({mark_helper.GetUkspsGap(mark)},  {{[21]={UkspsGapNG=86, UkspsGapRG=114}, [22]={UkspsGapNG=86, UkspsGapRG=114}}})
+    lu.assertEquals(mark_helper.GetUkspsGap(mark),  {[21]={UkspsGapNG=86, UkspsGapRG=114}, [22]={UkspsGapNG=86, UkspsGapRG=114}})
 
     mark = make_mark('test_data/beacon1.xml')
-    lu.assertEquals({mark_helper.GetUkspsGap(mark)}, {{}})
+    lu.assertEquals(mark_helper.GetUkspsGap(mark), {})
+end
+
+function TestGetUkspsParam()
+    local mark = make_mark('test_data/uksps_xml.xml')
+    lu.assertEquals(mark_helper.GetUkspsParam(mark),   {
+        [21]={
+            Angle_mrad=999,
+            AxisSysCoord_mm=7512649,
+            UKSPSFault=0,
+            UkspsGapNG={Length=84},
+            UkspsGapRG={Length=83}   },
+        [22]={
+            Angle_mrad=999,
+            AxisSysCoord_mm=7512649,
+            UKSPSFault=1,
+            UkspsGapNG={Length=84},
+            UkspsGapRG={Length=83}
+        }});
+
+    mark = make_mark('test_data/uksps_xml1.xml')
+    lu.assertEquals(mark_helper.GetUkspsParam(mark), {
+        [21]={
+            Angle_mrad=999,
+            AxisSysCoord_mm=95213478,
+            UKSPSFault=0,
+            UkspsGapNG={Length=92},
+            UkspsGapRG={Length=122}
+        }})
+
+        
+    mark = make_mark('test_data/uksps_xml2.xml')
+    lu.assertEquals(mark_helper.GetUkspsParam(mark), {
+        [21]={
+            Angle_mrad=999,
+            AxisSysCoord_mm=4175786,
+            UKSPSFault=0,
+            UkspsGapNG={Length=88},
+            UkspsGapRG={Length=113} },
+        [22]={
+            Angle_mrad=999,
+            AxisSysCoord_mm=4175763,
+            UKSPSFault=1,
+            UkspsGapNG={Length=86},
+            UkspsGapRG={Length=114}     }})
+
+    mark = make_mark('test_data/beacon1.xml')
+    lu.assertEquals(mark_helper.GetUkspsParam(mark), {})
 end
 
 -- ======================================================

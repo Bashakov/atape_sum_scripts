@@ -6,6 +6,7 @@ local table_merge = mark_helper.table_merge
 local TYPES = require 'sum_types'
 local TYPE_GROUPS = require "sum_list_pane_guids"
 local algorithm = require 'algorithm'
+local utils = require "utils"
 
 local prev_atape = ATAPE
 ATAPE = true -- disable debug code while load scripts
@@ -740,6 +741,8 @@ local filters =
 		group = {'Тест:видео'},
 		name = 'Тест УКСПС',
 		columns = {
+			-- column_num,
+			-- column_sys_coord,
 			column_path_coord,
 			column_rail_lr,
 			column_jat_defect,
@@ -748,6 +751,60 @@ local filters =
 			column_pov_common,
 		},
 		GUIDS = {TYPES.UKSPS_VIDEO},
+		sort_method = function(marks, fn, inc) return mark_helper.sort_marks(marks, function(m) return {fn(m)} end, inc) end,
+		post_load = function (marks, fnContinueCalc)
+			local function copy_prop(orig)
+				local r = {}
+				for _, name in ipairs{"ID", "SysCoord", "Len", "RailMask", "ChannelMask", "UserFlags", "MarkFlags", "Guid", "Description"} do
+					local v = orig[name]
+					r[name] = tonumber(v) or tostring(v)
+				end
+				return r
+			end
+
+			local function copy_ext(orig)
+				local r = {}
+				for name, val in pairs(orig) do
+					r[name] = tonumber(val) or tostring(val)
+				end
+				return r
+			end
+		
+			local function new_mark(dst, orig, vid_ch, fault, val, name)
+				local nm = {
+					prop = copy_prop(orig.prop),
+					ext = copy_ext(orig.ext),
+				}
+				nm.prop.RailMask = (vid_ch % 2 == 1 and 1 or 2)
+				nm.ext.UKSPS_FAULT = fault
+				if val then
+					nm.ext.JAT_VALUE = val
+				end
+				nm.ext.UKSPS_DEFECT_NAME = name
+				table.insert(dst, nm)
+			end
+
+			local res = {}
+			marks = mark_helper.sort_mark_by_coord(marks)
+			for i, mark in ipairs(marks) do
+				local uksps_params = mark_helper.GetUkspsParam(mark)
+				for vid_ch, ch_params in algorithm.sorted(uksps_params) do
+					if ch_params.UKSPSFault and ch_params.UKSPSFault == 1 then
+						new_mark(res, mark, vid_ch, 1, nil, "Неисправен")
+					else
+						for _, name in ipairs{'UkspsGapRG', 'UkspsGapNG'} do
+							if ch_params[name] and ch_params[name].Length then
+								new_mark(res, mark, vid_ch, 0, ch_params[name].Length, name .. ' не по эпюре')
+							end
+						end
+					end
+					if fnContinueCalc and i % 20 == 0 and not fnContinueCalc(i / #marks) then
+						return {}
+					end
+				end
+			end
+			return res
+		end,
 	},
 	{
 		-- 84.201.134.151/issues/72
