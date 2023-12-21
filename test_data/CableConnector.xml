@@ -1,0 +1,20 @@
+<ACTION_RESULTS version='1.4'>
+	<PARAM name='ACTION_RESULTS' channel='19' value='CableConnector' readable_name=''>
+		<PARAM name='FrameNumber' value='0' coord='1305677' _value='в каком кадре объект найден: 0-текущий(наилучший), [-N]-предыдущий,, [+N]-следующий'>
+			<PARAM name='Coord' type='rect' value='662,301,702,226' _value='X0,Y0,X1,Y1[pix]; {0,0}-левый нижний край кадра'/>
+		</PARAM>
+		<PARAM name='FrameNumber' value='0' coord='1305677' _value='в каком кадре объект найден: 0-текущий(наилучший), [-N]-предыдущий,, [+N]-следующий'>
+			<PARAM name='Coord' type='rect' value='452,300,492,229' _value='X0,Y0,X1,Y1[pix]; {0,0}-левый нижний край кадра'/>
+		</PARAM>
+		<PARAM name='FrameNumber' value='1' coord='1306701' _value='в каком кадре объект найден: 0-текущий(наилучший), [-N]-предыдущий,, [+N]-следующий'>
+			<PARAM name='Coord' type='rect' value='14,298,50,227' _value='X0,Y0,X1,Y1[pix]; {0,0}-левый нижний край кадра'/>
+		</PARAM>
+		<PARAM name='FrameNumber' value='1' coord='1306701' _value='в каком кадре объект найден: 0-текущий(наилучший), [-N]-предыдущий,, [+N]-следующий'>
+			<PARAM name='Coord' type='rect' value='202,303,240,230' _value='X0,Y0,X1,Y1[pix]; {0,0}-левый нижний край кадра'/>
+		</PARAM>
+		<PARAM name='ACTION_RESULTS' channel='19' value='Common'>
+			<PARAM name='Reliability' value='95'/>
+			<PARAM name='RecogObjCoord' value='1306659' _desc='координата найденного объекта'/>
+		</PARAM>
+	</PARAM>
+</ACTION_RESULTS>

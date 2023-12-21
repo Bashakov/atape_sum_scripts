@@ -1,0 +1,63 @@
+Convertor.GetPointOnFrame: 149166118 149166118, 113 361 -> 113
+Convertor.GetPointOnFrame: 149166118 149166118, 113 197 -> 113
+Convertor.GetPointOnFrame: 149166118 149167142, 89 361 -> 1113
+Convertor.GetPointOnFrame: 149166118 149167142, 89 197 -> 1113
+prop.lineWidth: 1
+prop.fillColor: {1=128,2=128,3=128,4=0}
+prop.lineColor: {1=128,2=128,3=128,4=200}
+fig.polygon: 113,361,113,197,1113,197,1113,361
+Convertor.GetPointOnFrame: 149166118 149166118, 162 255 -> 162
+Convertor.ScalePoint: 30 43
+prop.lineWidth: 1
+prop.fillColor: {1=128,2=128,3=128,4=0}
+prop.lineColor: {1=128,2=128,3=128,4=255}
+fig.ellipse: 162 255 30 43
+Convertor.GetPointOnFrame: 149166118 149166118, 294 261 -> 294
+Convertor.ScalePoint: 30 33
+prop.lineWidth: 1
+prop.fillColor: {1=128,2=128,3=128,4=0}
+prop.lineColor: {1=128,2=128,3=128,4=255}
+fig.ellipse: 294 261 30 33
+Convertor.GetPointOnFrame: 149166118 149166118, 518 256 -> 518
+Convertor.ScalePoint: 28 46
+prop.lineWidth: 1
+prop.fillColor: {1=128,2=128,3=128,4=0}
+prop.lineColor: {1=128,2=128,3=128,4=255}
+fig.ellipse: 518 256 28 46
+Convertor.GetPointOnFrame: 149166118 149166118, 717 263 -> 717
+Convertor.ScalePoint: 29 32
+prop.lineWidth: 1
+prop.fillColor: {1=128,2=128,3=128,4=0}
+prop.lineColor: {1=128,2=128,3=128,4=255}
+fig.ellipse: 717 263 29 32
+Convertor.GetPointOnFrame: 149166118 149166118, 936 258 -> 936
+Convertor.ScalePoint: 28 44
+prop.lineWidth: 1
+prop.fillColor: {1=128,2=128,3=128,4=0}
+prop.lineColor: {1=128,2=128,3=128,4=255}
+fig.ellipse: 936 258 28 44
+Convertor.GetPointOnFrame: 149166118 149167142, 48 262 -> 1072
+Convertor.ScalePoint: 28 29
+prop.lineWidth: 1
+prop.fillColor: {1=128,2=128,3=128,4=0}
+prop.lineColor: {1=128,2=128,3=128,4=255}
+fig.ellipse: 1072 262 28 29
+Convertor.ScalePoint: 609 419
+Convertor.ScalePoint: 628 419
+Convertor.ScalePoint: 628 353
+Convertor.ScalePoint: 609 353
+prop.lineWidth: 1
+prop.fillColor: {1=255,2=0,3=255,4=0}
+prop.lineColor: {1=255,2=0,3=255,4=200}
+fig.polygon: 609,419,628,419,628,353,609,353
+text.font: {bold=0,height=13,name=Tahoma,render=VectorFontCache}
+text.alignment: AlignLeft AlignBottom
+text.calcSize: 19 mm
+prop.lineWidth: 3
+prop.fillColor: {a=225,b=0,g=0,r=0}
+prop.lineColor: {a=225,b=0,g=0,r=0}
+text.multiline: {str=19 mm,x=623,y=381}
+prop.lineWidth: 1
+prop.fillColor: {a=225,b=255,g=255,r=255}
+prop.lineColor: {a=225,b=255,g=255,r=255}
+text.multiline: {str=19 mm,x=623,y=381}

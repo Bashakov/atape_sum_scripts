@@ -1,0 +1,18 @@
+<ACTION_RESULTS version="1.4">
+        <PARAM name="ACTION_RESULTS" channel="17" value="CalcRailGap_User">
+            <PARAM name="FrameNumber" value="0" coord="1976397">
+                <PARAM name="Result" value="main">
+                    <PARAM name="Coord" type="polygon" value="812,446 812,396 830,396 830,446"/>
+                    <PARAM name="RailGapWidth_mkm" value="123000"/>
+                </PARAM>
+            </PARAM>
+        </PARAM>
+        <PARAM name="ACTION_RESULTS" channel="19" value="CalcRailGap_Head_Top">
+            <PARAM name="FrameNumber" value="0" coord="1976397">
+                <PARAM name="Result" value="main">
+                    <PARAM name="Coord" type="polygon" value="812,446 812,396 830,396 830,446"/>
+                    <PARAM name="RailGapWidth_mkm" value="18000"/>
+                </PARAM>
+            </PARAM>
+        </PARAM>
+    </ACTION_RESULTS>

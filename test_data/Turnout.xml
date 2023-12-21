@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<ACTION_RESULTS version="5.196" protocol_version='1.1'> 
+	<!--  vklyuchayet: 2 styka vnachale + 2 ostryaka + krestovina + 2 styka v kontse -->
+	<!-- 2 styka v nachale -->
+
+	<PARAM value="Strelka_StartStyk" channel="17" name="ACTION_RESULTS"> <!-- zapolnyayetsya blizhayshiy styk pered ostryakom ili krestovinoy v predelakh 10 metrovv -->
+		<PARAM value="1" name="FrameNumber" coord="40992755">
+			<PARAM value="main" name="Result">
+				<PARAM value="846" name="Coord" type="polygon"/> <!-- abstsissa styka v kadre po zazoru -->
+			</PARAM>
+		</PARAM>
+		<PARAM name="RecogObjCoord" value="40994122" _desc="Strelka_StartStyk Coord"/>
+	</PARAM>
+	<PARAM value="Strelka_StartStyk" channel="18" name="ACTION_RESULTS"> <!-- zapolnyayetsya blizhayshiy styk pered ostryakom ili krestovinoy v predelakh 10 metrovv -->
+		<PARAM value="1" name="FrameNumber" coord="40992755">
+			<PARAM value="main" name="Result">
+				<PARAM value="846" name="Coord" type="polygon"/> <!-- abstsissa styka v kadre po zazoru -->
+			</PARAM>
+		</PARAM>
+		<PARAM name="RecogObjCoord" value="40994122" _desc="Strelka_StartStyk Coord"/>
+	</PARAM>
+	
+	<!-- 2 ostryaka -->
+	
+	<PARAM value="Strelka_Ostryak" channel="17" name="ACTION_RESULTS"> 
+		<PARAM value="0" name="FrameNumber" coord="40993779">
+			<PARAM value="main" name="Result">
+				<PARAM value="322,420 322,394" name="Coord" type="polygon"/> <!-- abstsissa ostryaka v kadre, v konture ostryak ne obvodim, nuzhny koordinaty nachala ostryaka -->
+				<!-- -->
+				<PARAM value="0" name="Strelka_OstryakFault" _value="0(norm), 1(fault)"/>
+			</PARAM>
+		</PARAM>
+		<PARAM name="RecogObjCoord" value="40991122" _desc="Strelka_Ostryak Coord"/>
+	</PARAM>
+	<PARAM value="Strelka_ZazorInKorenOstryaka" channel="17" name="ACTION_RESULTS"> <!-- koordinata zazora v korne ostryaka, na budushcheye -->
+		<PARAM value="0" name="FrameNumber" coord="40993779">
+			<PARAM value="main" name="Result">
+				<PARAM value="322,420 322,394 328,394 328,420" name="Coord" type="polygon"/> 
+				<PARAM value="5000" name="Strelka_ZazorInKorenOstryaka_mkm"/> <!-- razmer zazora v korne ostryaka, na budushcheye -->
+			</PARAM>
+		</PARAM>
+		<PARAM name="RecogObjCoord" value="40991122" _desc="Strelka_ZazorInKorenOstryaka Coord"/>
+	</PARAM>
+	
+	<PARAM value="Strelka_Ostryak" channel="18" name="ACTION_RESULTS"> 
+		<PARAM value="0" name="FrameNumber" coord="40993779">
+			<PARAM value="main" name="Result">
+				<PARAM value="322,420 322,394" name="Coord" type="polygon"/> <!-- abstsissa ostryaka v kadre, v konture ostryak ne obvodim, nuzhny koordinaty nachala ostryaka -->
+				<PARAM name="Strelka_OstryakFault" value="0"  _value="0(norm), 1(fault)"/>
+			</PARAM>
+		</PARAM>
+	<PARAM name="RecogObjCoord" value="40991122" _desc="Strelka_Ostryak Coord"/>		
+	</PARAM>
+		<PARAM value="Strelka_ZazorInKorenOstryaka" channel="18" name="ACTION_RESULTS"> <!-- koordinata zazora v korne ostryaka, na budushcheye -->
+		<PARAM value="0" name="FrameNumber" coord="40993779">
+			<PARAM value="main" name="Result">
+				<PARAM value="322,420 322,394 328,394 328,420" name="Coord" type="polygon"/> 
+				<PARAM value="5000" name="Strelka_ZazorInKorenOstryaka_mkm"/> <!-- razmer zazora v korne ostryaka, na budushcheye -->
+			</PARAM>
+		</PARAM>
+		<PARAM name="RecogObjCoord" value="40991122" _desc="Strelka_ZazorInKorenOstryaka Coord"/>
+	</PARAM>
+	
+	<!-- krestovina -->
+	
+	<PARAM value="Strelka_Krestovina" channel="17" name="ACTION_RESULTS">
+		<PARAM value="0" name="FrameNumber" coord="40993779">
+			<PARAM value="main" name="Result">
+				<PARAM value="322,420 322,394 328,394 328,420" name="Coord" type="polygon"/> <!-- abstsissa krestoviny v kadre, v konture krestovinu ne obvodim, nuzhny koordinaty rassmatrivayem krestoviny -->
+				<PARAM value="2" name="Strelka_KrestovinaFault" _value="0(norm), 2(fault)"/>
+			</PARAM>
+		</PARAM>
+		<PARAM name="RecogObjCoord" value="40992122" _desc="Strelka_Krestovina Coord"/>
+	</PARAM>
+	
+	<!-- kontrrel's -->
+	<!-- 2 styka v kontse -->
+	
+	<PARAM value="Strelka_EndStyk" channel="17" name="ACTION_RESULTS"> <!-- sozdayetsya blizhayshiy styk posle pered ostryakom ili krestovinoy v predelakh 10 metrov -->
+		<PARAM value="1" name="FrameNumber" coord="40992755">
+			<PARAM value="main" name="Result">
+				<PARAM value="322" name="Coord" type="polygon"/> <!-- abstsissa styka v kadre po zazoru -->
+			</PARAM>
+		</PARAM>
+		<PARAM name="RecogObjCoord" value="409923122" _desc="Strelka_EndStyk Coord"/>
+	</PARAM>
+	<PARAM value="Strelka_EndStyk" channel="18" name="ACTION_RESULTS"> <!-- sozdayetsya blizhayshiy styk posle pered ostryakom ili krestovinoy v predelakh 10 metrov -->
+		<PARAM value="1" name="FrameNumber" coord="40992755">
+			<PARAM value="main" name="Result">
+				<PARAM value="322" name="Coord" type="polygon"/> <!-- abstsissa styka v kadre po zazoru -->
+			</PARAM>
+		</PARAM>
+		<PARAM name="RecogObjCoord" value="409923122" _desc="Strelka_EndStyk Coord"/>
+	</PARAM>
+
+	<PARAM value="Common" name="ACTION_RESULTS">
+		<PARAM value="100" name="Reliability"/>
+		<PARAM value="40994122" name="RecogObjCoord" _desc=" "/>
+		<PARAM value="1" name="MULTIBIT" _value="1 - , 0 - 8-"/>
+	</PARAM>
+</ACTION_RESULTS>

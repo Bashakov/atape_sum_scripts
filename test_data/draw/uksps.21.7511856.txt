@@ -1,0 +1,48 @@
+Convertor.ScalePoint: 816 493
+Convertor.ScalePoint: 854 493
+Convertor.ScalePoint: 854 -1
+Convertor.ScalePoint: 816 -1
+prop.lineWidth: 1
+prop.fillColor: {1=192,2=0,3=192,4=0}
+prop.lineColor: {1=192,2=0,3=192,4=200}
+fig.polygon: 816,493,854,493,854,-1,816,-1
+
+Convertor.ScalePoint: 808 1023
+Convertor.ScalePoint: 856 1023
+Convertor.ScalePoint: 856 735
+Convertor.ScalePoint: 808 735
+prop.lineWidth: 1
+prop.fillColor: {1=255,2=201,3=14,4=0}
+prop.lineColor: {1=255,2=201,3=14,4=200}
+fig.polygon: 808,1023,856,1023,856,735,808,735
+text.font: {bold=0,height=13,name=Tahoma,render=VectorFontCache}
+text.alignment: AlignLeft AlignBottom
+text.calcSize: УКСПС Рабочая грань: зазор 83
+prop.lineWidth: 3
+prop.fillColor: {a=225,b=0,g=0,r=0}
+prop.lineColor: {a=225,b=0,g=0,r=0}
+text.multiline: {str=УКСПС Рабочая грань: зазор 83,x=851,y=894}
+prop.lineWidth: 1
+prop.fillColor: {a=225,b=255,g=255,r=255}
+prop.lineColor: {a=225,b=255,g=255,r=255}
+text.multiline: {str=УКСПС Рабочая грань: зазор 83,x=851,y=894}
+
+Convertor.ScalePoint: 816 493
+Convertor.ScalePoint: 854 493
+Convertor.ScalePoint: 854 -1
+Convertor.ScalePoint: 816 -1
+prop.lineWidth: 1
+prop.fillColor: {1=255,2=201,3=14,4=0}
+prop.lineColor: {1=255,2=201,3=14,4=200}
+fig.polygon: 816,493,854,493,854,-1,816,-1
+text.font: {bold=0,height=13,name=Tahoma,render=VectorFontCache}
+text.alignment: AlignLeft AlignBottom
+text.calcSize: УКСПС Нерабочая грань: зазор 84
+prop.lineWidth: 3
+prop.fillColor: {a=225,b=0,g=0,r=0}
+prop.lineColor: {a=225,b=0,g=0,r=0}
+text.multiline: {str=УКСПС Нерабочая грань: зазор 84,x=849,y=261}
+prop.lineWidth: 1
+prop.fillColor: {a=225,b=255,g=255,r=255}
+prop.lineColor: {a=225,b=255,g=255,r=255}
+text.multiline: {str=УКСПС Нерабочая грань: зазор 84,x=849,y=261}

@@ -1,0 +1,25 @@
+Convertor.GetPointOnFrame: 3811632 3810632, 711 739 -> -289
+Convertor.GetPointOnFrame: 3811632 3810632, 712 361 -> -288
+prop.lineWidth: 1
+prop.fillColor: {1=67,2=149,3=209,4=0}
+prop.lineColor: {1=67,2=149,3=209,4=255}
+fig.polygon: -294 739 -283 361
+
+Convertor.GetPointOnFrame: 3811632 3810632, 722 361 -> -278
+Convertor.GetPointOnFrame: 3811632 3810632, 723 324 -> -277
+prop.lineWidth: 1
+prop.fillColor: {1=0,2=169,3=157,4=0}
+prop.lineColor: {1=0,2=169,3=157,4=255}
+fig.polygon: -283 361 -272 324
+
+text.font: {bold=0,height=13,name=Tahoma,render=VectorFontCache}
+text.alignment: AlignLeft AlignBottom
+text.calcSize: -11.0 mm
+prop.lineWidth: 3
+prop.fillColor: {a=225,b=0,g=0,r=0}
+prop.lineColor: {a=225,b=0,g=0,r=0}
+text.multiline: {str=-11.0 mm,x=-288,y=356}
+prop.lineWidth: 1
+prop.fillColor: {a=225,b=255,g=255,r=255}
+prop.lineColor: {a=225,b=255,g=255,r=255}
+text.multiline: {str=-11.0 mm,x=-288,y=356}

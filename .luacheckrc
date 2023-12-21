@@ -17,6 +17,10 @@ files["sum_list_pane_*.lua"] = {
     }
 }
 
+filesp["test_*.lua"] = {
+    ignore = {'lowercase-global'}
+}
+
 read_globals = {
     "luacom",
     "bit32",
@@ -28,4 +32,11 @@ read_globals = {
 globals = {
     "ATAPE",
     "HUN",
+}
+
+exclude_files = {
+    ".luacheckrc",
+    "luaunit.lua",
+    "mobdebug.lua",
+    "xml_parse.lua",
 }

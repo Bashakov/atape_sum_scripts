@@ -1,0 +1,55 @@
+<ACTION_RESULTS version="1.4">
+	<PARAM name="ACTION_RESULTS" channel="21" value="Uksps">
+		<PARAM name="FrameNumber" value="0" coord="4174713">
+			<PARAM name="Result" value="main">
+				<PARAM name="SleeperUksps">
+					<PARAM name="Coord" type="polygon" value="642,-19,642,1027,904,1027,904,-19"></PARAM>
+				</PARAM>
+				<PARAM name="UkspsGapNG">
+					<PARAM name="Coord" type="polygon" value="748,1015,794,1015,794,767,748,767"></PARAM>
+					<PARAM name="Length" value="88" _value="Rasstoyanie do rel.sa v pikselyakh"></PARAM>
+				</PARAM>
+				<PARAM name="UkspsGapRG">
+					<PARAM name="Coord" type="polygon" value="732,491,782,491,782,3,732,3"></PARAM>
+					<PARAM name="Length" value="113" _value="Rasstoyanie do rel.sa v pikselyakh"></PARAM>
+				</PARAM>
+				<PARAM name="UKSPSFault" value="0" value_="0-ispraven, 1-neispraven"></PARAM>
+				<PARAM name="Angle_mrad" value="999"></PARAM>
+				<PARAM name="AxisSysCoord_mm" value="4175786"></PARAM>
+			</PARAM>
+		</PARAM>
+	</PARAM>
+	<PARAM name="ACTION_RESULTS" channel="22" value="Uksps">
+		<PARAM name="FrameNumber" value="0" coord="4174713">
+			<PARAM name="Result" value="main">
+				<PARAM name="SleeperUksps">
+					<PARAM name="Coord" type="polygon" value="616,32,616,1024,884,1024,884,32"></PARAM>
+				</PARAM>
+				<PARAM name="UkspsGapNG">
+					<PARAM name="Coord" type="polygon" value="724,1001,772,1001,772,743,724,743"></PARAM>
+					<PARAM name="Length" value="86" _value="Rasstoyanie do rel.sa v pikselyakh"></PARAM>
+				</PARAM>
+				<PARAM name="UkspsGapRG">
+					<PARAM name="Coord" type="polygon" value="702,469,774,469,774,9,702,9"></PARAM>
+					<PARAM name="Length" value="114" _value="Rasstoyanie do rel.sa v pikselyakh"></PARAM>
+				</PARAM>
+				<PARAM name="UKSPSFault" value="1" value_="0-ispraven, 1-neispraven"></PARAM>
+				<PARAM name="Angle_mrad" value="999"></PARAM>
+				<PARAM name="AxisSysCoord_mm" value="4175763"></PARAM>
+			</PARAM>
+		</PARAM>
+	</PARAM>
+
+
+	<!--PARAM name="ACTION_RESULTS" value="Uksps" _value="in advance if uksps will be one on both rail">
+		<PARAM name="Angle_mrad" value="999"></PARAM>
+		<PARAM name="AxisSysCoord_mm" value="4175786"></PARAM>
+		<PARAM name="UKSPSFault" value="0" value_="0-ispraven, 1-neispraven"></PARAM>
+	</PARAM-->
+	``
+	<PARAM name="ACTION_RESULTS" value="Common">
+		<PARAM name="Reliability" value="100"></PARAM>
+		<PARAM name="RecogObjCoord" value="4175786"></PARAM>
+		<PARAM name="MULTIBIT" value="1" _value="1 -analiziruetsya mul.tibitno, 0 - perevoditsya v 8-bitnoe"></PARAM>
+	</PARAM>
+</ACTION_RESULTS>

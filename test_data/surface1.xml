@@ -1,0 +1,18 @@
+﻿<ACTION_RESULTS version="1.4">
+<PARAM name="ACTION_RESULTS" channel="17" value="Surface">
+<PARAM name="FrameNumber" value="0" coord="3086664">
+<PARAM name="Result" value="main">
+<PARAM name="Coord" type="polygon" value="239,774 239,876,397,876 397,774"></PARAM>
+<PARAM name="SurfaceFault" value="0" value_="0-черный пов.дефект; 1-"></PARAM>
+<PARAM name="SurfaceWidth" value="158"></PARAM>
+<PARAM name="SurfaceLength" value="102" value_="Длина, мм "></PARAM>
+<PARAM name="SurfaceArea" value="10" value_="Площадь,мм**2 "></PARAM>
+<PARAM name="Reliability" value="95"></PARAM>
+</PARAM>
+</PARAM>
+
+<PARAM name="ACTION_RESULTS" channel="17" value="Common">
+<PARAM name="Reliability" value="95"></PARAM>
+<PARAM name="RecogObjCoord" value="3086982" _desc="координата найденного объекта"></PARAM><PARAM name="MarkTypeGuid" value="{4FB794A3-0CD7-4E55-B0FB-41B023AA5C6E}"></PARAM></PARAM>
+</PARAM>
+</ACTION_RESULTS>
